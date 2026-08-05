@@ -1,0 +1,20 @@
+{
+  "name": "tcm-ac",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run start -w frontend",
+    "android": "npm run android -w frontend",
+    "ios": "npm run ios -w frontend",
+    "web": "npm run web -w frontend",
+    "seed": "npm run seed -w backend"
+  },
+  "devDependencies": {
+    "react": "19.1.0"
+  }
+}

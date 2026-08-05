@@ -1,0 +1,1245 @@
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from "react-native";
+import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
+import { getTargetUserProfile, sendFriendRequestAction, toggleFollowUser } from "../api/client";
+import { colors, shadow } from "../constants/theme";
+import { fonts } from "../constants/fonts";
+
+export default function UserProfileScreen({ session, targetUser, onClose, onOpenChat }) {
+  const [profileData, setProfileData] = useState(null);
+  const [userPosts, setUserPosts] = useState([]);
+  const [followersList, setFollowersList] = useState([]);
+  const [followingList, setFollowingList] = useState([]);
+  const [friendStatus, setFriendStatus] = useState("none");
+  const [loading, setLoading] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [activeTab, setActiveTab] = useState("Posts");
+
+  // Bottom Sheets & Modals state
+  const [followersModalOpen, setFollowersModalOpen] = useState(false);
+  const [followingModalOpen, setFollowingModalOpen] = useState(false);
+  const [avatarEnlargedOpen, setAvatarEnlargedOpen] = useState(false);
+  const [optionsSheetOpen, setOptionsSheetOpen] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+
+  const targetId = targetUser?.id || targetUser?._id || targetUser?.authorId || "user-rohit";
+
+  useEffect(() => {
+    loadProfile();
+  }, [targetId, session?.token]);
+
+  async function loadProfile() {
+    if (!session?.token) {
+      setFriendStatus("none");
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await getTargetUserProfile(session.token, targetId);
+      if (data?.user) {
+        setProfileData(data.user);
+      }
+      if (data?.friendStatus) {
+        setFriendStatus(data.friendStatus);
+      }
+      if (data?.posts) {
+        setUserPosts(data.posts);
+      }
+      if (data?.followers) {
+        setFollowersList(data.followers);
+      }
+      if (data?.following) {
+        setFollowingList(data.following);
+      }
+    } catch (error) {
+      // Fallback quietly to targetUser prop if offline
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleFriendRequest(action) {
+    if (!session?.token) {
+      Alert.alert("Login Required", "Please login to send a friend request.");
+      return;
+    }
+    setUpdating(true);
+    try {
+      const result = await sendFriendRequestAction(session.token, targetId, action);
+      if (result?.friendStatus !== undefined) {
+        setFriendStatus(result.friendStatus);
+        if (action === "send") {
+          Alert.alert("Success", "Friend request sent! 📩");
+        } else if (action === "cancel") {
+          Alert.alert("Cancelled", "Friend request cancelled.");
+        } else if (action === "accept") {
+          Alert.alert("Connected", "You are now friends! 🎉");
+        } else if (action === "unfriend") {
+          Alert.alert("Removed", "Removed from friends list.");
+        }
+      }
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to perform action.");
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  const userObj = profileData || targetUser || {};
+  const name = userObj.name || userObj.authorName || "TCM Member";
+  const handle = userObj.handle || (name !== "TCM Member" ? name.toLowerCase().replace(/[^a-z0-9]/g, "_") : "tcm_member");
+  const bio = userObj.bio || "Building TCM to help curious minds learn, grow & create impact.";
+  const avatarUrl = userObj.avatarUrl || userObj.authorAvatarUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80";
+  const location = userObj.location || "India";
+  const joinedDate = userObj.joinedDate || "Joined Jan 2024";
+  const website = userObj.website || "thecodemunk.in";
+  const verified = userObj.verified ?? true;
+  const currentUserId = String(session?.user?.id || session?.user?._id || "").trim();
+  const currentUserName = (session?.user?.name || "").toLowerCase().trim();
+  const currentUserHandle = (session?.user?.handle || "").toLowerCase().replace(/^@/, "").trim();
+
+  const isSelf = Boolean(
+    targetUser?.isSelf ||
+    (currentUserId && (String(targetId).trim() === currentUserId || String(userObj.id || userObj._id || "").trim() === currentUserId)) ||
+    (currentUserName && name && name.toLowerCase().trim() === currentUserName) ||
+    (currentUserHandle && handle && handle.toLowerCase().replace(/^@/, "").trim() === currentUserHandle)
+  );
+
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "TM";
+
+  const posts = userPosts;
+
+  const filteredPosts = posts.filter((post) => {
+    if (activeTab === "Posts") return true;
+    return post.category?.toLowerCase() === activeTab.toLowerCase();
+  });
+
+  const stats = {
+    postsCount: profileData?.stats?.postsCount !== undefined ? profileData.stats.postsCount : posts.length,
+    followers: profileData?.stats?.followers !== undefined ? profileData.stats.followers : followersList.length.toString(),
+    following: profileData?.stats?.following !== undefined ? profileData.stats.following : followingList.length,
+    reputation: profileData?.stats?.reputation !== undefined ? profileData.stats.reputation : (posts.length * 50).toString()
+  };
+
+  const filteredUserList = (followersModalOpen ? followersList : followingList).filter((u) => {
+    if (!userSearchQuery.trim()) return true;
+    const q = userSearchQuery.toLowerCase();
+    return u.name?.toLowerCase().includes(q) || u.handle?.toLowerCase().includes(q) || u.role?.toLowerCase().includes(q);
+  });
+
+  async function handleToggleFollow(userToToggle) {
+    const targetUserIdToToggle = userToToggle.id || userToToggle.handle;
+    const isCurrentlyFollowing = userToToggle.isFollowing;
+
+    setFollowingList((prev) => {
+      if (isCurrentlyFollowing) {
+        return prev.filter((u) => u.id !== targetUserIdToToggle && u.handle !== userToToggle.handle);
+      } else {
+        return [...prev, { ...userToToggle, isFollowing: true }];
+      }
+    });
+
+    setFollowersList((prev) =>
+      prev.map((u) => {
+        if (u.id === targetUserIdToToggle || u.handle === userToToggle.handle) {
+          return { ...u, isFollowing: !isCurrentlyFollowing };
+        }
+        return u;
+      })
+    );
+
+    if (session?.token) {
+      try {
+        await toggleFollowUser(session.token, { targetUserId: targetUserIdToToggle, targetUserHandle: userToToggle.handle });
+      } catch (err) {}
+    }
+  }
+
+  async function handleShareProfile() {
+    try {
+      await Share.share({
+        message: `Check out ${name}'s (@${handle}) profile on TCM: https://thecodemunk.in/user/${handle}`
+      });
+    } catch (err) {
+      Alert.alert("Share Profile", `Profile URL: https://thecodemunk.in/user/${handle}`);
+    }
+  }
+
+  function renderFriendButton() {
+    if (isSelf) {
+      return (
+        <Pressable
+          onPress={() => {
+            if (onClose) onClose();
+          }}
+          style={[styles.joinBtn, { backgroundColor: "#F0EDFF", borderWidth: 1, borderColor: "#5B3CF5" }]}
+        >
+          <Feather name="user" size={15} color="#5B3CF5" />
+          <Text style={[styles.joinBtnText, { color: "#5B3CF5" }]}>Your Profile (You)</Text>
+        </Pressable>
+      );
+    }
+
+    if (updating) {
+      return (
+        <View style={[styles.joinBtn, styles.loadingBtn]}>
+          <ActivityIndicator color="#FFFFFF" size="small" />
+        </View>
+      );
+    }
+
+    if (friendStatus === "friends") {
+      return (
+        <Pressable
+          onPress={() => {
+            Alert.alert(
+              "Friend Options",
+              `Status with ${name}:`,
+              [
+                { text: "Cancel", style: "cancel" },
+                { text: "Unfriend", style: "destructive", onPress: () => handleFriendRequest("unfriend") }
+              ]
+            );
+          }}
+          style={[styles.joinBtn, styles.joinedBtn]}
+        >
+          <Feather name="check" size={15} color="#5B3CF5" />
+          <Text style={[styles.joinBtnText, styles.joinedBtnText]}>Friends ✓</Text>
+        </Pressable>
+      );
+    }
+
+    if (friendStatus === "pending_sent") {
+      return (
+        <Pressable
+          onPress={() => handleFriendRequest("cancel")}
+          style={[styles.joinBtn, styles.pendingBtn]}
+        >
+          <Feather name="clock" size={15} color="#5B3CF5" />
+          <Text style={[styles.joinBtnText, styles.pendingBtnText]}>Request Sent ⏳</Text>
+        </Pressable>
+      );
+    }
+
+    if (friendStatus === "pending_received") {
+      return (
+        <Pressable
+          onPress={() => handleFriendRequest("accept")}
+          style={[styles.joinBtn, styles.acceptBtn]}
+        >
+          <Feather name="user-check" size={15} color="#FFFFFF" />
+          <Text style={styles.joinBtnText}>Accept Request</Text>
+        </Pressable>
+      );
+    }
+
+    return (
+      <Pressable
+        onPress={() => handleFriendRequest("send")}
+        style={styles.joinBtn}
+      >
+        <Feather name="user-plus" size={15} color="#FFFFFF" />
+        <Text style={styles.joinBtnText}>Add Friend ✨</Text>
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={styles.scrollBody}>
+      {/* Profile Card */}
+      <View style={styles.profileCard}>
+        <Pressable onPress={() => setAvatarEnlargedOpen(true)} style={styles.avatarWrapper}>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
+          ) : (
+            <View style={styles.avatarInitialsContainer}>
+              <Text style={styles.avatarInitialsText}>{initials}</Text>
+            </View>
+          )}
+          {verified ? (
+            <View style={styles.verifiedCheckBadge}>
+              <MaterialCommunityIcons name="check-decagram" size={17} color="#FFFFFF" />
+            </View>
+          ) : null}
+        </Pressable>
+
+        <View style={styles.userMainInfo}>
+          <Text style={styles.userName}>{name}</Text>
+          <Text style={styles.userHandle}>@{handle}</Text>
+
+          <Text style={styles.bioText}>{bio}</Text>
+
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}>
+              <Feather name="map-pin" size={12} color="#7C7C9A" />
+              <Text style={styles.metaText}>{location}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Feather name="calendar" size={12} color="#7C7C9A" />
+              <Text style={styles.metaText}>{joinedDate}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Feather name="link" size={12} color="#5B3CF5" />
+              <Text style={[styles.metaText, styles.metaLink]}>{website}</Text>
+            </View>
+          </View>
+
+          {/* Action Buttons Row */}
+          <View style={styles.actionBtnRow}>
+            {renderFriendButton()}
+
+            {/* Message Button - Only visible when users mutually follow each other */}
+            {!isSelf && (userObj.isMutual || friendStatus === "friends" || (userObj.isFollowing && userObj.isFollower) || profileData?.isMutual) ? (
+              <Pressable
+                onPress={() => (onOpenChat ? onOpenChat(userObj) : Alert.alert("Message", `Opening direct chat with ${name}.`))}
+                style={styles.messageBtn}
+              >
+                <Feather name="send" size={15} color="#33334F" />
+                <Text style={styles.messageBtnText}>Message</Text>
+              </Pressable>
+            ) : null}
+
+            <Pressable onPress={() => setOptionsSheetOpen(true)} style={styles.dropBtn}>
+              <Feather name="chevron-down" size={16} color="#4A4A6A" />
+            </Pressable>
+          </View>
+
+          {/* Social Proof Overlapping Avatars */}
+          <View style={styles.socialProofRow}>
+            <View style={styles.avatarStack}>
+              <Image source={{ uri: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=80&q=80" }} style={styles.stackAvatar} />
+              <Image source={{ uri: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80" }} style={[styles.stackAvatar, { marginLeft: -8 }]} />
+            </View>
+            <Text style={styles.socialProofText}>Connected with TCM Community</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 3. Non-Random Dynamic Stats Grid */}
+      <View style={styles.statsCard}>
+        <View style={styles.statCol}>
+          <Text style={styles.statVal}>{stats.postsCount}</Text>
+          <Text style={styles.statLbl}>Posts</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <Pressable onPress={() => { setFollowersModalOpen(true); setFollowingModalOpen(false); }} style={styles.statCol}>
+          <Text style={styles.statVal}>{stats.followers}</Text>
+          <Text style={styles.statLbl}>Followers</Text>
+        </Pressable>
+        <View style={styles.statDivider} />
+        <Pressable onPress={() => { setFollowingModalOpen(true); setFollowersModalOpen(false); }} style={styles.statCol}>
+          <Text style={styles.statVal}>{stats.following}</Text>
+          <Text style={styles.statLbl}>Following</Text>
+        </Pressable>
+        <View style={styles.statDivider} />
+        <View style={styles.statCol}>
+          <Text style={styles.statVal}>{stats.reputation}</Text>
+          <Text style={styles.statLbl}>Reputation</Text>
+        </View>
+      </View>
+
+      {/* 4. Highlight Categories Row */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.highlightsRow}>
+        {[
+          { label: "Achievements", icon: "trophy-outline" },
+          { label: "Courses", icon: "school-outline" },
+          { label: "Certificates", icon: "certificate-outline" },
+          { label: "Events", icon: "calendar-month-outline" },
+          { label: "Projects", icon: "folder-outline" }
+        ].map((item) => (
+          <Pressable key={item.label} onPress={() => Alert.alert(item.label, `Viewing ${item.label}...`)} style={styles.highlightItem}>
+            <View style={styles.highlightCircle}>
+              <MaterialCommunityIcons name={item.icon} size={22} color="#5B3CF5" />
+            </View>
+            <Text style={styles.highlightLabel}>{item.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {/* 5. Tabs Header */}
+      <View style={styles.tabsRow}>
+        {[
+          { key: "Posts", icon: "grid" },
+          { key: "Notes", icon: "file-text" },
+          { key: "Videos", icon: "video" },
+          { key: "Certificates", icon: "award" }
+        ].map((tab) => {
+          const isActive = activeTab === tab.key;
+          return (
+            <Pressable
+              key={tab.key}
+              onPress={() => setActiveTab(tab.key)}
+              style={[styles.tabItem, isActive && styles.tabItemActive]}
+            >
+              <Feather name={tab.icon} size={15} color={isActive ? "#5B3CF5" : "#7C7C9A"} />
+              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.key}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* 6. Content Grid Feed */}
+      <View style={styles.gridFeed}>
+        {loading ? (
+          <ActivityIndicator size="large" color="#5B3CF5" style={{ marginVertical: 35, alignSelf: "center", width: "100%" }} />
+        ) : filteredPosts.length > 0 ? (
+          filteredPosts.map((post) => (
+            <View key={post.id} style={styles.gridCard}>
+              {post.type === "code" ? (
+                <View style={styles.codePostCard}>
+                  <View style={styles.codeHeader}>
+                    <Text style={styles.codeLangText}>
+                      {post.title.toLowerCase().includes("python") ? "def two_sum(nums, target):" : "const sum = (a, b) => {"}
+                    </Text>
+                    <Feather name="code" size={14} color="#FFFFFF" />
+                  </View>
+                  <Text numberOfLines={5} style={styles.codeSnippetText}>
+                    {post.codeSnippet || "code snippet..."}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.imagePostCard}>
+                  <Image source={{ uri: post.imageUrl }} style={styles.cardImg} />
+                  {post.type === "video" && (
+                    <View style={styles.mediaOverlayBadge}>
+                      <Ionicons name="play" size={14} color="#FFFFFF" />
+                    </View>
+                  )}
+                  {post.type === "certificate" && (
+                    <View style={styles.mediaOverlayBadge}>
+                      <Feather name="award" size={14} color="#FFFFFF" />
+                    </View>
+                  )}
+                </View>
+              )}
+
+              <View style={styles.cardBody}>
+                <Text numberOfLines={1} style={styles.cardTitle}>{post.title}</Text>
+                <Text numberOfLines={1} style={styles.cardTags}>
+                  {post.tags?.join(" ")}
+                </Text>
+
+                <View style={styles.cardFooter}>
+                  <View style={styles.metricRow}>
+                    <Ionicons name="heart-outline" size={14} color="#FF465F" />
+                    <Text style={styles.metricCount}>{post.likes}</Text>
+                  </View>
+                  <Ionicons
+                    name={post.bookmarked ? "bookmark" : "bookmark-outline"}
+                    size={14}
+                    color={post.bookmarked ? "#5B3CF5" : "#7C7C9A"}
+                  />
+                </View>
+              </View>
+            </View>
+          ))
+        ) : (
+          <View style={{ paddingVertical: 40, alignItems: "center", width: "100%" }}>
+            <Feather name="layers" size={28} color="#A4A3B8" />
+            <Text style={{ fontSize: 14, fontFamily: fonts.semiBold, color: "#2E2D4D", marginTop: 8 }}>No posts found</Text>
+            <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: "#7C7C9A", marginTop: 4 }}>This user hasn't published any {activeTab.toLowerCase()} content yet.</Text>
+          </View>
+        )}
+      </View>
+
+      {/* --- MODALS & BOTTOM SHEETS --- */}
+
+      {/* 1. Followers / Following Bottom Sheet */}
+      <Modal visible={followersModalOpen || followingModalOpen} animationType="slide" transparent onRequestClose={() => { setFollowersModalOpen(false); setFollowingModalOpen(false); }}>
+        <Pressable onPress={() => { setFollowersModalOpen(false); setFollowingModalOpen(false); }} style={styles.modalBg}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { height: "78%" }]}>
+            <View style={styles.sheetHandleBar} />
+            <View style={styles.igModalHeader}>
+              <View style={styles.igTabSwitch}>
+                <Pressable
+                  onPress={() => { setFollowersModalOpen(true); setFollowingModalOpen(false); }}
+                  style={[styles.igTab, followersModalOpen && styles.igTabActive]}
+                >
+                  <Text style={[styles.igTabText, followersModalOpen && styles.igTabTextActive]}>
+                    Followers ({followersList.length})
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => { setFollowingModalOpen(true); setFollowersModalOpen(false); }}
+                  style={[styles.igTab, followingModalOpen && styles.igTabActive]}
+                >
+                  <Text style={[styles.igTabText, followingModalOpen && styles.igTabTextActive]}>
+                    Following ({followingList.length})
+                  </Text>
+                </Pressable>
+              </View>
+
+              <Pressable onPress={() => { setFollowersModalOpen(false); setFollowingModalOpen(false); }}>
+                <Feather name="x" size={20} color="#4A4A6A" />
+              </Pressable>
+            </View>
+
+            <View style={styles.igSearchBox}>
+              <Feather name="search" size={15} color="#7C7C9A" />
+              <TextInput
+                value={userSearchQuery}
+                onChangeText={setUserSearchQuery}
+                placeholder="Search people..."
+                style={styles.igSearchInput}
+              />
+              {userSearchQuery ? (
+                <Pressable onPress={() => setUserSearchQuery("")}>
+                  <Feather name="x-circle" size={14} color="#7C7C9A" />
+                </Pressable>
+              ) : null}
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+              {filteredUserList.map((u) => {
+                const isFollowing = followingList.some((item) => item.id === u.id || item.handle === u.handle);
+                return (
+                  <View key={u.id || u.handle} style={styles.igUserItem}>
+                    <View style={styles.igUserLeft}>
+                      <Image source={{ uri: u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80" }} style={{ width: 42, height: 42, borderRadius: 21 }} />
+                      <View style={{ gap: 2 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                          <Text style={styles.igUserName}>{u.name}</Text>
+                          {u.verified ? <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" /> : null}
+                        </View>
+                        <Text style={styles.igUserHandle}>@{u.handle || "member"} • {u.role || "TCM Member"}</Text>
+                      </View>
+                    </View>
+
+                    <Pressable
+                      onPress={() => handleToggleFollow(u)}
+                      style={[styles.igFollowBtn, isFollowing && styles.igFollowBtnActive]}
+                    >
+                      <Text style={[styles.igFollowBtnText, isFollowing && styles.igFollowBtnTextActive]}>
+                        {isFollowing ? "Following" : "Follow"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
+
+              {!filteredUserList.length && (
+                <View style={{ paddingVertical: 35, alignItems: "center" }}>
+                  <Feather name="users" size={24} color="#A4A3B8" />
+                  <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: "#7C7C9A", marginTop: 8 }}>No users found</Text>
+                </View>
+              )}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* 2. Enlarged Avatar View Modal */}
+      <Modal visible={avatarEnlargedOpen} animationType="fade" transparent onRequestClose={() => setAvatarEnlargedOpen(false)}>
+        <Pressable onPress={() => setAvatarEnlargedOpen(false)} style={styles.enlargedAvatarBg}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={styles.enlargedAvatarCard}>
+            <Pressable onPress={() => setAvatarEnlargedOpen(false)} style={styles.enlargedCloseBtn}>
+              <Feather name="x" size={22} color="#FFFFFF" />
+            </Pressable>
+
+            <View style={styles.enlargedAvatarWrapper}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={{ width: 210, height: 210, borderRadius: 105 }} />
+              ) : (
+                <View style={[styles.avatarInitialsContainer, { width: 210, height: 210, borderRadius: 105 }]}>
+                  <Text style={[styles.avatarInitialsText, { fontSize: 72 }]}>{initials}</Text>
+                </View>
+              )}
+            </View>
+
+            <Text style={styles.enlargedUserName}>{name}</Text>
+            <Text style={styles.enlargedUserHandle}>@{handle}</Text>
+
+            <View style={styles.enlargedActionRow}>
+              <Pressable
+                onPress={() => {
+                  setAvatarEnlargedOpen(false);
+                  handleShareProfile();
+                }}
+                style={styles.enlargedShareBtn}
+              >
+                <Feather name="share-2" size={16} color="#FFFFFF" />
+                <Text style={{ color: "#FFFFFF", fontFamily: fonts.semiBold, fontSize: 13 }}>Share Profile</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* 3. Options Bottom Sheet */}
+      <Modal visible={optionsSheetOpen} animationType="slide" transparent onRequestClose={() => setOptionsSheetOpen(false)}>
+        <Pressable onPress={() => setOptionsSheetOpen(false)} style={styles.modalBg}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={styles.optionsSheetCard}>
+            <View style={styles.sheetHandleBar} />
+            <Text style={styles.optionsSheetTitle}>User Options</Text>
+
+            <Pressable
+              onPress={() => {
+                setOptionsSheetOpen(false);
+                handleShareProfile();
+              }}
+              style={styles.optionsItem}
+            >
+              <Feather name="share-2" size={18} color="#5B3CF5" />
+              <Text style={styles.optionsItemText}>Share Profile</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setOptionsSheetOpen(false);
+                Alert.alert("Copied!", `Profile link copied: https://thecodemunk.in/user/${handle}`);
+              }}
+              style={styles.optionsItem}
+            >
+              <Feather name="copy" size={18} color="#33334F" />
+              <Text style={styles.optionsItemText}>Copy Profile Link</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setOptionsSheetOpen(false);
+                Alert.alert("Message", `Opening chat with ${name}...`);
+              }}
+              style={styles.optionsItem}
+            >
+              <Feather name="send" size={18} color="#33334F" />
+              <Text style={styles.optionsItemText}>Send Direct Message</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setOptionsSheetOpen(false);
+                Alert.alert("Muted", `Muted notifications from ${name}.`);
+              }}
+              style={styles.optionsItem}
+            >
+              <Feather name="bell-off" size={18} color="#68677D" />
+              <Text style={styles.optionsItemText}>Mute Notifications</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setOptionsSheetOpen(false);
+                Alert.alert("Block User", `Are you sure you want to block ${name}?`, [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Block", style: "destructive", onPress: () => Alert.alert("Blocked", `${name} has been blocked.`) }
+                ]);
+              }}
+              style={styles.optionsItem}
+            >
+              <Feather name="slash" size={18} color="#E53935" />
+              <Text style={[styles.optionsItemText, { color: "#E53935" }]}>Block User</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setOptionsSheetOpen(false);
+                Alert.alert("Reported", "Thank you. Our moderation team will review this profile.");
+              }}
+              style={styles.optionsItem}
+            >
+              <Feather name="flag" size={18} color="#E53935" />
+              <Text style={[styles.optionsItemText, { color: "#E53935" }]}>Report Profile</Text>
+            </Pressable>
+
+            <Pressable onPress={() => setOptionsSheetOpen(false)} style={styles.optionsCancelBtn}>
+              <Text style={styles.optionsCancelText}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+
+
+  scrollBody: {
+    paddingBottom: 20
+  },
+
+  profileCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#F0EFFF",
+    ...shadow.soft
+  },
+  avatarWrapper: {
+    alignSelf: "flex-start",
+    position: "relative",
+    marginBottom: 12
+  },
+  avatarImg: {
+    width: 90,
+    height: 90,
+    borderRadius: 45
+  },
+  avatarInitialsContainer: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#5B3CF5",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  avatarInitialsText: {
+    color: "#FFFFFF",
+    fontFamily: fonts.bold,
+    fontSize: 32
+  },
+  verifiedCheckBadge: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    backgroundColor: "#5B3CF5",
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  userMainInfo: {
+    gap: 4
+  },
+  userName: {
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: "#18172B"
+  },
+  userHandle: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: "#7C7C9A"
+  },
+  bioText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: "#4A4A6A",
+    lineHeight: 19,
+    marginTop: 4
+  },
+
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginTop: 6,
+    marginBottom: 10
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4
+  },
+  metaText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: "#7C7C9A"
+  },
+  metaLink: {
+    color: "#5B3CF5",
+    textDecorationLine: "underline"
+  },
+
+  actionBtnRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 12
+  },
+  joinBtn: {
+    flex: 2,
+    backgroundColor: "#5B3CF5",
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    ...shadow.soft
+  },
+  joinedBtn: {
+    backgroundColor: "#F0EDFF",
+    borderWidth: 1,
+    borderColor: "#E5E1FF"
+  },
+  pendingBtn: {
+    backgroundColor: "#F4F0FF",
+    borderWidth: 1,
+    borderColor: "#E4DCFF"
+  },
+  pendingBtnText: {
+    color: "#5B3CF5"
+  },
+  acceptBtn: {
+    backgroundColor: "#2E7D32"
+  },
+  loadingBtn: {
+    opacity: 0.8
+  },
+  joinBtnText: {
+    color: "#FFFFFF",
+    fontFamily: fonts.semiBold,
+    fontSize: 13
+  },
+  joinedBtnText: {
+    color: "#5B3CF5"
+  },
+  messageBtn: {
+    flex: 2,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E5F2",
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6
+  },
+  messageBtnText: {
+    color: "#33334F",
+    fontFamily: fonts.semiBold,
+    fontSize: 13
+  },
+  dropBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#F8F7FF",
+    borderWidth: 1,
+    borderColor: "#EAE7FF",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  socialProofRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#F4F3FA"
+  },
+  avatarStack: {
+    flexDirection: "row",
+    alignItems: "center"
+  },
+  stackAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF"
+  },
+  socialProofText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: "#7C7C9A"
+  },
+
+  statsCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#F0EFFF",
+    ...shadow.soft
+  },
+  statCol: {
+    flex: 1,
+    alignItems: "center"
+  },
+  statVal: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: "#18172B"
+  },
+  statLbl: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: "#7C7C9A",
+    marginTop: 2
+  },
+  statDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: "#F0F0FA"
+  },
+
+  highlightsRow: {
+    gap: 14,
+    marginBottom: 16
+  },
+  highlightItem: {
+    alignItems: "center",
+    gap: 4
+  },
+  highlightCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#F5F3FF",
+    borderWidth: 1.5,
+    borderColor: "#EAE6FF",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  highlightLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: "#4A4A6A"
+  },
+
+  tabsRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#EAE7FF",
+    marginBottom: 16
+  },
+  tabItem: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent"
+  },
+  tabItemActive: {
+    borderBottomColor: "#5B3CF5"
+  },
+  tabText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: "#7C7C9A"
+  },
+  tabTextActive: {
+    fontFamily: fonts.bold,
+    color: "#5B3CF5"
+  },
+
+  gridFeed: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 14
+  },
+  gridCard: {
+    width: "48.5%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#F0EFFF",
+    ...shadow.soft
+  },
+  imagePostCard: {
+    height: 125,
+    backgroundColor: "#F7F6FF",
+    position: "relative"
+  },
+  cardImg: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover"
+  },
+  mediaOverlayBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(24, 23, 37, 0.65)",
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  codePostCard: {
+    height: 125,
+    backgroundColor: "#18172B",
+    padding: 10,
+    justifyContent: "space-between"
+  },
+  codeHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  codeLangText: {
+    color: "#00E676",
+    fontSize: 10,
+    fontFamily: fonts.medium
+  },
+  codeSnippetText: {
+    color: "#ECEFF1",
+    fontSize: 10,
+    fontFamily: "monospace",
+    lineHeight: 14
+  },
+
+  cardBody: {
+    padding: 10
+  },
+  cardTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+    color: "#181725",
+    marginBottom: 2
+  },
+  cardTags: {
+    fontFamily: fonts.medium,
+    fontSize: 10,
+    color: "#5B3CF5",
+    marginBottom: 6
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  metricRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4
+  },
+  metricCount: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: "#7C7C9A"
+  },
+
+  // Modals & Bottom Sheets Styles
+  modalBg: {
+    flex: 1,
+    backgroundColor: "rgba(10, 9, 26, 0.55)",
+    justifyContent: "flex-end"
+  },
+  modalCard: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 24
+  },
+  sheetHandleBar: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E2E0EE",
+    alignSelf: "center",
+    marginBottom: 14
+  },
+  igModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14
+  },
+  igTabSwitch: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 18
+  },
+  igTab: {
+    paddingBottom: 4,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent"
+  },
+  igTabActive: {
+    borderBottomColor: "#5B3CF5"
+  },
+  igTabText: {
+    fontFamily: fonts.medium,
+    fontSize: 15,
+    color: "#7C7C9A"
+  },
+  igTabTextActive: {
+    fontFamily: fonts.bold,
+    color: "#181725"
+  },
+  igSearchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F7FF",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#EAE7FF"
+  },
+  igSearchInput: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    color: "#181725"
+  },
+  igUserItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F4F3FA"
+  },
+  igUserLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12
+  },
+  igUserName: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: "#181725"
+  },
+  igUserHandle: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: "#7C7C9A"
+  },
+  igFollowBtn: {
+    backgroundColor: "#5B3CF5",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10
+  },
+  igFollowBtnActive: {
+    backgroundColor: "#F0EDFF",
+    borderWidth: 1,
+    borderColor: "#E5E1FF"
+  },
+  igFollowBtnText: {
+    color: "#FFFFFF",
+    fontFamily: fonts.semiBold,
+    fontSize: 12
+  },
+  igFollowBtnTextActive: {
+    color: "#5B3CF5"
+  },
+  enlargedAvatarBg: {
+    flex: 1,
+    backgroundColor: "rgba(10, 9, 26, 0.92)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24
+  },
+  enlargedAvatarCard: {
+    alignItems: "center",
+    width: "100%",
+    position: "relative"
+  },
+  enlargedCloseBtn: {
+    position: "absolute",
+    top: -65,
+    right: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.18)",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  enlargedAvatarWrapper: {
+    marginBottom: 16,
+    borderWidth: 4,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+    borderRadius: 110,
+    ...shadow.soft
+  },
+  enlargedUserName: {
+    color: "#FFFFFF",
+    fontFamily: fonts.bold,
+    fontSize: 22,
+    textAlign: "center"
+  },
+  enlargedUserHandle: {
+    color: "#A2A0C2",
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    marginTop: 2,
+    textAlign: "center"
+  },
+  enlargedActionRow: {
+    marginTop: 22
+  },
+  enlargedShareBtn: {
+    backgroundColor: "#5B3CF5",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  optionsSheetCard: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 30
+  },
+  optionsSheetTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: "#181725",
+    marginBottom: 12,
+    textAlign: "center"
+  },
+  optionsItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F4F3FA"
+  },
+  optionsItemText: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: "#181725"
+  },
+  optionsCancelBtn: {
+    marginTop: 16,
+    backgroundColor: "#F4F3FA",
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center"
+  },
+  optionsCancelText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 14,
+    color: "#4A4A6A"
+  }
+});

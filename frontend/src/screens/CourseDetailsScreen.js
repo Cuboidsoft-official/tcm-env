@@ -1,0 +1,1597 @@
+import { useState, useEffect } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
+import { getCourseDetails } from "../api/client";
+import { generateCourseOverviewInsightsWithAI } from "../api/openrouter";
+import { colors, shadow } from "../constants/theme";
+import { fonts } from "../constants/fonts";
+
+export default function CourseDetailsScreen({ session, user = {}, courseId = "p1", onBack, onEditCourse }) {
+  const [course, setCourse] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [expandedAbout, setExpandedAbout] = useState(false);
+  const [expandedModules, setExpandedModules] = useState({ m1: true, m2: true });
+  const [aiInsights, setAiInsights] = useState(null);
+
+  useEffect(() => {
+    loadCourseDetails();
+  }, [courseId, session?.token]);
+
+  async function loadCourseDetails() {
+    setLoading(true);
+    try {
+      const data = await getCourseDetails(session?.token, courseId);
+      if (data && data.title) {
+        setCourse(data);
+        loadAiInsights(data.title, data.category, data.level);
+      }
+    } catch (err) {
+      console.warn("Error fetching course details:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadAiInsights(title, category, level) {
+    try {
+      const insights = await generateCourseOverviewInsightsWithAI(title, category, level);
+      if (insights) setAiInsights(insights);
+    } catch (e) {}
+  }
+
+  function toggleModule(modId) {
+    setExpandedModules((prev) => ({ ...prev, [modId]: !prev[modId] }));
+  }
+
+  function toggleExpandAll() {
+    const allExpanded = Object.keys(expandedModules).length >= 3 && Object.values(expandedModules).every(Boolean);
+    if (allExpanded) {
+      setExpandedModules({});
+    } else {
+      setExpandedModules({ m1: true, m2: true, m3: true, m4: true });
+    }
+  }
+
+  function handleEnrollNow() {
+    Alert.alert("Enrollment Confirmation", `Confirm enrollment for "${courseData.title}" at ${courseData.price}?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Proceed to Payment",
+        onPress: () => Alert.alert("Success! 🎉", `Payment successful! You now have lifetime access to ${courseData.title}.`)
+      }
+    ]);
+  }
+
+  function handleShare() {
+    Alert.alert("Share Course", `Course Link: https://thecodemunk.in/course/${courseId}`);
+  }
+
+  const isNeet = String(courseId).toLowerCase().includes("neet");
+  const isJee = String(courseId).toLowerCase().includes("jee");
+
+  const fallbackTitle = isNeet
+    ? "NEET Ultimate Crash Course 2026"
+    : isJee
+    ? "JEE Rank Booster Batch 2026"
+    : "TCM Live Masterclass";
+
+  const fallbackSubtitle = isNeet
+    ? "Physics • Chemistry • Biology • 5000+ MCQs & Mock Tests"
+    : isJee
+    ? "Advanced Maths • Physics • Organic Chemistry • IITian Mentors"
+    : "Live Interactive Classes • Hands-on Labs • Placement Support";
+
+  const fallbackCourseData = {
+    id: courseId,
+    tag: isNeet ? "🔴 NEET 2026 LIVE" : isJee ? "⚡ JEE MAIN & ADV" : "POPULAR BATCH",
+    title: fallbackTitle,
+    subtitle: fallbackSubtitle,
+    rating: "4.9",
+    reviews: "1.5K",
+    students: "5.2K",
+    totalLength: isNeet || isJee ? "180 Days" : "45 Days",
+    level: isNeet ? "Medical Aspirants" : isJee ? "Engineering Aspirants" : "All Skill Levels",
+    about: [
+      `Course Overview\nMaster ${fallbackTitle} with live interactive guidance, daily practical exercises, and high-yield question solving. ${fallbackSubtitle}`,
+      `Who Should Join?\nDesigned for learners seeking real-world practical skills with 1-on-1 live mentor doubt clearance and daily problem solving.`,
+      `Career & Exam Outcomes\nWork on live industry projects / high-yield test series, build your portfolio, and earn an official TCM Verified Certificate upon completion.`
+    ].join("\n\n"),
+    whatYouWillLearn: [
+      `Master core fundamentals and advanced concepts of ${fallbackTitle}`,
+      "Build real-world practical projects & solve high-yield MCQs",
+      "Hands-on practical labs and daily doubt clearance",
+      "Industry best practices & clean code architecture",
+      "Certificate of completion & placement support"
+    ],
+    features: [
+      { id: "f1", icon: "youtube-subscription", label: "Lifetime Access", color: "#5B3CF5", bg: "#F0EDFF" },
+      { id: "f2", icon: "certificate", label: "Certificate Included", color: "#2E7D32", bg: "#ECF9E9" },
+      { id: "f3", icon: "account-group", label: "Community Access", color: "#E7A900", bg: "#FFF6DA" },
+      { id: "f4", icon: "download", label: "Downloadable Resources", color: "#2F79B9", bg: "#EAF5FF" }
+    ],
+    curriculum: {
+      totalLessons: "30 Lessons",
+      totalModules: "3 Modules",
+      modules: [
+        {
+          id: "m1",
+          title: `Module 1 (Days 1–15): ${fallbackTitle} Core Foundations`,
+          lessonsCount: "10 Lessons",
+          expanded: true,
+          lessons: [
+            { id: "l1", title: "1.1 Course Orientation & Setup", duration: "15 mins", type: "video" },
+            { id: "l2", title: `1.2 Core Principles & High Yield Concepts`, duration: "30 mins", type: "video" }
+          ]
+        },
+        {
+          id: "m2",
+          title: `Module 2 (Days 16–30): Problem Solving & Deep Dive`,
+          lessonsCount: "10 Lessons",
+          expanded: false,
+          lessons: [
+            { id: "l4", title: "2.1 Advanced Problem Solving & Logic", duration: "35 mins", type: "video" },
+            { id: "l5", title: "2.2 Live Speed Practice & Doubt Session", duration: "40 mins", type: "video" }
+          ]
+        },
+        {
+          id: "m3",
+          title: `Module 3 (Days 31–45): Full Assessment & Mock Tests`,
+          lessonsCount: "10 Lessons",
+          expanded: false,
+          lessons: [
+            { id: "l7", title: "3.1 Full Length Assessment & Performance Audit", duration: "45 mins", type: "video" },
+            { id: "l8", title: "3.2 Final Certification & Next Steps", duration: "20 mins", type: "video" }
+          ]
+        }
+      ]
+    },
+    price: "₹1,499",
+    originalPrice: "₹4,999",
+    discountPill: "70% OFF"
+  };
+
+  const courseData = course || fallbackCourseData;
+  const curriculumModules = courseData.curriculum?.modules || courseData.modules || [];
+  const totalModCount = courseData.curriculum?.totalModules || `${curriculumModules.length} Modules`;
+  const totalLesCount = courseData.curriculum?.totalLessons || `${curriculumModules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)} Lessons`;
+  const isMentorUser = Boolean(user?.role === "mentor" || user?.isMentor);
+
+  function stripEmojis(str) {
+    if (!str) return "";
+    return str
+      .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F004}\u{1F0CF}\u{1F170}-\u{1F251}]/gu, "")
+      .replace(/[🚀🎯🏆💡✨🐍🔴⚡💻💰📈🏢💼]/g, "")
+      .trim();
+  }
+
+  function getCompanyLogoUrl(companyName) {
+    const name = (companyName || "").toLowerCase().trim();
+    if (name.includes("google")) return "https://logo.clearbit.com/google.com";
+    if (name.includes("amazon")) return "https://logo.clearbit.com/amazon.com";
+    if (name.includes("tcs") || name.includes("tata")) return "https://logo.clearbit.com/tcs.com";
+    if (name.includes("infosys")) return "https://logo.clearbit.com/infosys.com";
+    if (name.includes("microsoft")) return "https://logo.clearbit.com/microsoft.com";
+    if (name.includes("accenture")) return "https://logo.clearbit.com/accenture.com";
+    if (name.includes("wipro")) return "https://logo.clearbit.com/wipro.com";
+    if (name.includes("flipkart")) return "https://logo.clearbit.com/flipkart.com";
+    if (name.includes("meta") || name.includes("facebook")) return "https://logo.clearbit.com/meta.com";
+    if (name.includes("apple")) return "https://logo.clearbit.com/apple.com";
+    if (name.includes("uber")) return "https://logo.clearbit.com/uber.com";
+    if (name.includes("rbi") || name.includes("bank")) return "https://logo.clearbit.com/rbi.org.in";
+    if (name.includes("aiims") || name.includes("hospital")) return "https://logo.clearbit.com/aiims.edu";
+    return `https://logo.clearbit.com/${name.replace(/[^a-z0-9]/g, "")}.com`;
+  }
+
+  function autoFormatDescriptionContent(rawText) {
+    if (!rawText) return null;
+    const clean = stripEmojis(rawText);
+
+    const headingKeywords = [
+      "What You'll Learn",
+      "What You Will Learn",
+      "Course Details",
+      "Course Highlights",
+      "Key Highlights",
+      "Prerequisites",
+      "Who Should Join",
+      "Target Audience",
+      "Career Outcomes",
+      "Why Join",
+      "About The Course",
+      "Course Overview"
+    ];
+
+    const patternStr = headingKeywords.map((h) => h.replace("'", "['’]?")).join("|");
+    const regex = new RegExp(`(?=\\b(?:${patternStr})\\b)`, "gi");
+
+    const parts = clean.split(regex).map((p) => p.trim()).filter(Boolean);
+
+    if (parts.length <= 1 && !clean.includes("*")) {
+      return <Text style={styles.compactParagraphText}>{clean}</Text>;
+    }
+
+    return (
+      <View style={{ gap: 8 }}>
+        {parts.map((part, pIdx) => {
+          let matchedHeading = "";
+          let bodyStr = part;
+
+          for (const hk of headingKeywords) {
+            const hkNorm = hk.toLowerCase().replace(/['’]/g, "");
+            if (part.toLowerCase().replace(/['’]/g, "").startsWith(hkNorm)) {
+              matchedHeading = hk;
+              bodyStr = part.substring(hk.length).replace(/^[\s:*–-]+/, "").trim();
+              break;
+            }
+          }
+
+          const hasAsterisks = bodyStr.includes("*");
+          const bulletItems = hasAsterisks
+            ? bodyStr.split("*").map((b) => b.trim()).filter((b) => b.length > 1)
+            : [];
+
+          const firstPara = hasAsterisks && !bodyStr.trim().startsWith("*") ? bodyStr.split("*")[0].trim() : (hasAsterisks ? "" : bodyStr);
+
+          return (
+            <View key={pIdx} style={matchedHeading ? styles.autoSubSectionBox : null}>
+              {matchedHeading ? (
+                <View style={styles.autoSubHeaderRow}>
+                  <View style={styles.autoSubHeaderDot} />
+                  <Text style={styles.autoSubHeaderTitle}>{matchedHeading}</Text>
+                </View>
+              ) : null}
+
+              {firstPara ? <Text style={styles.compactParagraphText}>{firstPara}</Text> : null}
+
+              {bulletItems.length > 0 ? (
+                <View style={styles.autoBulletGrid}>
+                  {bulletItems.map((item, bIdx) => (
+                    <View key={bIdx} style={styles.autoBulletChip}>
+                      <Feather name="check" size={10} color="#5B3CF5" style={{ marginRight: 4 }} />
+                      <Text style={styles.autoBulletChipText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : !firstPara && bodyStr ? (
+                <Text style={styles.compactParagraphText}>{bodyStr}</Text>
+              ) : null}
+            </View>
+          );
+        })}
+      </View>
+    );
+  }
+
+  function renderFormattedAbout(aboutText, expanded) {
+    if (!aboutText) return null;
+
+    const cleanAboutText = stripEmojis(aboutText);
+    const words = cleanAboutText.trim().split(/\s+/);
+    const isLongText = words.length > 30;
+    const rawDisplayText = (!expanded && isLongText) ? words.slice(0, 30).join(" ") + "..." : cleanAboutText;
+
+    const blocks = rawDisplayText.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+    const whyList = (aiInsights?.whyLearn || []).map(stripEmojis);
+
+    const getSectionIconInfo = (headerStr) => {
+      const h = (headerStr || "").toLowerCase();
+      if (h.includes("overview") || h.includes("scope")) {
+        return { icon: "compass-outline", color: "#5B3CF5", bg: "#F0EDFF" };
+      }
+      if (h.includes("join") || h.includes("target") || h.includes("who")) {
+        return { icon: "target", color: "#E7A900", bg: "#FFF8EC" };
+      }
+      if (h.includes("outcome") || h.includes("placement") || h.includes("career")) {
+        return { icon: "trophy-outline", color: "#2E7D32", bg: "#ECF9E9" };
+      }
+      return { icon: "bookmark-outline", color: "#2F79B9", bg: "#EBF5FF" };
+    };
+
+    return (
+      <View style={styles.aboutContainer}>
+        {/* A. Description Paragraphs (30 Words Max Initially, Emoji Free) */}
+        {blocks.map((block, index) => {
+          const lines = block.split("\n");
+          let header = "";
+          let bodyLines = [];
+
+          if (lines[0] && (lines[0].includes("Overview") || lines[0].includes("Join") || lines[0].includes("Outcomes") || lines[0].includes("Placement") || lines[0].includes(":"))) {
+            header = stripEmojis(lines[0].replace(/\*\*/g, "").trim());
+            bodyLines = lines.slice(1);
+          } else {
+            bodyLines = lines;
+          }
+
+          const bodyText = stripEmojis(bodyLines.join(" ").trim());
+          const iconInfo = getSectionIconInfo(header);
+
+          return (
+            <View key={index} style={styles.compactAboutBlock}>
+              {header ? (
+                <View style={styles.compactHeaderRow}>
+                  <View style={[styles.compactIconBadge, { backgroundColor: iconInfo.bg }]}>
+                    <MaterialCommunityIcons name={iconInfo.icon} size={12} color={iconInfo.color} />
+                  </View>
+                  <Text style={styles.compactHeaderTitle}>{header}</Text>
+                </View>
+              ) : null}
+
+              {bodyText ? (
+                autoFormatDescriptionContent(bodyText)
+              ) : null}
+            </View>
+          );
+        })}
+
+        {/* B. Why Should You Learn This? (Sleek Compact AI Insight) */}
+        {whyList.length > 0 ? (
+          <View style={styles.compactWhyCard}>
+            <View style={styles.compactHeaderRow}>
+              <View style={[styles.compactIconBadge, { backgroundColor: "#FFF8EC" }]}>
+                <MaterialCommunityIcons name="bullseye-arrow" size={12} color="#E7A900" />
+              </View>
+              <Text style={styles.compactHeaderTitle}>Why Learn This Course?</Text>
+              <View style={styles.miniAiPill}>
+                <MaterialCommunityIcons name="sparkles" size={9} color="#5B3CF5" />
+                <Text style={styles.miniAiPillText}>AI</Text>
+              </View>
+            </View>
+
+            <View style={{ gap: 6, marginTop: 4 }}>
+              {whyList.map((item, idx) => (
+                <View key={idx} style={styles.miniBulletRow}>
+                  <View style={styles.miniBulletDot} />
+                  <Text style={styles.miniBulletText}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+      </View>
+    );
+  }
+
+  function renderSalaryInsightsCard() {
+    const salary = aiInsights?.salaryInsights;
+    if (!salary) return null;
+
+    return (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Salary & Career Prospects</Text>
+        <View style={styles.sleekSalaryCard}>
+          <View style={styles.sleekSalaryTop}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View style={styles.sleekSalaryIcon}>
+                <MaterialCommunityIcons name="currency-inr" size={14} color="#5B3CF5" />
+              </View>
+              <Text style={styles.sleekSalaryTitle}>Salary & Hiring Insights</Text>
+            </View>
+            <View style={styles.miniAiPill}>
+              <MaterialCommunityIcons name="sparkles" size={9} color="#5B3CF5" />
+              <Text style={styles.miniAiPillText}>AI</Text>
+            </View>
+          </View>
+
+          {/* Metrics Row */}
+          <View style={styles.sleekMetricsRow}>
+            <View style={styles.sleekMetricCol}>
+              <Text style={styles.sleekMetricLabel}>Avg Starting CTC</Text>
+              <Text style={styles.sleekMetricVal}>{stripEmojis(salary.avgSalary || "₹6.5L – ₹18.0L /yr")}</Text>
+            </View>
+            <View style={styles.sleekMetricDivider} />
+            <View style={styles.sleekMetricCol}>
+              <Text style={styles.sleekMetricLabel}>Market Demand</Text>
+              <Text style={[styles.sleekMetricVal, { color: "#2E7D32" }]}>{stripEmojis(salary.growthRate || "+28% YoY")}</Text>
+            </View>
+          </View>
+
+          {/* Companies with Logos */}
+          {salary.hiringCompanies && salary.hiringCompanies.length > 0 ? (
+            <View style={{ marginTop: 10 }}>
+              <Text style={styles.sleekSectionSubLabel}>Top Hiring Companies:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 6, paddingTop: 4 }}>
+                {salary.hiringCompanies.map((comp, cIdx) => (
+                  <View key={cIdx} style={styles.sleekCompanyChip}>
+                    <Image
+                      source={{ uri: getCompanyLogoUrl(comp) }}
+                      style={styles.sleekCompanyLogo}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.sleekCompanyText}>{stripEmojis(comp)}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
+
+          {/* Target Career Roles */}
+          {salary.careerRoles && salary.careerRoles.length > 0 ? (
+            <View style={{ marginTop: 10 }}>
+              <Text style={styles.sleekSectionSubLabel}>Target Roles:</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 3 }}>
+                {salary.careerRoles.map((role, rIdx) => (
+                  <View key={rIdx} style={styles.sleekRoleTag}>
+                    <Text style={styles.sleekRoleTagText}>{stripEmojis(role)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.headerRow}>
+          <Pressable onPress={onBack} style={styles.backBtn}>
+            <Feather name="arrow-left" size={20} color="#181725" />
+          </Pressable>
+          <View style={styles.headerTitleWrap}>
+            <Text style={styles.headerTitle}>Course Details</Text>
+            <Text style={styles.headerSub}>Fetching live data...</Text>
+          </View>
+        </View>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 60 }}>
+          <ActivityIndicator size="large" color="#5B3CF5" />
+          <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: "#7C7C9A", marginTop: 12 }}>Loading Course Details...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* 1. Header Bar matching reference UI */}
+      <View style={styles.headerRow}>
+        <View style={styles.headerLeft}>
+          <Pressable onPress={onBack} style={styles.backBtn}>
+            <Feather name="arrow-left" size={20} color="#181725" />
+          </Pressable>
+          <View style={styles.headerTitleWrap}>
+            <Text style={styles.headerTitle}>Course Details</Text>
+            <Text style={styles.headerSub}>Learn. Practice. Grow.</Text>
+          </View>
+        </View>
+
+        <View style={styles.headerRight}>
+          {isMentorUser ? (
+            <Pressable onPress={() => onEditCourse && onEditCourse(courseData)} style={styles.editHeaderBtn}>
+              <Feather name="edit-3" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+              <Text style={styles.editHeaderBtnText}>Edit</Text>
+            </Pressable>
+          ) : null}
+
+          <Pressable onPress={() => setBookmarked((p) => !p)} style={styles.headerIconBtn}>
+            <Feather name="bookmark" size={18} color={bookmarked ? "#5B3CF5" : "#181725"} fill={bookmarked ? "#5B3CF5" : "none"} />
+          </Pressable>
+          <Pressable onPress={handleShare} style={styles.headerIconBtn}>
+            <Feather name="share-2" size={18} color="#181725" />
+          </Pressable>
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* 2. Dark Hero Header Card */}
+        <LinearGradient colors={["#0D0B26", "#19154C"]} style={styles.heroCard}>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroLeftCol}>
+              <View style={styles.tagBadge}>
+                <Text style={styles.tagBadgeText}>{courseData.tag || "BESTSELLER"}</Text>
+              </View>
+              <Text style={styles.heroCourseTitle} numberOfLines={2}>{courseData.title}</Text>
+              <Text style={styles.heroCourseSub} numberOfLines={2}>{courseData.subtitle}</Text>
+            </View>
+
+            <View style={styles.heroRightCol}>
+              <Image
+                source={{ uri: courseData.imageUrl || courseData.image || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=400&q=80" }}
+                style={styles.heroGraphicImg}
+              />
+            </View>
+          </View>
+
+          {/* Hero Metrics Row */}
+          <View style={styles.heroStatsRow}>
+            <View style={styles.statItem}>
+              <View style={styles.statTop}>
+                <FontAwesome name="star" size={11} color="#FFB800" />
+                <Text style={styles.statVal}>{courseData.rating}</Text>
+                <Text style={styles.statSubText}>({courseData.reviews})</Text>
+              </View>
+              <Text style={styles.statLabel} numberOfLines={1}>Ratings</Text>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statItem}>
+              <View style={styles.statTop}>
+                <Feather name="users" size={11} color="#A086FD" />
+                <Text style={styles.statVal}>{courseData.students}</Text>
+              </View>
+              <Text style={styles.statLabel} numberOfLines={1}>Students</Text>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statItem}>
+              <View style={styles.statTop}>
+                <Feather name="clock" size={11} color="#A086FD" />
+                <Text style={styles.statVal}>{courseData.totalLength}</Text>
+              </View>
+              <Text style={styles.statLabel} numberOfLines={1}>Total Length</Text>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statItem}>
+              <View style={styles.statTop}>
+                <Feather name="trending-up" size={11} color="#A086FD" />
+                <Text style={styles.statVal}>{courseData.level === "Beginner to Advanced" ? "Beg - Adv" : courseData.level}</Text>
+              </View>
+              <Text style={styles.statLabel} numberOfLines={1}>Level</Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* 3. Feature Highlights Grid */}
+        <View style={styles.featuresRow}>
+          {(courseData.features || [
+            { id: "f1", icon: "youtube-subscription", label: "Lifetime Access", color: "#5B3CF5", bg: "#F0EDFF" },
+            { id: "f2", icon: "certificate", label: "Certificate Included", color: "#2E7D32", bg: "#ECF9E9" },
+            { id: "f3", icon: "account-group", label: "Community Access", color: "#E7A900", bg: "#FFF6DA" },
+            { id: "f4", icon: "download", label: "Downloadable Resources", color: "#2F79B9", bg: "#EAF5FF" }
+          ]).map((feat) => (
+            <View key={feat.id} style={styles.featureCard}>
+              <View style={[styles.featureIconWrap, { backgroundColor: feat.bg }]}>
+                <MaterialCommunityIcons name={feat.icon} size={20} color={feat.color} />
+              </View>
+              <Text style={styles.featureLabel}>{feat.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* 4. About this course Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>About this course</Text>
+          {renderFormattedAbout(courseData.about, expandedAbout)}
+          <Pressable onPress={() => setExpandedAbout((p) => !p)} style={styles.readMoreRow}>
+            <Text style={styles.readMoreText}>{expandedAbout ? "Read Less" : "Show Full Overview"}</Text>
+            <Feather name={expandedAbout ? "chevron-up" : "chevron-down"} size={14} color="#5B3CF5" />
+          </Pressable>
+        </View>
+
+        {/* 5. What you'll learn Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>What you'll learn</Text>
+          <View style={styles.learnGrid}>
+            {(courseData.whatYouWillLearn || [
+              "Master core architecture and practical concepts",
+              "Build real-world production-grade projects",
+              "Hands-on labs and live doubt clearance",
+              "Certificate of completion & placement support"
+            ]).map((item, idx) => (
+              <View key={idx} style={styles.learnItemRow}>
+                <View style={styles.checkCircle}>
+                  <Feather name="check" size={11} color="#5B3CF5" />
+                </View>
+                <Text style={styles.learnItemText}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* 6. Course Curriculum Section */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.curriculumHeaderRow}>
+            <View>
+              <Text style={styles.sectionTitle}>Course Curriculum</Text>
+              <Text style={styles.curriculumSub}>
+                {totalLesCount} • {totalModCount}
+              </Text>
+            </View>
+            <Pressable onPress={toggleExpandAll}>
+              <Text style={styles.expandAllText}>Expand All</Text>
+            </Pressable>
+          </View>
+
+          {/* Accordion Modules */}
+          {curriculumModules.map((mod, idx) => {
+            const mId = mod.id || `m${idx + 1}`;
+            const isExpanded = expandedModules[mId] !== false;
+            return (
+              <View key={mId} style={styles.moduleCard}>
+                <Pressable onPress={() => toggleModule(mId)} style={styles.moduleHeader}>
+                  <View style={styles.moduleHeaderLeft}>
+                    <View style={styles.moduleNumCircle}>
+                      <Text style={styles.moduleNumText}>{idx + 1}</Text>
+                    </View>
+                    <Text style={styles.moduleTitleText}>{mod.title}</Text>
+                  </View>
+                  <View style={styles.moduleHeaderRight}>
+                    <Text style={styles.lessonsCountText}>{mod.lessonsCount || (mod.lessons ? `${mod.lessons.length} Lessons` : "3 Lessons")}</Text>
+                    <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color="#7C7C9A" />
+                  </View>
+                </Pressable>
+
+                {isExpanded && mod.lessons ? (
+                  <View style={styles.lessonsList}>
+                    {mod.lessons.map((les, lIdx) => {
+                      const lesObj = typeof les === "string" ? { id: `les-${lIdx}`, title: les, duration: "25 mins", type: "video" } : les;
+                      return (
+                        <Pressable
+                          key={lesObj.id || `les-${lIdx}`}
+                          onPress={() => Alert.alert("Play Lesson", `Starting ${lesObj.title}...`)}
+                          style={styles.lessonItemRow}
+                        >
+                          <View style={styles.lessonLeft}>
+                            <View style={styles.timelineDot} />
+                            <View style={styles.playIconCircle}>
+                              {lesObj.type === "quiz" ? (
+                                <MaterialCommunityIcons name="target" size={12} color="#5B3CF5" />
+                              ) : (
+                                <Feather name="play" size={10} color="#5B3CF5" style={{ marginLeft: 1 }} />
+                              )}
+                            </View>
+                            <Text style={styles.lessonTitleText}>{lesObj.title}</Text>
+                          </View>
+                          <Text style={styles.lessonDurationText}>{lesObj.duration || "25 mins"}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+
+        {/* 7. Salary & Career Prospects Section (Separate Section After Curriculum) */}
+        {renderSalaryInsightsCard()}
+      </ScrollView>
+
+      {/* 7. Sticky Bottom Purchase Bar */}
+      <View style={styles.stickyPurchaseBar}>
+        <View style={styles.priceCol}>
+          <View style={styles.priceRow}>
+            <Text style={styles.currentPriceText}>{courseData.price}</Text>
+            <Text style={styles.originalPriceText}>{courseData.originalPrice}</Text>
+            <View style={styles.discountPill}>
+              <Text style={styles.discountPillText}>{courseData.discountPill}</Text>
+            </View>
+          </View>
+          <Text style={styles.priceTaxesText}>Inclusive of all taxes</Text>
+        </View>
+
+        <Pressable onPress={handleEnrollNow} style={styles.stickyEnrollBtn}>
+          <Text style={styles.stickyEnrollBtnText}>Enroll Now →</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    width: "100%",
+    backgroundColor: "#F8F7FF"
+  },
+
+  // 1. Header Bar
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#F0EFFF",
+    ...shadow.soft
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12
+  },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#F4F3FA",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  headerTitleWrap: {},
+  headerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 17,
+    color: "#181725"
+  },
+  headerSub: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: "#7C7C9A"
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  editHeaderBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#5B3CF5",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20
+  },
+  editHeaderBtnText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+    color: "#FFFFFF"
+  },
+  headerIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#F4F3FA",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  scrollContent: {
+    paddingHorizontal: 2,
+    paddingTop: 8,
+    paddingBottom: 110,
+    width: "100%"
+  },
+
+  // 2. Dark Hero Header Card
+  heroCard: {
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 16,
+    ...shadow.soft
+  },
+  heroTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 14,
+    gap: 8
+  },
+  heroLeftCol: {
+    flex: 1,
+    paddingRight: 4
+  },
+  tagBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#5B3CF5",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginBottom: 6
+  },
+  tagBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    color: "#FFFFFF",
+    letterSpacing: 0.6
+  },
+  heroCourseTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: "#FFFFFF",
+    lineHeight: 23,
+    marginBottom: 4
+  },
+  heroCourseSub: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: "#C8C4E6",
+    lineHeight: 15
+  },
+  heroRightCol: {
+    width: 95,
+    height: 95,
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  heroGraphicImg: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 12
+  },
+  heroBadgeReact: {
+    position: "absolute",
+    top: -5,
+    left: -5,
+    backgroundColor: "#18172B",
+    padding: 3,
+    borderRadius: 6
+  },
+  heroBadgeNode: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "#18172B",
+    padding: 3,
+    borderRadius: 6
+  },
+  heroBadgeMongo: {
+    position: "absolute",
+    bottom: -5,
+    right: -5,
+    backgroundColor: "#18172B",
+    padding: 3,
+    borderRadius: 6
+  },
+  heroBadgeJs: {
+    position: "absolute",
+    bottom: -5,
+    left: -5,
+    backgroundColor: "#F7DF1E",
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 5
+  },
+  heroBadgeJsText: {
+    fontFamily: fonts.bold,
+    fontSize: 8,
+    color: "#000000"
+  },
+
+  // Hero Stats Row
+  heroStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)"
+  },
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+    minWidth: 0
+  },
+  statTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3
+  },
+  statVal: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: "#FFFFFF"
+  },
+  statValSmall: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: "#FFFFFF"
+  },
+  statSubText: {
+    fontFamily: fonts.regular,
+    fontSize: 9,
+    color: "#C8C4E6"
+  },
+  statLabel: {
+    fontFamily: fonts.regular,
+    fontSize: 9,
+    color: "#A086FD",
+    marginTop: 2,
+    textAlign: "center"
+  },
+  statDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.15)"
+  },
+
+  // 3. Feature Highlights Grid
+  featuresRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#F0EFFF",
+    ...shadow.soft
+  },
+  featureCard: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: 2
+  },
+  featureIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6
+  },
+  featureLabel: {
+    fontFamily: fonts.semiBold,
+    fontSize: 9,
+    color: "#181725",
+    textAlign: "center",
+    lineHeight: 12
+  },
+
+  // Section Containers
+  sectionContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#F0EFFF",
+    ...shadow.soft
+  },
+  sectionTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: "#181725",
+    marginBottom: 8
+  },
+  aboutText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: "#4A4A6A",
+    lineHeight: 19
+  },
+  aboutContainer: {
+    gap: 8,
+    marginTop: 4
+  },
+  compactAboutBlock: {
+    marginBottom: 4
+  },
+  compactHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: 3
+  },
+  compactIconBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  compactHeaderTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize: 13,
+    color: "#181725"
+  },
+  compactParagraphText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: "#4A4A68",
+    lineHeight: 19
+  },
+  autoSubSectionBox: {
+    marginTop: 6,
+    backgroundColor: "#FBFBFE",
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#F0EFFF"
+  },
+  autoSubHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6
+  },
+  autoSubHeaderDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#5B3CF5"
+  },
+  autoSubHeaderTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: "#181725"
+  },
+  autoBulletGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 4
+  },
+  autoBulletChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#EBE5FF"
+  },
+  autoBulletChipText: {
+    fontFamily: fonts.medium,
+    fontSize: 11.5,
+    color: "#3A3A54"
+  },
+  compactWhyCard: {
+    backgroundColor: "#FFFBFA",
+    borderWidth: 1,
+    borderColor: "#FEE8C6",
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 4
+  },
+  miniAiPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    backgroundColor: "#F0EDFF",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+    marginLeft: "auto"
+  },
+  miniAiPillText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 9,
+    color: "#5B3CF5"
+  },
+  miniBulletRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6
+  },
+  miniBulletDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#5B3CF5"
+  },
+  miniBulletText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: "#3A3A54"
+  },
+  sleekSalaryCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#EBE5FF",
+    padding: 12,
+    marginTop: 6,
+    ...shadow.soft
+  },
+  sleekSalaryTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  sleekSalaryIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: "#F0EDFF",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  sleekSalaryTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: "#181725"
+  },
+  sleekMetricsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FBFBFE",
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#F0EFFF"
+  },
+  sleekMetricCol: {
+    flex: 1
+  },
+  sleekMetricLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 10,
+    color: "#7C7C9A"
+  },
+  sleekMetricVal: {
+    fontFamily: fonts.bold,
+    fontSize: 12.5,
+    color: "#5B3CF5",
+    marginTop: 1
+  },
+  sleekMetricDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: "#EBE5FF",
+    marginHorizontal: 8
+  },
+  sleekSectionSubLabel: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    color: "#525266"
+  },
+  sleekCompanyChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FBFBFE",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#F0EFFF"
+  },
+  sleekCompanyLogo: {
+    width: 16,
+    height: 16,
+    marginRight: 5
+  },
+  sleekCompanyText: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: "#3A3A54"
+  },
+  sleekRoleTag: {
+    backgroundColor: "#ECF9E9",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6
+  },
+  sleekRoleTagText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10.5,
+    color: "#2E7D32",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8
+  },
+  aiBadgeTagTextWhite: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+    color: "#5B3CF5"
+  },
+  salaryStatsFlex: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)"
+  },
+  salaryBoxHero: {
+    flex: 1
+  },
+  salaryBoxHeroRight: {
+    flex: 1,
+    alignItems: "flex-end"
+  },
+  salaryBoxHeroLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 10.5,
+    color: "#D0C9FF"
+  },
+  salaryBoxHeroVal: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: "#00E676",
+    marginTop: 3
+  },
+  salaryBoxHeroValGreen: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: "#FFD700",
+    marginTop: 3
+  },
+  companiesSection: {
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0EFFF"
+  },
+  subMetaLabelBold: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: "#181725",
+    marginBottom: 8
+  },
+  companiesLogoScroll: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingRight: 10
+  },
+  companyLogoCard: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#F0EFFF",
+    minWidth: 70,
+    ...shadow.soft
+  },
+  companyRealLogoImg: {
+    width: 32,
+    height: 32,
+    marginBottom: 4
+  },
+  companyLogoNameText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10.5,
+    color: "#4A4A6A"
+  },
+  rolesSection: {
+    padding: 14
+  },
+  rolePillGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0EDFF",
+    borderWidth: 1,
+    borderColor: "#E5DEFF",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10
+  },
+  rolePillTextGradient: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11.5,
+    color: "#5B3CF5"
+  },
+  aiBadgeTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#F0EDFF",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6
+  },
+  aiBadgeTagText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 9.5,
+    color: "#5B3CF5"
+  },
+  aiBulletRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8
+  },
+  aiBulletDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#5B3CF5",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2
+  },
+  aiBulletText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 12.5,
+    color: "#3A3A54",
+    lineHeight: 18
+  },
+  salaryHighlightsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 6
+  },
+  salaryStatBox: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#EAF5FF",
+    ...shadow.soft
+  },
+  salaryStatLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 10.5,
+    color: "#7C7C9A"
+  },
+  salaryStatVal: {
+    fontFamily: fonts.bold,
+    fontSize: 12.5,
+    color: "#5B3CF5",
+    marginTop: 2
+  },
+  subMetaLabel: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    color: "#525266",
+    marginBottom: 4
+  },
+  pillsWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6
+  },
+  companyPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0EDFF",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8
+  },
+  companyPillText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    color: "#5B3CF5"
+  },
+  rolePill: {
+    backgroundColor: "#ECF9E9",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8
+  },
+  rolePillText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    color: "#2E7D32"
+  },
+  readMoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 8
+  },
+  readMoreText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+    color: "#5B3CF5"
+  },
+
+  // 5. What you'll learn Grid
+  learnGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    rowGap: 10,
+    columnGap: 10
+  },
+  learnItemRow: {
+    width: "48%",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8
+  },
+  checkCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#F0EDFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1
+  },
+  learnItemText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: "#4A4A6A",
+    lineHeight: 16
+  },
+
+  // 6. Course Curriculum
+  curriculumHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12
+  },
+  curriculumSub: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: "#7C7C9A",
+    marginTop: -4
+  },
+  expandAllText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+    color: "#5B3CF5"
+  },
+
+  moduleCard: {
+    backgroundColor: "#F8F7FF",
+    borderRadius: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#EAE7FF",
+    overflow: "hidden"
+  },
+  moduleHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 12
+  },
+  moduleHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1
+  },
+  moduleNumCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#5B3CF5",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  moduleNumText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: "#FFFFFF"
+  },
+  moduleTitleText: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: "#181725",
+    flex: 1
+  },
+  moduleHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6
+  },
+  lessonsCountText: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: "#7C7C9A"
+  },
+
+  lessonsList: {
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#EAE7FF"
+  },
+  lessonItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0EFFF"
+  },
+  lessonLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1
+  },
+  timelineDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#5B3CF5"
+  },
+  playIconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#F0EDFF",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  lessonTitleText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: "#181725",
+    flex: 1
+  },
+  lessonDurationText: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: "#7C7C9A"
+  },
+
+  // 7. Sticky Bottom Purchase Bar
+  stickyPurchaseBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "#F0EFFF",
+    ...shadow.soft
+  },
+  priceCol: {},
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  currentPriceText: {
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: "#181725"
+  },
+  originalPriceText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: "#9A9A9A",
+    textDecorationLine: "line-through"
+  },
+  discountPill: {
+    backgroundColor: "#ECF9E9",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6
+  },
+  discountPillText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: "#2E7D32"
+  },
+  priceTaxesText: {
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    color: "#7C7C9A",
+    marginTop: 1
+  },
+
+  stickyEnrollBtn: {
+    backgroundColor: "#5B3CF5",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 14,
+    ...shadow.soft
+  },
+  stickyEnrollBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: "#FFFFFF"
+  }
+});

@@ -1,0 +1,4 @@
+
+> @tcm/backend@0.1.0 start
+> node src/server.js
+

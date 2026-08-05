@@ -1,0 +1,566 @@
+import React from "react";
+import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Feather,
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
+  MaterialIcons
+} from "@expo/vector-icons";
+import { colors, shadow } from "../constants/theme";
+import { fonts } from "../constants/fonts";
+
+export default function SidebarDrawer({
+  visible,
+  onClose,
+  user = {},
+  activeItem = "Home",
+  onSelectMenuItem,
+  onLogout
+}) {
+  const name = user.name || "Ayushman";
+  const handle = user.handle ? `@${user.handle}` : "@ayushman.dev";
+  const memberBadge = user.memberBadge || "Premium Member";
+  const avatarUri = user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80";
+
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "AY";
+
+  function handleNavigate(itemKey) {
+    onClose();
+    if (onSelectMenuItem) {
+      onSelectMenuItem(itemKey);
+    }
+  }
+
+  return (
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
+      <View style={styles.overlayBg}>
+        {/* Backdrop touch to close */}
+        <Pressable style={styles.backdropTouch} onPress={onClose} />
+
+        {/* Sliding Sidebar Panel */}
+        <View style={styles.drawerPanel}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {/* 1. Header Section */}
+            <View style={styles.headerSection}>
+              <View style={styles.headerTopRow}>
+                <View style={styles.avatarWrap}>
+                  {avatarUri ? (
+                    <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+                  ) : (
+                    <View style={styles.avatarCircle}>
+                      <Text style={styles.avatarInitials}>{initials}</Text>
+                    </View>
+                  )}
+                  <Pressable onPress={() => handleNavigate("Profile")} style={styles.editBadge}>
+                    <Feather name="edit-2" size={9} color="#FFFFFF" />
+                  </Pressable>
+                </View>
+
+                <Pressable onPress={onClose} style={styles.closeBtn}>
+                  <Feather name="x" size={20} color="#52506E" />
+                </Pressable>
+              </View>
+
+              <View style={styles.userInfoRow}>
+                <Text style={styles.userName}>{name}</Text>
+                <MaterialCommunityIcons name="check-decagram" size={17} color="#5B3CF5" />
+              </View>
+              <Text style={styles.userHandle}>{handle}</Text>
+
+              <View style={styles.premiumPill}>
+                <FontAwesome5 name="crown" size={11} color="#5B3CF5" />
+                <Text style={styles.premiumPillText}>{memberBadge}</Text>
+              </View>
+            </View>
+
+            {/* 2. Quick Metrics Row */}
+            <View style={styles.metricsRow}>
+              <View style={styles.metricCard}>
+                <MaterialCommunityIcons name="book-open-page-variant" size={18} color="#5B3CF5" />
+                <Text style={styles.metricVal}>12</Text>
+                <Text style={styles.metricLbl}>Enrolled Courses</Text>
+              </View>
+
+              <View style={styles.metricCard}>
+                <FontAwesome5 name="star" size={16} color="#FFB800" solid />
+                <Text style={styles.metricVal}>1,250</Text>
+                <Text style={styles.metricLbl}>Points Earned</Text>
+              </View>
+
+              <View style={styles.metricCard}>
+                <MaterialCommunityIcons name="shield-check" size={18} color="#2E7D32" />
+                <Text style={styles.metricVal}>5</Text>
+                <Text style={styles.metricLbl}>Certificates</Text>
+              </View>
+            </View>
+
+            {/* 3. MAIN MENU Section */}
+            <View style={styles.sectionWrap}>
+              <Text style={styles.sectionTitle}>MAIN MENU</Text>
+
+              <MenuItem
+                icon={<Feather name="home" size={18} />}
+                label="Home"
+                active={activeItem === "Home"}
+                onPress={() => handleNavigate("Home")}
+              />
+              <MenuItem
+                icon={<Feather name="tv" size={18} />}
+                label="My Classes"
+                active={activeItem === "My Classes"}
+                onPress={() => handleNavigate("My Classes")}
+              />
+              <MenuItem
+                icon={<Feather name="help-circle" size={18} />}
+                label="Help Request"
+                active={activeItem === "Help Request"}
+                onPress={() => handleNavigate("Help Request")}
+              />
+              <MenuItem
+                icon={<Feather name="message-circle" size={18} />}
+                label="Doubts"
+                badgeCount={5}
+                active={activeItem === "Doubts"}
+                onPress={() => handleNavigate("Doubts")}
+              />
+              <MenuItem
+                icon={<Feather name="award" size={18} />}
+                label="Top Mentors"
+                active={activeItem === "Top Mentors"}
+                onPress={() => handleNavigate("Top Mentors")}
+              />
+              <MenuItem
+                icon={<Ionicons name="school-outline" size={18} />}
+                label="TCM Academy"
+                active={activeItem === "TCM Academy"}
+                onPress={() => handleNavigate("TCM Academy")}
+              />
+              <MenuItem
+                icon={<Feather name="briefcase" size={18} />}
+                label="TCM Career"
+                active={activeItem === "TCM Career"}
+                onPress={() => handleNavigate("TCM Career")}
+              />
+              <MenuItem
+                icon={<Feather name="book-open" size={18} />}
+                label="TCM Guide"
+                active={activeItem === "TCM Guide"}
+                onPress={() => handleNavigate("TCM Guide")}
+              />
+              <MenuItem
+                icon={<MaterialIcons name="devices" size={18} />}
+                label="TCM Inform Tech"
+                active={activeItem === "TCM Inform Tech"}
+                onPress={() => handleNavigate("TCM Inform Tech")}
+              />
+            </View>
+
+            {/* 4. LEAVE MANAGEMENT Section */}
+            <View style={styles.sectionWrap}>
+              <Text style={styles.sectionTitle}>LEAVE MANAGEMENT</Text>
+
+              <MenuItem
+                icon={<MaterialCommunityIcons name="calendar-plus" size={18} color="#7D45EA" />}
+                label="My Leaves"
+                active={activeItem === "My Leaves"}
+                onPress={() => handleNavigate("My Leaves")}
+              />
+              <MenuItem
+                icon={<MaterialCommunityIcons name="calendar-edit" size={18} color="#2E7D32" />}
+                label="Apply for Leave"
+                active={activeItem === "Apply for Leave"}
+                onPress={() => handleNavigate("Apply for Leave")}
+              />
+              <MenuItem
+                icon={<MaterialCommunityIcons name="calendar-month" size={18} color="#E7A900" />}
+                label="Leave Calendar"
+                active={activeItem === "Leave Calendar"}
+                onPress={() => handleNavigate("Leave Calendar")}
+              />
+              <MenuItem
+                icon={<MaterialCommunityIcons name="clock-outline" size={18} color="#2F79B9" />}
+                label="Leave Balance"
+                active={activeItem === "Leave Balance"}
+                onPress={() => handleNavigate("Leave Balance")}
+              />
+              <MenuItem
+                icon={<MaterialCommunityIcons name="file-document-outline" size={18} color="#5B3CF5" />}
+                label="Leave Requests"
+                active={activeItem === "Leave Requests"}
+                onPress={() => handleNavigate("Leave Requests")}
+              />
+            </View>
+
+            {/* 5. ACCOUNT Section */}
+            <View style={styles.sectionWrap}>
+              <Text style={styles.sectionTitle}>ACCOUNT</Text>
+
+              <MenuItem
+                icon={<Feather name="user" size={18} />}
+                label="Profile"
+                active={activeItem === "Profile"}
+                onPress={() => handleNavigate("Profile")}
+              />
+              <MenuItem
+                icon={<Feather name="settings" size={18} />}
+                label="Settings"
+                active={activeItem === "Settings"}
+                onPress={() => handleNavigate("Settings")}
+              />
+              <MenuItem
+                icon={<Feather name="credit-card" size={18} />}
+                label="Payment & Billing"
+                active={activeItem === "Payment & Billing"}
+                onPress={() => handleNavigate("Payment & Billing")}
+              />
+              <MenuItem
+                icon={<Feather name="bell" size={18} />}
+                label="Notifications"
+                badgeCount={3}
+                active={activeItem === "Notifications"}
+                onPress={() => handleNavigate("Notifications")}
+              />
+            </View>
+
+            {/* 6. Go Premium Banner */}
+            <Pressable
+              onPress={() => handleNavigate("Go Premium")}
+              style={({ pressed }) => [
+                styles.premiumCard,
+                activeItem === "Go Premium" && styles.premiumCardActive,
+                pressed && styles.pressed
+              ]}
+            >
+              <View style={styles.premiumIconWrap}>
+                <FontAwesome5 name="crown" size={14} color="#FFFFFF" />
+              </View>
+              <View style={styles.premiumTextWrap}>
+                <Text style={styles.premiumTitle}>Go Premium</Text>
+                <Text style={styles.premiumSub}>Unlock all premium features and courses</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color="#5B3CF5" />
+            </Pressable>
+
+            {/* 7. Logout Button */}
+            <Pressable
+              onPress={() => {
+                onClose();
+                if (onLogout) onLogout();
+              }}
+              style={({ pressed }) => [styles.logoutBtn, pressed && styles.pressed]}
+            >
+              <Feather name="log-out" size={18} color="#FF465F" />
+              <Text style={styles.logoutText}>Logout</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function MenuItem({ icon, label, badgeCount, active, onPress }) {
+  const iconElement = React.isValidElement(icon)
+    ? React.cloneElement(icon, {
+        color: active ? "#5B3CF5" : (icon.props.color || "#4A4A6A"),
+        size: icon.props.size || 18
+      })
+    : icon;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.menuItem,
+        active && styles.menuItemActive,
+        pressed && styles.pressed
+      ]}
+    >
+      <View style={styles.menuLeft}>
+        <View style={styles.iconWrap}>{iconElement}</View>
+        <Text style={[styles.menuLabel, active && styles.menuLabelActive]}>{label}</Text>
+      </View>
+
+      <View style={styles.menuRight}>
+        {badgeCount ? (
+          <View style={styles.badgeCircle}>
+            <Text style={styles.badgeText}>{badgeCount}</Text>
+          </View>
+        ) : null}
+        <Feather name="chevron-right" size={16} color={active ? "#5B3CF5" : "#A2A0B8"} />
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlayBg: {
+    flex: 1,
+    backgroundColor: "rgba(12, 10, 32, 0.45)",
+    flexDirection: "row"
+  },
+  backdropTouch: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0
+  },
+  drawerPanel: {
+    width: "82%",
+    maxWidth: 340,
+    backgroundColor: "#FAF9FE",
+    height: "100%",
+    ...shadow.soft
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 52 : 44,
+    paddingBottom: 40
+  },
+
+  // 1. Header Section
+  headerSection: {
+    marginBottom: 16
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8
+  },
+  avatarWrap: {
+    position: "relative",
+    width: 62,
+    height: 62
+  },
+  avatarImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: "#FFFFFF"
+  },
+  avatarCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#5B3CF5",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF"
+  },
+  avatarInitials: {
+    color: "#FFFFFF",
+    fontFamily: fonts.bold,
+    fontSize: 22
+  },
+  editBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: -2,
+    backgroundColor: "#7D45EA",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F0EEF8",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  userInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6
+  },
+  userName: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: "#18172B"
+  },
+  userHandle: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: "#7C7C9A",
+    marginTop: 1
+  },
+  premiumPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#F0EDFF",
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8
+  },
+  premiumPillText: {
+    color: "#5B3CF5",
+    fontFamily: fonts.semiBold,
+    fontSize: 12
+  },
+
+  // 2. Metrics Row
+  metricsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 20
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#F0EFFF",
+    ...shadow.soft
+  },
+  metricVal: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: "#18172B",
+    marginTop: 4
+  },
+  metricLbl: {
+    fontFamily: fonts.regular,
+    fontSize: 9,
+    color: "#7C7C9A",
+    textAlign: "center",
+    marginTop: 1
+  },
+
+  // 3. Menu Sections
+  sectionWrap: {
+    marginBottom: 20
+  },
+  sectionTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: "#9A98B0",
+    letterSpacing: 0.8,
+    marginBottom: 8,
+    paddingLeft: 6
+  },
+
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    marginBottom: 2
+  },
+  menuItemActive: {
+    backgroundColor: "#F0EDFF"
+  },
+  menuLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12
+  },
+  iconWrap: {
+    width: 22,
+    alignItems: "center"
+  },
+  menuLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: "#4A4A6A"
+  },
+  menuLabelActive: {
+    fontFamily: fonts.bold,
+    color: "#5B3CF5"
+  },
+
+  menuRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  badgeCircle: {
+    backgroundColor: "#FF465F",
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontFamily: fonts.bold
+  },
+
+  // 6. Go Premium
+  premiumCard: {
+    backgroundColor: "#F0EDFF",
+    borderRadius: 16,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E6E1FF"
+  },
+  premiumIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#5B3CF5",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  premiumTextWrap: {
+    flex: 1
+  },
+  premiumTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: "#5B3CF5"
+  },
+  premiumSub: {
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    color: "#6E6B89",
+    marginTop: 1
+  },
+
+  // 7. Logout
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 10
+  },
+  logoutText: {
+    color: "#FF465F",
+    fontFamily: fonts.semiBold,
+    fontSize: 14
+  },
+
+  pressed: {
+    opacity: 0.75
+  }
+});
