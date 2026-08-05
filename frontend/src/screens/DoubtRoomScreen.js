@@ -52,6 +52,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
   const currentUserId = String(session?.user?._id || session?.user?.id || "");
   const isMember = Boolean((room?.members || []).includes(currentUserId) || room?.creatorId === currentUserId);
   const isAdmin = Boolean((room?.admins || []).includes(currentUserId) || room?.creatorId === currentUserId);
+  const hasRequestedJoin = Boolean((room?.joinRequests || []).some((r) => String(r.userId) === currentUserId));
 
   async function handleJoinRoom() {
     try {
@@ -60,7 +61,11 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
       const res = await joinDoubtRoom(token, roomId);
       if (res && res.room) {
         setRoom(res.room);
-        Alert.alert("Welcome 🎉", `You joined ${res.room.title}! You can now participate in discussions.`);
+        if (res.status === "requested") {
+          Alert.alert("Request Sent ⏳", "Your request to join this Private Room has been sent to the Room Admin for approval.");
+        } else {
+          Alert.alert("Welcome 🎉", `You joined ${res.room.title}! You can now participate in discussions.`);
+        }
       }
     } catch (err) {
       Alert.alert("Error", err.message || "Failed to join room.");
@@ -478,16 +483,25 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
       {/* 5. INPUT BAR OR JOIN ROOM BAR */}
       {!isMember ? (
         <View style={styles.joinRoomContainer}>
-          <TouchableOpacity style={styles.joinRoomButton} onPress={handleJoinRoom} disabled={joining}>
-            {joining ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <MaterialCommunityIcons name="account-plus" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                <Text style={styles.joinRoomButtonText}>Join Room to Participate 💬</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {hasRequestedJoin ? (
+            <View style={[styles.joinRoomButton, { backgroundColor: "#64748B" }]}>
+              <MaterialCommunityIcons name="clock-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.joinRoomButtonText}>Join Request Pending Approval ⏳</Text>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.joinRoomButton} onPress={handleJoinRoom} disabled={joining}>
+              {joining ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name={room?.isPrivate ? "lock-outline" : "account-plus"} size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                  <Text style={styles.joinRoomButtonText}>
+                    {room?.isPrivate ? "Request to Join Private Room 🔒" : "Join Room to Participate 💬"}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         <View style={[styles.inputContainer, { paddingBottom: Platform.OS === "ios" ? 12 : 8 }]}>
@@ -527,7 +541,9 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
               <>
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setManageModalVisible(true); }}>
                   <MaterialCommunityIcons name="shield-account" size={20} color="#5B3CF5" />
-                  <Text style={styles.menuItemText}>Admin Tools & Members 👑</Text>
+                  <Text style={styles.menuItemText}>
+                    Admin Tools & Requests 👑 {(room?.joinRequests?.length || 0) > 0 ? `(${room.joinRequests.length} Pending)` : ""}
+                  </Text>
                 </TouchableOpacity>
               </>
             ) : null}
@@ -554,6 +570,36 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
           <View style={styles.pollModalBox}>
             <Text style={styles.modalBoxTitle}>Room Admin Settings 👑</Text>
 
+            {/* PENDING JOIN REQUESTS SECTION */}
+            {(room?.joinRequests || []).length > 0 ? (
+              <View style={{ backgroundColor: "#FFFBEB", borderRadius: 12, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: "#FDE68A" }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#D97706", marginBottom: 6 }}>
+                  ⏳ Pending Join Requests ({room.joinRequests.length})
+                </Text>
+                {room.joinRequests.map((reqItem, idx) => (
+                  <View key={idx} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4 }}>
+                    <Text style={{ fontSize: 12, color: "#1E293B", fontWeight: "600" }}>
+                      {reqItem.userName || "Student"}
+                    </Text>
+                    <View style={{ flexDirection: "row", gap: 6 }}>
+                      <TouchableOpacity
+                        onPress={() => handleManageAction("approve_request", { targetUserId: reqItem.userId })}
+                        style={{ backgroundColor: "#10B981", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}
+                      >
+                        <Text style={{ fontSize: 11, color: "#FFFFFF", fontWeight: "700" }}>Approve ✅</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleManageAction("decline_request", { targetUserId: reqItem.userId })}
+                        style={{ backgroundColor: "#EF4444", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}
+                      >
+                        <Text style={{ fontSize: 11, color: "#FFFFFF", fontWeight: "700" }}>Decline ❌</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
             <Text style={styles.modalBoxLabel}>Edit Room Description:</Text>
             <TextInput
               style={styles.modalTextInput}
@@ -570,7 +616,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
             </TouchableOpacity>
 
             <Text style={styles.modalBoxLabel}>Manage Room Members & Admins:</Text>
-            <ScrollView style={{ maxHeight: 150, marginVertical: 6 }}>
+            <ScrollView style={{ maxHeight: 120, marginVertical: 6 }}>
               {(room?.members || [currentUserId]).map((mId, idx) => (
                 <View key={idx} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" }}>
                   <Text style={{ fontSize: 13, color: "#1E293B", fontWeight: "600" }}>

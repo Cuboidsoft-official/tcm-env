@@ -2439,7 +2439,7 @@ homeRouter.post("/doubt-rooms", requireAuth, (req, res) => {
   return res.json({ success: true, room: newRoom });
 });
 
-// POST /home/doubt-rooms/:roomId/join - Join a Doubt Room
+// POST /home/doubt-rooms/:roomId/join - Join or Request to Join a Doubt Room
 homeRouter.post("/doubt-rooms/:roomId/join", requireAuth, (req, res) => {
   const { roomId } = req.params;
   const store = getDefaultDoubtRooms(req);
@@ -2448,14 +2448,34 @@ homeRouter.post("/doubt-rooms/:roomId/join", requireAuth, (req, res) => {
 
   const userId = String(req.user._id || req.user.id);
   if (!room.members) room.members = [];
-  if (!room.members.includes(userId)) {
-    room.members.push(userId);
-    room.membersCount = (room.membersCount || 0) + 1;
+  if (!room.joinRequests) room.joinRequests = [];
+
+  // Already a member
+  if (room.members.includes(userId)) {
+    return res.json({ success: true, room, status: "joined" });
   }
-  return res.json({ success: true, room });
+
+  // If room is private, submit a join request for admin approval
+  if (room.isPrivate) {
+    const existingReq = room.joinRequests.find((r) => String(r.userId) === userId);
+    if (!existingReq) {
+      room.joinRequests.push({
+        userId,
+        userName: req.user?.name || "Student Learner",
+        userAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+        requestedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      });
+    }
+    return res.json({ success: true, room, status: "requested", message: "Join request sent to Room Admin for approval." });
+  }
+
+  // Public room: instant join
+  room.members.push(userId);
+  room.membersCount = (room.membersCount || 0) + 1;
+  return res.json({ success: true, room, status: "joined" });
 });
 
-// POST /home/doubt-rooms/:roomId/manage - Admin management (promote admin, remove member, update info)
+// POST /home/doubt-rooms/:roomId/manage - Admin management (approve/decline requests, promote admin, remove member, update info)
 homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, (req, res) => {
   const { roomId } = req.params;
   const { action, targetUserId, description, roomAvatar, isPrivate } = req.body;
@@ -2470,7 +2490,18 @@ homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, (req, res) => {
     return res.status(403).json({ message: "Only room admins can manage settings." });
   }
 
-  if (action === "promote_admin" && targetUserId) {
+  if (!room.joinRequests) room.joinRequests = [];
+  if (!room.members) room.members = [];
+
+  if (action === "approve_request" && targetUserId) {
+    room.joinRequests = room.joinRequests.filter((r) => String(r.userId) !== String(targetUserId));
+    if (!room.members.includes(String(targetUserId))) {
+      room.members.push(String(targetUserId));
+      room.membersCount = (room.membersCount || 0) + 1;
+    }
+  } else if (action === "decline_request" && targetUserId) {
+    room.joinRequests = room.joinRequests.filter((r) => String(r.userId) !== String(targetUserId));
+  } else if (action === "promote_admin" && targetUserId) {
     if (!room.admins) room.admins = [room.creatorId];
     if (!room.admins.includes(targetUserId)) {
       room.admins.push(targetUserId);
