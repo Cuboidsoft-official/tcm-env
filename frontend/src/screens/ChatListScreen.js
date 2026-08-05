@@ -310,29 +310,17 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
         </ScrollView>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          {/* Action Row: Create Doubt Room & Knowledge Base */}
+          {/* Action Row: Create Doubt Room */}
           <View style={styles.actionBtnRow}>
-            <Pressable onPress={() => setShowRoomModal(true)} style={[styles.askDoubtCtaBtn, { flex: 1, marginRight: 6 }]}>
+            <Pressable onPress={() => setShowRoomModal(true)} style={[styles.askDoubtCtaBtn, { flex: 1 }]}>
               <LinearGradient
                 colors={["#5B3CF5", "#7F65FF"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.askDoubtGradient}
               >
-                <Feather name="plus-circle" size={15} color="#FFFFFF" style={{ marginRight: 4 }} />
-                <Text style={styles.askDoubtCtaText}>+ Create Room</Text>
-              </LinearGradient>
-            </Pressable>
-
-            <Pressable onPress={() => setShowKbModal(true)} style={[styles.askDoubtCtaBtn, { flex: 1, marginLeft: 6 }]}>
-              <LinearGradient
-                colors={["#0F172A", "#1E293B"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.askDoubtGradient}
-              >
-                <Feather name="search" size={15} color="#38BDF8" style={{ marginRight: 4 }} />
-                <Text style={[styles.askDoubtCtaText, { color: "#38BDF8" }]}>Knowledge Base 🔍</Text>
+                <Feather name="plus-circle" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.askDoubtCtaText}>+ Create Doubt Room</Text>
               </LinearGradient>
             </Pressable>
           </View>
@@ -540,55 +528,6 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
                 <Text style={styles.submitDoubtText}>Create & Enter Doubt Room 🚀</Text>
               )}
             </Pressable>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* KNOWLEDGE BASE SEARCH MODAL */}
-      <Modal visible={showKbModal} transparent animationType="slide" onRequestClose={() => setShowKbModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: "85%" }]}>
-            <View style={styles.modalHeaderRow}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons name="book-search-outline" size={20} color="#38BDF8" style={{ marginRight: 6 }} />
-                <Text style={styles.modalTitle}>TCM Knowledge Base 📚</Text>
-              </View>
-              <Pressable onPress={() => setShowKbModal(false)} style={styles.modalCloseBtn}>
-                <Feather name="x" size={18} color="#686780" />
-              </Pressable>
-            </View>
-
-            <View style={styles.kbSearchBox}>
-              <Feather name="search" size={16} color="#64748B" style={{ marginRight: 8 }} />
-              <TextInput
-                value={kbQuery}
-                onChangeText={handleSearchKb}
-                placeholder="Search solved doubts (e.g. p-block, electronegativity)..."
-                placeholderTextColor="#94A3B8"
-                style={styles.kbSearchInput}
-              />
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 10 }}>
-              {loadingKb ? (
-                <ActivityIndicator size="small" color="#38BDF8" style={{ marginVertical: 20 }} />
-              ) : kbResults.length === 0 ? (
-                <Text style={{ textAlign: "center", color: "#64748B", marginVertical: 20 }}>No archived solutions found for "{kbQuery}".</Text>
-              ) : (
-                kbResults.map((kb) => (
-                  <View key={kb.itemId} style={styles.kbCard}>
-                    <View style={styles.kbBadgeRow}>
-                      <View style={styles.kbCategoryPill}>
-                        <Text style={styles.kbCategoryText}>{kb.category}</Text>
-                      </View>
-                      <Text style={styles.kbAuthorText}>Solved by {kb.solvedByMentorName}</Text>
-                    </View>
-                    <Text style={styles.kbQuestionTitle}>❓ {kb.questionText}</Text>
-                    <Text style={styles.kbSolutionText}>💡 {kb.solutionText}</Text>
-                  </View>
-                ))
-              )}
-            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>

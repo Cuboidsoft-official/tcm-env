@@ -223,16 +223,16 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
           <View style={styles.headerTextWrap}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Text style={styles.headerName} numberOfLines={1}>{room?.title || "NEET Doubt Discussion"}</Text>
+              <Text style={styles.headerName} numberOfLines={1}>{room?.title || "Doubt Room"}</Text>
               <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 4 }} />
             </View>
 
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
               <View style={styles.idBadge}>
-                <Text style={styles.idBadgeText}>{room?.roomId || "NEET-DOUBT-001"}</Text>
+                <Text style={styles.idBadgeText}>{room?.roomId || "DOUBT-ROOM"}</Text>
               </View>
               <Text style={styles.headerStatus} numberOfLines={1}>
-                {room?.membersCount || "1,285"} Members • <Text style={{ color: "#10B981" }}>🟢 {room?.onlineCount || "86"} Online</Text>
+                {room?.membersCount || "1"} Member • <Text style={{ color: "#10B981" }}>🟢 Online</Text>
               </Text>
             </View>
           </View>
@@ -240,10 +240,10 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => Alert.alert("Search", "Search in discussion messages.")}>
-            <MaterialCommunityIcons name="magnify" size={20} color="#5B3CF5" />
+            <MaterialCommunityIcons name="magnify" size={18} color="#5B3CF5" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={() => setMenuVisible(true)}>
-            <MaterialCommunityIcons name="dots-vertical" size={20} color="#686780" />
+            <MaterialCommunityIcons name="dots-vertical" size={18} color="#686780" />
           </TouchableOpacity>
         </View>
       </View>
@@ -459,7 +459,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
           {sending ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <MaterialCommunityIcons name="microphone" size={20} color="#FFFFFF" />
+            <MaterialCommunityIcons name="send" size={18} color="#FFFFFF" />
           )}
         </TouchableOpacity>
       </View>
@@ -586,16 +586,20 @@ const styles = StyleSheet.create({
     borderColor: "#FFFFFF"
   },
   headerTextWrap: {
-    flex: 1
+    flex: 1,
+    marginRight: 6,
+    overflow: "hidden"
   },
   headerName: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#181725"
+    color: "#181725",
+    flexShrink: 1
   },
   headerStatus: {
     fontSize: 11,
-    color: "#8A879F"
+    color: "#8A879F",
+    flexShrink: 1
   },
   idBadge: {
     backgroundColor: "#F0EDFF",
