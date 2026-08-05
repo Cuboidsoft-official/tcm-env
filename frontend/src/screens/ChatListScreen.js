@@ -82,19 +82,23 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
 
   async function handleCreateRoom() {
     if (!roomTitle.trim()) {
-      Alert.alert("Missing Title", "Please enter a Doubt Room title.");
+      Alert.alert("Room Title Required", "Please enter a title for your room.");
       return;
     }
     try {
       setCreatingRoom(true);
       const res = await createDoubtRoom(session?.token, {
         title: roomTitle,
-        category: roomCategory
+        category: roomCategory,
+        isPrivate: isRoomPrivate,
+        description: roomDescription
       });
       if (res && res.room) {
         Alert.alert("Success 🎉", `Created Doubt Room: ${res.room.title}`);
         setShowRoomModal(false);
         setRoomTitle("");
+        setRoomDescription("");
+        setIsRoomPrivate(false);
         fetchDoubtsAndRooms();
         if (onSelectDoubtRoom) {
           onSelectDoubtRoom(res.room);
@@ -516,6 +520,31 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
                 </Pressable>
               ))}
             </ScrollView>
+
+            <Text style={[styles.inputLabelText, { marginTop: 10 }]}>Room Description (Optional):</Text>
+            <TextInput
+              value={roomDescription}
+              onChangeText={setRoomDescription}
+              placeholder="e.g. Dedicated room for Organic Chemistry derivations"
+              placeholderTextColor="#8A879F"
+              style={styles.modalInput}
+            />
+
+            <Text style={[styles.inputLabelText, { marginTop: 10 }]}>Privacy Type:</Text>
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
+              <Pressable
+                onPress={() => setIsRoomPrivate(false)}
+                style={[styles.subjectChip, !isRoomPrivate && styles.subjectChipActive]}
+              >
+                <Text style={[styles.subjectChipText, !isRoomPrivate && styles.subjectChipTextActive]}>🌐 Public Room</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setIsRoomPrivate(true)}
+                style={[styles.subjectChip, isRoomPrivate && styles.subjectChipActive]}
+              >
+                <Text style={[styles.subjectChipText, isRoomPrivate && styles.subjectChipTextActive]}>🔒 Private Room</Text>
+              </Pressable>
+            </View>
 
             <Pressable
               onPress={handleCreateRoom}

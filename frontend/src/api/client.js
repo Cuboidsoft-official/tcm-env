@@ -471,3 +471,18 @@ export function searchKnowledgeBase(token, query) {
     headers: { Authorization: `Bearer ${token}` }
   });
 }
+
+export function joinDoubtRoom(token, roomId) {
+  return request(`/home/doubt-rooms/${roomId}/join`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+export function manageDoubtRoom(token, roomId, data) {
+  return request(`/home/doubt-rooms/${roomId}/manage`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
+}

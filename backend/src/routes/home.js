@@ -2388,28 +2388,33 @@ homeRouter.get("/doubt-rooms", requireAuth, (req, res) => {
 
 // 2. POST /home/doubt-rooms - Create a new Doubt Room (Mentor or Student created)
 homeRouter.post("/doubt-rooms", requireAuth, (req, res) => {
-  const { title, category = "NEET", assignedMentorId = "m1" } = req.body;
+  const { title, category = "NEET", isPrivate = false, description = "" } = req.body;
   if (!title || !title.trim()) {
     return res.status(400).json({ message: "Room title is required." });
   }
 
   const store = getDefaultDoubtRooms(req);
   const userRole = (req.user?.role || "").toLowerCase().includes("mentor") || req.user?.isMentor ? "mentor" : "student";
+  const currentUserId = String(req.user._id || req.user.id);
   const newRoomId = `${category.toUpperCase().replace(/\s+/g, "")}-DOUBT-${Math.floor(100 + Math.random() * 900)}`;
 
   const newRoom = {
     roomId: newRoomId,
     title: title.trim(),
     category,
-    creatorId: String(req.user._id || req.user.id),
+    description: description.trim(),
+    isPrivate: Boolean(isPrivate),
+    creatorId: currentUserId,
     creatorRole: userRole,
-    assignedMentor: {
-      id: assignedMentorId,
-      name: assignedMentorId === "m2" ? "Prof. Rajesh Kumar" : "Rahul Sharma",
-      role: assignedMentorId === "m2" ? "Physics & Maths HOD" : "Chemistry Expert & Lead Mentor",
-      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    admins: [currentUserId],
+    members: [currentUserId],
+    assignedMentor: userRole === "mentor" ? {
+      id: currentUserId,
+      name: req.user?.name || "Mentor",
+      role: req.user?.role || "TCM Mentor",
+      avatarUrl: req.user?.avatarUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
       online: true
-    },
+    } : null,
     membersCount: 1,
     onlineCount: 1,
     pinnedAnnouncement: {
@@ -2421,11 +2426,10 @@ homeRouter.post("/doubt-rooms", requireAuth, (req, res) => {
       {
         id: `msg_welcome_${Date.now()}`,
         authorName: req.user?.name || "Room Creator",
-        authorRole: userRole === "mentor" ? "Admin" : "Member",
+        authorRole: "Admin",
         authorAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
         time: "Just now",
-        text: `Created room: ${title.trim()}. Start asking doubts!`,
-        reactions: [{ emoji: "👋", count: 1, label: "1" }],
+        text: `Welcome to ${title.trim()}! ${isPrivate ? "🔒 (Private Room)" : "🌐 (Public Room)"}`,
         type: "text"
       }
     ]
@@ -2433,6 +2437,54 @@ homeRouter.post("/doubt-rooms", requireAuth, (req, res) => {
 
   store[newRoomId] = newRoom;
   return res.json({ success: true, room: newRoom });
+});
+
+// POST /home/doubt-rooms/:roomId/join - Join a Doubt Room
+homeRouter.post("/doubt-rooms/:roomId/join", requireAuth, (req, res) => {
+  const { roomId } = req.params;
+  const store = getDefaultDoubtRooms(req);
+  const room = store[roomId];
+  if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+
+  const userId = String(req.user._id || req.user.id);
+  if (!room.members) room.members = [];
+  if (!room.members.includes(userId)) {
+    room.members.push(userId);
+    room.membersCount = (room.membersCount || 0) + 1;
+  }
+  return res.json({ success: true, room });
+});
+
+// POST /home/doubt-rooms/:roomId/manage - Admin management (promote admin, remove member, update info)
+homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, (req, res) => {
+  const { roomId } = req.params;
+  const { action, targetUserId, description, roomAvatar, isPrivate } = req.body;
+  const store = getDefaultDoubtRooms(req);
+  const room = store[roomId];
+  if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+
+  const currentUserId = String(req.user._id || req.user.id);
+  const isAdmin = (room.admins || []).includes(currentUserId) || room.creatorId === currentUserId;
+
+  if (!isAdmin) {
+    return res.status(403).json({ message: "Only room admins can manage settings." });
+  }
+
+  if (action === "promote_admin" && targetUserId) {
+    if (!room.admins) room.admins = [room.creatorId];
+    if (!room.admins.includes(targetUserId)) {
+      room.admins.push(targetUserId);
+    }
+  } else if (action === "remove_member" && targetUserId) {
+    room.members = (room.members || []).filter((m) => String(m) !== String(targetUserId));
+    room.membersCount = Math.max(1, (room.membersCount || 1) - 1);
+  } else if (action === "update_info") {
+    if (description !== undefined) room.description = description;
+    if (roomAvatar !== undefined) room.roomAvatar = roomAvatar;
+    if (isPrivate !== undefined) room.isPrivate = Boolean(isPrivate);
+  }
+
+  return res.json({ success: true, room });
 });
 
 // 3. GET /home/doubt-rooms/:roomId - Fetch Doubt Room details & chat messages

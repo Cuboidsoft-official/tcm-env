@@ -22,7 +22,9 @@ import {
   askAiDoubt,
   createDoubtRoomPoll,
   voteDoubtRoomPoll,
-  markDoubtRoomSolved
+  markDoubtRoomSolved,
+  joinDoubtRoom,
+  manageDoubtRoom
 } from "../api/client";
 
 export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", onClose, onOpenMentorProfile }) {
@@ -39,7 +41,47 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
   const [codeModalVisible, setCodeModalVisible] = useState(false);
   const [codeSnippetText, setCodeSnippetText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Admin Management Modal State
+  const [manageModalVisible, setManageModalVisible] = useState(false);
+  const [editDescInput, setEditDescInput] = useState("");
+  const [editAvatarInput, setEditAvatarInput] = useState("");
+
+  const currentUserId = String(session?.user?._id || session?.user?.id || "");
+  const isMember = Boolean((room?.members || []).includes(currentUserId) || room?.creatorId === currentUserId);
+  const isAdmin = Boolean((room?.admins || []).includes(currentUserId) || room?.creatorId === currentUserId);
+
+  async function handleJoinRoom() {
+    try {
+      setJoining(true);
+      const token = session?.token;
+      const res = await joinDoubtRoom(token, roomId);
+      if (res && res.room) {
+        setRoom(res.room);
+        Alert.alert("Welcome 🎉", `You joined ${res.room.title}! You can now participate in discussions.`);
+      }
+    } catch (err) {
+      Alert.alert("Error", err.message || "Failed to join room.");
+    } finally {
+      setJoining(false);
+    }
+  }
+
+  async function handleManageAction(action, extra = {}) {
+    try {
+      const token = session?.token;
+      const res = await manageDoubtRoom(token, roomId, { action, ...extra });
+      if (res && res.room) {
+        setRoom(res.room);
+        Alert.alert("Updated ⚡", "Room settings updated successfully!");
+        setManageModalVisible(false);
+      }
+    } catch (err) {
+      Alert.alert("Error", err.message || "Failed to update room settings.");
+    }
+  }
 
   const scrollViewRef = useRef();
 
@@ -255,25 +297,27 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
       >
-        {/* 2. PERMANENTLY PINNED ASSIGNED MENTOR CARD */}
-        <TouchableOpacity
-          style={styles.assignedMentorCard}
-          onPress={() => onOpenMentorProfile && onOpenMentorProfile(assignedMentor.id)}
-          activeOpacity={0.85}
-        >
-          <View style={styles.mentorAvatarWrap}>
-            <Image source={{ uri: assignedMentor.avatarUrl }} style={styles.mentorAvatar} />
-            <View style={styles.onlineDot} />
-          </View>
+        {/* 2. PERMANENTLY PINNED ASSIGNED MENTOR CARD (ONLY IF CREATED BY MENTOR) */}
+        {room?.assignedMentor?.name ? (
+          <TouchableOpacity
+            style={styles.assignedMentorCard}
+            onPress={() => onOpenMentorProfile && onOpenMentorProfile(room.assignedMentor.id || "m1")}
+            activeOpacity={0.85}
+          >
+            <View style={styles.mentorAvatarWrap}>
+              <Image source={{ uri: room.assignedMentor.avatarUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80" }} style={styles.mentorAvatar} />
+              <View style={styles.onlineDot} />
+            </View>
 
-          <View style={styles.mentorInfo}>
-            <Text style={styles.mentorLabel}>Assigned Mentor</Text>
-            <Text style={styles.mentorName}>{assignedMentor.name}</Text>
-            <Text style={styles.mentorSpecialty}>{assignedMentor.role}</Text>
-          </View>
+            <View style={styles.mentorInfo}>
+              <Text style={styles.mentorLabel}>Assigned Mentor</Text>
+              <Text style={styles.mentorName}>{room.assignedMentor.name}</Text>
+              <Text style={styles.mentorSpecialty}>{room.assignedMentor.role || "TCM Mentor"}</Text>
+            </View>
 
-          <MaterialCommunityIcons name="chevron-right" size={22} color="#64748B" />
-        </TouchableOpacity>
+            <MaterialCommunityIcons name="chevron-right" size={22} color="#64748B" />
+          </TouchableOpacity>
+        ) : null}
 
         {/* 3. PINNED ANNOUNCEMENT BANNER */}
         <View style={styles.pinnedBanner}>
@@ -431,48 +475,63 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         )}
       </ScrollView>
 
-      {/* 5. INPUT BAR */}
-      <View style={[styles.inputContainer, { paddingBottom: Platform.OS === "ios" ? Math.max(10, keyboardHeight) : 10 }]}>
-        <TouchableOpacity style={styles.plusBtn} onPress={() => setPollModalVisible(true)}>
-          <MaterialCommunityIcons name="plus" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+      {/* 5. INPUT BAR OR JOIN ROOM BAR */}
+      {!isMember ? (
+        <View style={styles.joinRoomContainer}>
+          <TouchableOpacity style={styles.joinRoomButton} onPress={handleJoinRoom} disabled={joining}>
+            {joining ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="account-plus" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={styles.joinRoomButtonText}>Join Room to Participate 💬</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={[styles.inputContainer, { paddingBottom: Platform.OS === "ios" ? 12 : 8 }]}>
+          <TouchableOpacity style={styles.plusBtn} onPress={() => setPollModalVisible(true)}>
+            <MaterialCommunityIcons name="plus" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
 
-        <TextInput
-          style={styles.inputField}
-          placeholder="Type a message..."
-          placeholderTextColor="#94A3B8"
-          value={inputText}
-          onChangeText={setInputText}
-        />
+          <TextInput
+            style={styles.inputField}
+            placeholder="Type a message..."
+            placeholderTextColor="#94A3B8"
+            value={inputText}
+            onChangeText={setInputText}
+          />
 
-        <TouchableOpacity style={styles.inputActionBtn} onPress={() => setCodeModalVisible(true)}>
-          <MaterialCommunityIcons name="code-tags" size={22} color="#64748B" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.inputActionBtn} onPress={() => Alert.alert("Upload", "Attach image or note.")}>
-          <MaterialCommunityIcons name="image-outline" size={22} color="#64748B" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.inputActionBtn} onPress={() => Alert.alert("Attachment", "Attach PDF document.")}>
-          <MaterialCommunityIcons name="paperclip" size={22} color="#64748B" />
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.inputActionBtn} onPress={() => setCodeModalVisible(true)}>
+            <MaterialCommunityIcons name="code-tags" size={22} color="#64748B" />
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.sendBtn} onPress={handleSendMessage} disabled={sending}>
-          {sending ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <MaterialCommunityIcons name="send" size={18} color="#FFFFFF" />
-          )}
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={styles.sendBtn} onPress={handleSendMessage} disabled={sending}>
+            {sending ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <MaterialCommunityIcons name="send" size={18} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* MODAL: ADMIN MENU */}
+      {/* MODAL: OPTIONS & ADMIN MENU */}
       <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMenuVisible(false)}>
           <View style={styles.menuContainer}>
             <Text style={styles.menuHeaderTitle}>Doubt Room Options</Text>
-            <TouchableOpacity style={styles.menuItem} onPress={handleMarkSolved}>
-              <MaterialCommunityIcons name="check-circle-outline" size={20} color="#10B981" />
-              <Text style={styles.menuItemText}>Mark Doubt as Solved ✅</Text>
-            </TouchableOpacity>
+
+            {isAdmin ? (
+              <>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setManageModalVisible(true); }}>
+                  <MaterialCommunityIcons name="shield-account" size={20} color="#5B3CF5" />
+                  <Text style={styles.menuItemText}>Admin Tools & Members 👑</Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
+
             <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setPollModalVisible(true); }}>
               <MaterialCommunityIcons name="poll" size={20} color="#5B3CF5" />
               <Text style={styles.menuItemText}>Create Live Poll 📊</Text>
@@ -481,8 +540,67 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
               <MaterialCommunityIcons name="code-json" size={20} color="#3B82F6" />
               <Text style={styles.menuItemText}>Share Code Snippet 💻</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={handleMarkSolved}>
+              <MaterialCommunityIcons name="check-circle-outline" size={20} color="#10B981" />
+              <Text style={styles.menuItemText}>Mark Doubt as Solved ✅</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* MODAL: ADMIN MANAGEMENT TOOLS */}
+      <Modal visible={manageModalVisible} transparent animationType="slide" onRequestClose={() => setManageModalVisible(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
+          <View style={styles.pollModalBox}>
+            <Text style={styles.modalBoxTitle}>Room Admin Settings 👑</Text>
+
+            <Text style={styles.modalBoxLabel}>Edit Room Description:</Text>
+            <TextInput
+              style={styles.modalTextInput}
+              value={editDescInput}
+              onChangeText={setEditDescInput}
+              placeholder={room?.description || "Enter room description..."}
+            />
+
+            <TouchableOpacity
+              style={[styles.submitModalBtn, { marginTop: 10, marginBottom: 16 }]}
+              onPress={() => handleManageAction("update_info", { description: editDescInput })}
+            >
+              <Text style={styles.submitModalText}>Save Room Description</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.modalBoxLabel}>Manage Room Members & Admins:</Text>
+            <ScrollView style={{ maxHeight: 150, marginVertical: 6 }}>
+              {(room?.members || [currentUserId]).map((mId, idx) => (
+                <View key={idx} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" }}>
+                  <Text style={{ fontSize: 13, color: "#1E293B", fontWeight: "600" }}>
+                    Member: {mId === currentUserId ? "You (Admin)" : `User_${String(mId).slice(-4)}`}
+                  </Text>
+                  {mId !== currentUserId ? (
+                    <View style={{ flexDirection: "row", gap: 6 }}>
+                      <TouchableOpacity
+                        onPress={() => handleManageAction("promote_admin", { targetUserId: mId })}
+                        style={{ backgroundColor: "#F0EDFF", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}
+                      >
+                        <Text style={{ fontSize: 11, color: "#5B3CF5", fontWeight: "700" }}>Make Admin</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleManageAction("remove_member", { targetUserId: mId })}
+                        style={{ backgroundColor: "#FEE2E2", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}
+                      >
+                        <Text style={{ fontSize: 11, color: "#EF4444", fontWeight: "700" }}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+                </View>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity style={[styles.cancelModalBtn, { marginTop: 12 }]} onPress={() => setManageModalVisible(false)}>
+              <Text style={styles.cancelModalText}>Close Settings</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* MODAL: CREATE POLL */}
@@ -1027,6 +1145,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#F8FAFC",
     lineHeight: 18
+  },
+  joinRoomContainer: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9"
+  },
+  joinRoomButton: {
+    backgroundColor: "#5B3CF5",
+    borderRadius: 24,
+    paddingVertical: 14,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  joinRoomButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700"
   },
   inputContainer: {
     flexDirection: "row",
