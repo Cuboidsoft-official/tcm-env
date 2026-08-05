@@ -39,6 +39,8 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [roomTitle, setRoomTitle] = useState("");
   const [roomCategory, setRoomCategory] = useState("NEET");
+  const [roomDescription, setRoomDescription] = useState("");
+  const [isRoomPrivate, setIsRoomPrivate] = useState(false);
   const [creatingRoom, setCreatingRoom] = useState(false);
 
   // Knowledge Base Modal State
