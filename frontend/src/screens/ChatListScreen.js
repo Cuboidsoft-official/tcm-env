@@ -26,6 +26,12 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingDoubts, setLoadingDoubts] = useState(true);
 
+  // Create Individual Doubt Modal State
+  const [showDoubtModal, setShowDoubtModal] = useState(false);
+  const [doubtTitle, setDoubtTitle] = useState("");
+  const [doubtSubject, setDoubtSubject] = useState("Full Stack Web & Mobile");
+  const [creatingDoubt, setCreatingDoubt] = useState(false);
+
   // Create Doubt Room Modal State
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [roomTitle, setRoomTitle] = useState("");
