@@ -374,7 +374,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               <ActivityIndicator size="small" color="#5B3CF5" />
               <Text style={styles.loadingText}>Loading Q&A doubts & rooms...</Text>
             </View>
-          ) : null}
+          ) : doubts.length === 0 ? (
             <View style={styles.emptyBox}>
               <View style={styles.emptyIconCircle}>
                 <Feather name="help-circle" size={24} color="#5B3CF5" />
