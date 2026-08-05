@@ -590,7 +590,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               )}
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
