@@ -184,9 +184,10 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
             const combined = [...res.messages, ...prev];
             const deduped = new Map();
             combined.forEach((m) => {
-              const key = m.id.startsWith("msg_user_")
+              const msgIdStr = String(m.id || "");
+              const key = msgIdStr.startsWith("msg_user_")
                 ? `${m.senderId}_${m.text}`
-                : String(m.id);
+                : msgIdStr || `msg_${Math.random()}`;
               if (!deduped.has(key)) {
                 deduped.set(key, m);
               }
@@ -478,7 +479,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           </View>
         ) : null}
 
-        {messages.map((msg) => {
+        {messages.map((msg, index) => {
           const currentUserIdStr = String(session?.user?._id || session?.user?.id || "seed-user");
           const targetIdStr = String(currentTarget?.id || targetUserId || "m1");
           const senderIdStr = String(msg.senderId || "");
@@ -495,7 +496,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           const mediaUrlToDisplay = isImageMsg ? getResolvedMediaUrl(msg) : null;
 
           return (
-            <View key={msg.id} style={[styles.msgRow, isMe ? styles.msgRowMe : styles.msgRowOther]}>
+            <View key={String(msg.id || `msg_${index}`)} style={[styles.msgRow, isMe ? styles.msgRowMe : styles.msgRowOther]}>
               {!isMe ? (
                 <Image source={{ uri: msg.senderAvatar || currentTarget.avatarUrl }} style={styles.msgAvatar} />
               ) : null}
