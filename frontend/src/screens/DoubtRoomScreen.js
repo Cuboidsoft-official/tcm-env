@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Share
@@ -38,8 +39,29 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
   const [codeModalVisible, setCodeModalVisible] = useState(false);
   const [codeSnippetText, setCodeSnippetText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const scrollViewRef = useRef();
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (e) => {
+        setKeyboardHeight(e.endCoordinates?.height || 0);
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 50);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setKeyboardHeight(0)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     loadRoomDetails();
@@ -433,7 +455,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
       </ScrollView>
 
       {/* 5. INPUT BAR */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { paddingBottom: Platform.OS === "ios" ? Math.max(10, keyboardHeight) : 10 }]}>
         <TouchableOpacity style={styles.plusBtn} onPress={() => setPollModalVisible(true)}>
           <MaterialCommunityIcons name="plus" size={24} color="#FFFFFF" />
         </TouchableOpacity>
@@ -488,7 +510,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
       {/* MODAL: CREATE POLL */}
       <Modal visible={pollModalVisible} transparent animationType="slide" onRequestClose={() => setPollModalVisible(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.pollModalBox}>
             <Text style={styles.modalBoxTitle}>Create Live Poll 📊</Text>
             <Text style={styles.modalBoxLabel}>Poll Question:</Text>
@@ -507,12 +529,12 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* MODAL: CODE SNIPPET */}
       <Modal visible={codeModalVisible} transparent animationType="slide" onRequestClose={() => setCodeModalVisible(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.pollModalBox}>
             <Text style={styles.modalBoxTitle}>Share Code Snippet 💻</Text>
             <TextInput
@@ -531,7 +553,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </KeyboardAvoidingView>
   );

@@ -3,7 +3,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -436,7 +439,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
 
       {/* Ask Doubt Modal */}
       <Modal visible={showDoubtModal} transparent animationType="slide" onRequestClose={() => setShowDoubtModal(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeaderRow}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -487,12 +490,12 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               )}
             </Pressable>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* CREATE DOUBT ROOM MODAL */}
       <Modal visible={showRoomModal} transparent animationType="slide" onRequestClose={() => setShowRoomModal(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeaderRow}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -538,12 +541,12 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               )}
             </Pressable>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* KNOWLEDGE BASE SEARCH MODAL */}
       <Modal visible={showKbModal} transparent animationType="slide" onRequestClose={() => setShowKbModal(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={[styles.modalContent, { maxHeight: "85%" }]}>
             <View style={styles.modalHeaderRow}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
