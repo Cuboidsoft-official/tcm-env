@@ -738,7 +738,7 @@ export default function HomeScreen({ session, onLogout }) {
           </View>
           </ScrollView>
         )}
-        {!selectedCourseId && !showPopularCourses && !showSearchScreen && !selectedMentorId && !activeChatUser && !showNotificationsScreen ? (
+        {!selectedCourseId && !showPopularCourses && !showSearchScreen && !selectedMentorId && !activeChatUser && !activeDoubtRoom && !showNotificationsScreen ? (
           <ActionDock
             open={actionMenuOpen}
             setOpen={setActionMenuOpen}

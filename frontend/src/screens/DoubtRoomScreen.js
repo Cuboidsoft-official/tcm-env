@@ -209,36 +209,41 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      {/* 1. TOP HEADER MATCHING MOCKUP */}
-      <View style={styles.header}>
+      {/* 1. TOP HEADER MATCHING CHATSCREEN */}
+      <View style={styles.topHeader}>
         <TouchableOpacity style={styles.backBtn} onPress={onClose}>
-          <MaterialCommunityIcons name="chevron-left" size={28} color="#1E293B" />
+          <MaterialCommunityIcons name="chevron-left" size={26} color="#5B3CF5" />
         </TouchableOpacity>
 
-        <View style={styles.headerIconContainer}>
-          <MaterialCommunityIcons name="medical-bag" size={22} color="#FFFFFF" />
-        </View>
+        <TouchableOpacity style={styles.headerUserCol} onPress={() => onOpenMentorProfile && onOpenMentorProfile(assignedMentor.id)}>
+          <View style={styles.avatarWrap}>
+            <Image source={{ uri: assignedMentor.avatarUrl }} style={styles.avatarImg} />
+            <View style={styles.onlineDotHeader} />
+          </View>
 
-        <View style={styles.headerTitleWrap}>
-          <View style={styles.titleRow}>
-            <Text style={styles.roomTitle} numberOfLines={1}>{room?.title || "NEET Doubt Discussion"}</Text>
-          </View>
-          <View style={styles.subTitleRow}>
-            <View style={styles.idBadge}>
-              <Text style={styles.idBadgeText}>ID: {room?.roomId || "NEET-DOUBT-001"}</Text>
+          <View style={styles.headerTextWrap}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text style={styles.headerName} numberOfLines={1}>{room?.title || "NEET Doubt Discussion"}</Text>
+              <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 4 }} />
             </View>
-            <Text style={styles.memberInfoText}>
-              {room?.membersCount || "1,285"} Members • <Text style={{ color: "#10B981" }}>🟢 {room?.onlineCount || "86"} Online</Text>
-            </Text>
+
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 1 }}>
+              <View style={styles.idBadge}>
+                <Text style={styles.idBadgeText}>{room?.roomId || "NEET-DOUBT-001"}</Text>
+              </View>
+              <Text style={styles.headerStatus} numberOfLines={1}>
+                {room?.membersCount || "1,285"} Members • <Text style={{ color: "#10B981" }}>🟢 {room?.onlineCount || "86"} Online</Text>
+              </Text>
+            </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => Alert.alert("Search", "Search in discussion messages.")}>
-            <MaterialCommunityIcons name="magnify" size={22} color="#1E293B" />
+            <MaterialCommunityIcons name="magnify" size={20} color="#5B3CF5" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={() => setMenuVisible(true)}>
-            <MaterialCommunityIcons name="dots-vertical" size={22} color="#1E293B" />
+            <MaterialCommunityIcons name="dots-vertical" size={20} color="#686780" />
           </TouchableOpacity>
         </View>
       </View>
@@ -360,7 +365,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
               );
             }
 
-            // REGULAR CHAT BUBBLE (Self or Participant)
+            // REGULAR CHAT BUBBLE (Self)
             if (item.isSelf) {
               return (
                 <View key={item.id} style={styles.msgRowRight}>
@@ -371,17 +376,6 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                       <MaterialCommunityIcons name="check-all" size={14} color="#C4B5FD" style={{ marginLeft: 4 }} />
                     </View>
                   </View>
-
-                  {/* REACTIONS */}
-                  {item.reactions && item.reactions.length > 0 && (
-                    <View style={styles.reactionsRowRight}>
-                      {item.reactions.map((r, idx) => (
-                        <TouchableOpacity key={idx} style={styles.reactionBadge} onPress={() => handleReaction(item.id, r.emoji)}>
-                          <Text style={styles.reactionText}>{r.emoji} {r.count}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
                 </View>
               );
             }
@@ -430,23 +424,6 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                       <Text style={styles.mentorHelpText}>Need Mentor Help 🆘</Text>
                     </TouchableOpacity>
                   )}
-
-                  {/* REACTIONS */}
-                  <View style={styles.reactionsRowLeft}>
-                    {item.reactions && item.reactions.length > 0
-                      ? item.reactions.map((r, idx) => (
-                          <TouchableOpacity key={idx} style={styles.reactionBadge} onPress={() => handleReaction(item.id, r.emoji)}>
-                            <Text style={styles.reactionText}>{r.emoji} {r.count}</Text>
-                          </TouchableOpacity>
-                        ))
-                      : null}
-                    <TouchableOpacity style={styles.addReactionBtn} onPress={() => handleReaction(item.id, "👍")}>
-                      <MaterialCommunityIcons name="thumb-up-outline" size={14} color="#64748B" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.addReactionBtn} onPress={() => handleReaction(item.id, "🔥")}>
-                      <MaterialCommunityIcons name="fire" size={14} color="#EF4444" />
-                    </TouchableOpacity>
-                  </View>
                 </View>
               </View>
             );
@@ -564,68 +541,86 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFC"
   },
-  header: {
+  topHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 12 : 16,
-    paddingBottom: 12,
     backgroundColor: "#FFFFFF",
+    paddingHorizontal: 14,
+    paddingTop: Platform.OS === "ios" ? 10 : 14,
+    paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9"
+    borderBottomColor: "#F4F3FA"
   },
   backBtn: {
-    marginRight: 8
-  },
-  headerIconContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#5B3CF5",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F4F3FA",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 10
   },
-  headerTitleWrap: {
-    flex: 1
-  },
-  titleRow: {
+  headerUserCol: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center"
   },
-  roomTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#0F172A"
+  avatarWrap: {
+    position: "relative",
+    marginRight: 10
   },
-  subTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2
+  avatarImg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20
+  },
+  onlineDotHeader: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#10B981",
+    borderWidth: 2,
+    borderColor: "#FFFFFF"
+  },
+  headerTextWrap: {
+    flex: 1
+  },
+  headerName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#181725"
+  },
+  headerStatus: {
+    fontSize: 11,
+    color: "#8A879F"
   },
   idBadge: {
     backgroundColor: "#F0EDFF",
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 1,
     borderRadius: 6,
     marginRight: 6
   },
   idBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     color: "#5B3CF5"
-  },
-  memberInfoText: {
-    fontSize: 12,
-    color: "#64748B"
   },
   headerActions: {
     flexDirection: "row",
     alignItems: "center"
   },
   iconBtn: {
-    padding: 6,
-    marginLeft: 4
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F4F3FA",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 6
   },
   scrollBody: {
     flex: 1
