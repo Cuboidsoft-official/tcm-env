@@ -405,3 +405,69 @@ export function createDoubtThread(token, data) {
     body: JSON.stringify(data)
   });
 }
+
+export function getDoubtRooms(token) {
+  return request("/home/doubt-rooms", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+export function createDoubtRoom(token, data) {
+  return request("/home/doubt-rooms", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
+}
+
+export function getDoubtRoomDetails(token, roomId) {
+  return request(`/home/doubt-rooms/${roomId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+export function sendDoubtRoomMessage(token, roomId, data) {
+  return request(`/home/doubt-rooms/${roomId}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
+}
+
+export function askAiDoubt(token, roomId, data) {
+  return request(`/home/doubt-rooms/${roomId}/ask-ai`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
+}
+
+export function createDoubtRoomPoll(token, roomId, data) {
+  return request(`/home/doubt-rooms/${roomId}/polls`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
+}
+
+export function voteDoubtRoomPoll(token, roomId, pollId, optionId) {
+  return request(`/home/doubt-rooms/${roomId}/polls/${pollId}/vote`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ optionId })
+  });
+}
+
+export function markDoubtRoomSolved(token, roomId, data) {
+  return request(`/home/doubt-rooms/${roomId}/mark-solved`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data || {})
+  });
+}
+
+export function searchKnowledgeBase(token, query) {
+  return request(`/home/knowledge-base/search?q=${encodeURIComponent(query || "")}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}

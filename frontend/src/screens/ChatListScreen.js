@@ -13,28 +13,104 @@ import {
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { getChatConversations, getDoubtsList, createDoubtThread } from "../api/client";
+import { getChatConversations, getDoubtsList, createDoubtThread, getDoubtRooms, createDoubtRoom, searchKnowledgeBase } from "../api/client";
 import { shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
-export default function ChatListScreen({ session, onSelectChat }) {
+export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoom }) {
   const [activeTab, setActiveTab] = useState("chats"); // "chats" | "doubts"
   const [searchQuery, setSearchQuery] = useState("");
   const [conversations, setConversations] = useState([]);
   const [doubts, setDoubts] = useState([]);
+  const [doubtRooms, setDoubtRooms] = useState([]);
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingDoubts, setLoadingDoubts] = useState(true);
 
-  // Create Doubt Modal State
-  const [showDoubtModal, setShowDoubtModal] = useState(false);
-  const [doubtTitle, setDoubtTitle] = useState("");
-  const [doubtSubject, setDoubtSubject] = useState("Full Stack Web & Mobile");
-  const [creatingDoubt, setCreatingDoubt] = useState(false);
+  // Create Doubt Room Modal State
+  const [showRoomModal, setShowRoomModal] = useState(false);
+  const [roomTitle, setRoomTitle] = useState("");
+  const [roomCategory, setRoomCategory] = useState("NEET");
+  const [creatingRoom, setCreatingRoom] = useState(false);
+
+  // Knowledge Base Modal State
+  const [showKbModal, setShowKbModal] = useState(false);
+  const [kbQuery, setKbQuery] = useState("");
+  const [kbResults, setKbResults] = useState([]);
+  const [loadingKb, setLoadingKb] = useState(false);
 
   useEffect(() => {
     fetchConversations();
-    fetchDoubts();
+    fetchDoubtsAndRooms();
   }, [session?.token]);
+
+  async function fetchDoubtsAndRooms() {
+    if (!session?.token) {
+      setLoadingDoubts(false);
+      return;
+    }
+    setLoadingDoubts(true);
+    try {
+      const [doubtsRes, roomsRes] = await Promise.all([
+        getDoubtsList(session.token).catch(() => null),
+        getDoubtRooms(session.token).catch(() => null)
+      ]);
+
+      if (doubtsRes && Array.isArray(doubtsRes.doubts)) {
+        setDoubts(doubtsRes.doubts);
+      }
+      if (roomsRes && Array.isArray(roomsRes.rooms)) {
+        setDoubtRooms(roomsRes.rooms);
+      }
+      if (roomsRes && Array.isArray(roomsRes.knowledgeBase)) {
+        setKbResults(roomsRes.knowledgeBase);
+      }
+    } catch (e) {
+      console.log("Error fetching doubts/rooms:", e);
+    } finally {
+      setLoadingDoubts(false);
+    }
+  }
+
+  async function handleCreateRoom() {
+    if (!roomTitle.trim()) {
+      Alert.alert("Missing Title", "Please enter a Doubt Room title.");
+      return;
+    }
+    try {
+      setCreatingRoom(true);
+      const res = await createDoubtRoom(session?.token, {
+        title: roomTitle,
+        category: roomCategory
+      });
+      if (res && res.room) {
+        Alert.alert("Success 🎉", `Created Doubt Room: ${res.room.title}`);
+        setShowRoomModal(false);
+        setRoomTitle("");
+        fetchDoubtsAndRooms();
+        if (onSelectDoubtRoom) {
+          onSelectDoubtRoom(res.room);
+        }
+      }
+    } catch (err) {
+      Alert.alert("Error", err.message || "Failed to create room.");
+    } finally {
+      setCreatingRoom(false);
+    }
+  }
+
+  async function handleSearchKb(text) {
+    setKbQuery(text);
+    try {
+      setLoadingKb(true);
+      const res = await searchKnowledgeBase(session?.token, text);
+      if (res && res.items) {
+        setKbResults(res.items);
+      }
+    } catch (e) {
+    } finally {
+      setLoadingKb(false);
+    }
+  }
 
   async function fetchConversations() {
     if (!session?.token) {
@@ -225,25 +301,80 @@ export default function ChatListScreen({ session, onSelectChat }) {
         </ScrollView>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          {/* Ask Doubt CTA Button */}
-          <Pressable onPress={() => setShowDoubtModal(true)} style={styles.askDoubtCtaBtn}>
-            <LinearGradient
-              colors={["#5B3CF5", "#7F65FF"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.askDoubtGradient}
+          {/* Action Row: Create Doubt Room & Knowledge Base */}
+          <View style={styles.actionBtnRow}>
+            <Pressable onPress={() => setShowRoomModal(true)} style={[styles.askDoubtCtaBtn, { flex: 1, marginRight: 6 }]}>
+              <LinearGradient
+                colors={["#5B3CF5", "#7F65FF"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.askDoubtGradient}
+              >
+                <Feather name="plus-circle" size={15} color="#FFFFFF" style={{ marginRight: 4 }} />
+                <Text style={styles.askDoubtCtaText}>+ Create Room</Text>
+              </LinearGradient>
+            </Pressable>
+
+            <Pressable onPress={() => setShowKbModal(true)} style={[styles.askDoubtCtaBtn, { flex: 1, marginLeft: 6 }]}>
+              <LinearGradient
+                colors={["#0F172A", "#1E293B"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.askDoubtGradient}
+              >
+                <Feather name="search" size={15} color="#38BDF8" style={{ marginRight: 4 }} />
+                <Text style={[styles.askDoubtCtaText, { color: "#38BDF8" }]}>Knowledge Base 🔍</Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
+
+          {/* COLLABORATIVE DOUBT ROOMS SECTION */}
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionHeaderTitle}>Collaborative Doubt Rooms 💬</Text>
+            <View style={styles.roomCountPill}>
+              <Text style={styles.roomCountText}>{doubtRooms.length} Active</Text>
+            </View>
+          </View>
+
+          {doubtRooms.map((roomItem) => (
+            <Pressable
+              key={roomItem.roomId}
+              onPress={() => onSelectDoubtRoom && onSelectDoubtRoom(roomItem)}
+              style={styles.doubtRoomCard}
             >
-              <Feather name="plus-circle" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-              <Text style={styles.askDoubtCtaText}>Ask a New Academic Doubt ❓</Text>
-            </LinearGradient>
-          </Pressable>
+              <View style={styles.roomAvatarWrap}>
+                <Image source={{ uri: roomItem.assignedMentor?.avatarUrl }} style={styles.roomMentorAvatar} />
+                <View style={styles.onlineBadgeDot} />
+              </View>
+
+              <View style={styles.roomMainCol}>
+                <View style={styles.roomTitleRow}>
+                  <Text style={styles.roomTitleText} numberOfLines={1}>{roomItem.title}</Text>
+                  <View style={styles.roomIdTag}>
+                    <Text style={styles.roomIdTagText}>{roomItem.roomId}</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.roomSubInfoText}>
+                  Assigned Mentor: <Text style={{ fontWeight: "700", color: "#1E293B" }}>{roomItem.assignedMentor?.name}</Text> ({roomItem.assignedMentor?.role})
+                </Text>
+
+                <View style={styles.roomMetaRow}>
+                  <Text style={styles.roomMembersText}>{roomItem.membersCount || "1.2K"} Members • <Text style={{ color: "#10B981" }}>🟢 {roomItem.onlineCount || 86} Online</Text></Text>
+                  <View style={styles.joinRoomBtn}>
+                    <Text style={styles.joinRoomText}>Enter Room &gt;</Text>
+                  </View>
+                </View>
+              </View>
+            </Pressable>
+          ))}
 
           {loadingDoubts ? (
             <View style={styles.loadingBox}>
               <ActivityIndicator size="small" color="#5B3CF5" />
-              <Text style={styles.loadingText}>Loading Q&A doubts...</Text>
+              <Text style={styles.loadingText}>Loading Q&A doubts & rooms...</Text>
             </View>
-          ) : doubts.length === 0 ? (
+          ) : null}
             <View style={styles.emptyBox}>
               <View style={styles.emptyIconCircle}>
                 <Feather name="help-circle" size={24} color="#5B3CF5" />
@@ -349,6 +480,106 @@ export default function ChatListScreen({ session, onSelectChat }) {
                 </>
               )}
             </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* CREATE DOUBT ROOM MODAL */}
+      <Modal visible={showRoomModal} transparent animationType="slide" onRequestClose={() => setShowRoomModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeaderRow}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons name="forum" size={18} color="#5B3CF5" style={{ marginRight: 6 }} />
+                <Text style={styles.modalTitle}>Create Doubt Room 💬</Text>
+              </View>
+              <Pressable onPress={() => setShowRoomModal(false)} style={styles.modalCloseBtn}>
+                <Feather name="x" size={18} color="#686780" />
+              </Pressable>
+            </View>
+
+            <Text style={styles.inputLabelText}>Room Title:</Text>
+            <TextInput
+              value={roomTitle}
+              onChangeText={setRoomTitle}
+              placeholder="e.g. NEET Biology & Chemistry Doubt Space"
+              placeholderTextColor="#8A879F"
+              style={styles.modalInput}
+            />
+
+            <Text style={[styles.inputLabelText, { marginTop: 10 }]}>Category / Stream:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+              {["NEET", "JEE", "Full Stack", "Python & AI", "General"].map((cat, idx) => (
+                <Pressable
+                  key={idx}
+                  onPress={() => setRoomCategory(cat)}
+                  style={[styles.subjectChip, roomCategory === cat && styles.subjectChipActive]}
+                >
+                  <Text style={[styles.subjectChipText, roomCategory === cat && styles.subjectChipTextActive]}>{cat}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <Pressable
+              onPress={handleCreateRoom}
+              disabled={creatingRoom}
+              style={[styles.submitDoubtBtn, { backgroundColor: "#5B3CF5", marginTop: 16 }]}
+            >
+              {creatingRoom ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.submitDoubtText}>Create & Enter Doubt Room 🚀</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* KNOWLEDGE BASE SEARCH MODAL */}
+      <Modal visible={showKbModal} transparent animationType="slide" onRequestClose={() => setShowKbModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: "85%" }]}>
+            <View style={styles.modalHeaderRow}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons name="book-search-outline" size={20} color="#38BDF8" style={{ marginRight: 6 }} />
+                <Text style={styles.modalTitle}>TCM Knowledge Base 📚</Text>
+              </View>
+              <Pressable onPress={() => setShowKbModal(false)} style={styles.modalCloseBtn}>
+                <Feather name="x" size={18} color="#686780" />
+              </Pressable>
+            </View>
+
+            <View style={styles.kbSearchBox}>
+              <Feather name="search" size={16} color="#64748B" style={{ marginRight: 8 }} />
+              <TextInput
+                value={kbQuery}
+                onChangeText={handleSearchKb}
+                placeholder="Search solved doubts (e.g. p-block, electronegativity)..."
+                placeholderTextColor="#94A3B8"
+                style={styles.kbSearchInput}
+              />
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 10 }}>
+              {loadingKb ? (
+                <ActivityIndicator size="small" color="#38BDF8" style={{ marginVertical: 20 }} />
+              ) : kbResults.length === 0 ? (
+                <Text style={{ textAlign: "center", color: "#64748B", marginVertical: 20 }}>No archived solutions found for "{kbQuery}".</Text>
+              ) : (
+                kbResults.map((kb) => (
+                  <View key={kb.itemId} style={styles.kbCard}>
+                    <View style={styles.kbBadgeRow}>
+                      <View style={styles.kbCategoryPill}>
+                        <Text style={styles.kbCategoryText}>{kb.category}</Text>
+                      </View>
+                      <Text style={styles.kbAuthorText}>Solved by {kb.solvedByMentorName}</Text>
+                    </View>
+                    <Text style={styles.kbQuestionTitle}>❓ {kb.questionText}</Text>
+                    <Text style={styles.kbSolutionText}>💡 {kb.solutionText}</Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -759,5 +990,160 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 13.5,
     color: "#FFFFFF"
+  },
+  actionBtnRow: {
+    flexDirection: "row",
+    marginBottom: 16
+  },
+  roomCountPill: {
+    backgroundColor: "#F0EDFF",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8
+  },
+  roomCountText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: "#5B3CF5"
+  },
+  doubtRoomCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#EBE8FF",
+    ...shadow.soft
+  },
+  roomAvatarWrap: {
+    position: "relative",
+    marginRight: 12
+  },
+  roomMentorAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23
+  },
+  onlineBadgeDot: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#10B981",
+    borderWidth: 2,
+    borderColor: "#FFFFFF"
+  },
+  roomMainCol: {
+    flex: 1
+  },
+  roomTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 2
+  },
+  roomTitleText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: "#181725",
+    flex: 1
+  },
+  roomIdTag: {
+    backgroundColor: "#F0EDFF",
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+    marginLeft: 6
+  },
+  roomIdTagText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: "#5B3CF5"
+  },
+  roomSubInfoText: {
+    fontFamily: fonts.regular,
+    fontSize: 11.5,
+    color: "#686780",
+    marginBottom: 4
+  },
+  roomMetaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  roomMembersText: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: "#64748B"
+  },
+  joinRoomBtn: {
+    backgroundColor: "#F0EDFF",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8
+  },
+  joinRoomText: {
+    fontFamily: fonts.bold,
+    fontSize: 10.5,
+    color: "#5B3CF5"
+  },
+  kbSearchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 10
+  },
+  kbSearchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: "#0F172A"
+  },
+  kbCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0"
+  },
+  kbBadgeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6
+  },
+  kbCategoryPill: {
+    backgroundColor: "#E0F2FE",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6
+  },
+  kbCategoryText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#0284C7"
+  },
+  kbAuthorText: {
+    fontSize: 11,
+    color: "#64748B"
+  },
+  kbQuestionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginBottom: 4
+  },
+  kbSolutionText: {
+    fontSize: 12.5,
+    color: "#334155",
+    lineHeight: 18
   }
 });

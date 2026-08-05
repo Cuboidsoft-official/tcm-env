@@ -42,6 +42,7 @@ import CreateCourseScreen from "./CreateCourseScreen";
 import CreateWebinarScreen from "./CreateWebinarScreen";
 import AllMentorsScreen from "./AllMentorsScreen";
 import ChatListScreen from "./ChatListScreen";
+import DoubtRoomScreen from "./DoubtRoomScreen";
 import SidebarDrawer from "../components/SidebarDrawer";
 
 const fallbackTabs = [
@@ -224,8 +225,28 @@ export default function HomeScreen({ session, onLogout }) {
   const [showCreateWebinarScreen, setShowCreateWebinarScreen] = useState(false);
   const [showAllMentorsScreen, setShowAllMentorsScreen] = useState(false);
   const [courseToEdit, setCourseToEdit] = useState(null);
+  const [activeDoubtRoom, setActiveDoubtRoom] = useState(null);
 
   const user = home?.user || session?.user || {};
+
+  function resetSubScreens() {
+    setSelectedCourseId(null);
+    setShowContinueLearning(false);
+    setShowPopularCourses(false);
+    setShowSearchScreen(false);
+    setSelectedMentorId(null);
+    setActiveChatUser(null);
+    setActiveDoubtRoom(null);
+    setShowNotificationsScreen(false);
+    setExploreCategoryKey(null);
+    setShowWalletScreen(false);
+    setShowMentorDashboard(false);
+    setShowCreateCourseScreen(false);
+    setShowCreateWebinarScreen(false);
+    setShowAllMentorsScreen(false);
+    setTargetUserProfile(null);
+    setCourseToEdit(null);
+  }
 
   function isSelfUser(target) {
     if (!target || !user) return false;
@@ -406,14 +427,24 @@ export default function HomeScreen({ session, onLogout }) {
     );
   }
 
-  const isFullScreenView = Boolean(activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen);
+  const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen);
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.appShell}>
         {isFullScreenView ? (
           <View style={[styles.page, { width: contentWidth, flex: 1, paddingBottom: 0 }]}>
-            {activeChatUser ? (
+            {activeDoubtRoom ? (
+              <DoubtRoomScreen
+                session={session}
+                roomId={activeDoubtRoom.roomId || "NEET-DOUBT-001"}
+                onClose={() => setActiveDoubtRoom(null)}
+                onOpenMentorProfile={(mId) => {
+                  setActiveDoubtRoom(null);
+                  setSelectedMentorId(mId || "m1");
+                }}
+              />
+            ) : activeChatUser ? (
               <ChatScreen
                 session={session}
                 user={user}
@@ -665,6 +696,9 @@ export default function HomeScreen({ session, onLogout }) {
                 session={session}
                 onSelectChat={(chatUser) => {
                   setActiveChatUser(chatUser);
+                }}
+                onSelectDoubtRoom={(roomItem) => {
+                  setActiveDoubtRoom(roomItem);
                 }}
               />
             ) : activeTab === "Profile" ? (

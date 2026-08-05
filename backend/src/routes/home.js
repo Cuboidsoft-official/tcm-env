@@ -7,6 +7,8 @@ import { Story } from "../models/Story.js";
 import { User } from "../models/User.js";
 import { Course } from "../models/Course.js";
 import { Webinar } from "../models/Webinar.js";
+import { DoubtRoom } from "../models/DoubtRoom.js";
+import { KnowledgeBaseItem } from "../models/KnowledgeBaseItem.js";
 
 export const homeRouter = express.Router();
 
@@ -2355,4 +2357,482 @@ homeRouter.post("/doubts", requireAuth, (req, res) => {
 
   req.app.locals.doubtThreads.unshift(newDoubt);
   res.json({ success: true, doubt: newDoubt, doubts: req.app.locals.doubtThreads });
+});
+
+// Helper for initial default Doubt Rooms matching user mockup & prompt
+function getDefaultDoubtRooms(req) {
+  if (!req.app.locals.doubtRoomStore) {
+    req.app.locals.doubtRoomStore = {
+      "NEET-DOUBT-001": {
+        roomId: "NEET-DOUBT-001",
+        title: "NEET Doubt Discussion",
+        category: "NEET",
+        creatorId: "m1",
+        creatorRole: "mentor",
+        assignedMentor: {
+          id: "m1",
+          name: "Rahul Sharma",
+          role: "Chemistry Expert",
+          avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+          online: true
+        },
+        membersCount: 1285,
+        onlineCount: 86,
+        pinnedAnnouncement: {
+          text: "Please use this group only for NEET related doubts.",
+          authorName: "Admin"
+        },
+        isSolved: false,
+        messages: [
+          {
+            id: "msg_1",
+            authorName: "Ankit Sharma",
+            authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+            time: "10:12 AM",
+            text: "Why does the p-block element have lower electronegativity than halogens?",
+            reactions: [
+              { emoji: "👍", count: 4, label: "4" },
+              { emoji: "🔥", count: 2, label: "2" }
+            ],
+            type: "text",
+            canAskAi: true
+          },
+          {
+            id: "msg_2",
+            authorName: "Priya Verma",
+            authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
+            time: "10:14 AM",
+            text: "Because of atomic size and shielding effect in p-block elements.",
+            reactions: [
+              { emoji: "👍", count: 2, label: "2" }
+            ],
+            type: "text"
+          },
+          {
+            id: "msg_3",
+            authorName: "Rahul Yadav",
+            authorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80",
+            time: "10:16 AM",
+            text: "Yes, as we move down the group, atomic size increases.",
+            reactions: [
+              { emoji: "👍", count: 1, label: "1" }
+            ],
+            type: "text"
+          },
+          {
+            id: "msg_4",
+            authorName: "Me",
+            authorAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+            time: "10:18 AM",
+            text: "Got it! So electronegativity decreases down the group due to increased size. Thanks!",
+            reactions: [
+              { emoji: "👍", count: 2, label: "2" }
+            ],
+            isSelf: true,
+            type: "text"
+          },
+          {
+            id: "msg_5",
+            authorName: "Physics Guru",
+            authorRole: "Admin",
+            authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+            time: "10:20 AM",
+            text: "Great discussion everyone! If anyone has more doubts, feel free to ask.",
+            reactions: [
+              { emoji: "👍", count: 5, label: "5" },
+              { emoji: "❤️", count: 1, label: "1" }
+            ],
+            isAdmin: true,
+            type: "text"
+          },
+          {
+            id: "msg_poll_1",
+            type: "poll",
+            pollId: "poll_1",
+            authorName: "Physics Guru",
+            authorRole: "Admin",
+            time: "10:21 AM",
+            question: "Who wants to learn this topic again in a live session?",
+            options: [
+              { id: "opt_1", text: "Yes, I want to learn again", count: 156, percentage: 78, isVoted: true },
+              { id: "opt_2", text: "No, I understood", count: 44, percentage: 22, isVoted: false }
+            ],
+            totalVotes: 200,
+            endsIn: "22h 45m"
+          }
+        ]
+      },
+      "JEE-DOUBT-002": {
+        roomId: "JEE-DOUBT-002",
+        title: "JEE Main & Adv Doubt Room",
+        category: "JEE",
+        creatorId: "m2",
+        creatorRole: "mentor",
+        assignedMentor: {
+          id: "m2",
+          name: "Prof. Rajesh Kumar",
+          role: "Physics & Maths HOD",
+          avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+          online: true
+        },
+        membersCount: 840,
+        onlineCount: 42,
+        pinnedAnnouncement: {
+          text: "Focus area: Calculus derivations & Rotational Dynamics problems.",
+          authorName: "Prof. Rajesh"
+        },
+        isSolved: false,
+        messages: [
+          {
+            id: "jee_msg_1",
+            authorName: "Karan Singh",
+            authorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80",
+            time: "09:30 AM",
+            text: "Can someone explain the moment of inertia of a hollow sphere using integration?",
+            reactions: [{ emoji: "👍", count: 3, label: "3" }],
+            type: "text",
+            canAskAi: true
+          }
+        ]
+      }
+    };
+  }
+
+  if (!req.app.locals.knowledgeBaseStore) {
+    req.app.locals.knowledgeBaseStore = [
+      {
+        itemId: "kb_1",
+        roomId: "NEET-DOUBT-001",
+        title: "Electronegativity Trend in p-Block vs Halogens",
+        category: "Chemistry",
+        questionText: "Why does the p-block element have lower electronegativity than halogens?",
+        solutionText: "Because atomic size increases down the group and effective nuclear charge is highest in Group 17 (Halogens). Halogens require only 1 electron to complete their octet.",
+        authorName: "Ankit Sharma",
+        solvedByMentorName: "Rahul Sharma",
+        upvotes: 45,
+        createdAt: "Yesterday"
+      },
+      {
+        itemId: "kb_2",
+        roomId: "JEE-DOUBT-002",
+        title: "Integration Method for Hollow Sphere Moment of Inertia",
+        category: "Physics",
+        questionText: "How to derive I = (2/3)MR^2 for a thin spherical shell?",
+        solutionText: "Divide the hollow sphere into thin circular ring elements of angle dθ. Use I = ∫ r^2 dm where dm = M * (2π R^2 sinθ dθ) / (4π R^2).",
+        authorName: "Karan Singh",
+        solvedByMentorName: "Prof. Rajesh Kumar",
+        upvotes: 82,
+        createdAt: "2 days ago"
+      }
+    ];
+  }
+
+  return req.app.locals.doubtRoomStore;
+}
+
+// 1. GET /home/doubt-rooms - List all active Doubt Rooms & Knowledge Base highlights
+homeRouter.get("/doubt-rooms", requireAuth, (req, res) => {
+  const store = getDefaultDoubtRooms(req);
+  const rooms = Object.values(store).map((r) => ({
+    roomId: r.roomId,
+    title: r.title,
+    category: r.category,
+    creatorRole: r.creatorRole,
+    assignedMentor: r.assignedMentor,
+    membersCount: r.membersCount,
+    onlineCount: r.onlineCount,
+    isSolved: r.isSolved,
+    lastMessage: r.messages?.[r.messages.length - 1]?.text || "Study discussion room active"
+  }));
+
+  const kbItems = req.app.locals.knowledgeBaseStore || [];
+  return res.json({ success: true, rooms, knowledgeBase: kbItems });
+});
+
+// 2. POST /home/doubt-rooms - Create a new Doubt Room (Mentor or Student created)
+homeRouter.post("/doubt-rooms", requireAuth, (req, res) => {
+  const { title, category = "NEET", assignedMentorId = "m1" } = req.body;
+  if (!title || !title.trim()) {
+    return res.status(400).json({ message: "Room title is required." });
+  }
+
+  const store = getDefaultDoubtRooms(req);
+  const userRole = (req.user?.role || "").toLowerCase().includes("mentor") || req.user?.isMentor ? "mentor" : "student";
+  const newRoomId = `${category.toUpperCase().replace(/\s+/g, "")}-DOUBT-${Math.floor(100 + Math.random() * 900)}`;
+
+  const newRoom = {
+    roomId: newRoomId,
+    title: title.trim(),
+    category,
+    creatorId: String(req.user._id || req.user.id),
+    creatorRole: userRole,
+    assignedMentor: {
+      id: assignedMentorId,
+      name: assignedMentorId === "m2" ? "Prof. Rajesh Kumar" : "Rahul Sharma",
+      role: assignedMentorId === "m2" ? "Physics & Maths HOD" : "Chemistry Expert & Lead Mentor",
+      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+      online: true
+    },
+    membersCount: 1,
+    onlineCount: 1,
+    pinnedAnnouncement: {
+      text: `Welcome to ${title.trim()}! Keep discussions on-topic and respectful.`,
+      authorName: req.user?.name || "Room Admin"
+    },
+    isSolved: false,
+    messages: [
+      {
+        id: `msg_welcome_${Date.now()}`,
+        authorName: req.user?.name || "Room Creator",
+        authorRole: userRole === "mentor" ? "Admin" : "Member",
+        authorAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+        time: "Just now",
+        text: `Created room: ${title.trim()}. Start asking doubts!`,
+        reactions: [{ emoji: "👋", count: 1, label: "1" }],
+        type: "text"
+      }
+    ]
+  };
+
+  store[newRoomId] = newRoom;
+  return res.json({ success: true, room: newRoom });
+});
+
+// 3. GET /home/doubt-rooms/:roomId - Fetch Doubt Room details & chat messages
+homeRouter.get("/doubt-rooms/:roomId", requireAuth, (req, res) => {
+  const { roomId } = req.params;
+  const store = getDefaultDoubtRooms(req);
+  const room = store[roomId];
+
+  if (!room) {
+    return res.status(404).json({ message: "Doubt Room not found." });
+  }
+
+  return res.json({ success: true, room });
+});
+
+// 4. POST /home/doubt-rooms/:roomId/messages - Send room message (Text, Code, Reaction, Reply)
+homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, (req, res) => {
+  const { roomId } = req.params;
+  const { text, codeSnippet, attachmentUrl, attachmentType, replyToId, reactionEmoji } = req.body;
+  const store = getDefaultDoubtRooms(req);
+  const room = store[roomId];
+
+  if (!room) {
+    return res.status(404).json({ message: "Doubt Room not found." });
+  }
+
+  // Handle reaction toggle if reactionEmoji and replyToId are provided
+  if (reactionEmoji && replyToId) {
+    const targetMsg = room.messages.find((m) => m.id === replyToId);
+    if (targetMsg) {
+      if (!targetMsg.reactions) targetMsg.reactions = [];
+      const existing = targetMsg.reactions.find((r) => r.emoji === reactionEmoji);
+      if (existing) {
+        existing.count += 1;
+        existing.label = String(existing.count);
+      } else {
+        targetMsg.reactions.push({ emoji: reactionEmoji, count: 1, label: "1" });
+      }
+      return res.json({ success: true, room });
+    }
+  }
+
+  if (!text && !codeSnippet && !attachmentUrl) {
+    return res.status(400).json({ message: "Message content cannot be empty." });
+  }
+
+  const isUserMentor = (req.user?.role || "").toLowerCase().includes("mentor") || req.user?.isMentor;
+  const newMsg = {
+    id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+    authorName: req.user?.name || "Learner",
+    authorRole: isUserMentor ? "Admin" : undefined,
+    authorAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    text: text ? text.trim() : "",
+    codeSnippet: codeSnippet ? codeSnippet.trim() : undefined,
+    attachmentUrl: attachmentUrl || undefined,
+    attachmentType: attachmentType || undefined,
+    reactions: [],
+    isSelf: true,
+    isAdmin: isUserMentor,
+    type: codeSnippet ? "code" : attachmentUrl ? "file" : "text",
+    canAskAi: text && text.includes("?")
+  };
+
+  room.messages.push(newMsg);
+  return res.json({ success: true, message: newMsg, room });
+});
+
+// 5. POST /home/doubt-rooms/:roomId/ask-ai - AI Tutor participant answer & escalation
+homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => {
+  const { roomId } = req.params;
+  const { messageId, doubtText } = req.body;
+  const store = getDefaultDoubtRooms(req);
+  const room = store[roomId];
+
+  if (!room) {
+    return res.status(404).json({ message: "Doubt Room not found." });
+  }
+
+  const aiAnswerText = `🤖 **TCM AI Explanation**:\n\nRegarding "${doubtText || "your question"}":\n\n1. **Core Concept**: In ${room.category || "this topic"}, electronegativity decreases down the group because atomic radius increases, placing valence electrons farther from the nucleus.\n2. **Key Factor**: The increased shielding effect from inner shell electrons reduces effective nuclear pull.\n\n*Need further clarification? You can tap "Need Mentor Help" below to loop in ${room.assignedMentor?.name || "your mentor"}!*`;
+
+  const aiMsg = {
+    id: `msg_ai_${Date.now()}`,
+    authorName: "TCM AI Tutor 🤖",
+    authorRole: "AI Assistant",
+    authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
+    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    text: aiAnswerText,
+    reactions: [{ emoji: "💡", count: 3, label: "3" }],
+    isAi: true,
+    type: "ai_response",
+    canRequestMentorHelp: true
+  };
+
+  room.messages.push(aiMsg);
+  return res.json({ success: true, aiMessage: aiMsg, room });
+});
+
+// 6. POST /home/doubt-rooms/:roomId/polls - Create poll inside room
+homeRouter.post("/doubt-rooms/:roomId/polls", requireAuth, (req, res) => {
+  const { roomId } = req.params;
+  const { question, options = ["Yes, I want to learn again", "No, I understood"] } = req.body;
+  const store = getDefaultDoubtRooms(req);
+  const room = store[roomId];
+
+  if (!room) {
+    return res.status(404).json({ message: "Doubt Room not found." });
+  }
+
+  const pollMsg = {
+    id: `msg_poll_${Date.now()}`,
+    type: "poll",
+    pollId: `poll_${Date.now()}`,
+    authorName: req.user?.name || "Physics Guru",
+    authorRole: (req.user?.role || "").toLowerCase().includes("mentor") ? "Admin" : "Member",
+    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    question: question || "Who wants to learn this topic again in a live session?",
+    options: options.map((optText, index) => ({
+      id: `opt_${index + 1}`,
+      text: optText,
+      count: index === 0 ? 4 : 1,
+      percentage: index === 0 ? 80 : 20,
+      isVoted: false
+    })),
+    totalVotes: 5,
+    endsIn: "24h 00m"
+  };
+
+  room.messages.push(pollMsg);
+  return res.json({ success: true, pollMessage: pollMsg, room });
+});
+
+// 7. POST /home/doubt-rooms/:roomId/polls/:pollId/vote - Vote on poll
+homeRouter.post("/doubt-rooms/:roomId/polls/:pollId/vote", requireAuth, (req, res) => {
+  const { roomId, pollId } = req.params;
+  const { optionId } = req.body;
+  const store = getDefaultDoubtRooms(req);
+  const room = store[roomId];
+
+  if (!room) {
+    return res.status(404).json({ message: "Doubt Room not found." });
+  }
+
+  const pollMsg = room.messages.find((m) => m.type === "poll" && (m.pollId === pollId || m.id === pollId));
+  if (!pollMsg) {
+    return res.status(404).json({ message: "Poll not found." });
+  }
+
+  pollMsg.options.forEach((opt) => {
+    if (opt.id === optionId) {
+      opt.count += 1;
+      opt.isVoted = true;
+    }
+  });
+
+  const total = pollMsg.options.reduce((sum, o) => sum + o.count, 0);
+  pollMsg.totalVotes = total;
+  pollMsg.options.forEach((opt) => {
+    opt.percentage = Math.round((opt.count / total) * 100);
+  });
+
+  // Auto-Trigger Mentor Alert if any option gets 5 or more votes
+  const highDemandOpt = pollMsg.options.find((o) => o.count >= 5 && o.text.toLowerCase().includes("yes"));
+  if (highDemandOpt) {
+    const mentorId = room.assignedMentor?.id || "m1";
+    if (!req.app.locals.userNotifications) req.app.locals.userNotifications = {};
+    if (!req.app.locals.userNotifications[mentorId]) req.app.locals.userNotifications[mentorId] = [];
+
+    const autoAlert = {
+      id: `notif_auto_rev_${Date.now()}`,
+      type: "mentor",
+      title: "⚡ Revision Session Recommended!",
+      subtitle: `In '${room.title}', ${highDemandOpt.count}+ students voted for a Live Revision Class on: "${pollMsg.question}"`,
+      time: "Just now",
+      unread: true,
+      section: "Today",
+      icon: "video",
+      iconBg: "#F0EDFF",
+      iconColor: "#5B3CF5"
+    };
+
+    req.app.locals.userNotifications[mentorId].unshift(autoAlert);
+  }
+
+  return res.json({ success: true, pollMessage: pollMsg, room });
+});
+
+// 8. POST /home/doubt-rooms/:roomId/mark-solved - Mark doubt as solved & save to Knowledge Base
+homeRouter.post("/doubt-rooms/:roomId/mark-solved", requireAuth, (req, res) => {
+  const { roomId } = req.params;
+  const { questionText, solutionText } = req.body;
+  const store = getDefaultDoubtRooms(req);
+  const room = store[roomId];
+
+  if (!room) {
+    return res.status(404).json({ message: "Doubt Room not found." });
+  }
+
+  room.isSolved = true;
+
+  if (!req.app.locals.knowledgeBaseStore) {
+    req.app.locals.knowledgeBaseStore = [];
+  }
+
+  const kbEntry = {
+    itemId: `kb_${Date.now()}`,
+    roomId,
+    title: room.title,
+    category: room.category,
+    questionText: questionText || "P-block element electronegativity vs halogens",
+    solutionText: solutionText || "Atomic size increases down group & halogens have maximum effective nuclear pull.",
+    authorName: req.user?.name || "Learner",
+    solvedByMentorName: room.assignedMentor?.name || "Rahul Sharma",
+    upvotes: 1,
+    createdAt: "Just now"
+  };
+
+  req.app.locals.knowledgeBaseStore.unshift(kbEntry);
+  return res.json({ success: true, message: "Doubt marked as Solved and added to Knowledge Base! 🎉", knowledgeBaseItem: kbEntry });
+});
+
+// 9. GET /home/knowledge-base/search - Search solved Knowledge Base items
+homeRouter.get("/knowledge-base/search", requireAuth, (req, res) => {
+  const query = (req.query.q || "").toLowerCase().trim();
+  const kbItems = req.app.locals.knowledgeBaseStore || [];
+
+  if (!query) {
+    return res.json({ success: true, items: kbItems });
+  }
+
+  const filtered = kbItems.filter(
+    (item) =>
+      item.title.toLowerCase().includes(query) ||
+      item.questionText.toLowerCase().includes(query) ||
+      item.solutionText.toLowerCase().includes(query) ||
+      item.category.toLowerCase().includes(query)
+  );
+
+  return res.json({ success: true, items: filtered });
 });
