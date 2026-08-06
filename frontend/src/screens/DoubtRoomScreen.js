@@ -26,6 +26,7 @@ import {
   joinDoubtRoom,
   manageDoubtRoom
 } from "../api/client";
+import RoomDetailsScreen from "./RoomDetailsScreen";
 
 export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", onClose, onOpenMentorProfile }) {
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
   const [sending, setSending] = useState(false);
 
   // Modals & Tools
+  const [showRoomDetails, setShowRoomDetails] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [pollModalVisible, setPollModalVisible] = useState(false);
   const [pollQuestion, setPollQuestion] = useState("Who wants to learn this topic again in a live session?");
@@ -254,6 +256,18 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
     online: true
   };
 
+  if (showRoomDetails) {
+    return (
+      <RoomDetailsScreen
+        session={session}
+        room={room}
+        isAdmin={isAdmin}
+        onClose={() => setShowRoomDetails(false)}
+        onRoomUpdated={(updatedRoom) => setRoom(updatedRoom)}
+      />
+    );
+  }
+
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       {/* 1. TOP HEADER MATCHING CHATSCREEN */}
@@ -262,9 +276,15 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
           <MaterialCommunityIcons name="chevron-left" size={26} color="#5B3CF5" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.headerUserCol} onPress={() => onOpenMentorProfile && onOpenMentorProfile(assignedMentor.id)}>
+        <TouchableOpacity style={styles.headerUserCol} onPress={() => setShowRoomDetails(true)}>
           <View style={styles.avatarWrap}>
-            <Image source={{ uri: assignedMentor.avatarUrl }} style={styles.avatarImg} />
+            {room?.roomAvatar ? (
+              <Image source={{ uri: room.roomAvatar }} style={styles.avatarImg} />
+            ) : (
+              <View style={[styles.avatarImg, { backgroundColor: "#7C3AED", justifyContent: "center", alignItems: "center" }]}>
+                <MaterialCommunityIcons name="code-tags" size={20} color="#FFFFFF" />
+              </View>
+            )}
             <View style={styles.onlineDotHeader} />
           </View>
 

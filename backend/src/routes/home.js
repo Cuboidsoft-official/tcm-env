@@ -9,6 +9,7 @@ import { Course } from "../models/Course.js";
 import { Webinar } from "../models/Webinar.js";
 import { DoubtRoom } from "../models/DoubtRoom.js";
 import { KnowledgeBaseItem } from "../models/KnowledgeBaseItem.js";
+import { askGeminiAi } from "../services/geminiService.js";
 
 export const homeRouter = express.Router();
 
@@ -2584,7 +2585,7 @@ homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, (req, res) => {
   return res.json({ success: true, message: newMsg, room });
 });
 
-// 5. POST /home/doubt-rooms/:roomId/ask-ai - AI Tutor participant answer & escalation
+// 5. POST /home/doubt-rooms/:roomId/ask-ai - AI Tutor participant answer & escalation using Google Gemini API
 homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => {
   const { roomId } = req.params;
   const { messageId, doubtText } = req.body;
@@ -2595,7 +2596,12 @@ homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => 
     return res.status(404).json({ message: "Doubt Room not found." });
   }
 
-  const aiAnswerText = `🤖 **TCM AI Explanation**:\n\nRegarding "${doubtText || "your question"}":\n\n1. **Core Concept**: In ${room.category || "this topic"}, electronegativity decreases down the group because atomic radius increases, placing valence electrons farther from the nucleus.\n2. **Key Factor**: The increased shielding effect from inner shell electrons reduces effective nuclear pull.\n\n*Need further clarification? You can tap "Need Mentor Help" below to loop in ${room.assignedMentor?.name || "your mentor"}!*`;
+  const systemInstruction = `You are TCM AI Tutor, an expert academic and technical AI tutor for ${room.title || "TCM Academy"}. Explain clearly, step-by-step, with bullet points. Keep response concise under 250 words.`;
+  const geminiResponse = await askGeminiAi(doubtText || "Explain this concept in detail.", systemInstruction);
+
+  const aiAnswerText = geminiResponse
+    ? `🤖 **TCM AI Explanation**:\n\n${geminiResponse}`
+    : `🤖 **TCM AI Explanation**:\n\nRegarding "${doubtText || "your question"}":\n\n1. **Core Concept**: In ${room.category || "this topic"}, key concepts rely on fundamental principles.\n2. **Key Factor**: Understand the core equations and step-by-step logic.\n\n*Need further clarification? You can tap "Need Mentor Help" below!*`;
 
   const aiMsg = {
     id: `msg_ai_${Date.now()}`,
@@ -2604,7 +2610,6 @@ homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => 
     authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     text: aiAnswerText,
-    reactions: [{ emoji: "💡", count: 3, label: "3" }],
     isAi: true,
     type: "ai_response",
     canRequestMentorHelp: true
