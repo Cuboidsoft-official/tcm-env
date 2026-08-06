@@ -866,7 +866,8 @@ const styles = StyleSheet.create({
     flex: 1
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 10,
+    paddingTop: 12,
     paddingBottom: 30
   },
   assignedMentorCard: {
@@ -974,16 +975,18 @@ const styles = StyleSheet.create({
   },
   msgRowLeft: {
     flexDirection: "row",
-    marginBottom: 16
+    alignItems: "flex-end",
+    marginBottom: 14
   },
   msgAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: 10
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 6,
+    marginBottom: 2
   },
   msgBodyLeft: {
-    flex: 1
+    maxWidth: "88%"
   },
   authorHeaderRow: {
     flexDirection: "row",
@@ -1098,14 +1101,11 @@ const styles = StyleSheet.create({
     padding: 4,
     marginRight: 4
   },
-  msgBodyLeft: {
-    maxWidth: "88%"
-  },
   msgRowRight: {
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "flex-end",
-    marginBottom: 16
+    marginBottom: 14
   },
   msgBodyRight: {
     backgroundColor: "#5B3CF5",
