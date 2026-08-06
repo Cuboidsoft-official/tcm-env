@@ -36,6 +36,17 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
     );
     setScheduleModalOpen(false);
   }
+  // Weekly Engagement Activity Chart Data (Mon - Sun)
+  const weeklyData = [
+    { day: "Mon", percent: 75, hours: "6h" },
+    { day: "Tue", percent: 90, hours: "7.5h" },
+    { day: "Wed", percent: 65, hours: "5h" },
+    { day: "Thu", percent: 100, hours: "8h" },
+    { day: "Fri", percent: 85, hours: "7h" },
+    { day: "Sat", percent: 95, hours: "7.8h" },
+    { day: "Sun", percent: 50, hours: "4h" }
+  ];
+
   // Course List & Day-by-Day Syllabus Sessions
   const courseList = [
     { id: "c1", title: "Full Stack Web Development Masterclass", category: "Web Dev" },
