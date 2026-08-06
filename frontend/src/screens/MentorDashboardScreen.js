@@ -3,10 +3,13 @@ import {
   Alert,
   Dimensions,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View
 } from "react-native";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -16,6 +19,23 @@ import { fonts } from "../constants/fonts";
 const { width } = Dimensions.get("window");
 
 export default function MentorDashboardScreen({ session, user = {}, onBack, onNavigateActivity }) {
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [sessionName, setSessionName] = useState("Full Stack Web Dev - Session 1");
+  const [classTitle, setClassTitle] = useState("Day 1: Frontend Foundations & React Setup");
+  const [classTime, setClassTime] = useState("Today • 10:00 AM – 11:30 AM");
+  const [meetingUrl, setMeetingUrl] = useState("https://meet.jit.si/tcm-live-fullstack");
+
+  function handleBroadcastLink() {
+    if (!meetingUrl.trim() || !classTitle.trim()) {
+      Alert.alert("Missing Fields", "Please enter both Class Title and Meeting Link.");
+      return;
+    }
+    Alert.alert(
+      "Class Link Broadcasted! 🚀",
+      `Session "${sessionName}" live class link has been sent to enrolled students:\n\n📌 Title: ${classTitle}\n⏰ Time: ${classTime}\n🔗 Link: ${meetingUrl}`
+    );
+    setScheduleModalOpen(false);
+  }
   // Weekly Engagement Activity Chart Data (Mon - Sun)
   const weeklyData = [
     { day: "Mon", percent: 75, hours: "6h" },
@@ -297,7 +317,79 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
               <Feather name="arrow-right" size={16} color="#2E7D32" />
             </View>
           </Pressable>
+
+          {/* Activity 5: Schedule Daily Live Class Link (Session-Wise) */}
+          <Pressable
+            onPress={() => setScheduleModalOpen(true)}
+            style={({ pressed }) => [styles.activityTouchCard, { borderColor: "#5B3CF5", backgroundColor: "#F0EDFF" }, pressed && styles.pressed]}
+          >
+            <View style={[styles.activityIconBox, { backgroundColor: "#5B3CF5" }]}>
+              <Feather name="video" size={20} color="#FFFFFF" />
+            </View>
+
+            <View style={styles.activityCopy}>
+              <Text style={[styles.activityTitle, { color: "#5B3CF5" }]}>Schedule Daily Class Links 🎥</Text>
+              <Text style={styles.activitySub}>Send session-wise live class links to enrolled students</Text>
+            </View>
+
+            <View style={[styles.arrowCircle, { backgroundColor: "#5B3CF5" }]}>
+              <Feather name="plus" size={16} color="#FFFFFF" />
+            </View>
+          </Pressable>
         </View>
+
+        {/* MODAL: BROADCAST DAILY LIVE CLASS LINK */}
+        <Modal visible={scheduleModalOpen} transparent animationType="slide" onRequestClose={() => setScheduleModalOpen(false)}>
+          <View style={{ flex: 1, backgroundColor: "rgba(15,23,42,0.6)", justifyContent: "center", alignItems: "center", padding: 16 }}>
+            <View style={{ width: "100%", maxWidth: 420, backgroundColor: "#FFFFFF", borderRadius: 20, padding: 20, borderWidth: 1, borderColor: "#E2E8F0" }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <Text style={{ fontSize: 17, fontWeight: "700", color: "#0F172A" }}>Schedule Live Class Link 🎥</Text>
+                <TouchableOpacity onPress={() => setScheduleModalOpen(false)} style={{ padding: 4 }}>
+                  <Feather name="x" size={20} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "#475569", marginBottom: 4 }}>Select Course Session:</Text>
+              <TextInput
+                value={sessionName}
+                onChangeText={setSessionName}
+                style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 10, fontSize: 13, marginBottom: 12, color: "#0F172A" }}
+                placeholder="e.g. Full Stack Web Dev - Session 1"
+              />
+
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "#475569", marginBottom: 4 }}>Class Topic / Title:</Text>
+              <TextInput
+                value={classTitle}
+                onChangeText={setClassTitle}
+                style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 10, fontSize: 13, marginBottom: 12, color: "#0F172A" }}
+                placeholder="e.g. Day 1: React & Next.js Architecture"
+              />
+
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "#475569", marginBottom: 4 }}>Class Time & Schedule:</Text>
+              <TextInput
+                value={classTime}
+                onChangeText={setClassTime}
+                style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 10, fontSize: 13, marginBottom: 12, color: "#0F172A" }}
+                placeholder="e.g. Today • 10:00 AM – 11:30 AM"
+              />
+
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "#475569", marginBottom: 4 }}>Live Class Meeting URL (Jitsi / Zoom / Meet):</Text>
+              <TextInput
+                value={meetingUrl}
+                onChangeText={setMeetingUrl}
+                style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 10, fontSize: 13, marginBottom: 16, color: "#0F172A" }}
+                placeholder="e.g. https://meet.jit.si/tcm-live-fullstack"
+              />
+
+              <TouchableOpacity
+                onPress={handleBroadcastLink}
+                style={{ backgroundColor: "#5B3CF5", borderRadius: 12, paddingVertical: 14, alignItems: "center" }}
+              >
+                <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 14 }}>Broadcast Class Link 🚀</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* ============================================================ */}
         {/* 6. RECENT STUDENT TIMELINE */}
