@@ -275,7 +275,11 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 20}
+    >
       {/* 1. TOP HEADER MATCHING CHATSCREEN */}
       <View style={styles.topHeader}>
         <TouchableOpacity style={styles.backBtn} onPress={onClose}>
@@ -1094,6 +1098,9 @@ const styles = StyleSheet.create({
     padding: 4,
     marginRight: 4
   },
+  msgBodyLeft: {
+    maxWidth: "88%"
+  },
   msgRowRight: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -1104,7 +1111,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#5B3CF5",
     borderRadius: 14,
     padding: 12,
-    maxWidth: "80%"
+    maxWidth: "88%"
   },
   msgTextRight: {
     fontSize: 14,
