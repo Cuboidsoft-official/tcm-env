@@ -444,6 +444,20 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                       <Text style={styles.msgTimeRight}>{item.time}</Text>
                       <MaterialCommunityIcons name="check-all" size={14} color="#C4B5FD" style={{ marginLeft: 4 }} />
                     </View>
+
+                    {/* ASK WITH AI BUTTON (RIGHT SIDE SELF MESSAGE) */}
+                    {item.canAskAi !== false && !item.isAi && item.type !== "poll" && (
+                      <TouchableOpacity
+                        style={[styles.askAiBtn, { alignSelf: "flex-end", marginTop: 6 }]}
+                        onPress={() => handleAskAi(item)}
+                        disabled={aiLoading}
+                      >
+                        <MaterialCommunityIcons name="robot" size={16} color="#5B3CF5" />
+                        <Text style={styles.askAiText}>
+                          {aiLoading ? "Asking AI..." : "Ask with AI 🤖"}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               );
@@ -469,8 +483,8 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                     <Text style={[styles.msgTextLeft, item.isAi && styles.msgTextAi]}>{item.text}</Text>
                   </View>
 
-                  {/* ASK WITH AI BUTTON */}
-                  {item.canAskAi && (
+                  {/* ASK WITH AI BUTTON (LEFT SIDE PARTICIPANT MESSAGE) */}
+                  {item.canAskAi !== false && !item.isAi && item.type !== "poll" && (
                     <TouchableOpacity
                       style={styles.askAiBtn}
                       onPress={() => handleAskAi(item)}

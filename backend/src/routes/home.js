@@ -2568,7 +2568,7 @@ homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, async (req, res) =
       isSelf: true,
       isAdmin: isUserMentor,
       type: codeSnippet ? "code" : attachmentUrl ? "file" : "text",
-      canAskAi: text && text.includes("?")
+      canAskAi: Boolean(!isUserMentor && (text || codeSnippet))
     };
 
     room.messages.push(newMsg);
