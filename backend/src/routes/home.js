@@ -131,7 +131,19 @@ async function buildLearnPayload(user, mentors, learn = {}, memoryStore = null, 
         image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80"
       }
     ],
-    continueLearning: safeLearn.continueLearning || [],
+    continueLearning: (safeLearn.continueLearning && safeLearn.continueLearning.length > 0)
+      ? safeLearn.continueLearning
+      : [
+          {
+            id: "c_webdev_fullstack",
+            title: "Full Stack Web Development Masterclass",
+            subtitle: "React, Node.js, Express & MongoDB",
+            progress: 45,
+            icon: "code-tags",
+            iconColor: "#5B3CF5",
+            bgColor: "#F0EDFF"
+          }
+        ],
     popularCourses,
     topCategories: safeLearn.topCategories || [
       {
