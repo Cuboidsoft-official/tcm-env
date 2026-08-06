@@ -36,18 +36,46 @@ const DoubtRoomSchema = new mongoose.Schema(
       },
       online: { type: Boolean, default: true }
     },
+    description: {
+      type: String,
+      default: ""
+    },
+    roomAvatar: {
+      type: String,
+      default: ""
+    },
+    isPrivate: {
+      type: Boolean,
+      default: false
+    },
+    admins: {
+      type: [String],
+      default: []
+    },
+    members: {
+      type: [String],
+      default: []
+    },
+    joinRequests: [
+      {
+        userId: String,
+        userName: String,
+        userAvatar: String,
+        requestedAt: String
+      }
+    ],
     membersCount: {
       type: Number,
-      default: 1285
+      default: 1
     },
     onlineCount: {
       type: Number,
-      default: 86
+      default: 1
     },
     pinnedAnnouncement: {
       text: {
         type: String,
-        default: "Please use this group only for NEET related doubts."
+        default: "Welcome to this Doubt Room! Keep discussions respectful."
       },
       authorName: {
         type: String,
@@ -61,6 +89,10 @@ const DoubtRoomSchema = new mongoose.Schema(
     solvedAnswerId: {
       type: String,
       default: null
+    },
+    messages: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: []
     }
   },
   { timestamps: true }
