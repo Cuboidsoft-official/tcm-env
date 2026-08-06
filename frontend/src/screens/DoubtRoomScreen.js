@@ -114,11 +114,15 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
   useEffect(() => {
     loadRoomDetails();
+    const interval = setInterval(() => {
+      loadRoomDetails(true);
+    }, 2500);
+    return () => clearInterval(interval);
   }, [roomId]);
 
-  async function loadRoomDetails() {
+  async function loadRoomDetails(silent = false) {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const token = session?.token;
       const res = await getDoubtRoomDetails(token, roomId);
       if (res && res.room) {
@@ -128,7 +132,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
     } catch (err) {
       console.log("Error loading doubt room:", err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
@@ -174,9 +178,11 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         setRoom(res.room);
         setMessages(res.room.messages || []);
         setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
+      } else {
+        await loadRoomDetails(true);
       }
     } catch (err) {
-      Alert.alert("AI Error", "Could not reach AI Tutor.");
+      await loadRoomDetails(true);
     } finally {
       setAiLoading(false);
     }
@@ -476,6 +482,7 @@ function isQuestionMessage(item) {
                       </TouchableOpacity>
                     )}
                   </View>
+                  <Image source={{ uri: item.authorAvatar || session?.user?.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80" }} style={[styles.msgAvatar, { marginLeft: 8 }]} />
                 </View>
               );
             }
