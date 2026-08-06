@@ -68,3 +68,14 @@ If the backend is not running, the mobile app opens the home screen with demo fa
 ## Default API
 
 The frontend uses `EXPO_PUBLIC_API_URL` when present, otherwise it falls back to `http://localhost:5000/api`.
+
+## CI/CD
+
+- **CI Checks** (`.github/workflows/ci-checks.yml`) run on every push to `main` and pull request: backend health check (starts the server without a DB, asserts `/api/health` returns `"ok":true`) and a frontend Android Metro bundle export.
+- **Backend** auto-deploys to Cloudflare Containers on push to `main`.
+- **Frontend** Android APK/AAB is auto-built and emailed to `cuboidsoft@gmail.com` on tags, manual dispatch, and push to `main`.
+- Required GitHub secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, `MAIL_USERNAME`, `MAIL_APP_PASSWORD`, `MAIL_TO`.
+
+## CI/CD & Hosting
+
+Full pipeline docs: [`docs/CI-CD.md`](docs/CI-CD.md). Push to `main` → CI checks, backend auto-deploys to Cloudflare Containers, and Android APK + AAB auto-build in EAS, upload to Cloudflare R2, and download links are emailed to `cuboidsoft@gmail.com`.
