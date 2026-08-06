@@ -36,16 +36,67 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
     );
     setScheduleModalOpen(false);
   }
-  // Weekly Engagement Activity Chart Data (Mon - Sun)
-  const weeklyData = [
-    { day: "Mon", percent: 75, hours: "6h" },
-    { day: "Tue", percent: 90, hours: "7.5h" },
-    { day: "Wed", percent: 65, hours: "5h" },
-    { day: "Thu", percent: 100, hours: "8h" },
-    { day: "Fri", percent: 85, hours: "7h" },
-    { day: "Sat", percent: 95, hours: "7.8h" },
-    { day: "Sun", percent: 50, hours: "4h" }
+  // Course List & Day-by-Day Syllabus Sessions
+  const courseList = [
+    { id: "c1", title: "Full Stack Web Development Masterclass", category: "Web Dev" },
+    { id: "c2", title: "NEET Ultimate Crash Course 2026", category: "NEET Prep" },
+    { id: "c3", title: "JEE Rank Booster Batch 2026", category: "JEE Prep" },
+    { id: "c4", title: "Data Science & AI Masterclass", category: "Data Science" }
   ];
+
+  const syllabusSessionsMap = {
+    c1: [
+      { dayNum: "Day 1", topic: "Environment Setup & React Core Architecture" },
+      { dayNum: "Day 2", topic: "State Architecture, Props & Context API" },
+      { dayNum: "Day 3", topic: "Node.js Express REST API & Middleware" },
+      { dayNum: "Day 4", topic: "MongoDB Database Models & Aggregation" },
+      { dayNum: "Day 5", topic: "Production Cloud Deployment & CI/CD" }
+    ],
+    c2: [
+      { dayNum: "Day 1", topic: "Electromagnetism & Optics MCQ Practice" },
+      { dayNum: "Day 2", topic: "Organic Reaction Mechanisms & Concepts" },
+      { dayNum: "Day 3", topic: "Genetics, Cell Biology & Human Physiology" },
+      { dayNum: "Day 4", topic: "Full Syllabus Mock Test & Paper Discussion" }
+    ],
+    c3: [
+      { dayNum: "Day 1", topic: "Differential Calculus & Vectors" },
+      { dayNum: "Day 2", topic: "Rotational Dynamics & Thermodynamics" },
+      { dayNum: "Day 3", topic: "Physical Chemistry & Solutions" },
+      { dayNum: "Day 4", topic: "JEE Advanced PYQs & Time Management" }
+    ],
+    c4: [
+      { dayNum: "Day 1", topic: "Python Data Analysis & Pandas Basics" },
+      { dayNum: "Day 2", topic: "Machine Learning Regressions & Classifiers" },
+      { dayNum: "Day 3", topic: "Neural Networks & Deep Learning with PyTorch" },
+      { dayNum: "Day 4", topic: "Large Language Models & Gemini API" }
+    ]
+  };
+
+  const timeSlots = [
+    "Today • 10:00 AM – 11:30 AM",
+    "Today • 02:00 PM – 03:30 PM",
+    "Today • 06:00 PM – 07:30 PM",
+    "Today • 08:30 PM – 10:00 PM"
+  ];
+
+  const [selectedCourseId, setSelectedCourseId] = useState("c1");
+  const [selectedDayTopic, setSelectedDayTopic] = useState(syllabusSessionsMap.c1[0].topic);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState(timeSlots[0]);
+
+  const currentCourse = courseList.find((c) => c.id === selectedCourseId) || courseList[0];
+  const currentSessions = syllabusSessionsMap[selectedCourseId] || syllabusSessionsMap.c1;
+
+  function handleBroadcastLink() {
+    if (!meetingUrl.trim()) {
+      Alert.alert("Missing Link", "Please enter a valid Live Class Meeting Link.");
+      return;
+    }
+    Alert.alert(
+      "Live Class Link Broadcasted! 🚀",
+      `Course: ${currentCourse.title}\n📌 Topic: ${selectedDayTopic}\n⏰ Time: ${selectedTimeSlot}\n🔗 Link: ${meetingUrl}\n\nEnrolled students have been notified.`
+    );
+    setScheduleModalOpen(false);
+  }
 
   // Recent Student Activity Feed
   const recentActivities = [
@@ -338,57 +389,134 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           </Pressable>
         </View>
 
-        {/* MODAL: BROADCAST DAILY LIVE CLASS LINK */}
+        {/* MODAL: BOTTOM SHEET FOR SCHEDULING DAILY LIVE CLASS LINK */}
         <Modal visible={scheduleModalOpen} transparent animationType="slide" onRequestClose={() => setScheduleModalOpen(false)}>
-          <View style={{ flex: 1, backgroundColor: "rgba(15,23,42,0.6)", justifyContent: "center", alignItems: "center", padding: 16 }}>
-            <View style={{ width: "100%", maxWidth: 420, backgroundColor: "#FFFFFF", borderRadius: 20, padding: 20, borderWidth: 1, borderColor: "#E2E8F0" }}>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: "rgba(15,23,42,0.6)", justifyContent: "flex-end" }} activeOpacity={1} onPress={() => setScheduleModalOpen(false)}>
+            <TouchableOpacity activeOpacity={1} style={{ width: "100%", backgroundColor: "#FFFFFF", borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, maxHeight: "88%" }}>
+              {/* Drag Handle Indicator */}
+              <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: "#CBD5E1", alignSelf: "center", marginBottom: 14 }} />
+
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <Text style={{ fontSize: 17, fontWeight: "700", color: "#0F172A" }}>Schedule Live Class Link 🎥</Text>
-                <TouchableOpacity onPress={() => setScheduleModalOpen(false)} style={{ padding: 4 }}>
-                  <Feather name="x" size={20} color="#64748B" />
+                <View>
+                  <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F172A" }}>Schedule Live Class Link 🎥</Text>
+                  <Text style={{ fontSize: 12, color: "#64748B" }}>Select Course, Syllabus Topic & Broadcast Class Link</Text>
+                </View>
+                <TouchableOpacity onPress={() => setScheduleModalOpen(false)} style={{ padding: 6, backgroundColor: "#F1F5F9", borderRadius: 20 }}>
+                  <Feather name="x" size={18} color="#64748B" />
                 </TouchableOpacity>
               </View>
 
-              <Text style={{ fontSize: 12, fontWeight: "600", color: "#475569", marginBottom: 4 }}>Select Course Session:</Text>
-              <TextInput
-                value={sessionName}
-                onChangeText={setSessionName}
-                style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 10, fontSize: 13, marginBottom: 12, color: "#0F172A" }}
-                placeholder="e.g. Full Stack Web Dev - Session 1"
-              />
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* 1. SELECT COURSE DROPDOWN */}
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>1. SELECT CREATED COURSE 📚</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                  {courseList.map((course) => {
+                    const isSelected = course.id === selectedCourseId;
+                    return (
+                      <TouchableOpacity
+                        key={course.id}
+                        onPress={() => {
+                          setSelectedCourseId(course.id);
+                          const firstTopic = (syllabusSessionsMap[course.id] || [])[0]?.topic || "";
+                          setSelectedDayTopic(firstTopic);
+                        }}
+                        style={{
+                          paddingHorizontal: 14,
+                          paddingVertical: 10,
+                          borderRadius: 12,
+                          backgroundColor: isSelected ? "#5B3CF5" : "#F8FAFC",
+                          borderWidth: 1,
+                          borderColor: isSelected ? "#5B3CF5" : "#E2E8F0",
+                          marginRight: 8
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: isSelected ? "#FFFFFF" : "#334155" }}>
+                          {course.title}
+                        </Text>
+                        <Text style={{ fontSize: 10, color: isSelected ? "#DDD6FE" : "#94A3B8", marginTop: 2 }}>
+                          Category: {course.category}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
 
-              <Text style={{ fontSize: 12, fontWeight: "600", color: "#475569", marginBottom: 4 }}>Class Topic / Title:</Text>
-              <TextInput
-                value={classTitle}
-                onChangeText={setClassTitle}
-                style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 10, fontSize: 13, marginBottom: 12, color: "#0F172A" }}
-                placeholder="e.g. Day 1: React & Next.js Architecture"
-              />
+                {/* 2. SELECT DAY-BY-DAY SYLLABUS SESSION */}
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>2. SELECT DAY-BY-DAY SYLLABUS SESSION 🗓️</Text>
+                <View style={{ marginBottom: 16 }}>
+                  {currentSessions.map((sess) => {
+                    const isSelected = sess.topic === selectedDayTopic;
+                    return (
+                      <TouchableOpacity
+                        key={sess.dayNum}
+                        onPress={() => setSelectedDayTopic(sess.topic)}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          padding: 12,
+                          borderRadius: 12,
+                          backgroundColor: isSelected ? "#F0EDFF" : "#F8FAFC",
+                          borderWidth: 1,
+                          borderColor: isSelected ? "#5B3CF5" : "#E2E8F0",
+                          marginBottom: 8
+                        }}
+                      >
+                        <View style={{ backgroundColor: isSelected ? "#5B3CF5" : "#E2E8F0", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 10 }}>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: isSelected ? "#FFFFFF" : "#64748B" }}>{sess.dayNum}</Text>
+                        </View>
+                        <Text style={{ flex: 1, fontSize: 13, fontWeight: isSelected ? "700" : "500", color: isSelected ? "#5B3CF5" : "#1E293B" }}>
+                          {sess.topic}
+                        </Text>
+                        {isSelected && <MaterialCommunityIcons name="check-circle" size={18} color="#5B3CF5" />}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
 
-              <Text style={{ fontSize: 12, fontWeight: "600", color: "#475569", marginBottom: 4 }}>Class Time & Schedule:</Text>
-              <TextInput
-                value={classTime}
-                onChangeText={setClassTime}
-                style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 10, fontSize: 13, marginBottom: 12, color: "#0F172A" }}
-                placeholder="e.g. Today • 10:00 AM – 11:30 AM"
-              />
+                {/* 3. SELECTABLE TIME SLOTS */}
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>3. SELECT TIME SLOT ⏰</Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+                  {timeSlots.map((slot) => {
+                    const isSelected = slot === selectedTimeSlot;
+                    return (
+                      <TouchableOpacity
+                        key={slot}
+                        onPress={() => setSelectedTimeSlot(slot)}
+                        style={{
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          borderRadius: 20,
+                          backgroundColor: isSelected ? "#5B3CF5" : "#F1F5F9",
+                          borderWidth: 1,
+                          borderColor: isSelected ? "#5B3CF5" : "#CBD5E1"
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "600", color: isSelected ? "#FFFFFF" : "#334155" }}>
+                          {slot}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
 
-              <Text style={{ fontSize: 12, fontWeight: "600", color: "#475569", marginBottom: 4 }}>Live Class Meeting URL (Jitsi / Zoom / Meet):</Text>
-              <TextInput
-                value={meetingUrl}
-                onChangeText={setMeetingUrl}
-                style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 10, fontSize: 13, marginBottom: 16, color: "#0F172A" }}
-                placeholder="e.g. https://meet.jit.si/tcm-live-fullstack"
-              />
+                {/* 4. LIVE CLASS MEETING URL */}
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>4. LIVE MEETING LINK (Jitsi / Zoom / Meet) 🔗</Text>
+                <TextInput
+                  value={meetingUrl}
+                  onChangeText={setMeetingUrl}
+                  style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, padding: 12, fontSize: 13, marginBottom: 20, color: "#0F172A", backgroundColor: "#F8FAFC" }}
+                  placeholder="https://meet.jit.si/tcm-live-fullstack"
+                />
 
-              <TouchableOpacity
-                onPress={handleBroadcastLink}
-                style={{ backgroundColor: "#5B3CF5", borderRadius: 12, paddingVertical: 14, alignItems: "center" }}
-              >
-                <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 14 }}>Broadcast Class Link 🚀</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+                <TouchableOpacity
+                  onPress={handleBroadcastLink}
+                  style={{ backgroundColor: "#5B3CF5", borderRadius: 14, paddingVertical: 15, alignItems: "center", shadowColor: "#5B3CF5", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
+                >
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>Broadcast Class Link 🚀</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </TouchableOpacity>
+          </TouchableOpacity>
         </Modal>
 
         {/* ============================================================ */}
