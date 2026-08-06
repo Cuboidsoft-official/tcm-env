@@ -88,6 +88,12 @@ const courseSchema = new mongoose.Schema(
     isLive: {
       type: Boolean,
       default: true
+    },
+    activeLiveClass: {
+      topic: String,
+      meetingUrl: String,
+      time: String,
+      scheduledAt: Date
     }
   },
   { timestamps: true }
