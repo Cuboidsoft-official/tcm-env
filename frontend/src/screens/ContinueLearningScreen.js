@@ -145,15 +145,15 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
       ]
     },
     userProgress: {
-      courseProgress: 65,
-      dayStreak: 7,
-      xpPoints: 1280,
-      certificates: 3
+      courseProgress: 0,
+      dayStreak: 1,
+      xpPoints: 0,
+      certificates: 0
     },
     learningJourney: [
-      { id: "m1", moduleNum: "Module 1", title: "Frontend Foundations", icon: "flag-variant", status: "completed" },
-      { id: "m2", moduleNum: "Module 2", title: "Backend Development", icon: "code-tags", status: "completed" },
-      { id: "m3", moduleNum: "Module 3", title: "Database & APIs", icon: "database", sub: "Live class in progress", status: "in_progress" },
+      { id: "m1", moduleNum: "Module 1", title: "Frontend Foundations", icon: "flag-variant", sub: "Live class starting soon", status: "in_progress" },
+      { id: "m2", moduleNum: "Module 2", title: "Backend Development", icon: "code-tags", status: "upcoming" },
+      { id: "m3", moduleNum: "Module 3", title: "Database & APIs", icon: "database", status: "upcoming" },
       { id: "m4", moduleNum: "Module 4", title: "Deployment & DevOps", icon: "cloud-outline", status: "upcoming" },
       { id: "m5", moduleNum: "Module 5", title: "Testing & Best Practices", icon: "shield-check-outline", status: "upcoming" }
     ],
