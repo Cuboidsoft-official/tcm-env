@@ -2562,7 +2562,9 @@ homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, async (req, res) =
         "what is", "what are", "how to", "how do", "how can", "why does", "why do", "why is",
         "explain", "define", "difference", "vs", "syntax", "example", "meaning", "solve",
         "is it", "can i", "can we", "could you", "should i", "where is", "when to", "which one",
-        "error", "bug", "issue", "problem", "not working", "fix", "output of", "value of", "write"
+        "error", "bug", "issue", "problem", "not working", "fix", "output of", "value of", "write",
+        "kaise", "kyun", "kyu", "kya", "janna", "bataye", "batao", "samjha", "sikhna", "madad", "help",
+        "kare", "kam", "kaam", "python", "django", "react", "html", "css", "js", "javascript", "node", "code"
       ].some((kw) => textStr.includes(kw));
 
     const newMsg = {
