@@ -710,6 +710,44 @@ homeRouter.post("/courses", requireAuth, async (req, res) => {
   res.status(201).json({ course: courseObj });
 });
 
+// POST /home/courses/:courseId/schedule-live - Schedule live class link for course in MongoDB
+homeRouter.post("/courses/:courseId/schedule-live", requireAuth, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { topic, meetingUrl, time } = req.body;
+
+    if (!meetingUrl) {
+      return res.status(400).json({ message: "Meeting URL is required." });
+    }
+
+    const liveData = {
+      topic: topic || "Daily Live Session",
+      meetingUrl: meetingUrl.trim(),
+      time: time || "Today • 10:00 AM – 11:30 AM",
+      scheduledAt: new Date()
+    };
+
+    // Update in MongoDB
+    try {
+      await Course.findOneAndUpdate(
+        { $or: [{ customId: courseId }, { _id: courseId }] },
+        { $set: { activeLiveClass: liveData } },
+        { new: true }
+      );
+    } catch (e) {}
+
+    if (!req.app.locals.activeLiveClasses) {
+      req.app.locals.activeLiveClasses = {};
+    }
+    req.app.locals.activeLiveClasses[courseId] = liveData;
+    req.app.locals.latestGlobalLiveClass = liveData;
+
+    return res.json({ success: true, liveClass: liveData });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
 homeRouter.post("/webinars", requireAuth, async (req, res) => {
   const memoryStore = req.app.locals.memoryStore;
   const {

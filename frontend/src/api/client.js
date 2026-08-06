@@ -472,6 +472,14 @@ export function searchKnowledgeBase(token, query) {
   });
 }
 
+export function scheduleLiveClassLink(token, courseId, data) {
+  return request(`/home/courses/${encodeURIComponent(courseId)}/schedule-live`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
+}
+
 export function joinDoubtRoom(token, roomId) {
   return request(`/home/doubt-rooms/${roomId}/join`, {
     method: "POST",

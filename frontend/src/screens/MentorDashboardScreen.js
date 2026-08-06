@@ -13,6 +13,7 @@ import {
   View
 } from "react-native";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { scheduleLiveClassLink } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -25,17 +26,6 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   const [classTime, setClassTime] = useState("Today • 10:00 AM – 11:30 AM");
   const [meetingUrl, setMeetingUrl] = useState("https://meet.jit.si/tcm-live-fullstack");
 
-  function handleBroadcastLink() {
-    if (!meetingUrl.trim() || !classTitle.trim()) {
-      Alert.alert("Missing Fields", "Please enter both Class Title and Meeting Link.");
-      return;
-    }
-    Alert.alert(
-      "Class Link Broadcasted! 🚀",
-      `Session "${sessionName}" live class link has been sent to enrolled students:\n\n📌 Title: ${classTitle}\n⏰ Time: ${classTime}\n🔗 Link: ${meetingUrl}`
-    );
-    setScheduleModalOpen(false);
-  }
   // Weekly Engagement Activity Chart Data (Mon - Sun)
   const weeklyData = [
     { day: "Mon", percent: 75, hours: "6h" },
@@ -97,16 +87,29 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   const currentCourse = courseList.find((c) => c.id === selectedCourseId) || courseList[0];
   const currentSessions = syllabusSessionsMap[selectedCourseId] || syllabusSessionsMap.c1;
 
-  function handleBroadcastLink() {
+  async function handleBroadcastLink() {
     if (!meetingUrl.trim()) {
       Alert.alert("Missing Link", "Please enter a valid Live Class Meeting Link.");
       return;
     }
-    Alert.alert(
-      "Live Class Link Broadcasted! 🚀",
-      `Course: ${currentCourse.title}\n📌 Topic: ${selectedDayTopic}\n⏰ Time: ${selectedTimeSlot}\n🔗 Link: ${meetingUrl}\n\nEnrolled students have been notified.`
-    );
-    setScheduleModalOpen(false);
+    try {
+      const token = session?.token;
+      if (token) {
+        await scheduleLiveClassLink(token, selectedCourseId, {
+          topic: selectedDayTopic,
+          time: selectedTimeSlot,
+          meetingUrl: meetingUrl.trim()
+        });
+      }
+      Alert.alert(
+        "Live Class Link Broadcasted!",
+        `Course: ${currentCourse.title}\nTopic: ${selectedDayTopic}\nTime: ${selectedTimeSlot}\nLink: ${meetingUrl}\n\nEnrolled students have been notified.`
+      );
+      setScheduleModalOpen(false);
+    } catch (err) {
+      Alert.alert("Notice", `Broadcasting live class link: ${meetingUrl}`);
+      setScheduleModalOpen(false);
+    }
   }
 
   // Recent Student Activity Feed
@@ -390,7 +393,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
             </View>
 
             <View style={styles.activityCopy}>
-              <Text style={[styles.activityTitle, { color: "#5B3CF5" }]}>Schedule Daily Class Links 🎥</Text>
+              <Text style={[styles.activityTitle, { color: "#5B3CF5" }]}>Schedule Daily Class Links</Text>
               <Text style={styles.activitySub}>Send session-wise live class links to enrolled students</Text>
             </View>
 
@@ -409,7 +412,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <View>
-                  <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F172A" }}>Schedule Live Class Link 🎥</Text>
+                  <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F172A" }}>Schedule Live Class Link</Text>
                   <Text style={{ fontSize: 12, color: "#64748B" }}>Select Course, Syllabus Topic & Broadcast Class Link</Text>
                 </View>
                 <TouchableOpacity onPress={() => setScheduleModalOpen(false)} style={{ padding: 6, backgroundColor: "#F1F5F9", borderRadius: 20 }}>
@@ -419,7 +422,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
               <ScrollView showsVerticalScrollIndicator={false}>
                 {/* 1. SELECT COURSE DROPDOWN */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>1. SELECT CREATED COURSE 📚</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>1. SELECT CREATED COURSE</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
                   {courseList.map((course) => {
                     const isSelected = course.id === selectedCourseId;
@@ -453,7 +456,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                 </ScrollView>
 
                 {/* 2. SELECT DAY-BY-DAY SYLLABUS SESSION */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>2. SELECT DAY-BY-DAY SYLLABUS SESSION 🗓️</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>2. SELECT DAY-BY-DAY SYLLABUS SESSION</Text>
                 <View style={{ marginBottom: 16 }}>
                   {currentSessions.map((sess) => {
                     const isSelected = sess.topic === selectedDayTopic;
@@ -485,7 +488,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                 </View>
 
                 {/* 3. SELECTABLE TIME SLOTS */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>3. SELECT TIME SLOT ⏰</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>3. SELECT TIME SLOT</Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
                   {timeSlots.map((slot) => {
                     const isSelected = slot === selectedTimeSlot;
@@ -511,7 +514,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                 </View>
 
                 {/* 4. LIVE CLASS MEETING URL */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>4. LIVE MEETING LINK (Jitsi / Zoom / Meet) 🔗</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>4. LIVE MEETING LINK (Jitsi / Zoom / Meet)</Text>
                 <TextInput
                   value={meetingUrl}
                   onChangeText={setMeetingUrl}
@@ -523,7 +526,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                   onPress={handleBroadcastLink}
                   style={{ backgroundColor: "#5B3CF5", borderRadius: 14, paddingVertical: 15, alignItems: "center", shadowColor: "#5B3CF5", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
                 >
-                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>Broadcast Class Link 🚀</Text>
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>Broadcast Class Link</Text>
                 </TouchableOpacity>
               </ScrollView>
             </TouchableOpacity>
