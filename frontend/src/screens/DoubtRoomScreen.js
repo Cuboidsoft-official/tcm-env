@@ -444,7 +444,9 @@ function isQuestionMessage(item) {
     "what is", "what are", "how to", "how do", "how can", "why does", "why do", "why is",
     "explain", "define", "difference", "vs", "syntax", "example", "meaning", "solve",
     "is it", "can i", "can we", "could you", "should i", "where is", "when to", "which one",
-    "error", "bug", "issue", "problem", "not working", "fix", "output of", "value of", "write"
+    "error", "bug", "issue", "problem", "not working", "fix", "output of", "value of", "write",
+    "kaise", "kyun", "kyu", "kya", "janna", "bataye", "batao", "samjha", "sikhna", "madad", "help",
+    "kare", "kam", "kaam", "python", "django", "react", "html", "css", "js", "javascript", "node", "code"
   ];
   return questionKeywords.some((kw) => str.includes(kw));
 }
@@ -512,15 +514,25 @@ function isQuestionMessage(item) {
                     </TouchableOpacity>
                   )}
 
-                  {/* NEED MENTOR HELP BUTTON */}
+                  {/* NEED MENTOR HELP & CREATE POLL BUTTONS */}
                   {item.canRequestMentorHelp && (
-                    <TouchableOpacity
-                      style={styles.mentorHelpBtn}
-                      onPress={() => Alert.alert("Mentor Alerted 🆘", `${assignedMentor.name} has been notified and will review this doubt.`)}
-                    >
-                      <MaterialCommunityIcons name="shield-account" size={16} color="#EF4444" />
-                      <Text style={styles.mentorHelpText}>Need Mentor Help 🆘</Text>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
+                      <TouchableOpacity
+                        style={[styles.mentorHelpBtn, { flex: 1 }]}
+                        onPress={() => Alert.alert("Mentor Alerted 🆘", `${assignedMentor.name} has been notified and will review this doubt.`)}
+                      >
+                        <MaterialCommunityIcons name="shield-account" size={16} color="#EF4444" />
+                        <Text style={styles.mentorHelpText}>Need Mentor Help 🆘</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.mentorHelpBtn, { backgroundColor: "#F0EDFF", borderColor: "#DDD6FE" }]}
+                        onPress={() => setPollModalVisible(true)}
+                      >
+                        <MaterialCommunityIcons name="poll" size={16} color="#5B3CF5" />
+                        <Text style={[styles.mentorHelpText, { color: "#5B3CF5" }]}>Create Poll 📊</Text>
+                      </TouchableOpacity>
+                    </View>
                   )}
                 </View>
               </View>
