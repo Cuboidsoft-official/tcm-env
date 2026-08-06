@@ -138,11 +138,12 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [allMentorsModalOpen, setAllMentorsModalOpen] = useState(false);
 
-  const heroBanners = learn.heroBanners?.length ? learn.heroBanners : defaultHeroBanners;
-  const continueLearning = learn.continueLearning?.length ? learn.continueLearning : defaultContinueLearning;
-  const topCategories = learn.topCategories?.length ? learn.topCategories : defaultTopCategories;
-  const expertMentors = learn.expertMentors?.length ? learn.expertMentors : defaultExpertMentors;
-  const initialPopular = Array.isArray(learn.popularCourses) ? learn.popularCourses : defaultPopularCourses;
+  const safeLearn = learn || {};
+  const heroBanners = safeLearn.heroBanners?.length ? safeLearn.heroBanners : defaultHeroBanners;
+  const continueLearning = safeLearn.continueLearning?.length ? safeLearn.continueLearning : defaultContinueLearning;
+  const topCategories = safeLearn.topCategories?.length ? safeLearn.topCategories : defaultTopCategories;
+  const expertMentors = safeLearn.expertMentors?.length ? safeLearn.expertMentors : defaultExpertMentors;
+  const initialPopular = Array.isArray(safeLearn.popularCourses) ? safeLearn.popularCourses : defaultPopularCourses;
 
   const [popularCourses, setPopularCourses] = useState(initialPopular);
 
