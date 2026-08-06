@@ -1576,29 +1576,24 @@ homeRouter.get("/continue-learning", requireAuth, (req, res) => {
   }
 
   const userReflectionState = req.app.locals.userReflections[userId] || {
-    reflectionRequired: true,
+    reflectionRequired: false,
     reflectionSubmitted: false,
-    nextClassUnlocked: false,
-    lastCompletedClass: {
-      id: "cls_prev",
-      title: "Module 3: Database & Node.js API Integration",
-      instructor: "Rahul Dev",
-      completedAt: "Yesterday • 10:00 AM – 11:30 AM"
-    }
+    nextClassUnlocked: true,
+    lastCompletedClass: null
   };
 
   return res.json({
     reflection: userReflectionState,
     liveClass: {
       id: "lc1",
-      tag: userReflectionState.nextClassUnlocked ? "🔴 LIVE CLASS UNLOCKED" : "🔒 NEXT CLASS LOCKED",
+      tag: "🔴 LIVE CLASS READY",
       time: "Today • 10:00 AM – 11:30 AM",
-      title: "Full Stack Web Development - Module 4: Deployment & DevOps",
+      title: "Full Stack Web Development - Module 1: Frontend Foundations",
       instructor: "Rahul Dev",
       verified: true,
       joiningCount: 342,
       joiningText: "342 learners ready",
-      meetingUrl: userReflectionState.nextClassUnlocked ? "https://meet.jit.si/tcm-live-fullstack" : null,
+      meetingUrl: "https://meet.jit.si/tcm-live-fullstack",
       avatars: [
         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
@@ -1607,28 +1602,28 @@ homeRouter.get("/continue-learning", requireAuth, (req, res) => {
       ]
     },
     userProgress: {
-      courseProgress: 65,
-      dayStreak: 7,
-      xpPoints: userReflectionState.reflectionSubmitted ? 1300 : 1280,
-      certificates: 3
+      courseProgress: 0,
+      dayStreak: 1,
+      xpPoints: 0,
+      certificates: 0
     },
     learningJourney: [
-      { id: "m1", moduleNum: "Module 1", title: "Frontend Foundations", icon: "flag-variant", status: "completed" },
-      { id: "m2", moduleNum: "Module 2", title: "Backend Development", icon: "code-tags", status: "completed" },
-      { id: "m3", moduleNum: "Module 3", title: "Database & APIs", icon: "database", sub: "Class Reflection Completed", status: "completed" },
-      { id: "m4", moduleNum: "Module 4", title: "Deployment & DevOps", icon: userReflectionState.nextClassUnlocked ? "door-open" : "lock-outline", sub: userReflectionState.nextClassUnlocked ? "Live class ready to join!" : "Locked (Reflection Required)", status: userReflectionState.nextClassUnlocked ? "in_progress" : "locked" },
+      { id: "m1", moduleNum: "Module 1", title: "Frontend Foundations", icon: "flag-variant", sub: "Live class starting soon", status: "in_progress" },
+      { id: "m2", moduleNum: "Module 2", title: "Backend Development", icon: "code-tags", status: "upcoming" },
+      { id: "m3", moduleNum: "Module 3", title: "Database & APIs", icon: "database", status: "upcoming" },
+      { id: "m4", moduleNum: "Module 4", title: "Deployment & DevOps", icon: "cloud-outline", status: "upcoming" },
       { id: "m5", moduleNum: "Module 5", title: "Testing & Best Practices", icon: "shield-check-outline", status: "upcoming" }
     ],
     whatsNext: [
       {
         id: "wn1",
-        title: userReflectionState.nextClassUnlocked ? "Next Live Class" : "🔒 Next Class Locked",
-        sub: userReflectionState.nextClassUnlocked ? "Today, 10:00 AM\nwith Rahul Dev" : "Submit Class Reflection\nto reveal joining link",
-        btn: userReflectionState.nextClassUnlocked ? "Join Live >" : "Locked 🔒",
-        icon: userReflectionState.nextClassUnlocked ? "calendar-clock" : "lock-clock",
-        bg: userReflectionState.nextClassUnlocked ? "#F4F0FF" : "#FFF3F3",
-        color: userReflectionState.nextClassUnlocked ? "#5B3CF5" : "#D32F2F",
-        meetingUrl: userReflectionState.nextClassUnlocked ? "https://meet.jit.si/tcm-live-fullstack" : null
+        title: "Next Live Class",
+        sub: "Today, 10:00 AM\nwith Rahul Dev",
+        btn: "Join Live >",
+        icon: "calendar-clock",
+        bg: "#F4F0FF",
+        color: "#5B3CF5",
+        meetingUrl: "https://meet.jit.si/tcm-live-fullstack"
       },
       {
         id: "wn2",
