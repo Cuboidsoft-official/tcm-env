@@ -2554,6 +2554,17 @@ homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, async (req, res) =
     }
 
     const isUserMentor = (req.user?.role || "").toLowerCase().includes("mentor") || req.user?.isMentor;
+    const textStr = (text || "").toLowerCase().trim();
+    const isQuestionOrDoubt =
+      Boolean(codeSnippet) ||
+      textStr.includes("?") ||
+      [
+        "what is", "what are", "how to", "how do", "how can", "why does", "why do", "why is",
+        "explain", "define", "difference", "vs", "syntax", "example", "meaning", "solve",
+        "is it", "can i", "can we", "could you", "should i", "where is", "when to", "which one",
+        "error", "bug", "issue", "problem", "not working", "fix", "output of", "value of", "write"
+      ].some((kw) => textStr.includes(kw));
+
     const newMsg = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
       authorName: req.user?.name || "Learner",
@@ -2568,7 +2579,7 @@ homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, async (req, res) =
       isSelf: true,
       isAdmin: isUserMentor,
       type: codeSnippet ? "code" : attachmentUrl ? "file" : "text",
-      canAskAi: Boolean(!isUserMentor && (text || codeSnippet))
+      canAskAi: Boolean(!isUserMentor && isQuestionOrDoubt)
     };
 
     room.messages.push(newMsg);
