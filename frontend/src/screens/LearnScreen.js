@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import ViewAllMentorsModal from "../components/ViewAllMentorsModal";
+import { getContinueLearningDetails } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -133,6 +134,12 @@ const defaultExpertMentors = [
   }
 ];
 
+function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80") {
+  if (!url || typeof url !== "string") return fallback;
+  if (url.startsWith("blob:") || url.includes("blob:http")) return fallback;
+  return url;
+}
+
 export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
@@ -140,18 +147,47 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 
   const safeLearn = learn || {};
   const heroBanners = safeLearn.heroBanners?.length ? safeLearn.heroBanners : defaultHeroBanners;
-  const continueLearning = safeLearn.continueLearning?.length ? safeLearn.continueLearning : defaultContinueLearning;
   const topCategories = safeLearn.topCategories?.length ? safeLearn.topCategories : defaultTopCategories;
   const expertMentors = safeLearn.expertMentors?.length ? safeLearn.expertMentors : defaultExpertMentors;
   const initialPopular = Array.isArray(safeLearn.popularCourses) ? safeLearn.popularCourses : defaultPopularCourses;
 
   const [popularCourses, setPopularCourses] = useState(initialPopular);
+  const [continueLearningList, setContinueLearningList] = useState(
+    safeLearn.continueLearning?.length ? safeLearn.continueLearning : defaultContinueLearning
+  );
 
   useEffect(() => {
     if (Array.isArray(learn?.popularCourses)) {
       setPopularCourses(learn.popularCourses);
     }
   }, [learn?.popularCourses]);
+
+  useEffect(() => {
+    loadRealContinueLearningData();
+  }, [session?.token]);
+
+  async function loadRealContinueLearningData() {
+    try {
+      if (session?.token) {
+        const data = await getContinueLearningDetails(session.token);
+        if (data && data.courseTitle) {
+          setContinueLearningList([
+            {
+              id: data.courseId || "c_active",
+              title: data.courseTitle,
+              subtitle: `Mentor: ${data.mentorName || "Aayushmann C."} • Live Batch Ready`,
+              progress: data.userProgress?.courseProgress || 0,
+              icon: "code-tags",
+              iconColor: "#5B3CF5",
+              bgColor: "#F0EDFF"
+            }
+          ]);
+        }
+      }
+    } catch (e) {}
+  }
+
+  const continueLearning = continueLearningList;
 
   function toggleBookmark(courseId) {
     setPopularCourses((prev) =>
@@ -256,7 +292,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
                 </View>
 
                 <View style={styles.bannerRight}>
-                  <Image source={{ uri: banner.image }} style={styles.bannerGraphic} />
+                  <Image source={{ uri: safeImageUri(banner.image) }} style={styles.bannerGraphic} />
                   <View style={styles.techBadgeReact}>
                     <MaterialCommunityIcons name="react" size={18} color="#00D8FF" />
                   </View>
@@ -407,7 +443,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           {filteredCourses.map((course) => (
             <Pressable key={course.id} onPress={() => (onSelectCourse ? onSelectCourse(course.id) : handleEnroll(course))} style={styles.popularCard}>
               <View style={styles.popularImageWrap}>
-                <Image source={{ uri: course.image }} style={styles.popularImage} />
+                <Image source={{ uri: safeImageUri(course.image) }} style={styles.popularImage} />
                 <Pressable onPress={() => toggleBookmark(course.id)} style={styles.bookmarkBadge}>
                   <Feather name="bookmark" size={14} color={course.bookmarked ? "#5B3CF5" : "#181725"} fill={course.bookmarked ? "#5B3CF5" : "none"} />
                 </Pressable>
@@ -460,7 +496,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               <View key={mentor.id} style={[styles.mentorCard, { backgroundColor: mentor.cardBg || "#F6F4FF" }]}>
                 <View style={styles.mentorTopRow}>
                   <View style={styles.mentorAvatarWrap}>
-                    <Image source={{ uri: mentor.avatarUrl }} style={styles.mentorAvatarImg} />
+                    <Image source={{ uri: safeImageUri(mentor.avatarUrl) }} style={styles.mentorAvatarImg} />
                     <View style={styles.onlineDot} />
                   </View>
                   <View style={styles.mentorInfoCol}>

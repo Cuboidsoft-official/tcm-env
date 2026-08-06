@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Alert,
   Dimensions,
@@ -13,13 +13,13 @@ import {
   View
 } from "react-native";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { scheduleLiveClassLink } from "../api/client";
+import { getMentorCourses, scheduleLiveClassLink } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
 const { width } = Dimensions.get("window");
 
-export default function MentorDashboardScreen({ session, user = {}, onBack, onNavigateActivity }) {
+export default function MentorDashboardScreen({ session, user = {}, onBack, onNavigateActivity, onEditCourse }) {
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [sessionName, setSessionName] = useState("Full Stack Web Dev - Session 1");
   const [classTitle, setClassTitle] = useState("Day 1: Frontend Foundations & React Setup");
@@ -37,41 +37,20 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
     { day: "Sun", percent: 50, hours: "4h" }
   ];
 
-  // Course List & Day-by-Day Syllabus Sessions
-  const courseList = [
-    { id: "c1", title: "Full Stack Web Development Masterclass", category: "Web Dev" },
-    { id: "c2", title: "NEET Ultimate Crash Course 2026", category: "NEET Prep" },
-    { id: "c3", title: "JEE Rank Booster Batch 2026", category: "JEE Prep" },
-    { id: "c4", title: "Data Science & AI Masterclass", category: "Data Science" }
+  const defaultMentorCourses = [
+    {
+      id: "c1",
+      title: "Full Stack Web Development Masterclass",
+      category: "Web Development",
+      modules: [
+        { dayNum: "Day 1", topic: "Environment Setup & React Core Architecture" },
+        { dayNum: "Day 2", topic: "State Architecture, Props & Context API" },
+        { dayNum: "Day 3", topic: "Node.js Express REST API & Middleware" },
+        { dayNum: "Day 4", topic: "MongoDB Database Models & Aggregation" },
+        { dayNum: "Day 5", topic: "Production Cloud Deployment & CI/CD" }
+      ]
+    }
   ];
-
-  const syllabusSessionsMap = {
-    c1: [
-      { dayNum: "Day 1", topic: "Environment Setup & React Core Architecture" },
-      { dayNum: "Day 2", topic: "State Architecture, Props & Context API" },
-      { dayNum: "Day 3", topic: "Node.js Express REST API & Middleware" },
-      { dayNum: "Day 4", topic: "MongoDB Database Models & Aggregation" },
-      { dayNum: "Day 5", topic: "Production Cloud Deployment & CI/CD" }
-    ],
-    c2: [
-      { dayNum: "Day 1", topic: "Electromagnetism & Optics MCQ Practice" },
-      { dayNum: "Day 2", topic: "Organic Reaction Mechanisms & Concepts" },
-      { dayNum: "Day 3", topic: "Genetics, Cell Biology & Human Physiology" },
-      { dayNum: "Day 4", topic: "Full Syllabus Mock Test & Paper Discussion" }
-    ],
-    c3: [
-      { dayNum: "Day 1", topic: "Differential Calculus & Vectors" },
-      { dayNum: "Day 2", topic: "Rotational Dynamics & Thermodynamics" },
-      { dayNum: "Day 3", topic: "Physical Chemistry & Solutions" },
-      { dayNum: "Day 4", topic: "JEE Advanced PYQs & Time Management" }
-    ],
-    c4: [
-      { dayNum: "Day 1", topic: "Python Data Analysis & Pandas Basics" },
-      { dayNum: "Day 2", topic: "Machine Learning Regressions & Classifiers" },
-      { dayNum: "Day 3", topic: "Neural Networks & Deep Learning with PyTorch" },
-      { dayNum: "Day 4", topic: "Large Language Models & Gemini API" }
-    ]
-  };
 
   const timeSlots = [
     "Today • 10:00 AM – 11:30 AM",
@@ -80,30 +59,54 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
     "Today • 08:30 PM – 10:00 PM"
   ];
 
+  const [mentorCourses, setMentorCourses] = useState(defaultMentorCourses);
   const [selectedCourseId, setSelectedCourseId] = useState("c1");
-  const [selectedDayTopic, setSelectedDayTopic] = useState(syllabusSessionsMap.c1[0].topic);
+  const [selectedDayTopic, setSelectedDayTopic] = useState(defaultMentorCourses[0].modules[0].topic);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(timeSlots[0]);
+  const [isCustomTime, setIsCustomTime] = useState(false);
+  const [customTimeInput, setCustomTimeInput] = useState("Today • 04:30 PM – 06:00 PM");
 
-  const currentCourse = courseList.find((c) => c.id === selectedCourseId) || courseList[0];
-  const currentSessions = syllabusSessionsMap[selectedCourseId] || syllabusSessionsMap.c1;
+  useEffect(() => {
+    loadMentorCourses();
+  }, [session?.token]);
+
+  async function loadMentorCourses() {
+    try {
+      if (session?.token) {
+        const res = await getMentorCourses(session.token);
+        if (res && Array.isArray(res.courses) && res.courses.length > 0) {
+          setMentorCourses(res.courses);
+          setSelectedCourseId(res.courses[0].id);
+          setSelectedDayTopic(res.courses[0].modules?.[0]?.topic || `Day 1: ${res.courses[0].title}`);
+        }
+      }
+    } catch (e) {}
+  }
+
+  const activeCourseList = mentorCourses.length > 0 ? mentorCourses : defaultMentorCourses;
+  const currentCourse = activeCourseList.find((c) => c.id === selectedCourseId) || activeCourseList[0];
+  const currentSessions = currentCourse?.modules || defaultMentorCourses[0].modules;
 
   async function handleBroadcastLink() {
     if (!meetingUrl.trim()) {
       Alert.alert("Missing Link", "Please enter a valid Live Class Meeting Link.");
       return;
     }
+
+    const finalTime = isCustomTime ? customTimeInput : selectedTimeSlot;
+
     try {
       const token = session?.token;
       if (token) {
         await scheduleLiveClassLink(token, selectedCourseId, {
           topic: selectedDayTopic,
-          time: selectedTimeSlot,
+          time: finalTime,
           meetingUrl: meetingUrl.trim()
         });
       }
       Alert.alert(
         "Live Class Link Broadcasted!",
-        `Course: ${currentCourse.title}\nTopic: ${selectedDayTopic}\nTime: ${selectedTimeSlot}\nLink: ${meetingUrl}\n\nEnrolled students have been notified.`
+        `Course: ${currentCourse.title}\nTopic: ${selectedDayTopic}\nTime: ${finalTime}\nLink: ${meetingUrl}\n\nEnrolled students have been notified.`
       );
       setScheduleModalOpen(false);
     } catch (err) {
@@ -289,7 +292,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
           {/* Bar Chart Visualizer */}
           <View style={styles.barChartContainer}>
-            {weeklyData.map((item) => (
+            {(weeklyData || []).map((item) => (
               <View key={item.day} style={styles.barCol}>
                 <Text style={styles.barValueText}>{item.hours}</Text>
                 <View style={styles.barTrack}>
@@ -403,6 +406,75 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           </Pressable>
         </View>
 
+        {/* ============================================================ */}
+        {/* ALL CREATED COURSES & EDIT OPTIONS */}
+        {/* ============================================================ */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 24, marginBottom: 12 }}>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: "#0F172A" }}>My Created Courses ({activeCourseList.length})</Text>
+          <TouchableOpacity
+            onPress={() => {
+              if (onNavigateActivity) onNavigateActivity("Add Courses");
+            }}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+          >
+            <Feather name="plus-circle" size={15} color="#5B3CF5" />
+            <Text style={{ fontSize: 13, fontWeight: "700", color: "#5B3CF5" }}>Create New</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ marginBottom: 16 }}>
+          {(activeCourseList || []).map((course) => (
+            <View
+              key={course.id}
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 12,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+                ...shadow.sm
+              }}
+            >
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <View style={{ backgroundColor: "#F0EDFF", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginBottom: 6 }}>
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: "#5B3CF5" }}>{course.category || "Web Development"}</Text>
+                  </View>
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: "#0F172A" }}>{course.title}</Text>
+                  <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                    {course.modules?.length || 5} Day-by-Day Syllabus Modules • {course.duration || "20 Days"}
+                  </Text>
+                </View>
+
+                {/* EDIT COURSE BUTTON */}
+                <TouchableOpacity
+                  onPress={() => {
+                    if (onEditCourse) {
+                      onEditCourse(course);
+                    } else if (onNavigateActivity) {
+                      onNavigateActivity("Add Courses");
+                    } else {
+                      Alert.alert("Edit Course", `Opening edit editor for "${course.title}".`);
+                    }
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "#5B3CF5",
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 10
+                  }}
+                >
+                  <Feather name="edit-2" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 12 }}>Edit Course</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+
         {/* MODAL: BOTTOM SHEET FOR SCHEDULING DAILY LIVE CLASS LINK */}
         <Modal visible={scheduleModalOpen} transparent animationType="slide" onRequestClose={() => setScheduleModalOpen(false)}>
           <TouchableOpacity style={{ flex: 1, backgroundColor: "rgba(15,23,42,0.6)", justifyContent: "flex-end" }} activeOpacity={1} onPress={() => setScheduleModalOpen(false)}>
@@ -421,17 +493,17 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false}>
-                {/* 1. SELECT COURSE DROPDOWN */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>1. SELECT CREATED COURSE</Text>
+                {/* 1. SELECT CREATED COURSE */}
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>1. SELECT YOUR CREATED COURSE</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-                  {courseList.map((course) => {
+                  {activeCourseList.map((course) => {
                     const isSelected = course.id === selectedCourseId;
                     return (
                       <TouchableOpacity
                         key={course.id}
                         onPress={() => {
                           setSelectedCourseId(course.id);
-                          const firstTopic = (syllabusSessionsMap[course.id] || [])[0]?.topic || "";
+                          const firstTopic = (course.modules || [])[0]?.topic || `Day 1: ${course.title}`;
                           setSelectedDayTopic(firstTopic);
                         }}
                         style={{
@@ -448,7 +520,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                           {course.title}
                         </Text>
                         <Text style={{ fontSize: 10, color: isSelected ? "#DDD6FE" : "#94A3B8", marginTop: 2 }}>
-                          Category: {course.category}
+                          Category: {course.category || "TCM Academy"}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -458,12 +530,13 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                 {/* 2. SELECT DAY-BY-DAY SYLLABUS SESSION */}
                 <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>2. SELECT DAY-BY-DAY SYLLABUS SESSION</Text>
                 <View style={{ marginBottom: 16 }}>
-                  {currentSessions.map((sess) => {
-                    const isSelected = sess.topic === selectedDayTopic;
+                  {currentSessions.map((sess, idx) => {
+                    const topicText = sess.topic || sess.title || `Module ${idx + 1}`;
+                    const isSelected = topicText === selectedDayTopic;
                     return (
                       <TouchableOpacity
-                        key={sess.dayNum}
-                        onPress={() => setSelectedDayTopic(sess.topic)}
+                        key={idx}
+                        onPress={() => setSelectedDayTopic(topicText)}
                         style={{
                           flexDirection: "row",
                           alignItems: "center",
@@ -476,10 +549,10 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                         }}
                       >
                         <View style={{ backgroundColor: isSelected ? "#5B3CF5" : "#E2E8F0", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 10 }}>
-                          <Text style={{ fontSize: 11, fontWeight: "700", color: isSelected ? "#FFFFFF" : "#64748B" }}>{sess.dayNum}</Text>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: isSelected ? "#FFFFFF" : "#64748B" }}>{sess.dayNum || `Day ${idx + 1}`}</Text>
                         </View>
                         <Text style={{ flex: 1, fontSize: 13, fontWeight: isSelected ? "700" : "500", color: isSelected ? "#5B3CF5" : "#1E293B" }}>
-                          {sess.topic}
+                          {topicText}
                         </Text>
                         {isSelected && <MaterialCommunityIcons name="check-circle" size={18} color="#5B3CF5" />}
                       </TouchableOpacity>
@@ -487,15 +560,18 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                   })}
                 </View>
 
-                {/* 3. SELECTABLE TIME SLOTS */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>3. SELECT TIME SLOT</Text>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+                {/* 3. SELECTABLE TIME SLOTS & CUSTOM TIME PICKER */}
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>3. SELECT TIME SLOT OR CUSTOM TIME</Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                   {timeSlots.map((slot) => {
-                    const isSelected = slot === selectedTimeSlot;
+                    const isSelected = !isCustomTime && slot === selectedTimeSlot;
                     return (
                       <TouchableOpacity
                         key={slot}
-                        onPress={() => setSelectedTimeSlot(slot)}
+                        onPress={() => {
+                          setIsCustomTime(false);
+                          setSelectedTimeSlot(slot);
+                        }}
                         style={{
                           paddingHorizontal: 12,
                           paddingVertical: 8,
@@ -511,7 +587,35 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                       </TouchableOpacity>
                     );
                   })}
+
+                  <TouchableOpacity
+                    onPress={() => setIsCustomTime(true)}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      backgroundColor: isCustomTime ? "#5B3CF5" : "#F1F5F9",
+                      borderWidth: 1,
+                      borderColor: isCustomTime ? "#5B3CF5" : "#CBD5E1"
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "600", color: isCustomTime ? "#FFFFFF" : "#334155" }}>
+                      + Custom Time Slot
+                    </Text>
+                  </TouchableOpacity>
                 </View>
+
+                {isCustomTime && (
+                  <View style={{ marginBottom: 16 }}>
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: "#5B3CF5", marginBottom: 4 }}>Enter Custom Class Schedule Time:</Text>
+                    <TextInput
+                      value={customTimeInput}
+                      onChangeText={setCustomTimeInput}
+                      style={{ borderWidth: 1, borderColor: "#5B3CF5", borderRadius: 10, padding: 10, fontSize: 13, color: "#0F172A", backgroundColor: "#F0EDFF" }}
+                      placeholder="e.g. Today • 04:30 PM – 06:00 PM"
+                    />
+                  </View>
+                )}
 
                 {/* 4. LIVE CLASS MEETING URL */}
                 <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>4. LIVE MEETING LINK (Jitsi / Zoom / Meet)</Text>

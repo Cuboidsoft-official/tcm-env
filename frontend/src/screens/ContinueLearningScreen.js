@@ -4,6 +4,7 @@ import {
   Alert,
   Dimensions,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
 } from "react-native";
 import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getContinueLearningDetails, submitClassReflection } from "../api/client";
+import { generateMcqQuizWithGemini } from "../api/gemini";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -102,6 +104,8 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
   const [feedbackNote, setFeedbackNote] = useState("");
   const [submittingReflection, setSubmittingReflection] = useState(false);
   const [reflectionJustSubmitted, setReflectionJustSubmitted] = useState(false);
+  const [completedFeedbacks, setCompletedFeedbacks] = useState({});
+  const [completedQuizzes, setCompletedQuizzes] = useState({});
 
   useEffect(() => {
     loadDetails();
@@ -227,9 +231,53 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
     }
   }
 
+  const [activeQuizModuleId, setActiveQuizModuleId] = useState(null);
+  const [quizQuestions, setQuizQuestions] = useState([]);
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+
+  async function handleStartDayQuiz(modId, modTitle) {
+    setActiveQuizModuleId(modId);
+    setLoadingQuiz(true);
+    setQuizSubmitted(false);
+    setQuizAnswers({});
+    try {
+      const questions = await generateMcqQuizWithGemini(modTitle, payload?.courseTitle || "TCM Masterclass");
+      setQuizQuestions(questions || []);
+    } catch (err) {
+      Alert.alert("Quiz Error", "Could not generate 10 MCQs for this day class topic.");
+    } finally {
+      setLoadingQuiz(false);
+    }
+  }
+
+  function handleSelectQuizOption(qId, optionIdx) {
+    if (quizSubmitted) return;
+    setQuizAnswers((prev) => ({ ...prev, [qId]: optionIdx }));
+  }
+
+  function handleSubmitQuiz() {
+    let score = 0;
+    quizQuestions.forEach((q) => {
+      if (quizAnswers[q.id] === q.correctIndex) {
+        score++;
+      }
+    });
+    setQuizScore(score);
+    setQuizSubmitted(true);
+    Alert.alert(
+      "Quiz Completed!",
+      `Score: ${score}/10 (${Math.round((score / 10) * 100)}%)\nYou earned +50 XP for completing today's class practice quiz!`
+    );
+  }
+
   function handleJoinLiveClass() {
-    const url = payload.liveClass.meetingUrl || "https://meet.jit.si/tcm-live-fullstack";
-    Alert.alert("🚀 Joining Live Class", `Opening live video meeting:\n${url}\n\nInstructor: Rahul Dev`);
+    const url = payload?.liveClass?.meetingUrl || "https://meet.jit.si/tcm-live-fullstack";
+    Linking.openURL(url).catch(() => {
+      Alert.alert("Joining Class", `Direct Video Link:\n${url}`);
+    });
   }
 
   return (
@@ -274,14 +322,14 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
               {/* Learners Avatar Stack */}
               <View style={styles.learnersRow}>
                 <View style={styles.avatarStack}>
-                  {payload.liveClass.avatars.map((url, i) => (
+                  {(payload.liveClass?.avatars || []).map((url, i) => (
                     <Image key={i} source={{ uri: url }} style={[styles.avatarStackImg, { left: i * 16 }]} />
                   ))}
-                  <View style={[styles.moreLearnersPill, { left: payload.liveClass.avatars.length * 16 }]}>
+                  <View style={[styles.moreLearnersPill, { left: (payload.liveClass?.avatars?.length || 4) * 16 }]}>
                     <Text style={styles.moreLearnersText}>+256</Text>
                   </View>
                 </View>
-                <Text style={styles.joiningText}>{payload.liveClass.joiningText}</Text>
+                <Text style={styles.joiningText}>{payload.liveClass?.joiningText || "342 learners ready"}</Text>
               </View>
             </View>
 
@@ -358,10 +406,20 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
         </View>
 
         <View style={styles.journeyContainer}>
-          {payload.learningJourney.map((item, index) => {
-            const isCompleted = item.status === "completed";
-            const isInProgress = item.status === "in_progress";
-            const isUpcoming = (item.status === "upcoming" || item.status === "locked") && !isUnlocked;
+          {(payload.learningJourney || []).map((item, index) => {
+            const isFirstModule = index === 0;
+            const prevItem = index > 0 ? payload.learningJourney[index - 1] : null;
+            const prevModId = prevItem ? prevItem.id : null;
+            const prevCompleted = isFirstModule || (prevModId && completedFeedbacks[prevModId] && completedQuizzes[prevModId]?.completed);
+            
+            const hasFeedback = Boolean(completedFeedbacks[item.id]);
+            const quizInfo = completedQuizzes[item.id];
+            const hasQuiz = Boolean(quizInfo?.completed);
+
+            const isModuleDone = hasFeedback && hasQuiz;
+            const isCompleted = isModuleDone;
+            const isInProgress = prevCompleted && !isModuleDone;
+            const isUpcoming = !prevCompleted;
             const isExpanded = expandedModuleId === item.id;
 
             return (
@@ -387,7 +445,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                       )}
                     </View>
 
-                    {index < payload.learningJourney.length - 1 ? (
+                    {index < (payload.learningJourney || []).length - 1 ? (
                       <View style={[styles.timelineConnectorLine, isCompleted && styles.lineCompleted]} />
                     ) : null}
                   </View>
@@ -399,7 +457,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                   >
                     <View style={styles.moduleHeaderLeft}>
                       <View style={styles.moduleIconBox}>
-                        <MaterialCommunityIcons name={item.icon || "code-tags"} size={18} color="#5B3CF5" />
+                        <MaterialCommunityIcons name={item.icon || "code-tags"} size={18} color={isInProgress ? "#5B3CF5" : isCompleted ? "#2E7D32" : "#A0A0B8"} />
                       </View>
                       <View style={{ marginLeft: 10, flex: 1 }}>
                         <Text style={styles.moduleNumText}>{item.moduleNum}</Text>
@@ -411,7 +469,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                     <View style={styles.moduleHeaderRight}>
                       {isCompleted ? (
                         <View style={styles.completedBadge}>
-                          <Text style={styles.completedBadgeText}>Completed</Text>
+                          <Text style={styles.completedBadgeText}>Passed 🎉</Text>
                         </View>
                       ) : isInProgress ? (
                         <Pressable onPress={handleJoinLiveClass} style={styles.joinNowBtn}>
@@ -419,7 +477,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                         </Pressable>
                       ) : (
                         <View style={styles.upcomingBadge}>
-                          <Text style={styles.upcomingBadgeText}>{isUnlocked && item.id === "m4" ? "Unlocked 🎉" : "Upcoming"}</Text>
+                          <Text style={styles.upcomingBadgeText}>Locked 🔒</Text>
                         </View>
                       )}
 
@@ -428,124 +486,278 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                   </Pressable>
                 </View>
 
-                {/* Expanded Accordion Body (Class Reflection inside Module 3) */}
-                {isExpanded && item.id === "m3" ? (
+                {/* Expanded Accordion Body */}
+                {isExpanded ? (
                   <View style={styles.accordionBody}>
-                    <View style={styles.reflectionAccordionCard}>
-                      <View style={styles.reflectionTitleRow}>
-                        <Text style={styles.reflectionTitleText}>Class Reflection (Required)</Text>
-                        {isUnlocked ? (
-                          <View style={styles.completedTagPill}>
-                            <Feather name="check-circle" size={11} color="#2E7D32" style={{ marginRight: 3 }} />
-                            <Text style={styles.completedTagText}>Submitted (+20 XP)</Text>
-                          </View>
-                        ) : null}
-                      </View>
-                      <Text style={styles.reflectionSubtitleText}>
-                        Please take a moment to share your feedback about today's class.
-                      </Text>
-
-                      {!isUnlocked ? (
-                        <>
-                          {/* 5 Expandable Reflection Questions */}
-                          {reflectionQuestions.map((q) => {
-                            const isQExpanded = expandedQuestionId === q.id;
-                            const isRatingQ = q.id === "q5";
-
-                            return (
-                              <View key={q.id} style={styles.qAccordionRow}>
-                                <Pressable
-                                  onPress={() => setExpandedQuestionId(isQExpanded ? null : q.id)}
-                                  style={styles.qAccordionHeader}
-                                >
-                                  <View style={styles.qHeaderLeft}>
-                                    <View style={[styles.qIconCircle, { backgroundColor: q.iconBg }]}>
-                                      <Feather name={q.icon} size={13} color={q.iconColor} />
-                                    </View>
-                                    <Text style={styles.qHeaderText}>
-                                      {q.num} {q.question}
-                                    </Text>
-                                  </View>
-                                  <Feather name={isQExpanded ? "chevron-down" : "chevron-right"} size={16} color="#7C7C9A" />
-                                </Pressable>
-
-                                {isQExpanded ? (
-                                  <View style={styles.qAccordionBody}>
-                                    {isRatingQ ? (
-                                      <View style={styles.starsSelectorRow}>
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                          <Pressable key={star} onPress={() => setAnswers((prev) => ({ ...prev, q5: star }))} style={{ paddingHorizontal: 4 }}>
-                                            <FontAwesome name="star" size={22} color={star <= answers.q5 ? "#FFB800" : "#E2E2EC"} />
-                                          </Pressable>
-                                        ))}
-                                        <Text style={styles.starRatingVal}>{answers.q5}.0 / 5.0</Text>
-                                      </View>
-                                    ) : (
-                                      <View style={styles.optionsWrap}>
-                                        {q.options.map((opt) => {
-                                          const selected = answers[q.id] === opt.label;
-                                          return (
-                                            <Pressable
-                                              key={opt.label}
-                                              onPress={() => setAnswers((prev) => ({ ...prev, [q.id]: opt.label }))}
-                                              style={[styles.optChip, selected && styles.optChipSelected]}
-                                            >
-                                              <Feather name={opt.optIcon} size={12} color={selected ? "#5B3CF5" : opt.optColor} style={{ marginRight: 5 }} />
-                                              <Text style={[styles.optChipText, selected && styles.optChipTextSelected]}>
-                                                {opt.label}
-                                              </Text>
-                                            </Pressable>
-                                          );
-                                        })}
-                                      </View>
-                                    )}
-                                  </View>
-                                ) : null}
-                              </View>
-                            );
-                          })}
-
-                          {/* Quick Reflection Note Input */}
-                          <View style={{ marginTop: 10 }}>
-                            <TextInput
-                              value={feedbackNote}
-                              onChangeText={setFeedbackNote}
-                              placeholder="Any extra feedback or suggestion for Rahul Dev (Optional)..."
-                              placeholderTextColor="#A0A0B8"
-                              style={styles.feedbackInput}
-                            />
-                          </View>
-
-                          {/* Footer Submit Row */}
-                          <View style={styles.reflectionFooterRow}>
-                            <View style={styles.footerLockNotice}>
-                              <Feather name="lock" size={12} color="#5B3CF5" style={{ marginRight: 4 }} />
-                              <Text style={styles.footerLockText}>Submit your reflection to unlock the next class.</Text>
-                            </View>
-
-                            <Pressable
-                              onPress={handleReflectionSubmit}
-                              disabled={submittingReflection}
-                              style={({ pressed }) => [styles.submitBtn, pressed && styles.pressed]}
-                            >
-                              {submittingReflection ? (
-                                <ActivityIndicator color="#FFFFFF" size="small" />
-                              ) : (
-                                <Text style={styles.submitBtnText}>Submit Reflection</Text>
-                              )}
-                            </Pressable>
-                          </View>
-                        </>
-                      ) : (
-                        <View style={styles.submittedSuccessBox}>
-                          <MaterialCommunityIcons name="check-circle-outline" size={24} color="#2E7D32" />
-                          <View style={{ marginLeft: 8, flex: 1 }}>
-                            <Text style={styles.successBoxTitle}>Reflection Completed 🎉</Text>
-                            <Text style={styles.successBoxSub}>Your feedback was sent to Rahul Dev. Module 4 is now unlocked!</Text>
-                          </View>
+                    {!prevCompleted ? (
+                      <View style={[styles.reflectionAccordionCard, { backgroundColor: "#FFF8F6", borderColor: "#FFDCD6", borderWidth: 1, padding: 14 }]}>
+                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                          <Feather name="lock" size={16} color="#E76F51" style={{ marginRight: 8 }} />
+                          <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: "#D9381E", flex: 1 }}>
+                            Day Class Locked
+                          </Text>
                         </View>
-                      )}
-                    </View>
+                        <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: "#66443D", marginTop: 4 }}>
+                          Please complete Day {index}'s Feedback & 10-MCQs Practice Quiz to unlock this session.
+                        </Text>
+                      </View>
+                    ) : (
+                      <>
+                        {/* 1. Mentor Class Feedback & Rating Card */}
+                        <View style={styles.reflectionAccordionCard}>
+                          <View style={styles.reflectionTitleRow}>
+                            <Text style={styles.reflectionTitleText}>Step 1: Class & Mentor Feedback</Text>
+                            {hasFeedback ? (
+                              <View style={styles.completedTagPill}>
+                                <Feather name="check-circle" size={11} color="#2E7D32" style={{ marginRight: 3 }} />
+                                <Text style={styles.completedTagText}>Submitted (+20 XP)</Text>
+                              </View>
+                            ) : null}
+                          </View>
+                          <Text style={styles.reflectionSubtitleText}>
+                            Share your feedback for {payload.mentorName || "your Mentor"} for today's session.
+                          </Text>
+
+                          {!hasFeedback ? (
+                            <>
+                              {reflectionQuestions.map((q) => {
+                                const isQExpanded = expandedQuestionId === q.id;
+                                const isRatingQ = q.id === "q5";
+
+                                return (
+                                  <View key={q.id} style={styles.qAccordionRow}>
+                                    <Pressable
+                                      onPress={() => setExpandedQuestionId(isQExpanded ? null : q.id)}
+                                      style={styles.qAccordionHeader}
+                                    >
+                                      <View style={styles.qHeaderLeft}>
+                                        <View style={[styles.qIconCircle, { backgroundColor: q.iconBg }]}>
+                                          <Feather name={q.icon} size={13} color={q.iconColor} />
+                                        </View>
+                                        <Text style={styles.qHeaderText}>
+                                          {q.num} {q.question}
+                                        </Text>
+                                      </View>
+                                      <Feather name={isQExpanded ? "chevron-down" : "chevron-right"} size={16} color="#7C7C9A" />
+                                    </Pressable>
+
+                                    {isQExpanded ? (
+                                      <View style={styles.qAccordionBody}>
+                                        {isRatingQ ? (
+                                          <View style={styles.starsSelectorRow}>
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                              <Pressable key={star} onPress={() => setAnswers((prev) => ({ ...prev, q5: star }))} style={{ paddingHorizontal: 4 }}>
+                                                <FontAwesome name="star" size={22} color={star <= answers.q5 ? "#FFB800" : "#E2E2EC"} />
+                                              </Pressable>
+                                            ))}
+                                            <Text style={styles.starRatingVal}>{answers.q5}.0 / 5.0</Text>
+                                          </View>
+                                        ) : (
+                                          <View style={styles.optionsWrap}>
+                                            {q.options.map((opt) => {
+                                              const selected = answers[q.id] === opt.label;
+                                              return (
+                                                <Pressable
+                                                  key={opt.label}
+                                                  onPress={() => setAnswers((prev) => ({ ...prev, [q.id]: opt.label }))}
+                                                  style={[styles.optChip, selected && styles.optChipSelected]}
+                                                >
+                                                  <Feather name={opt.optIcon} size={12} color={selected ? "#5B3CF5" : opt.optColor} style={{ marginRight: 5 }} />
+                                                  <Text style={[styles.optChipText, selected && styles.optChipTextSelected]}>
+                                                    {opt.label}
+                                                  </Text>
+                                                </Pressable>
+                                              );
+                                            })}
+                                          </View>
+                                        )}
+                                      </View>
+                                    ) : null}
+                                  </View>
+                                );
+                              })}
+
+                              <View style={{ marginTop: 10 }}>
+                                <TextInput
+                                  value={feedbackNote}
+                                  onChangeText={setFeedbackNote}
+                                  placeholder={`Feedback note for ${payload.mentorName || "Mentor"} (Optional)...`}
+                                  placeholderTextColor="#A0A0B8"
+                                  style={styles.feedbackInput}
+                                />
+                              </View>
+
+                              <View style={styles.reflectionFooterRow}>
+                                <View style={styles.footerLockNotice}>
+                                  <Feather name="shield" size={12} color="#5B3CF5" style={{ marginRight: 4 }} />
+                                  <Text style={styles.footerLockText}>Feedback unlocks 10-MCQs Practice Quiz.</Text>
+                                </View>
+
+                                <Pressable
+                                  onPress={() => {
+                                    setCompletedFeedbacks((prev) => ({ ...prev, [item.id]: true }));
+                                    Alert.alert("Feedback Submitted! 🎉", "Thank you! 10-MCQs Practice Quiz is now unlocked below.");
+                                  }}
+                                  style={({ pressed }) => [styles.submitBtn, pressed && styles.pressed]}
+                                >
+                                  <Text style={styles.submitBtnText}>Submit Mentor Feedback (+20 XP)</Text>
+                                </Pressable>
+                              </View>
+                            </>
+                          ) : (
+                            <View style={styles.submittedSuccessBox}>
+                              <MaterialCommunityIcons name="check-circle-outline" size={24} color="#2E7D32" />
+                              <View style={{ marginLeft: 8, flex: 1 }}>
+                                <Text style={styles.successBoxTitle}>Mentor Feedback Completed 🎉</Text>
+                                <Text style={styles.successBoxSub}>Your feedback was submitted to {payload.mentorName || "Mentor"}. Step 2 Quiz is unlocked below!</Text>
+                              </View>
+                            </View>
+                          )}
+                        </View>
+
+                        {/* 2. Google Gemini AI 10-MCQs Practice Quiz Card */}
+                        <View style={[styles.reflectionAccordionCard, { marginTop: 12, backgroundColor: "#FAF8FF", borderColor: "#E5DEFF", borderWidth: 1 }]}>
+                          <View style={styles.reflectionTitleRow}>
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                              <MaterialCommunityIcons name="lightning-bolt" size={18} color="#5B3CF5" style={{ marginRight: 4 }} />
+                              <Text style={[styles.reflectionTitleText, { color: "#5B3CF5" }]}>Step 2: Gemini 10-MCQ Practice Quiz</Text>
+                            </View>
+                            {hasQuiz ? (
+                              <View style={[styles.completedTagPill, { backgroundColor: "#ECF9E9" }]}>
+                                <Feather name="award" size={11} color="#2E7D32" style={{ marginRight: 3 }} />
+                                <Text style={[styles.completedTagText, { color: "#2E7D32" }]}>Quiz Passed (+50 XP)</Text>
+                              </View>
+                            ) : null}
+                          </View>
+                          <Text style={styles.reflectionSubtitleText}>
+                            Test your understanding of "{item.title}" with 10 questions generated by Gemini AI.
+                          </Text>
+
+                          {!hasFeedback ? (
+                            <View style={{ backgroundColor: "#F3F4F6", padding: 10, borderRadius: 8, marginTop: 8, flexDirection: "row", alignItems: "center" }}>
+                              <Feather name="lock" size={14} color="#6B7280" style={{ marginRight: 6 }} />
+                              <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: "#4B5563" }}>
+                                Submit Mentor Feedback above first to unlock today's Quiz.
+                              </Text>
+                            </View>
+                          ) : activeQuizModuleId !== item.id || (!loadingQuiz && quizQuestions.length === 0) ? (
+                            <Pressable
+                              onPress={() => handleStartDayQuiz(item.id, item.title)}
+                              style={({ pressed }) => [styles.submitBtn, { marginTop: 8, backgroundColor: "#5B3CF5" }, pressed && styles.pressed]}
+                            >
+                              <MaterialCommunityIcons name="brain" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                              <Text style={styles.submitBtnText}>Start 10-MCQ Quiz with Gemini AI</Text>
+                            </Pressable>
+                          ) : loadingQuiz && activeQuizModuleId === item.id ? (
+                            <View style={{ paddingVertical: 16, alignItems: "center" }}>
+                              <ActivityIndicator color="#5B3CF5" size="medium" />
+                              <Text style={{ fontSize: 13, color: "#5B3CF5", marginTop: 8, fontFamily: fonts.medium }}>
+                                Generating 10 MCQs for "{item.title}" using Gemini AI...
+                              </Text>
+                            </View>
+                          ) : activeQuizModuleId === item.id && quizQuestions.length > 0 ? (
+                            <View style={{ marginTop: 10 }}>
+                              {quizSubmitted ? (
+                                <View style={{ backgroundColor: "#F0FDF4", padding: 12, borderRadius: 10, marginBottom: 14, borderWidth: 1, borderColor: "#BBF7D0" }}>
+                                  <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#166534" }}>
+                                    Result Score: {quizScore} / 10 ({Math.round((quizScore / 10) * 100)}%)
+                                  </Text>
+                                  <Text style={{ fontSize: 12, color: "#15803D", marginTop: 2 }}>
+                                    {quizScore >= 6
+                                      ? "🎉 Passed! Next Day Class is now fully unlocked!"
+                                      : "Good attempt! Review your answers below to strengthen your concepts."}
+                                  </Text>
+                                </View>
+                              ) : null}
+
+                              {quizQuestions.map((q, qIndex) => {
+                                const selectedOptIdx = quizAnswers[q.id];
+                                return (
+                                  <View key={q.id || qIndex} style={{ marginBottom: 14, backgroundColor: "#FFFFFF", padding: 12, borderRadius: 10, borderWidth: 1, borderColor: "#EBEBEF" }}>
+                                    <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: "#181725", marginBottom: 8 }}>
+                                      {qIndex + 1}. {q.question}
+                                    </Text>
+                                    <View style={{ gap: 6 }}>
+                                      {(q.options || []).map((optText, optIndex) => {
+                                        const isSelected = selectedOptIdx === optIndex;
+                                        const isCorrect = q.correctIndex === optIndex;
+                                        let optionStyle = { backgroundColor: "#F8F8FA", borderColor: "#E8E8EE" };
+                                        let optionTextColor = "#33334A";
+
+                                        if (quizSubmitted) {
+                                          if (isCorrect) {
+                                            optionStyle = { backgroundColor: "#DCFCE7", borderColor: "#22C55E" };
+                                            optionTextColor = "#15803D";
+                                          } else if (isSelected && !isCorrect) {
+                                            optionStyle = { backgroundColor: "#FEE2E2", borderColor: "#EF4444" };
+                                            optionTextColor = "#B91C1C";
+                                          }
+                                        } else if (isSelected) {
+                                          optionStyle = { backgroundColor: "#F0EDFF", borderColor: "#5B3CF5" };
+                                          optionTextColor = "#5B3CF5";
+                                        }
+
+                                        return (
+                                          <Pressable
+                                            key={optIndex}
+                                            onPress={() => handleSelectQuizOption(q.id, optIndex)}
+                                            style={[{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, flexDirection: "row", alignItems: "center" }, optionStyle]}
+                                          >
+                                            <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: isSelected ? "#5B3CF5" : "#A0A0B8", alignItems: "center", justifyContent: "center", marginRight: 8, backgroundColor: isSelected ? "#5B3CF5" : "transparent" }}>
+                                              {isSelected ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#FFFFFF" }} /> : null}
+                                            </View>
+                                            <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: optionTextColor, flex: 1 }}>{optText}</Text>
+                                          </Pressable>
+                                        );
+                                      })}
+                                    </View>
+
+                                    {quizSubmitted && q.explanation ? (
+                                      <Text style={{ fontSize: 11, color: "#666680", marginTop: 6, fontStyle: "italic" }}>
+                                        💡 {q.explanation}
+                                      </Text>
+                                    ) : null}
+                                  </View>
+                                );
+                              })}
+
+                              {!quizSubmitted ? (
+                                <Pressable
+                                  onPress={() => {
+                                    let score = 0;
+                                    quizQuestions.forEach((q) => {
+                                      if (quizAnswers[q.id] === q.correctIndex) {
+                                        score++;
+                                      }
+                                    });
+                                    setQuizScore(score);
+                                    setQuizSubmitted(true);
+                                    setCompletedQuizzes((prev) => ({
+                                      ...prev,
+                                      [item.id]: { score, total: 10, completed: true }
+                                    }));
+                                    Alert.alert(
+                                      "Quiz Result 🎉",
+                                      `Score: ${score}/10 (${Math.round((score / 10) * 100)}%)\nNext Day Class is now fully unlocked!`
+                                    );
+                                  }}
+                                  style={({ pressed }) => [styles.submitBtn, { marginTop: 10, backgroundColor: "#2E7D32" }, pressed && styles.pressed]}
+                                >
+                                  <Text style={styles.submitBtnText}>Submit 10 MCQs Quiz</Text>
+                                </Pressable>
+                              ) : (
+                                <Pressable
+                                  onPress={() => handleStartDayQuiz(item.id, item.title)}
+                                  style={({ pressed }) => [styles.submitBtn, { marginTop: 10, backgroundColor: "#5B3CF5" }, pressed && styles.pressed]}
+                                >
+                                  <Text style={styles.submitBtnText}>Retake Practice Quiz</Text>
+                                </Pressable>
+                              )}
+                            </View>
+                          ) : null}
+                        </View>
+                      </>
+                    )}
                   </View>
                 ) : null}
               </View>
@@ -556,7 +768,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
         {/* 5. What's Next Section */}
         <Text style={styles.sectionTitle}>What's Next?</Text>
         <View style={styles.whatsNextGrid}>
-          {payload.whatsNext.map((item) => (
+          {(payload.whatsNext || []).map((item) => (
             <Pressable
               key={item.id}
               onPress={() => (item.meetingUrl ? handleJoinLiveClass() : Alert.alert(item.title, item.sub))}

@@ -566,6 +566,11 @@ export default function HomeScreen({ session, onLogout }) {
                 session={session}
                 user={user}
                 onBack={() => setShowMentorDashboard(false)}
+                onEditCourse={(course) => {
+                  setShowMentorDashboard(false);
+                  setCourseToEdit(course);
+                  setShowCreateCourseScreen(true);
+                }}
                 onNavigateActivity={(act) => {
                   if (act === "Add Courses") {
                     setShowMentorDashboard(false);

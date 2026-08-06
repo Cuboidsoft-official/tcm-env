@@ -226,6 +226,12 @@ export function getPopularCoursesDetails(token) {
   });
 }
 
+export function getMentorCourses(token) {
+  return request("/home/mentor/courses", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
 export function searchGlobal(token, query) {
   return request(`/home/search?q=${encodeURIComponent(query)}`, {
     headers: {
