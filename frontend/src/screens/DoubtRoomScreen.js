@@ -554,7 +554,7 @@ function isQuestionMessage(item) {
           {hasRequestedJoin ? (
             <View style={[styles.joinRoomButton, { backgroundColor: "#64748B" }]}>
               <MaterialCommunityIcons name="clock-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={styles.joinRoomButtonText}>Join Request Pending Approval ⏳</Text>
+              <Text style={styles.joinRoomButtonText}>Join Request Pending Approval</Text>
             </View>
           ) : (
             <TouchableOpacity style={styles.joinRoomButton} onPress={handleJoinRoom} disabled={joining}>
@@ -564,7 +564,7 @@ function isQuestionMessage(item) {
                 <>
                   <MaterialCommunityIcons name={room?.isPrivate ? "lock-outline" : "account-plus"} size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
                   <Text style={styles.joinRoomButtonText}>
-                    {room?.isPrivate ? "Request to Join Private Room 🔒" : "Join Room to Participate 💬"}
+                    {room?.isPrivate ? "Request to Join Private Room" : "Join Room to Participate"}
                   </Text>
                 </>
               )}
@@ -610,7 +610,7 @@ function isQuestionMessage(item) {
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setManageModalVisible(true); }}>
                   <MaterialCommunityIcons name="shield-account" size={20} color="#5B3CF5" />
                   <Text style={styles.menuItemText}>
-                    Admin Tools & Requests 👑 {(room?.joinRequests?.length || 0) > 0 ? `(${room.joinRequests.length} Pending)` : ""}
+                    Admin Tools & Requests {(room?.joinRequests?.length || 0) > 0 ? `(${room.joinRequests.length} Pending)` : ""}
                   </Text>
                 </TouchableOpacity>
               </>
@@ -618,15 +618,15 @@ function isQuestionMessage(item) {
 
             <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setPollModalVisible(true); }}>
               <MaterialCommunityIcons name="poll" size={20} color="#5B3CF5" />
-              <Text style={styles.menuItemText}>Create Live Poll 📊</Text>
+              <Text style={styles.menuItemText}>Create Live Poll</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setCodeModalVisible(true); }}>
               <MaterialCommunityIcons name="code-json" size={20} color="#3B82F6" />
-              <Text style={styles.menuItemText}>Share Code Snippet 💻</Text>
+              <Text style={styles.menuItemText}>Share Code Snippet</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={handleMarkSolved}>
               <MaterialCommunityIcons name="check-circle-outline" size={20} color="#10B981" />
-              <Text style={styles.menuItemText}>Mark Doubt as Solved ✅</Text>
+              <Text style={styles.menuItemText}>Mark Doubt as Solved</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -636,13 +636,13 @@ function isQuestionMessage(item) {
       <Modal visible={manageModalVisible} transparent animationType="slide" onRequestClose={() => setManageModalVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.pollModalBox}>
-            <Text style={styles.modalBoxTitle}>Room Admin Settings 👑</Text>
+            <Text style={styles.modalBoxTitle}>Room Admin Settings</Text>
 
             {/* PENDING JOIN REQUESTS SECTION */}
             {(room?.joinRequests || []).length > 0 ? (
               <View style={{ backgroundColor: "#FFFBEB", borderRadius: 12, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: "#FDE68A" }}>
                 <Text style={{ fontSize: 13, fontWeight: "700", color: "#D97706", marginBottom: 6 }}>
-                  ⏳ Pending Join Requests ({room.joinRequests.length})
+                  Pending Join Requests ({room.joinRequests.length})
                 </Text>
                 {room.joinRequests.map((reqItem, idx) => (
                   <View key={idx} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4 }}>
@@ -654,13 +654,13 @@ function isQuestionMessage(item) {
                         onPress={() => handleManageAction("approve_request", { targetUserId: reqItem.userId })}
                         style={{ backgroundColor: "#10B981", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}
                       >
-                        <Text style={{ fontSize: 11, color: "#FFFFFF", fontWeight: "700" }}>Approve ✅</Text>
+                        <Text style={{ fontSize: 11, color: "#FFFFFF", fontWeight: "700" }}>Approve</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleManageAction("decline_request", { targetUserId: reqItem.userId })}
                         style={{ backgroundColor: "#EF4444", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}
                       >
-                        <Text style={{ fontSize: 11, color: "#FFFFFF", fontWeight: "700" }}>Decline ❌</Text>
+                        <Text style={{ fontSize: 11, color: "#FFFFFF", fontWeight: "700" }}>Decline</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -1095,7 +1095,9 @@ const styles = StyleSheet.create({
     marginRight: 4
   },
   msgRowRight: {
+    flexDirection: "row",
     alignItems: "flex-end",
+    justifyContent: "flex-end",
     marginBottom: 16
   },
   msgBodyRight: {
