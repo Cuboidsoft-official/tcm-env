@@ -2639,18 +2639,18 @@ homeRouter.post("/doubt-rooms/:roomId/polls", requireAuth, async (req, res) => {
       id: `msg_poll_${Date.now()}`,
       type: "poll",
       pollId: `poll_${Date.now()}`,
-      authorName: req.user?.name || "Physics Guru",
+      authorName: req.user?.name || "Student Learner",
       authorRole: (req.user?.role || "").toLowerCase().includes("mentor") ? "Admin" : "Member",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       question: question || "Who wants to learn this topic again in a live session?",
       options: options.map((optText, index) => ({
         id: `opt_${index + 1}`,
         text: optText,
-        count: index === 0 ? 4 : 1,
-        percentage: index === 0 ? 80 : 20,
+        count: 0,
+        percentage: 0,
         isVoted: false
       })),
-      totalVotes: 5,
+      totalVotes: 0,
       endsIn: "24h 00m"
     };
 
@@ -2683,8 +2683,41 @@ homeRouter.post("/doubt-rooms/:roomId/polls/:pollId/vote", requireAuth, async (r
     const total = pollMsg.options.reduce((sum, o) => sum + o.count, 0);
     pollMsg.totalVotes = total;
     pollMsg.options.forEach((opt) => {
-      opt.percentage = Math.round((opt.count / total) * 100);
+      opt.percentage = total > 0 ? Math.round((opt.count / total) * 100) : 0;
     });
+
+    // Auto-Trigger Mentor Alert if 5+ students give positive feedback
+    const positiveOpt = pollMsg.options.find(
+      (o) =>
+        o.count >= 5 &&
+        (o.text.toLowerCase().includes("yes") ||
+          o.text.toLowerCase().includes("ha") ||
+          o.text.toLowerCase().includes("positive") ||
+          o.text.toLowerCase().includes("learn") ||
+          o.text.toLowerCase().includes("want"))
+    );
+
+    if (positiveOpt && !pollMsg.hasNotifiedMentor) {
+      pollMsg.hasNotifiedMentor = true;
+      const mentorId = room.assignedMentor?.id || "m1";
+      if (!req.app.locals.userNotifications) req.app.locals.userNotifications = {};
+      if (!req.app.locals.userNotifications[mentorId]) req.app.locals.userNotifications[mentorId] = [];
+
+      const mentorAlert = {
+        id: `notif_doubt_sched_${Date.now()}`,
+        type: "mentor",
+        title: "⚡ Live Doubt Revision Class Scheduled!",
+        subtitle: `In '${room.title}', 5+ students requested a Live Doubt Session for: "${pollMsg.question}"`,
+        time: "Just now",
+        unread: true,
+        section: "Today",
+        icon: "video",
+        iconBg: "#F0EDFF",
+        iconColor: "#5B3CF5"
+      };
+
+      req.app.locals.userNotifications[mentorId].unshift(mentorAlert);
+    }
 
     await room.save();
     return res.json({ success: true, pollMessage: pollMsg, room });
