@@ -2360,404 +2360,371 @@ homeRouter.post("/doubts", requireAuth, (req, res) => {
   res.json({ success: true, doubt: newDoubt, doubts: req.app.locals.doubtThreads });
 });
 
-// Helper for Doubt Rooms store initialization (starts empty for real user data)
-function getDefaultDoubtRooms(req) {
-  if (!req.app.locals.doubtRoomStore) {
-    req.app.locals.doubtRoomStore = {};
+// 1. GET /home/doubt-rooms - List all active Doubt Rooms & Knowledge Base highlights from MongoDB
+homeRouter.get("/doubt-rooms", requireAuth, async (req, res) => {
+  try {
+    const rooms = await DoubtRoom.find({}).sort({ updatedAt: -1 });
+    const kbItems = await KnowledgeBaseItem.find({}).sort({ createdAt: -1 });
+    return res.json({ success: true, rooms, knowledgeBase: kbItems });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
-  return req.app.locals.doubtRoomStore;
-}
-
-// 1. GET /home/doubt-rooms - List all active Doubt Rooms & Knowledge Base highlights
-homeRouter.get("/doubt-rooms", requireAuth, (req, res) => {
-  const store = getDefaultDoubtRooms(req);
-  const rooms = Object.values(store).map((r) => ({
-    roomId: r.roomId,
-    title: r.title,
-    category: r.category,
-    creatorRole: r.creatorRole,
-    assignedMentor: r.assignedMentor,
-    membersCount: r.membersCount,
-    onlineCount: r.onlineCount,
-    isSolved: r.isSolved,
-    lastMessage: r.messages?.[r.messages.length - 1]?.text || "Study discussion room active"
-  }));
-
-  const kbItems = req.app.locals.knowledgeBaseStore || [];
-  return res.json({ success: true, rooms, knowledgeBase: kbItems });
 });
 
-// 2. POST /home/doubt-rooms - Create a new Doubt Room (Mentor or Student created)
-homeRouter.post("/doubt-rooms", requireAuth, (req, res) => {
-  const { title, category = "NEET", isPrivate = false, description = "" } = req.body;
-  if (!title || !title.trim()) {
-    return res.status(400).json({ message: "Room title is required." });
-  }
-
-  const store = getDefaultDoubtRooms(req);
-  const userRole = (req.user?.role || "").toLowerCase().includes("mentor") || req.user?.isMentor ? "mentor" : "student";
-  const currentUserId = String(req.user._id || req.user.id);
-  const newRoomId = `${category.toUpperCase().replace(/\s+/g, "")}-DOUBT-${Math.floor(100 + Math.random() * 900)}`;
-
-  const newRoom = {
-    roomId: newRoomId,
-    title: title.trim(),
-    category,
-    description: description.trim(),
-    isPrivate: Boolean(isPrivate),
-    creatorId: currentUserId,
-    creatorRole: userRole,
-    admins: [currentUserId],
-    members: [currentUserId],
-    assignedMentor: userRole === "mentor" ? {
-      id: currentUserId,
-      name: req.user?.name || "Mentor",
-      role: req.user?.role || "TCM Mentor",
-      avatarUrl: req.user?.avatarUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-      online: true
-    } : null,
-    membersCount: 1,
-    onlineCount: 1,
-    pinnedAnnouncement: {
-      text: `Welcome to ${title.trim()}! Keep discussions on-topic and respectful.`,
-      authorName: req.user?.name || "Room Admin"
-    },
-    isSolved: false,
-    messages: [
-      {
-        id: `msg_welcome_${Date.now()}`,
-        authorName: req.user?.name || "Room Creator",
-        authorRole: "Admin",
-        authorAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
-        time: "Just now",
-        text: `Welcome to ${title.trim()}! ${isPrivate ? "🔒 (Private Room)" : "🌐 (Public Room)"}`,
-        type: "text"
-      }
-    ]
-  };
-
-  store[newRoomId] = newRoom;
-  return res.json({ success: true, room: newRoom });
-});
-
-// POST /home/doubt-rooms/:roomId/join - Join or Request to Join a Doubt Room
-homeRouter.post("/doubt-rooms/:roomId/join", requireAuth, (req, res) => {
-  const { roomId } = req.params;
-  const store = getDefaultDoubtRooms(req);
-  const room = store[roomId];
-  if (!room) return res.status(404).json({ message: "Doubt Room not found." });
-
-  const userId = String(req.user._id || req.user.id);
-  if (!room.members) room.members = [];
-  if (!room.joinRequests) room.joinRequests = [];
-
-  // Already a member
-  if (room.members.includes(userId)) {
-    return res.json({ success: true, room, status: "joined" });
-  }
-
-  // If room is private, submit a join request for admin approval
-  if (room.isPrivate) {
-    const existingReq = room.joinRequests.find((r) => String(r.userId) === userId);
-    if (!existingReq) {
-      room.joinRequests.push({
-        userId,
-        userName: req.user?.name || "Student Learner",
-        userAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
-        requestedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      });
+// 2. POST /home/doubt-rooms - Create a new Doubt Room in MongoDB
+homeRouter.post("/doubt-rooms", requireAuth, async (req, res) => {
+  try {
+    const { title, category = "NEET", isPrivate = false, description = "" } = req.body;
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: "Room title is required." });
     }
-    return res.json({ success: true, room, status: "requested", message: "Join request sent to Room Admin for approval." });
-  }
 
-  // Public room: instant join
-  room.members.push(userId);
-  room.membersCount = (room.membersCount || 0) + 1;
-  return res.json({ success: true, room, status: "joined" });
-});
+    const userRole = (req.user?.role || "").toLowerCase().includes("mentor") || req.user?.isMentor ? "mentor" : "student";
+    const currentUserId = String(req.user._id || req.user.id);
+    const newRoomId = `${category.toUpperCase().replace(/\s+/g, "")}-DOUBT-${Math.floor(100 + Math.random() * 900)}`;
 
-// POST /home/doubt-rooms/:roomId/manage - Admin management (approve/decline requests, promote admin, remove member, update info)
-homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, (req, res) => {
-  const { roomId } = req.params;
-  const { action, targetUserId, description, roomAvatar, isPrivate } = req.body;
-  const store = getDefaultDoubtRooms(req);
-  const room = store[roomId];
-  if (!room) return res.status(404).json({ message: "Doubt Room not found." });
-
-  const currentUserId = String(req.user._id || req.user.id);
-  const isAdmin = (room.admins || []).includes(currentUserId) || room.creatorId === currentUserId;
-
-  if (!isAdmin) {
-    return res.status(403).json({ message: "Only room admins can manage settings." });
-  }
-
-  if (!room.joinRequests) room.joinRequests = [];
-  if (!room.members) room.members = [];
-
-  if (action === "approve_request" && targetUserId) {
-    room.joinRequests = room.joinRequests.filter((r) => String(r.userId) !== String(targetUserId));
-    if (!room.members.includes(String(targetUserId))) {
-      room.members.push(String(targetUserId));
-      room.membersCount = (room.membersCount || 0) + 1;
-    }
-  } else if (action === "decline_request" && targetUserId) {
-    room.joinRequests = room.joinRequests.filter((r) => String(r.userId) !== String(targetUserId));
-  } else if (action === "promote_admin" && targetUserId) {
-    if (!room.admins) room.admins = [room.creatorId];
-    if (!room.admins.includes(targetUserId)) {
-      room.admins.push(targetUserId);
-    }
-  } else if (action === "remove_member" && targetUserId) {
-    room.members = (room.members || []).filter((m) => String(m) !== String(targetUserId));
-    room.membersCount = Math.max(1, (room.membersCount || 1) - 1);
-  } else if (action === "update_info") {
-    if (description !== undefined) room.description = description;
-    if (roomAvatar !== undefined) room.roomAvatar = roomAvatar;
-    if (isPrivate !== undefined) room.isPrivate = Boolean(isPrivate);
-  }
-
-  return res.json({ success: true, room });
-});
-
-// 3. GET /home/doubt-rooms/:roomId - Fetch Doubt Room details & chat messages
-homeRouter.get("/doubt-rooms/:roomId", requireAuth, (req, res) => {
-  const { roomId } = req.params;
-  const store = getDefaultDoubtRooms(req);
-  const room = store[roomId];
-
-  if (!room) {
-    return res.status(404).json({ message: "Doubt Room not found." });
-  }
-
-  return res.json({ success: true, room });
-});
-
-// 4. POST /home/doubt-rooms/:roomId/messages - Send room message (Text, Code, Reaction, Reply)
-homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, (req, res) => {
-  const { roomId } = req.params;
-  const { text, codeSnippet, attachmentUrl, attachmentType, replyToId, reactionEmoji } = req.body;
-  const store = getDefaultDoubtRooms(req);
-  const room = store[roomId];
-
-  if (!room) {
-    return res.status(404).json({ message: "Doubt Room not found." });
-  }
-
-  // Handle reaction toggle if reactionEmoji and replyToId are provided
-  if (reactionEmoji && replyToId) {
-    const targetMsg = room.messages.find((m) => m.id === replyToId);
-    if (targetMsg) {
-      if (!targetMsg.reactions) targetMsg.reactions = [];
-      const existing = targetMsg.reactions.find((r) => r.emoji === reactionEmoji);
-      if (existing) {
-        existing.count += 1;
-        existing.label = String(existing.count);
-      } else {
-        targetMsg.reactions.push({ emoji: reactionEmoji, count: 1, label: "1" });
-      }
-      return res.json({ success: true, room });
-    }
-  }
-
-  if (!text && !codeSnippet && !attachmentUrl) {
-    return res.status(400).json({ message: "Message content cannot be empty." });
-  }
-
-  const isUserMentor = (req.user?.role || "").toLowerCase().includes("mentor") || req.user?.isMentor;
-  const newMsg = {
-    id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
-    authorName: req.user?.name || "Learner",
-    authorRole: isUserMentor ? "Admin" : undefined,
-    authorAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
-    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    text: text ? text.trim() : "",
-    codeSnippet: codeSnippet ? codeSnippet.trim() : undefined,
-    attachmentUrl: attachmentUrl || undefined,
-    attachmentType: attachmentType || undefined,
-    reactions: [],
-    isSelf: true,
-    isAdmin: isUserMentor,
-    type: codeSnippet ? "code" : attachmentUrl ? "file" : "text",
-    canAskAi: text && text.includes("?")
-  };
-
-  room.messages.push(newMsg);
-  return res.json({ success: true, message: newMsg, room });
-});
-
-// 5. POST /home/doubt-rooms/:roomId/ask-ai - AI Tutor participant answer & escalation using Google Gemini API
-homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => {
-  const { roomId } = req.params;
-  const { messageId, doubtText } = req.body;
-  const store = getDefaultDoubtRooms(req);
-  const room = store[roomId];
-
-  if (!room) {
-    return res.status(404).json({ message: "Doubt Room not found." });
-  }
-
-  const systemInstruction = `You are TCM AI Tutor, an expert academic and technical AI tutor for ${room.title || "TCM Academy"}. Explain clearly, step-by-step, with bullet points. Keep response concise under 250 words.`;
-  const geminiResponse = await askGeminiAi(doubtText || "Explain this concept in detail.", systemInstruction);
-
-  const aiAnswerText = geminiResponse
-    ? `🤖 **TCM AI Explanation**:\n\n${geminiResponse}`
-    : `🤖 **TCM AI Explanation**:\n\nRegarding "${doubtText || "your question"}":\n\n1. **Core Concept**: In ${room.category || "this topic"}, key concepts rely on fundamental principles.\n2. **Key Factor**: Understand the core equations and step-by-step logic.\n\n*Need further clarification? You can tap "Need Mentor Help" below!*`;
-
-  const aiMsg = {
-    id: `msg_ai_${Date.now()}`,
-    authorName: "TCM AI Tutor 🤖",
-    authorRole: "AI Assistant",
-    authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
-    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    text: aiAnswerText,
-    isAi: true,
-    type: "ai_response",
-    canRequestMentorHelp: true
-  };
-
-  room.messages.push(aiMsg);
-  return res.json({ success: true, aiMessage: aiMsg, room });
-});
-
-// 6. POST /home/doubt-rooms/:roomId/polls - Create poll inside room
-homeRouter.post("/doubt-rooms/:roomId/polls", requireAuth, (req, res) => {
-  const { roomId } = req.params;
-  const { question, options = ["Yes, I want to learn again", "No, I understood"] } = req.body;
-  const store = getDefaultDoubtRooms(req);
-  const room = store[roomId];
-
-  if (!room) {
-    return res.status(404).json({ message: "Doubt Room not found." });
-  }
-
-  const pollMsg = {
-    id: `msg_poll_${Date.now()}`,
-    type: "poll",
-    pollId: `poll_${Date.now()}`,
-    authorName: req.user?.name || "Physics Guru",
-    authorRole: (req.user?.role || "").toLowerCase().includes("mentor") ? "Admin" : "Member",
-    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    question: question || "Who wants to learn this topic again in a live session?",
-    options: options.map((optText, index) => ({
-      id: `opt_${index + 1}`,
-      text: optText,
-      count: index === 0 ? 4 : 1,
-      percentage: index === 0 ? 80 : 20,
-      isVoted: false
-    })),
-    totalVotes: 5,
-    endsIn: "24h 00m"
-  };
-
-  room.messages.push(pollMsg);
-  return res.json({ success: true, pollMessage: pollMsg, room });
-});
-
-// 7. POST /home/doubt-rooms/:roomId/polls/:pollId/vote - Vote on poll
-homeRouter.post("/doubt-rooms/:roomId/polls/:pollId/vote", requireAuth, (req, res) => {
-  const { roomId, pollId } = req.params;
-  const { optionId } = req.body;
-  const store = getDefaultDoubtRooms(req);
-  const room = store[roomId];
-
-  if (!room) {
-    return res.status(404).json({ message: "Doubt Room not found." });
-  }
-
-  const pollMsg = room.messages.find((m) => m.type === "poll" && (m.pollId === pollId || m.id === pollId));
-  if (!pollMsg) {
-    return res.status(404).json({ message: "Poll not found." });
-  }
-
-  pollMsg.options.forEach((opt) => {
-    if (opt.id === optionId) {
-      opt.count += 1;
-      opt.isVoted = true;
-    }
-  });
-
-  const total = pollMsg.options.reduce((sum, o) => sum + o.count, 0);
-  pollMsg.totalVotes = total;
-  pollMsg.options.forEach((opt) => {
-    opt.percentage = Math.round((opt.count / total) * 100);
-  });
-
-  // Auto-Trigger Mentor Alert if any option gets 5 or more votes
-  const highDemandOpt = pollMsg.options.find((o) => o.count >= 5 && o.text.toLowerCase().includes("yes"));
-  if (highDemandOpt) {
-    const mentorId = room.assignedMentor?.id || "m1";
-    if (!req.app.locals.userNotifications) req.app.locals.userNotifications = {};
-    if (!req.app.locals.userNotifications[mentorId]) req.app.locals.userNotifications[mentorId] = [];
-
-    const autoAlert = {
-      id: `notif_auto_rev_${Date.now()}`,
-      type: "mentor",
-      title: "⚡ Revision Session Recommended!",
-      subtitle: `In '${room.title}', ${highDemandOpt.count}+ students voted for a Live Revision Class on: "${pollMsg.question}"`,
-      time: "Just now",
-      unread: true,
-      section: "Today",
-      icon: "video",
-      iconBg: "#F0EDFF",
-      iconColor: "#5B3CF5"
+    const newRoomData = {
+      roomId: newRoomId,
+      title: title.trim(),
+      category,
+      description: description.trim(),
+      isPrivate: Boolean(isPrivate),
+      creatorId: currentUserId,
+      creatorRole: userRole,
+      admins: [currentUserId],
+      members: [currentUserId],
+      assignedMentor: userRole === "mentor" ? {
+        id: currentUserId,
+        name: req.user?.name || "Mentor",
+        role: req.user?.role || "TCM Mentor",
+        avatarUrl: req.user?.avatarUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+        online: true
+      } : null,
+      membersCount: 1,
+      onlineCount: 1,
+      pinnedAnnouncement: {
+        text: `Welcome to ${title.trim()}! Keep discussions on-topic and respectful.`,
+        authorName: req.user?.name || "Room Admin"
+      },
+      isSolved: false,
+      messages: [
+        {
+          id: `msg_welcome_${Date.now()}`,
+          authorName: req.user?.name || "Room Creator",
+          authorRole: "Admin",
+          authorAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+          time: "Just now",
+          text: `Welcome to ${title.trim()}! ${isPrivate ? "🔒 (Private Room)" : "🌐 (Public Room)"}`,
+          type: "text"
+        }
+      ]
     };
 
-    req.app.locals.userNotifications[mentorId].unshift(autoAlert);
+    const room = await DoubtRoom.create(newRoomData);
+    return res.json({ success: true, room });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
-
-  return res.json({ success: true, pollMessage: pollMsg, room });
 });
 
-// 8. POST /home/doubt-rooms/:roomId/mark-solved - Mark doubt as solved & save to Knowledge Base
-homeRouter.post("/doubt-rooms/:roomId/mark-solved", requireAuth, (req, res) => {
-  const { roomId } = req.params;
-  const { questionText, solutionText } = req.body;
-  const store = getDefaultDoubtRooms(req);
-  const room = store[roomId];
+// POST /home/doubt-rooms/:roomId/join - Join or Request to Join a Doubt Room in MongoDB
+homeRouter.post("/doubt-rooms/:roomId/join", requireAuth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await DoubtRoom.findOne({ roomId });
+    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
 
-  if (!room) {
-    return res.status(404).json({ message: "Doubt Room not found." });
+    const userId = String(req.user._id || req.user.id);
+    if (!room.members) room.members = [];
+    if (!room.joinRequests) room.joinRequests = [];
+
+    if (room.members.includes(userId)) {
+      return res.json({ success: true, room, status: "joined" });
+    }
+
+    if (room.isPrivate) {
+      const existingReq = room.joinRequests.find((r) => String(r.userId) === userId);
+      if (!existingReq) {
+        room.joinRequests.push({
+          userId,
+          userName: req.user?.name || "Student Learner",
+          userAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+          requestedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        });
+        await room.save();
+      }
+      return res.json({ success: true, room, status: "requested", message: "Join request sent to Room Admin for approval." });
+    }
+
+    room.members.push(userId);
+    room.membersCount = (room.membersCount || 0) + 1;
+    await room.save();
+    return res.json({ success: true, room, status: "joined" });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
-
-  room.isSolved = true;
-
-  if (!req.app.locals.knowledgeBaseStore) {
-    req.app.locals.knowledgeBaseStore = [];
-  }
-
-  const kbEntry = {
-    itemId: `kb_${Date.now()}`,
-    roomId,
-    title: room.title,
-    category: room.category,
-    questionText: questionText || "P-block element electronegativity vs halogens",
-    solutionText: solutionText || "Atomic size increases down group & halogens have maximum effective nuclear pull.",
-    authorName: req.user?.name || "Learner",
-    solvedByMentorName: room.assignedMentor?.name || "Rahul Sharma",
-    upvotes: 1,
-    createdAt: "Just now"
-  };
-
-  req.app.locals.knowledgeBaseStore.unshift(kbEntry);
-  return res.json({ success: true, message: "Doubt marked as Solved and added to Knowledge Base! 🎉", knowledgeBaseItem: kbEntry });
 });
 
-// 9. GET /home/knowledge-base/search - Search solved Knowledge Base items
-homeRouter.get("/knowledge-base/search", requireAuth, (req, res) => {
-  const query = (req.query.q || "").toLowerCase().trim();
-  const kbItems = req.app.locals.knowledgeBaseStore || [];
+// POST /home/doubt-rooms/:roomId/manage - Admin management in MongoDB
+homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { action, targetUserId, description, roomAvatar, isPrivate, title } = req.body;
+    const room = await DoubtRoom.findOne({ roomId });
+    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
 
-  if (!query) {
-    return res.json({ success: true, items: kbItems });
+    const currentUserId = String(req.user._id || req.user.id);
+    const isAdmin = (room.admins || []).includes(currentUserId) || room.creatorId === currentUserId;
+
+    if (!isAdmin) {
+      return res.status(403).json({ message: "Only room admins can manage settings." });
+    }
+
+    if (!room.joinRequests) room.joinRequests = [];
+    if (!room.members) room.members = [];
+
+    if (action === "approve_request" && targetUserId) {
+      room.joinRequests = room.joinRequests.filter((r) => String(r.userId) !== String(targetUserId));
+      if (!room.members.includes(String(targetUserId))) {
+        room.members.push(String(targetUserId));
+        room.membersCount = (room.membersCount || 0) + 1;
+      }
+    } else if (action === "decline_request" && targetUserId) {
+      room.joinRequests = room.joinRequests.filter((r) => String(r.userId) !== String(targetUserId));
+    } else if (action === "promote_admin" && targetUserId) {
+      if (!room.admins) room.admins = [room.creatorId];
+      if (!room.admins.includes(targetUserId)) {
+        room.admins.push(targetUserId);
+      }
+    } else if (action === "remove_member" && targetUserId) {
+      room.members = (room.members || []).filter((m) => String(m) !== String(targetUserId));
+      room.membersCount = Math.max(1, (room.membersCount || 1) - 1);
+    } else if (action === "update_info") {
+      if (title !== undefined) room.title = title;
+      if (description !== undefined) room.description = description;
+      if (roomAvatar !== undefined) room.roomAvatar = roomAvatar;
+      if (isPrivate !== undefined) room.isPrivate = Boolean(isPrivate);
+    }
+
+    await room.save();
+    return res.json({ success: true, room });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
+});
 
-  const filtered = kbItems.filter(
-    (item) =>
-      item.title.toLowerCase().includes(query) ||
-      item.questionText.toLowerCase().includes(query) ||
-      item.solutionText.toLowerCase().includes(query) ||
-      item.category.toLowerCase().includes(query)
-  );
+// 3. GET /home/doubt-rooms/:roomId - Fetch Doubt Room details from MongoDB
+homeRouter.get("/doubt-rooms/:roomId", requireAuth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await DoubtRoom.findOne({ roomId });
+    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+    return res.json({ success: true, room });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
 
-  return res.json({ success: true, items: filtered });
+// 4. POST /home/doubt-rooms/:roomId/messages - Send room message in MongoDB
+homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { text, codeSnippet, attachmentUrl, attachmentType, replyToId, reactionEmoji } = req.body;
+    const room = await DoubtRoom.findOne({ roomId });
+    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+
+    if (reactionEmoji && replyToId) {
+      const targetMsg = room.messages.find((m) => m.id === replyToId);
+      if (targetMsg) {
+        if (!targetMsg.reactions) targetMsg.reactions = [];
+        const existing = targetMsg.reactions.find((r) => r.emoji === reactionEmoji);
+        if (existing) {
+          existing.count += 1;
+          existing.label = String(existing.count);
+        } else {
+          targetMsg.reactions.push({ emoji: reactionEmoji, count: 1, label: "1" });
+        }
+        await room.save();
+        return res.json({ success: true, room });
+      }
+    }
+
+    if (!text && !codeSnippet && !attachmentUrl) {
+      return res.status(400).json({ message: "Message content cannot be empty." });
+    }
+
+    const isUserMentor = (req.user?.role || "").toLowerCase().includes("mentor") || req.user?.isMentor;
+    const newMsg = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      authorName: req.user?.name || "Learner",
+      authorRole: isUserMentor ? "Admin" : undefined,
+      authorAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      text: text ? text.trim() : "",
+      codeSnippet: codeSnippet ? codeSnippet.trim() : undefined,
+      attachmentUrl: attachmentUrl || undefined,
+      attachmentType: attachmentType || undefined,
+      reactions: [],
+      isSelf: true,
+      isAdmin: isUserMentor,
+      type: codeSnippet ? "code" : attachmentUrl ? "file" : "text",
+      canAskAi: text && text.includes("?")
+    };
+
+    room.messages.push(newMsg);
+    await room.save();
+    return res.json({ success: true, message: newMsg, room });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// 5. POST /home/doubt-rooms/:roomId/ask-ai - AI Tutor answer in MongoDB
+homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { messageId, doubtText } = req.body;
+    const room = await DoubtRoom.findOne({ roomId });
+    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+
+    const systemInstruction = `You are TCM AI Tutor, an expert academic and technical AI tutor for ${room.title || "TCM Academy"}. Explain clearly, step-by-step, with bullet points. Keep response concise under 250 words.`;
+    const geminiResponse = await askGeminiAi(doubtText || "Explain this concept in detail.", systemInstruction);
+
+    const aiAnswerText = geminiResponse
+      ? `🤖 **TCM AI Explanation**:\n\n${geminiResponse}`
+      : `🤖 **TCM AI Explanation**:\n\nRegarding "${doubtText || "your question"}":\n\n1. **Core Concept**: In ${room.category || "this topic"}, key concepts rely on fundamental principles.\n2. **Key Factor**: Understand the core equations and step-by-step logic.\n\n*Need further clarification? You can tap "Need Mentor Help" below!*`;
+
+    const aiMsg = {
+      id: `msg_ai_${Date.now()}`,
+      authorName: "TCM AI Tutor 🤖",
+      authorRole: "AI Assistant",
+      authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      text: aiAnswerText,
+      isAi: true,
+      type: "ai_response",
+      canRequestMentorHelp: true
+    };
+
+    room.messages.push(aiMsg);
+    await room.save();
+    return res.json({ success: true, aiMessage: aiMsg, room });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// 6. POST /home/doubt-rooms/:roomId/polls - Create poll in MongoDB
+homeRouter.post("/doubt-rooms/:roomId/polls", requireAuth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { question, options = ["Yes, I want to learn again", "No, I understood"] } = req.body;
+    const room = await DoubtRoom.findOne({ roomId });
+    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+
+    const pollMsg = {
+      id: `msg_poll_${Date.now()}`,
+      type: "poll",
+      pollId: `poll_${Date.now()}`,
+      authorName: req.user?.name || "Physics Guru",
+      authorRole: (req.user?.role || "").toLowerCase().includes("mentor") ? "Admin" : "Member",
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      question: question || "Who wants to learn this topic again in a live session?",
+      options: options.map((optText, index) => ({
+        id: `opt_${index + 1}`,
+        text: optText,
+        count: index === 0 ? 4 : 1,
+        percentage: index === 0 ? 80 : 20,
+        isVoted: false
+      })),
+      totalVotes: 5,
+      endsIn: "24h 00m"
+    };
+
+    room.messages.push(pollMsg);
+    await room.save();
+    return res.json({ success: true, pollMessage: pollMsg, room });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// 7. POST /home/doubt-rooms/:roomId/polls/:pollId/vote - Vote on poll in MongoDB
+homeRouter.post("/doubt-rooms/:roomId/polls/:pollId/vote", requireAuth, async (req, res) => {
+  try {
+    const { roomId, pollId } = req.params;
+    const { optionId } = req.body;
+    const room = await DoubtRoom.findOne({ roomId });
+    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+
+    const pollMsg = room.messages.find((m) => m.type === "poll" && (m.pollId === pollId || m.id === pollId));
+    if (!pollMsg) return res.status(404).json({ message: "Poll not found." });
+
+    pollMsg.options.forEach((opt) => {
+      if (opt.id === optionId) {
+        opt.count += 1;
+        opt.isVoted = true;
+      }
+    });
+
+    const total = pollMsg.options.reduce((sum, o) => sum + o.count, 0);
+    pollMsg.totalVotes = total;
+    pollMsg.options.forEach((opt) => {
+      opt.percentage = Math.round((opt.count / total) * 100);
+    });
+
+    await room.save();
+    return res.json({ success: true, pollMessage: pollMsg, room });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// 8. POST /home/doubt-rooms/:roomId/mark-solved - Mark doubt as solved & save to Knowledge Base in MongoDB
+homeRouter.post("/doubt-rooms/:roomId/mark-solved", requireAuth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { questionText, solutionText } = req.body;
+    const room = await DoubtRoom.findOne({ roomId });
+    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+
+    room.isSolved = true;
+    await room.save();
+
+    const kbEntry = await KnowledgeBaseItem.create({
+      itemId: `kb_${Date.now()}`,
+      roomId,
+      title: room.title,
+      category: room.category,
+      questionText: questionText || "P-block element electronegativity vs halogens",
+      solutionText: solutionText || "Atomic size increases down group & halogens have maximum effective nuclear pull.",
+      authorName: req.user?.name || "Learner",
+      solvedByMentorName: room.assignedMentor?.name || "Rahul Sharma",
+      upvotes: 1
+    });
+
+    return res.json({ success: true, message: "Doubt marked as Solved and added to Knowledge Base! 🎉", knowledgeBaseItem: kbEntry });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// 9. GET /home/knowledge-base/search - Search solved Knowledge Base items from MongoDB
+homeRouter.get("/knowledge-base/search", requireAuth, async (req, res) => {
+  try {
+    const query = (req.query.q || "").toLowerCase().trim();
+    if (!query) {
+      const items = await KnowledgeBaseItem.find({}).sort({ createdAt: -1 });
+      return res.json({ success: true, items });
+    }
+
+    const regex = new RegExp(query, "i");
+    const items = await KnowledgeBaseItem.find({
+      $or: [{ questionText: regex }, { solutionText: regex }, { title: regex }, { category: regex }]
+    }).sort({ createdAt: -1 });
+
+    return res.json({ success: true, items });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
 });
