@@ -17,6 +17,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,13 +44,13 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Sync MONGODB_URI secret
-        if: secrets.MONGODB_URI != ''
-        run: echo "${{ secrets.MONGODB_URI }}" | npx wrangler secret put MONGODB_URI --config backend/wrangler.toml
+        if: env.MONGODB_URI != ''
+        run: echo "$MONGODB_URI" | npx wrangler secret put MONGODB_URI --config backend/wrangler.toml
 
       - name: Sync JWT_SECRET secret
-        if: secrets.JWT_SECRET != ''
-        run: echo "${{ secrets.JWT_SECRET }}" | npx wrangler secret put JWT_SECRET --config backend/wrangler.toml
+        if: env.JWT_SECRET != ''
+        run: echo "$JWT_SECRET" | npx wrangler secret put JWT_SECRET --config backend/wrangler.toml
 
       - name: Sync GEMINI_API_KEY secret
-        if: secrets.GEMINI_API_KEY != ''
-        run: echo "${{ secrets.GEMINI_API_KEY }}" | npx wrangler secret put GEMINI_API_KEY --config backend/wrangler.toml
+        if: env.GEMINI_API_KEY != ''
+        run: echo "$GEMINI_API_KEY" | npx wrangler secret put GEMINI_API_KEY --config backend/wrangler.toml

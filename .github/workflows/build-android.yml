@@ -48,42 +48,57 @@ jobs:
       - name: Compute app version
         run: echo "TCM_APP_VERSION=$(node -e "console.log(require('./frontend/app.json').expo.version)")" >> "$GITHUB_ENV"
 
+      - name: Prepare dist directory
+        run: mkdir -p frontend/dist
+
       - name: Build APK (EAS preview)
-        run: npx eas-cli@latest build --platform android --profile preview --non-interactive --wait
+        working-directory: frontend
+        run: npx eas-cli@latest build --platform android --profile preview --non-interactive --wait --json > dist/build-preview.json
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build AAB (EAS production)
-        run: npx eas-cli@latest build --platform android --profile production --non-interactive --wait
+        working-directory: frontend
+        run: npx eas-cli@latest build --platform android --profile production --non-interactive --wait --json > dist/build-production.json
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Download EAS artifacts (APK + AAB)
+        working-directory: frontend
         run: |
           set -euo pipefail
-          mkdir -p frontend/dist
+          mkdir -p dist
+          cd dist
+
+          read_build() {
+            local buildjson="$1"
+            node -e "const fs=require('fs');let s=fs.readFileSync('$buildjson','utf8');const a=s.indexOf('['),b=s.lastIndexOf(']');if(a<0||b<a)throw new Error('no JSON array in $buildjson');const arr=JSON.parse(s.slice(a,b+1));const o=Array.isArray(arr)?arr[0]:arr;process.stdout.write(o.id+' '+((o.artifacts&&o.artifacts.buildUrl)||''))"
+          }
 
           download_build() {
             local profile="$1"
-            local outfile="$2"
-            local json
-            json="$(npx eas-cli@latest build:list --platform android --profile "$profile" --limit 1 --non-interactive --json)"
-            local build_id
-            build_id="$(echo "$json" | node -e "console.log(JSON.parse(require('fs').readFileSync(0, 'utf8'))[0].id)")"
-            local build_url
-            build_url="$(echo "$json" | node -e "console.log(JSON.parse(require('fs').readFileSync(0, 'utf8'))[0].artifacts.buildUrl)")"
+            local buildjson="$2"
+            local out
+            out="$(read_build "$buildjson")"
+            local build_id="${out%% *}"
+            local build_url="${out#* }"
             echo "Profile '$profile' -> build $build_id"
             echo "Artifact URL: $build_url"
-            npx eas-cli@latest build:download --build-id "$build_id" -o "$outfile"
+            npx eas-cli@latest build:download --build-id "$build_id" -o .
           }
 
-          download_build preview frontend/dist/app-preview.apk
-          download_build production frontend/dist/app-release.aab
+          download_build preview build-preview.json
+          download_build production build-production.json
 
-          ls -lh frontend/dist
+          mv ./*.apk app-preview.apk
+          mv ./*.aab app-release.aab
+          ls -lh
 
-      - name: Upload to R2
-        run: node frontend/scripts/upload-to-r2.js
+      - name: Upload to R2 (best-effort until bucket enabled)
+        run: |
+          if ! node frontend/scripts/upload-to-r2.js; then
+            echo "::warning::R2 upload failed - GitHub Release and EAS install links remain the download sources. Enable R2 in the Cloudflare dashboard to activate the tcm-dist URLs."
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -112,8 +127,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Email APK + AAB links
-        if: ${{ secrets.MAIL_APP_PASSWORD != '' }}
+      - name: Email build notification with install + download links
+        if: env.MAIL_APP_PASSWORD != ''
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -123,11 +138,14 @@ jobs:
           password: ${{ secrets.MAIL_APP_PASSWORD }}
           from: ${{ secrets.MAIL_USERNAME }}
           to: ${{ secrets.MAIL_TO || 'cuboidsoft@gmail.com' }}
-          subject: TCM Android Build ${{ env.TCM_APP_VERSION || '0.1.0' }} ready (APK + AAB)
+          subject: TCM Android build ${{ env.TCM_APP_VERSION || '0.1.0' }} ready (APK + AAB)
           body: |
             TCM Android build complete.
 
             App version: ${{ env.TCM_APP_VERSION || '0.1.0' }}
+
+            Install on device (Expo, no app store needed):
+            - EAS builds page: https://expo.dev/accounts/tcmacademics-team/projects/the-code-munk/builds
 
             Download links:
             - GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${{ env.RELEASE_TAG || 'latest' }}
@@ -135,7 +153,8 @@ jobs:
             - AAB (R2): https://tcm-dist.cuboidsoft.workers.dev/aab/latest-release.aab
             - Builds index (R2): https://tcm-dist.cuboidsoft.workers.dev/
 
-            Note: GitHub Releases is the immediate download source. The R2 links activate once
-            R2 is enabled in the Cloudflare dashboard.
+            Note: The EAS builds page is the primary install source. GitHub Releases is the
+            immediate APK/AAB download. The R2 links activate once R2 is enabled in the
+            Cloudflare dashboard.
 
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

@@ -73,9 +73,10 @@ The frontend uses `EXPO_PUBLIC_API_URL` when present, otherwise it falls back to
 
 - **CI Checks** (`.github/workflows/ci-checks.yml`) run on every push to `main` and pull request: backend health check (starts the server without a DB, asserts `/api/health` returns `"ok":true`) and a frontend Android Metro bundle export.
 - **Backend** auto-deploys to Cloudflare Containers on push to `main`.
-- **Frontend** Android APK/AAB is auto-built and emailed to `cuboidsoft@gmail.com` on tags, manual dispatch, and push to `main`.
-- Required GitHub secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, `MAIL_USERNAME`, `MAIL_APP_PASSWORD`, `MAIL_TO`.
+- **Frontend** Android APK/AAB auto-builds in EAS, publishes to GitHub Releases + R2 (best-effort until R2 is enabled), and emails install/download links to `cuboidsoft@gmail.com`.
+- **OTA** JS updates auto-publish to installed builds (`eas update`, preview + production channels).
+- Required GitHub secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, `EXPO_TOKEN`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET`, `MAIL_USERNAME`, `MAIL_APP_PASSWORD`, `MAIL_TO`.
 
 ## CI/CD & Hosting
 
-Full pipeline docs: [`docs/CI-CD.md`](docs/CI-CD.md). Push to `main` → CI checks, backend auto-deploys to Cloudflare Containers, and Android APK + AAB auto-build in EAS, upload to Cloudflare R2, and download links are emailed to `cuboidsoft@gmail.com`.
+Full pipeline docs: [`docs/CI-CD.md`](docs/CI-CD.md). Push to `main` → CI checks, backend auto-deploys to Cloudflare Containers, Android APK + AAB auto-build in EAS, OTA updates publish to the preview channel, and install/download links are emailed to `cuboidsoft@gmail.com`.

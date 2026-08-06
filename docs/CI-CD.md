@@ -18,10 +18,22 @@ CI runs on **GitHub Actions**. Deploy targets:
 |---|---|---|
 | **CI Checks** (`ci-checks.yml`) | Push to `main`; pull request to `main`; manual | Backend health check: starts the server without a DB and asserts `GET /api/health` returns `"ok":true`. Frontend check: `npx expo export --platform android` (Metro bundle must succeed). |
 | **Deploy Backend to Cloudflare** (`deploy-backend.yml`) | Push to `main` touching `backend/**` or the workflow file; manual | `npx wrangler deploy --config backend/wrangler.toml` → builds the container image from `backend/Dockerfile` and deploys worker `tcm-backend`. Then syncs `MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY` as Cloudflare secrets. |
-| **Build Android & Publish** (`build-android.yml`) | Push to `main` touching `frontend/**` or the workflow file; push of a `v*` tag; manual | Builds the APK (EAS **preview** profile) and the AAB (EAS **production** profile) in the cloud, downloads both, uploads `latest-release.apk`, `latest-release.aab`, and versioned copies to R2 bucket `tcm-dist`, attaches them as a GitHub Actions artifact, and emails the download links to `cuboidsoft@gmail.com`. |
+| **Build Android & Publish** (`build-android.yml`) | Push to `main` touching `frontend/**` or the workflow file; push of a `v*` tag; manual | Builds the APK (EAS **preview**) and the AAB (EAS **production**) in the cloud, downloads both to `frontend/dist/`, uploads `latest-release.apk`/`latest-release.aab` + versioned copies to R2 bucket `tcm-dist` (best-effort until R2 is enabled), attaches them as a GitHub Actions artifact, creates a GitHub Release, and emails the **install + download links** to `cuboidsoft@gmail.com`. |
+| **Deploy Distribution Worker** (`deploy-dist.yml`) | Push to `main` touching `dist-worker/**` or the workflow file; manual | Ensures the `tcm-dist` R2 bucket exists, then deploys the distribution worker that serves APK/AAB downloads. If R2 is not enabled on the account yet, it skips the deploy with a warning instead of failing. |
+| **Deploy OTA Updates** (`deploy-updates.yml`) | Push to `main` touching `frontend/**` or the workflow file; manual | Publishes the JavaScript bundle with `eas update` to the **preview** channel (and **production** on `v*` tag pushes). Devices with an installed build that embeds the matching channel receive the fix instantly — no rebuild, no store release. |
 
-> The distribution worker workflow (`deploy-dist.yml`) does not exist yet; see
-> "Operational notes" below.
+## Install & download sources (before app stores)
+
+Devices can get the app without any app store:
+
+| Source | What it is | Best for |
+|---|---|---|
+| **EAS builds page** | `https://expo.dev/accounts/tcmacademics-team/projects/the-code-munk/builds` | Primary install — internal distribution APK with QR code, hosted by Expo |
+| **GitHub Release** | `https://github.com/Cuboidsoft-official/tcm-env/releases/latest` | Always-available APK + AAB download |
+| **R2 + dist worker** | `https://tcm-dist.cuboidsoft.workers.dev/` | Content-addressed hosting of `latest-release.{apk,aab}` + versioned copies (active once R2 is enabled) |
+
+Email is a **notification with links** (never attachments) so inboxes and
+builds stay small.
 
 ## Developer workflow
 
@@ -30,8 +42,10 @@ Just write code, commit, and push to `main`:
 1. **CI checks run** automatically (`ci-checks.yml`) — backend health + frontend bundle.
 2. **The backend auto-deploys** to Cloudflare Containers on any `main` push that
    touches `backend/`.
-3. **Android APK + AAB auto-build** in EAS (cloud), upload to R2, and the download
-   links are **emailed to `cuboidsoft@gmail.com`**.
+3. **Android APK + AAB auto-build** in EAS (cloud), publish to GitHub Release +
+   R2, and the **install/download links are emailed** to `cuboidsoft@gmail.com`.
+4. **OTA updates auto-publish** to the `preview` channel, so installed builds pick
+   up JS fixes immediately.
 
 No release process, no tagging required for a test build — a plain push to `main`
 produces a fresh APK you can sideload immediately.
@@ -87,8 +101,9 @@ versioned artifacts. To install:
   set up in EAS credentials.
 - **App Store**: run `npx eas-cli submit --platform ios`. Requires an Apple
   Developer account and an iOS bundle identifier.
-- **Optional — OTA JS updates**: enable `expo-updates` and run `eas update` to
-  push JavaScript-only fixes to installed builds without a new store release.
+- **OTA JS updates**: already wired (`expo-updates` + `updates.url`). The
+  `deploy-updates.yml` workflow publishes to the **preview** channel on every
+  `main` push and to **production** on `v*` tag pushes.
 
 ## Operational notes
 
@@ -104,11 +119,13 @@ versioned artifacts. To install:
 - **Cold start**: the backend container sleeps after **15 minutes idle**
   (`sleepAfter = "15m"`); the first request after idle adds latency as the
   container wakes.
-- **Distribution worker**: the `tcm-dist` worker (`dist-worker/wrangler.toml`)
-  does not exist in the repo yet. Until it is deployed, R2 objects are uploaded
-  but there is no public URL serving them. The build email currently contains a
-  literal `<replace-with-workers-subdomain>` placeholder that must be updated to
-  the real workers.dev subdomain.
+- **Distribution worker**: `deploy-dist.yml` creates the `tcm-dist` bucket and
+  deploys `dist-worker/wrangler.toml`. While R2 is not enabled in the dashboard,
+  the workflow logs a warning and skips — GitHub Releases + EAS install links are
+  the working download sources.
+- **Working directory**: the EAS steps run with `working-directory: frontend`
+  because `app.json`/`eas.json` live there; `npm ci` runs at the repo root
+  (npm-workspaces installs everything).
 
 ## Cloudflare features in use
 
@@ -124,7 +141,7 @@ versioned artifacts. To install:
 - **EAS Build (cloud)** — APK (preview profile) and AAB (production profile) built
   on Expo's infrastructure.
 - **EAS internal distribution** — the preview APK is installable directly via
-  sideload; no Play Store account needed for testing.
-- **EAS Update (available next)** — OTA JavaScript updates for installed builds.
-- **EAS Submit (available next)** — one-command submission to Google Play and the
-  App Store.
+  sideload (or the EAS builds page QR); no Play Store account needed for testing.
+- **EAS Update** — OTA JavaScript updates for installed builds, published
+  automatically on every push (preview channel) and release tag (production).
+- **EAS Submit** — one-command submission to Google Play and the App Store.
