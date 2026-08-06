@@ -748,6 +748,75 @@ homeRouter.post("/courses/:courseId/schedule-live", requireAuth, async (req, res
   }
 });
 
+// GET /home/mentor/courses - Fetch all courses created by the logged-in mentor
+homeRouter.get("/mentor/courses", requireAuth, async (req, res) => {
+  try {
+    const mentorId = String(req.user?.id || req.user?._id || "");
+    const mentorName = req.user?.name || "";
+
+    let dbCourses = [];
+    try {
+      dbCourses = await Course.find({
+        $or: [
+          { mentorId: mentorId },
+          { mentorName: mentorName },
+          { "mentor.name": mentorName }
+        ]
+      }).sort({ createdAt: -1 }).lean();
+    } catch (e) {}
+
+    // Combine with global created courses in memory
+    const globalCourses = req.app.locals.globalCourses || [];
+    const memoryStoreCourses = req.app.locals.memoryStore?.courses || [];
+    const allCourses = [...dbCourses, ...globalCourses, ...memoryStoreCourses];
+
+    // Deduplicate and format modules
+    const uniqueCourses = [];
+    const seen = new Set();
+    allCourses.forEach((c) => {
+      const cId = String(c.customId || c.id || c._id);
+      if (!seen.has(cId)) {
+        seen.add(cId);
+        uniqueCourses.push({
+          id: cId,
+          title: c.title,
+          category: c.category || "TCM Academy",
+          duration: c.duration || "20 Days",
+          modules: c.modules && c.modules.length > 0 ? c.modules.map((m, idx) => ({
+            dayNum: `Module ${idx + 1}`,
+            topic: m.title || `Module ${idx + 1}`
+          })) : [
+            { dayNum: "Day 1", topic: `Introduction & Environment Setup for ${c.title}` },
+            { dayNum: "Day 2", topic: `Core Architecture & Logic in ${c.title}` },
+            { dayNum: "Day 3", topic: `Hands-on Live Project Implementation` },
+            { dayNum: "Day 4", topic: `Production Optimization & Placement Review` }
+          ]
+        });
+      }
+    });
+
+    if (uniqueCourses.length === 0) {
+      uniqueCourses.push({
+        id: "default_m1_c1",
+        title: "Full Stack Web Development Masterclass",
+        category: "Web Development",
+        duration: "20 Days",
+        modules: [
+          { dayNum: "Day 1", topic: "Environment Setup & React Core Architecture" },
+          { dayNum: "Day 2", topic: "State Architecture, Props & Context API" },
+          { dayNum: "Day 3", topic: "Node.js Express REST API & Middleware" },
+          { dayNum: "Day 4", topic: "MongoDB Database Models & Aggregation" },
+          { dayNum: "Day 5", topic: "Production Cloud Deployment & CI/CD" }
+        ]
+      });
+    }
+
+    return res.json({ success: true, courses: uniqueCourses });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
 homeRouter.post("/webinars", requireAuth, async (req, res) => {
   const memoryStore = req.app.locals.memoryStore;
   const {
@@ -847,18 +916,29 @@ homeRouter.put("/courses/:courseId", requireAuth, async (req, res) => {
   if (price) updateFields.price = price.startsWith("₹") ? price : `₹${price}`;
   if (duration) updateFields.duration = duration;
   if (level) updateFields.level = level;
-  if (imageUrl) updateFields.imageUrl = imageUrl;
+  if (imageUrl) {
+    updateFields.imageUrl = imageUrl.startsWith("blob:")
+      ? "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80"
+      : imageUrl;
+  }
   if (modules && Array.isArray(modules)) updateFields.modules = modules;
+
+  const query = { $or: [{ customId: courseId }, { id: courseId }] };
+  if (mongoose.Types.ObjectId.isValid(courseId)) {
+    query.$or.unshift({ _id: courseId });
+  }
 
   // 1. Update in MongoDB Database
   let updatedCourse = null;
   try {
     updatedCourse = await Course.findOneAndUpdate(
-      { $or: [{ _id: courseId }, { customId: courseId }, { id: courseId }] },
+      query,
       { $set: updateFields },
       { new: true }
     ).lean();
-  } catch (e) {}
+  } catch (e) {
+    console.warn("Course.findOneAndUpdate error:", e);
+  }
 
   // 2. Update memoryStore & globalCourses
   const allLiveCourses = (memoryStore?.courses || []).concat(req.app.locals.globalCourses || []);
@@ -867,7 +947,21 @@ homeRouter.put("/courses/:courseId", requireAuth, async (req, res) => {
     Object.assign(memoryCourse, updateFields);
   }
 
-  return res.json({ message: "Course updated successfully!", course: updatedCourse || memoryCourse });
+  // 3. Update in globalPopularCourses & popularCourses
+  const updatePopularItem = (list) => {
+    if (!Array.isArray(list)) return;
+    const item = list.find((c) => String(c.id) === String(courseId));
+    if (item) {
+      if (title) item.title = title;
+      if (updateFields.imageUrl) item.image = updateFields.imageUrl;
+      if (price) item.price = updateFields.price;
+    }
+  };
+
+  updatePopularItem(req.app.locals.globalPopularCourses);
+  updatePopularItem(memoryStore?.learn?.popularCourses);
+
+  return res.json({ message: "Course updated successfully!", course: updatedCourse || memoryCourse || { id: courseId, ...updateFields } });
 });
 
 homeRouter.get("/course/:courseId", async (req, res) => {
@@ -1607,7 +1701,7 @@ homeRouter.get("/course/:courseId", async (req, res) => {
   return res.json(defaultDetails);
 });
 
-homeRouter.get("/continue-learning", requireAuth, (req, res) => {
+homeRouter.get("/continue-learning", requireAuth, async (req, res) => {
   const userId = req.user?.id || "seed-user";
   if (!req.app.locals.userReflections) {
     req.app.locals.userReflections = {};
@@ -1620,18 +1714,84 @@ homeRouter.get("/continue-learning", requireAuth, (req, res) => {
     lastCompletedClass: null
   };
 
+  // 1. Fetch real mentor created courses from MongoDB & Memory
+  let allCourses = (req.app.locals.memoryStore?.courses || []).concat(req.app.locals.globalCourses || []);
+  try {
+    const dbCourses = await Course.find().sort({ createdAt: -1 }).lean();
+    dbCourses.forEach((dbC) => {
+      if (!allCourses.some((c) => String(c.id || c.customId || c._id) === String(dbC.customId || dbC.id || dbC._id))) {
+        allCourses.push(dbC);
+      }
+    });
+  } catch (e) {}
+
+  // 2. Pick active real mentor course
+  const activeCourse = allCourses.length > 0 ? allCourses[0] : {
+    title: "Full Stack Web Development Masterclass",
+    mentorName: "Aayushmann C.",
+    category: "Web Development",
+    modules: [
+      { dayNum: "Day 1", topic: "Environment Setup & React Core Architecture" },
+      { dayNum: "Day 2", topic: "State Architecture, Props & Context API" },
+      { dayNum: "Day 3", topic: "Node.js Express REST API & Middleware" },
+      { dayNum: "Day 4", topic: "MongoDB Database Models & Aggregation" },
+      { dayNum: "Day 5", topic: "Production Cloud Deployment & CI/CD" }
+    ]
+  };
+
+  const rawModules = activeCourse.modules && activeCourse.modules.length > 0
+    ? activeCourse.modules
+    : [
+        { dayNum: "Day 1", topic: `Introduction & Environment Setup for ${activeCourse.title}` },
+        { dayNum: "Day 2", topic: `Core Architecture & Live Logic` },
+        { dayNum: "Day 3", topic: `Advanced API Integration & Database` },
+        { dayNum: "Day 4", topic: `Security, Testing & Cloud Services` },
+        { dayNum: "Day 5", topic: `Production Capstone Project` }
+      ];
+
+  // 3. Map real mentor course modules into Day-by-Day learningJourney
+  const learningJourney = rawModules.map((m, idx) => {
+    let dayLabel = m.dayNum || `Day ${idx + 1}`;
+    let topicText = m.topic || m.title || `Day ${idx + 1} Topic`;
+    if (topicText.startsWith("Day ")) {
+      const parts = topicText.split(":");
+      dayLabel = parts[0].trim();
+      topicText = parts.slice(1).join(":").trim() || topicText;
+    }
+
+    const icons = ["flag-variant", "code-tags", "database", "cloud-outline", "shield-check-outline", "trophy-outline"];
+
+    return {
+      id: m.id || `day_${idx + 1}`,
+      moduleNum: dayLabel,
+      title: topicText,
+      icon: icons[idx % icons.length],
+      sub: idx === 0 ? "Live class active" : "Upcoming session",
+      status: idx === 0 ? "in_progress" : "upcoming"
+    };
+  });
+
+  const activeLive = activeCourse.activeLiveClass || req.app.locals.latestGlobalLiveClass || {
+    topic: `${rawModules[0]?.topic || rawModules[0]?.title || activeCourse.title}`,
+    meetingUrl: "https://meet.jit.si/tcm-live-fullstack",
+    time: "Today • 10:00 AM – 11:30 AM"
+  };
+
   return res.json({
+    courseId: activeCourse.customId || activeCourse.id || activeCourse._id,
+    courseTitle: activeCourse.title,
+    mentorName: activeCourse.mentorName || activeCourse.mentor?.name || "Aayushmann C.",
     reflection: userReflectionState,
     liveClass: {
-      id: "lc1",
-      tag: "🔴 LIVE CLASS READY",
-      time: "Today • 10:00 AM – 11:30 AM",
-      title: "Full Stack Web Development - Module 1: Frontend Foundations",
-      instructor: "Rahul Dev",
+      id: `lc_${activeCourse.id || "1"}`,
+      tag: "LIVE CLASS READY",
+      time: activeLive.time || "Today • 10:00 AM – 11:30 AM",
+      title: `${activeCourse.title} - ${activeLive.topic || rawModules[0]?.topic || "Day 1 Class"}`,
+      instructor: activeCourse.mentorName || activeCourse.mentor?.name || "Aayushmann C.",
       verified: true,
       joiningCount: 342,
       joiningText: "342 learners ready",
-      meetingUrl: "https://meet.jit.si/tcm-live-fullstack",
+      meetingUrl: activeLive.meetingUrl || "https://meet.jit.si/tcm-live-fullstack",
       avatars: [
         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
@@ -1645,23 +1805,17 @@ homeRouter.get("/continue-learning", requireAuth, (req, res) => {
       xpPoints: 0,
       certificates: 0
     },
-    learningJourney: [
-      { id: "m1", moduleNum: "Module 1", title: "Frontend Foundations", icon: "flag-variant", sub: "Live class starting soon", status: "in_progress" },
-      { id: "m2", moduleNum: "Module 2", title: "Backend Development", icon: "code-tags", status: "upcoming" },
-      { id: "m3", moduleNum: "Module 3", title: "Database & APIs", icon: "database", status: "upcoming" },
-      { id: "m4", moduleNum: "Module 4", title: "Deployment & DevOps", icon: "cloud-outline", status: "upcoming" },
-      { id: "m5", moduleNum: "Module 5", title: "Testing & Best Practices", icon: "shield-check-outline", status: "upcoming" }
-    ],
+    learningJourney,
     whatsNext: [
       {
         id: "wn1",
         title: "Next Live Class",
-        sub: "Today, 10:00 AM\nwith Rahul Dev",
+        sub: `Today • ${activeCourse.title}\nwith ${activeCourse.mentorName || "Aayushmann C."}`,
         btn: "Join Live >",
         icon: "calendar-clock",
         bg: "#F4F0FF",
         color: "#5B3CF5",
-        meetingUrl: "https://meet.jit.si/tcm-live-fullstack"
+        meetingUrl: activeLive.meetingUrl || "https://meet.jit.si/tcm-live-fullstack"
       },
       {
         id: "wn2",

@@ -21,7 +21,7 @@ async function callGeminiApi(prompt) {
         ],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 1200
+          maxOutputTokens: 2000
         }
       };
 
@@ -35,12 +35,12 @@ async function callGeminiApi(prompt) {
         const data = await response.json();
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text && text.trim()) {
-          console.log(`Gemini API generated syllabus using model: ${modelName}`);
+          console.log(`Google Gemini API generated response using model: ${modelName}`);
           return text.trim();
         }
       }
     } catch (err) {
-      console.warn(`Gemini model ${modelName} syllabus error:`, err.message);
+      console.warn(`Google Gemini model ${modelName} error:`, err.message);
     }
   }
   return null;
@@ -56,7 +56,7 @@ export async function generateSyllabusWithAI(courseTitle, category = "TCM Inform
   }
   totalDays = Math.min(Math.max(totalDays, 5), 45);
 
-  const prompt = `You are an elite Senior Curriculum Architect at TCM Academy. Design an IN-DEPTH, highly specific, DAY-BY-DAY day-wise curriculum for a course titled "${courseTitle}" under category "${category}" planned for a total duration of "${totalDays} Days".
+  const prompt = `You are Google Gemini AI acting as Senior Curriculum Architect at TCM Academy. Design an IN-DEPTH, highly specific, DAY-BY-DAY day-wise curriculum for a course titled "${courseTitle}" under category "${category}" planned for a total duration of "${totalDays} Days".
 
 CRITICAL REQUIREMENTS:
 1. Generate EXACTLY ${totalDays} Day-by-Day modules. Title each module clearly starting with "Day 1:", "Day 2:", "Day 3:", ..., "Day ${totalDays}:".
@@ -98,7 +98,7 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
       }
     }
   } catch (error) {
-    console.warn("Gemini Syllabus Generation failed, using dynamic N-Day fallback:", error);
+    console.warn("Google Gemini Syllabus Generation failed, using dynamic N-Day fallback:", error);
   }
 
   // Dynamic N-Day Fallback Engine for all selected days (Day 1 to Day N)
@@ -139,7 +139,7 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
 }
 
 export async function generateCourseOverviewInsightsWithAI(courseTitle, category = "TCM Academy", level = "All Levels") {
-  const prompt = `You are a Lead Career Counselor & Industry Analyst at TCM Academy. Provide highly accurate, professional career and salary insights for a course titled "${courseTitle}" in category "${category}" for level "${level}".
+  const prompt = `You are Google Gemini AI acting as Lead Career Counselor & Industry Analyst at TCM Academy. Provide highly accurate, professional career and salary insights for a course titled "${courseTitle}" in category "${category}" for level "${level}".
 
 Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational text):
 {
@@ -166,43 +166,7 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
       }
     }
   } catch (error) {
-    console.warn("Gemini Overview Insights failed, using fallback:", error);
-  }
-
-  const titleLower = (courseTitle || "").toLowerCase();
-  const isGovt = titleLower.includes("upsc") || titleLower.includes("ssc") || titleLower.includes("bank") || titleLower.includes("govt");
-  const isNeetJee = titleLower.includes("neet") || titleLower.includes("jee") || titleLower.includes("board");
-
-  if (isGovt) {
-    return {
-      whyLearn: [
-        "Job Security & Prestige: High-paying, respected government officer positions with pension & medical benefits.",
-        "Direct Public Impact: Play an active role in national administration, policymaking & governance.",
-        "Structured Competitive Strategy: Clear exam syllabus with high return on dedicated practice."
-      ],
-      salaryInsights: {
-        avgSalary: "₹56,100 – ₹2,25,000 / month",
-        hiringCompanies: ["IAS / IPS Cadre", "Central Govt Ministries", "RBI / Public Banks", "SSC Officer Posts"],
-        growthRate: "Top Govt Officer Cadre",
-        careerRoles: ["Civil Servant", "Banking Officer", "Govt Section Officer"]
-      }
-    };
-  }
-
-  if (isNeetJee) {
-    return {
-      whyLearn: [
-        "Premier College Admission: Secure seats in AIIMS, IITs, NITs & top government medical/engineering colleges.",
-        "High-Yield MCQ Mastery: Master speed & accuracy tricks to solve 180+ questions error-free.",
-        "Strong Professional Foundation: Essential for lucrative medical & engineering careers."
-      ],
-      salaryInsights: {
-        avgSalary: "Top Tier Medical & IIT Placements",
-        hiringCompanies: ["AIIMS / Hospitals", "Google", "Microsoft", "Top Global R&D"],
-        growthRate: "Top 1% Career Path",
-        careerRoles: ["Medical Specialist", "IIT Engineer", "R&D Scientist"]
-      }
-    };
+    console.warn("Google Gemini Overview Insights failed, using fallback:", error);
   }
 
   return {
@@ -218,4 +182,53 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
       careerRoles: [`${courseTitle} Engineer`, "Software Architect", "Technical Specialist"]
     }
   };
+}
+
+export async function generateMcqQuizWithGemini(topic, courseTitle = "TCM Course") {
+  const prompt = `You are Google Gemini AI acting as Lead Examiner at TCM Academy. Generate EXACTLY 10 multiple-choice questions (MCQs) for a student practice test on the topic "${topic}" of the course "${courseTitle}".
+
+CRITICAL REQUIREMENTS:
+1. Generate EXACTLY 10 questions. Each question must have 4 options: ["A", "B", "C", "D"].
+2. Provide the 0-indexed correct option index ("correctIndex": 0, 1, 2, or 3) and a brief clear explanation ("explanation": "string").
+
+Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational text):
+{
+  "quizTitle": "10-MCQ Daily Quiz: ${topic}",
+  "questions": [
+    {
+      "id": "q1",
+      "question": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctIndex": 0,
+      "explanation": "Explanation for option A."
+    }
+  ]
+}`;
+
+  try {
+    const rawContent = await callGeminiApi(prompt);
+    if (rawContent) {
+      const cleanedJson = rawContent.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleanedJson);
+      if (parsed && Array.isArray(parsed.questions) && parsed.questions.length > 0) {
+        return parsed.questions;
+      }
+    }
+  } catch (error) {
+    console.warn("Google Gemini Quiz Generation failed, using structured 10 MCQs fallback:", error);
+  }
+
+  // Dynamic 10 MCQs Fallback
+  return Array.from({ length: 10 }, (_, i) => ({
+    id: `q_${i + 1}`,
+    question: `Question ${i + 1}: What is the core practical requirement of ${topic} in ${courseTitle}?`,
+    options: [
+      `Modular Architecture & Practical Best Practices for ${topic}`,
+      `Legacy synchronous execution without state guards`,
+      `Depreciated standard with high execution latency`,
+      `Single-threaded fallback without validation`
+    ],
+    correctIndex: 0,
+    explanation: `Option A is correct. ${topic} requires modern modular architecture and real-time execution in ${courseTitle}.`
+  }));
 }

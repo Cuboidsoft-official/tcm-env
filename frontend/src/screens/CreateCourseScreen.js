@@ -13,12 +13,18 @@ import {
 } from "react-native";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { generateSyllabusWithAI } from "../api/openrouter";
+import { generateSyllabusWithAI } from "../api/gemini";
 import { createCourse, updateCourse } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
 const { width } = Dimensions.get("window");
+
+function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80") {
+  if (!url || typeof url !== "string") return fallback;
+  if (url.startsWith("blob:") || url.includes("blob:http")) return fallback;
+  return url;
+}
 
 export default function CreateCourseScreen({ session, user = {}, courseToEdit = null, onBack, onCourseCreated }) {
   const isEditing = Boolean(courseToEdit);
@@ -32,22 +38,36 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
   const [duration, setDuration] = useState(courseToEdit?.duration || "20 Days");
   const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [customDuration, setCustomDuration] = useState(courseToEdit?.duration || "");
-  const [coverImageUrl, setCoverImageUrl] = useState(courseToEdit?.imageUrl || courseToEdit?.image || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80");
+  const [coverImageUrl, setCoverImageUrl] = useState(safeImageUri(courseToEdit?.imageUrl || courseToEdit?.image));
   const [customImageInput, setCustomImageInput] = useState("");
   const [showCustomImageInput, setShowCustomImageInput] = useState(false);
   
-  // Syllabus State (Modules array containing lessons)
-  const [modules, setModules] = useState(courseToEdit?.modules?.length ? courseToEdit.modules : [
-    {
-      id: "m1",
-      title: "Module 1 (Days 1–5): Core Architecture & Setup",
-      lessons: [
-        "Lesson 1.1: Introduction & Tooling Configuration",
-        "Lesson 1.2: Essential Fundamentals & Core Syntax",
-        "Lesson 1.3: Hands-on Lab: Building First Live Feature"
-      ]
-    }
-  ]);
+  // Syllabus State (Normalize modules array containing lessons)
+  const initialModules = (courseToEdit?.modules && courseToEdit.modules.length > 0)
+    ? courseToEdit.modules.map((m, idx) => ({
+        id: m.id || `m_${idx + 1}_${Date.now()}`,
+        title: m.title || (m.dayNum ? `${m.dayNum}: ${m.topic}` : `Day ${idx + 1}: ${m.topic || "Core Topic"}`),
+        lessons: Array.isArray(m.lessons) && m.lessons.length > 0
+          ? m.lessons
+          : [
+              `Lesson ${idx + 1}.1: Introduction & Fundamentals`,
+              `Lesson ${idx + 1}.2: Live Coding & Application Setup`,
+              `Lesson ${idx + 1}.3: Hands-on Practice & Q&A`
+            ]
+      }))
+    : [
+        {
+          id: "m1",
+          title: "Day 1: Environment Setup & Foundations",
+          lessons: [
+            "Lesson 1.1: Tooling & IDE Configuration",
+            "Lesson 1.2: Essential Building Blocks",
+            "Lesson 1.3: Hands-on Lab: Building Live Feature"
+          ]
+        }
+      ];
+
+  const [modules, setModules] = useState(initialModules);
 
   const [generatingAI, setGeneratingAI] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -89,8 +109,20 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
     try {
       const generatedModules = await generateSyllabusWithAI(title.trim(), assignedCategory, duration);
       if (generatedModules && generatedModules.length > 0) {
-        setModules(generatedModules);
-        Alert.alert("Deep Syllabus Generated", `AI generated a comprehensive curriculum tailored for a ${duration} course! You can edit any module or lesson below.`);
+        const dayWiseModules = generatedModules.map((m, idx) => {
+          let topicTitle = m.title || `Topic ${idx + 1}`;
+          topicTitle = topicTitle.replace(/^(Module|Phase|Week)\s*\d+[^:]*:\s*/i, "");
+          if (!topicTitle.toLowerCase().startsWith("day")) {
+            topicTitle = `Day ${idx + 1}: ${topicTitle}`;
+          }
+          return {
+            ...m,
+            id: m.id || `m_${idx + 1}`,
+            title: topicTitle
+          };
+        });
+        setModules(dayWiseModules);
+        Alert.alert("Day-by-Day Syllabus Generated!", `AI generated a Day-by-Day syllabus for "${title.trim()}"!`);
       }
     } catch (err) {
       Alert.alert("AI Generation Error", err.message || "Failed to generate syllabus.");
@@ -116,8 +148,12 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
       });
 
       if (!result.canceled && result.assets && result.assets[0]?.uri) {
-        setCoverImageUrl(result.assets[0].uri);
-        Alert.alert("Picture Uploaded", "Course cover picture updated from device gallery!");
+        const pickedUri = result.assets[0].uri;
+        const validCoverUri = pickedUri.startsWith("blob:")
+          ? "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80"
+          : pickedUri;
+        setCoverImageUrl(validCoverUri);
+        Alert.alert("Picture Uploaded", "Course cover picture updated successfully!");
       }
     } catch (err) {
       Alert.alert("Upload Error", "Could not select image from gallery.");
@@ -137,13 +173,14 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
 
   // Add / Edit Module & Lesson Functions
   function handleAddModule() {
-    const newModId = `m${modules.length + 1}`;
+    const nextDayNum = modules.length + 1;
+    const newModId = `m${nextDayNum}`;
     setModules((prev) => [
       ...prev,
       {
         id: newModId,
-        title: `Module ${prev.length + 1}: New Topic Module`,
-        lessons: ["Lesson 1: Introduction", "Lesson 2: Core Practical Setup"]
+        title: `Day ${nextDayNum}: New Practical Day Topic`,
+        lessons: ["Lesson 1: Introduction & Fundamentals", "Lesson 2: Live Practical Setup"]
       }
     ]);
   }
@@ -226,16 +263,18 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
         modules
       };
 
+      const targetCourseId = courseToEdit?.id || courseToEdit?._id || courseToEdit?.customId;
+
       if (session?.token) {
-        if (isEditing && courseToEdit?.id) {
-          await updateCourse(session.token, courseToEdit.id, coursePayload);
+        if (isEditing && targetCourseId) {
+          await updateCourse(session.token, targetCourseId, coursePayload);
         } else {
           await createCourse(session.token, coursePayload);
         }
       }
 
-      Alert.alert(isEditing ? "Course Updated 🎉" : "Course Published Live", `"${title.trim()}" has been ${isEditing ? "updated" : "published"} under ${assignedCategory}!`);
-      if (onCourseCreated) onCourseCreated(coursePayload);
+      Alert.alert(isEditing ? "Course Updated!" : "Course Published Live!", `"${title.trim()}" has been ${isEditing ? "updated" : "published"} under ${assignedCategory}!`);
+      if (onCourseCreated) onCourseCreated({ ...coursePayload, id: targetCourseId });
       if (onBack) onBack();
     } catch (err) {
       Alert.alert("Save Failed", err.message || "Could not save course to backend.");
@@ -377,7 +416,7 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
           {/* Cover Picture Section */}
           <Text style={styles.inputLabel}>Course Cover Picture</Text>
           <View style={styles.coverPreviewBox}>
-            <Image source={{ uri: coverImageUrl }} style={styles.coverImage} />
+            <Image source={{ uri: safeImageUri(coverImageUrl) }} style={styles.coverImage} />
           </View>
 
           <View style={styles.coverActionsRow}>
@@ -411,7 +450,7 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetScroll}>
             {presetCovers.map((imgUrl, index) => (
               <Pressable key={index} onPress={() => setCoverImageUrl(imgUrl)} style={styles.presetImageBtn}>
-                <Image source={{ uri: imgUrl }} style={styles.presetImage} />
+                <Image source={{ uri: safeImageUri(imgUrl) }} style={styles.presetImage} />
               </Pressable>
             ))}
           </ScrollView>
@@ -459,12 +498,12 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
             </Pressable>
           </View>
 
-          {modules.map((mod) => (
-            <View key={mod.id} style={styles.moduleCard}>
+          {(modules || []).map((mod) => (
+            <View key={mod.id || Math.random().toString()} style={styles.moduleCard}>
               {/* Module Header Title Input */}
               <View style={styles.modHeaderRow}>
                 <TextInput
-                  value={mod.title}
+                  value={mod.title || (mod.dayNum ? `${mod.dayNum}: ${mod.topic}` : "Day Module")}
                   onChangeText={(text) => handleUpdateModuleTitle(mod.id, text)}
                   style={styles.modTitleInput}
                 />
@@ -475,7 +514,7 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
 
               {/* Lessons List inside Module */}
               <View style={styles.lessonsContainer}>
-                {mod.lessons.map((lesText, lesIdx) => (
+                {(mod.lessons || []).map((lesText, lesIdx) => (
                   <View key={lesIdx} style={styles.lessonRow}>
                     <MaterialCommunityIcons name="file-document-outline" size={15} color="#5B3CF5" style={{ marginRight: 8 }} />
                     <TextInput

@@ -12,9 +12,15 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getCourseDetails } from "../api/client";
-import { generateCourseOverviewInsightsWithAI } from "../api/openrouter";
+import { generateCourseOverviewInsightsWithAI } from "../api/gemini";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+
+function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80") {
+  if (!url || typeof url !== "string") return fallback;
+  if (url.startsWith("blob:") || url.includes("blob:http")) return fallback;
+  return url;
+}
 
 export default function CourseDetailsScreen({ session, user = {}, courseId = "p1", onBack, onEditCourse }) {
   const [course, setCourse] = useState(null);
@@ -121,37 +127,57 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
       { id: "f4", icon: "download", label: "Downloadable Resources", color: "#2F79B9", bg: "#EAF5FF" }
     ],
     curriculum: {
-      totalLessons: "30 Lessons",
-      totalModules: "3 Modules",
+      totalLessons: "20 Lessons",
+      totalModules: "5 Modules",
       modules: [
         {
           id: "m1",
-          title: `Module 1 (Days 1–15): ${fallbackTitle} Core Foundations`,
-          lessonsCount: "10 Lessons",
+          title: `Day 1: ${fallbackTitle} Core Setup & Foundations`,
+          lessonsCount: "4 Lessons",
           expanded: true,
           lessons: [
-            { id: "l1", title: "1.1 Course Orientation & Setup", duration: "15 mins", type: "video" },
-            { id: "l2", title: `1.2 Core Principles & High Yield Concepts`, duration: "30 mins", type: "video" }
+            { id: "l1", title: "1.1 Tooling & Environment Configuration", duration: "15 mins", type: "video" },
+            { id: "l2", title: "1.2 Core Fundamentals & Syntax Setup", duration: "30 mins", type: "video" }
           ]
         },
         {
           id: "m2",
-          title: `Module 2 (Days 16–30): Problem Solving & Deep Dive`,
-          lessonsCount: "10 Lessons",
+          title: `Day 2: Core Architecture & Live Logic`,
+          lessonsCount: "4 Lessons",
           expanded: false,
           lessons: [
-            { id: "l4", title: "2.1 Advanced Problem Solving & Logic", duration: "35 mins", type: "video" },
-            { id: "l5", title: "2.2 Live Speed Practice & Doubt Session", duration: "40 mins", type: "video" }
+            { id: "l3", title: "2.1 Key Architectural Patterns & Logic", duration: "35 mins", type: "video" },
+            { id: "l4", title: "2.2 State Management & API Connectivity", duration: "40 mins", type: "video" }
           ]
         },
         {
           id: "m3",
-          title: `Module 3 (Days 31–45): Full Assessment & Mock Tests`,
-          lessonsCount: "10 Lessons",
+          title: `Day 3: Advanced API Integration & Database Setup`,
+          lessonsCount: "4 Lessons",
           expanded: false,
           lessons: [
-            { id: "l7", title: "3.1 Full Length Assessment & Performance Audit", duration: "45 mins", type: "video" },
-            { id: "l8", title: "3.2 Final Certification & Next Steps", duration: "20 mins", type: "video" }
+            { id: "l5", title: "3.1 REST API Design & Database Schema", duration: "45 mins", type: "video" },
+            { id: "l6", title: "3.2 Hands-on Lab: Real-Time Data Sync", duration: "30 mins", type: "video" }
+          ]
+        },
+        {
+          id: "m4",
+          title: `Day 4: Security, Performance & Testing`,
+          lessonsCount: "4 Lessons",
+          expanded: false,
+          lessons: [
+            { id: "l7", title: "4.1 Security Practice & Auth Validation", duration: "35 mins", type: "video" },
+            { id: "l8", title: "4.2 Automated Testing & Continuous Integration", duration: "40 mins", type: "video" }
+          ]
+        },
+        {
+          id: "m5",
+          title: `Day 5: Real-World Capstone Project & Placement Drive`,
+          lessonsCount: "4 Lessons",
+          expanded: false,
+          lessons: [
+            { id: "l9", title: "5.1 End-to-End Live Industry Capstone", duration: "50 mins", type: "video" },
+            { id: "l10", title: "5.2 Portfolio Defense & Placement Referral", duration: "25 mins", type: "video" }
           ]
         }
       ]
@@ -498,7 +524,7 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
 
             <View style={styles.heroRightCol}>
               <Image
-                source={{ uri: courseData.imageUrl || courseData.image || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=400&q=80" }}
+                source={{ uri: safeImageUri(courseData.imageUrl || courseData.image) }}
                 style={styles.heroGraphicImg}
               />
             </View>
