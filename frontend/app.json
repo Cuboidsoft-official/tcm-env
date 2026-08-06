@@ -8,6 +8,13 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2d7e5eca-03da-47ea-b63c-85deeca77d83",
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "supportsTablet": false
     },
@@ -18,7 +25,8 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-updates"
     ],
     "extra": {
       "eas": {
