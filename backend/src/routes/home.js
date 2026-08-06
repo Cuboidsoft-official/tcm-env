@@ -138,7 +138,7 @@ async function buildLearnPayload(user, mentors, learn = {}, memoryStore = null, 
             id: "c_webdev_fullstack",
             title: "Full Stack Web Development Masterclass",
             subtitle: "React, Node.js, Express & MongoDB",
-            progress: 45,
+            progress: 0,
             icon: "code-tags",
             iconColor: "#5B3CF5",
             bgColor: "#F0EDFF"
