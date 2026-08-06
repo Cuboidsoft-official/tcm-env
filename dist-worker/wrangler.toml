@@ -1,0 +1,8 @@
+name = "tcm-dist"
+main = "src/index.js"
+account_id = "90386c5bad63a8285592513fd9c8c3fe"
+compatibility_date = "2026-08-06"
+
+[[r2_buckets]]
+binding = "DIST_BUCKET"
+bucket_name = "tcm-dist"

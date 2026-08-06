@@ -1,0 +1,11 @@
+node_modules
+.env
+*.log
+backend-*.log
+verify-*.log
+Dockerfile
+wrangler.toml
+cloudflare
+.git
+.gitignore
+npm-debug.log*

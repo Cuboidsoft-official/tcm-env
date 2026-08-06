@@ -1,0 +1,21 @@
+name = "tcm-backend"
+main = "cloudflare/index.js"
+account_id = "90386c5bad63a8285592513fd9c8c3fe"
+compatibility_date = "2026-08-06"
+
+[vars]
+PORT = "5000"
+CLIENT_ORIGIN = "*"
+
+[[containers]]
+class_name = "TcmBackend"
+image = "./Dockerfile"
+max_instances = 1
+
+[[durable_objects.bindings]]
+class_name = "TcmBackend"
+name = "TCM_BACKEND_CONTAINER"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TcmBackend"]
