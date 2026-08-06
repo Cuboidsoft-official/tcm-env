@@ -434,6 +434,21 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
               );
             }
 
+function isQuestionMessage(item) {
+  if (!item || item.isAi || item.type === "poll") return false;
+  if (item.canAskAi === true) return true;
+  if (item.canAskAi === false) return false;
+  const str = (item.text || "").toLowerCase().trim();
+  if (item.codeSnippet || str.includes("?")) return true;
+  const questionKeywords = [
+    "what is", "what are", "how to", "how do", "how can", "why does", "why do", "why is",
+    "explain", "define", "difference", "vs", "syntax", "example", "meaning", "solve",
+    "is it", "can i", "can we", "could you", "should i", "where is", "when to", "which one",
+    "error", "bug", "issue", "problem", "not working", "fix", "output of", "value of", "write"
+  ];
+  return questionKeywords.some((kw) => str.includes(kw));
+}
+
             // REGULAR CHAT BUBBLE (Self)
             if (item.isSelf) {
               return (
@@ -446,7 +461,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                     </View>
 
                     {/* ASK WITH AI BUTTON (RIGHT SIDE SELF MESSAGE) */}
-                    {item.canAskAi !== false && !item.isAi && item.type !== "poll" && (
+                    {isQuestionMessage(item) && (
                       <TouchableOpacity
                         style={[styles.askAiBtn, { alignSelf: "flex-end", marginTop: 6 }]}
                         onPress={() => handleAskAi(item)}
@@ -484,7 +499,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                   </View>
 
                   {/* ASK WITH AI BUTTON (LEFT SIDE PARTICIPANT MESSAGE) */}
-                  {item.canAskAi !== false && !item.isAi && item.type !== "poll" && (
+                  {isQuestionMessage(item) && (
                     <TouchableOpacity
                       style={styles.askAiBtn}
                       onPress={() => handleAskAi(item)}
