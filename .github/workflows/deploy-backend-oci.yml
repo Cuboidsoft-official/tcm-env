@@ -1,0 +1,35 @@
+name: Deploy Backend to OCI VM
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: tcm-backend-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.OCI_SSH_KEY }}
+
+      - name: Sync backend source to VM
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new ${{ secrets.OCI_USER }}@${{ secrets.OCI_HOST }} \
+            "sudo mkdir -p /opt/tcm/backend"
+          rsync -avz --delete --exclude 'node_modules' --exclude '.env' \
+            --exclude 'dist' --exclude '.wrangler' --exclude '.dev.vars' \
+            -e "ssh -o StrictHostKeyChecking=accept-new" \
+            ./backend/ ${{ secrets.OCI_USER }}@${{ secrets.OCI_HOST }}:/opt/tcm/backend/
+
+      - name: Install deps and restart service
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new ${{ secrets.OCI_USER }}@${{ secrets.OCI_HOST }} \
+            "cd /opt/tcm/backend && npm install --omit=dev --no-audit --no-fund && sudo systemctl restart tcm-backend && sleep 3 && echo '--- health ---' && curl -s http://localhost/api/health"
