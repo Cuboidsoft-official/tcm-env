@@ -105,7 +105,7 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             RELEASE_TAG="${GITHUB_REF_NAME}"
           else
-            RELEASE_TAG="latest"
+            RELEASE_TAG="v${TCM_APP_VERSION}"
           fi
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
           gh release delete "$RELEASE_TAG" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
