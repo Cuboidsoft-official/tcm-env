@@ -12,7 +12,7 @@ on:
       - ".github/workflows/build-android.yml"
 
 concurrency:
-  group: build-android-${{ github.ref }}
+  group: build-android
   cancel-in-progress: true
 
 permissions:
@@ -23,14 +23,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      OCI_HOST: ${{ secrets.OCI_HOST }}
-      OCI_USER: ${{ secrets.OCI_USER }}
-      TCM_DL_USER: ${{ secrets.TCM_DL_USER }}
-      TCM_DL_PASS: ${{ secrets.TCM_DL_PASS }}
+      EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'http://140.245.209.147/api' }}
+      EXPO_UPDATES_CHANNEL: preview
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
       MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
-      MAIL_TO: ${{ secrets.MAIL_TO }}
-      EXPO_PUBLIC_API_URL: http://140.245.209.147/api
+      MAIL_TO: ${{ secrets.MAIL_TO || 'cuboidsoft@gmail.com' }}
 
     steps:
       - name: Checkout
@@ -67,33 +64,46 @@ jobs:
           EXPO_NO_TELEMETRY: 1
         run: npx expo prebuild --platform android --no-install
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Build APK + AAB (local gradle, no EAS quota)
         working-directory: frontend/android
         run: ./gradlew assembleRelease bundleRelease --no-daemon
 
-      - name: Collect APK + AAB into dist
+      - name: Collect + verify APK + AAB into dist
         working-directory: frontend
         run: |
           set -euo pipefail
+          mkdir -p dist
           cp android/app/build/outputs/apk/release/app-release.apk dist/app-preview.apk
           cp android/app/build/outputs/bundle/release/app-release.aab dist/app-release.aab
+          test -s dist/app-preview.apk
+          test -s dist/app-release.aab
+          echo "APK size: $(stat -c%s dist/app-preview.apk) bytes"
+          echo "AAB size: $(stat -c%s dist/app-release.aab) bytes"
           ls -lh dist
 
-      - name: Upload artifacts to OCI VM (temporary hosting)
+      - name: Set up SSH agent for OCI VM
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.OCI_SSH_KEY }}
 
-      - name: Push APK + AAB to OCI VM
+      - name: Push APK + AAB to OCI VM (atomic)
+        env:
+          OCI_HOST: ${{ secrets.OCI_HOST }}
+          OCI_USER: ${{ secrets.OCI_USER }}
         run: |
           set -euo pipefail
           HOST="$OCI_HOST"
           USER="$OCI_USER"
-          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          ssh -q "$USER@$HOST" 'mkdir -p /opt/tcm/dist'
-          scp -q frontend/dist/app-preview.apk frontend/dist/app-release.aab "$USER@$HOST:/opt/tcm/dist/"
+          ssh -o StrictHostKeyChecking=accept-new "$USER@$HOST" 'mkdir -p /opt/tcm/dist'
+          scp -q frontend/dist/app-preview.apk frontend/dist/app-release.aab "$USER@$HOST:/opt/tcm/dist/.upload-"
+          ssh -q "$USER@$HOST" 'cd /opt/tcm/dist && mv -f .upload-app-preview.apk app-preview.apk && mv -f .upload-app-release.aab app-release.aab'
 
       - name: Publish to GitHub Release (temporary hosting)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
@@ -102,35 +112,33 @@ jobs:
             RELEASE_TAG="v${TCM_APP_VERSION}"
           fi
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
-          gh release delete "$RELEASE_TAG" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+          gh release delete "$RELEASE_TAG" --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
           gh release create "$RELEASE_TAG" \
             frontend/dist/app-preview.apk \
             frontend/dist/app-release.aab \
             --repo "$GITHUB_REPOSITORY" \
             --title "TCM Android Build ${{ env.TCM_APP_VERSION || '0.1.0' }}" \
             --notes "TCM Android APK + AAB build. App version: ${{ env.TCM_APP_VERSION || '0.1.0' }}."
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Email build notification with install + download links
         if: env.MAIL_APP_PASSWORD != ''
         uses: dawidd6/action-send-mail@v3
+        env:
+          TCM_DL_USER: ${{ secrets.TCM_DL_USER }}
+          TCM_DL_PASS: ${{ secrets.TCM_DL_PASS }}
         with:
           server_address: smtp.gmail.com
           server_port: 465
           secure: true
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_APP_PASSWORD }}
-          from: ${{ secrets.MAIL_USERNAME }}
-          to: ${{ secrets.MAIL_TO || 'cuboidsoft@gmail.com' }}
+          username: ${{ env.MAIL_USERNAME }}
+          password: ${{ env.MAIL_APP_PASSWORD }}
+          from: ${{ env.MAIL_USERNAME }}
+          to: ${{ env.MAIL_TO }}
           subject: TCM Android build ${{ env.TCM_APP_VERSION || '0.1.0' }} ready (APK + AAB)
           body: |
             TCM Android build complete.
 
             App version: ${{ env.TCM_APP_VERSION || '0.1.0' }}
-
-            Install on device (Expo, no app store needed):
-            - EAS builds page: https://expo.dev/accounts/tcmacademics-team/projects/the-code-munk/builds
 
             IMPORTANT:
             - app-preview.apk is the INSTALLABLE app. Download this to install on a phone.
@@ -138,7 +146,7 @@ jobs:
               directly on a device (if you install that, the app won't open).
             - If a download saves as 0 KB, the file/link is stale — use the latest email.
 
-            Download links (VM /dl is password-protected; user "${{ secrets.TCM_DL_USER }}"
+            Download links (VM /dl is password-protected; user "${{ env.TCM_DL_USER }}"
             / password below):
             - GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${{ env.RELEASE_TAG || 'latest' }}
             - APK (installable) - OCI VM: https://api.thecodemunk.in/dl/app-preview.apk
@@ -146,10 +154,25 @@ jobs:
             - Builds index (OCI VM): https://api.thecodemunk.in/dl/
 
             Direct (no domain yet): http://140.245.209.147/dl/app-preview.apk
-            Download password: ${{ secrets.TCM_DL_PASS }}
-
-            Note: The EAS builds page is the primary install source (requires an Expo login
-            with project access). GitHub Releases and the OCI VM /dl links are the direct
-            APK/AAB download sources; /dl is protected with the password above.
+            Download password: ${{ env.TCM_DL_PASS }}
 
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Email failure notification
+        if: failure() && env.MAIL_APP_PASSWORD != ''
+        uses: dawidd6/action-send-mail@v3
+        env:
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ env.MAIL_USERNAME }}
+          password: ${{ env.MAIL_APP_PASSWORD }}
+          from: ${{ env.MAIL_USERNAME }}
+          to: ${{ env.MAIL_TO }}
+          subject: "TCM Android build FAILED (${{ env.TCM_APP_VERSION || '0.1.0' }})"
+          body: |
+            TCM Android build failed.
+
+            Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Branch: ${{ github.ref_name }}

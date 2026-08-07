@@ -23,15 +23,23 @@ jobs:
           ssh-private-key: ${{ secrets.OCI_SSH_KEY }}
 
       - name: Sync backend source to VM
+        env:
+          OCI_USER: ${{ secrets.OCI_USER }}
+          OCI_HOST: ${{ secrets.OCI_HOST }}
         run: |
-          ssh -o StrictHostKeyChecking=accept-new ${{ secrets.OCI_USER }}@${{ secrets.OCI_HOST }} \
+          set -euo pipefail
+          ssh -o StrictHostKeyChecking=accept-new "$OCI_USER@$OCI_HOST" \
             "sudo mkdir -p /opt/tcm/backend"
-          rsync -avz --delete --exclude 'node_modules' --exclude '.env' \
-            --exclude 'dist' --exclude '.wrangler' --exclude '.dev.vars' \
+          rsync -avz --delete --delay-updates \
+            --exclude 'node_modules' --exclude '.env' \
             -e "ssh -o StrictHostKeyChecking=accept-new" \
-            ./backend/ ${{ secrets.OCI_USER }}@${{ secrets.OCI_HOST }}:/opt/tcm/backend/
+            ./backend/ "$OCI_USER@$OCI_HOST:/opt/tcm/backend/"
 
-      - name: Install deps and restart service
+      - name: Install deps, restart service, verify health
+        env:
+          OCI_USER: ${{ secrets.OCI_USER }}
+          OCI_HOST: ${{ secrets.OCI_HOST }}
         run: |
-          ssh -o StrictHostKeyChecking=accept-new ${{ secrets.OCI_USER }}@${{ secrets.OCI_HOST }} \
-            "cd /opt/tcm/backend && npm install --omit=dev --no-audit --no-fund && sudo systemctl restart tcm-backend && for i in \$(seq 1 15); do sleep 2; if curl -sf http://localhost/api/health; then echo; echo HEALTH_OK; exit 0; fi; done; echo 'health check failed after 30s'; exit 1"
+          set -euo pipefail
+          ssh -o StrictHostKeyChecking=accept-new "$OCI_USER@$OCI_HOST" \
+            "cd /opt/tcm/backend && npm ci --omit=dev --no-audit --no-fund && sudo systemctl restart tcm-backend && for i in \$(seq 1 30); do if curl -fsS --max-time 5 http://127.0.0.1:5000/api/health | grep -q '\"ok\":true'; then echo 'HEALTH_OK after '\$i' polls'; exit 0; fi; sleep 2; done; echo 'health check failed after 60s'; exit 1"
