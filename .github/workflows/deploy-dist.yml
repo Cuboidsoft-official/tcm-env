@@ -28,6 +28,10 @@ jobs:
 
       - name: Ensure R2 bucket exists
         id: r2
+        env:
+          CI: true
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set +e
           npx wrangler r2 bucket create tcm-dist > /tmp/r2-bucket.log 2>&1
