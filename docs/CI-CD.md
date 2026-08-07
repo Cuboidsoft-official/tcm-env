@@ -50,7 +50,7 @@ Devices can get the app without any app store:
 |---|---|---|
 | **EAS builds page** | `https://expo.dev/accounts/tcmacademics-team/projects/the-code-munk/builds` | Primary install — internal distribution APK with QR code, hosted by Expo |
 | **GitHub Release** | `https://github.com/Cuboidsoft-official/tcm-env/releases/latest` | Always-available APK + AAB download |
-| **OCI VM static hosting** | `https://api.thecodemunk.in/dl/` (directory listing) | Direct APK/AAB download hosted on our own VM |
+| **OCI VM static hosting** | `https://api.thecodemunk.in/dl/` (basic-auth protected) | Direct APK/AAB download hosted on our own VM, gated by a tester password |
 
 Email is a **notification with links** (never attachments) so inboxes and
 builds stay small.
@@ -89,6 +89,8 @@ values in the repo.
 | `GEMINI_API_KEY` | Gemini AI service; written to `/opt/tcm/.env` on the VM. |
 | `EXPO_TOKEN` | Authenticates `eas-cli` for cloud Android builds, OTA updates, and artifact downloads. |
 | `EXPO_PUBLIC_API_URL` | Backend base URL baked into builds/updates (`http://140.245.209.147/api`; switch to `https://api.thecodemunk.in/api` once DNS is live). |
+| `TCM_DL_USER` | Basic-auth user (`tester`) for the VM `/dl/` artifact downloads. |
+| `TCM_DL_PASS` | Basic-auth password for the VM `/dl/` artifact downloads. |
 | `ANDROID_KEYSTORE_BASE64` | Base64-encoded Android keystore — for the **local-gradle fallback** (the current EAS build uses EAS-managed credentials, not these). |
 | `ANDROID_KEYSTORE_PASSWORD` | Keystore password (local-gradle fallback). |
 | `ANDROID_KEY_ALIAS` | Signing key alias (local-gradle fallback). |
@@ -106,7 +108,9 @@ https://api.thecodemunk.in/dl/app-preview.apk
 ```
 
 (until DNS is set, use `http://140.245.209.147/dl/app-preview.apk`). The `/dl/`
-directory listing on the VM links every uploaded artifact. To install:
+directory listing on the VM links every uploaded artifact, and it is
+**password-protected** (basic auth, user `tester` / password from the build
+email). To install:
 
 1. Open the APK link on the Android device (or download it on desktop and transfer).
 2. Allow installs from **unknown sources** when prompted.
@@ -138,7 +142,8 @@ directory listing on the VM links every uploaded artifact. To install:
   Hostinger DNS zone editor). Caddy issues a Let's Encrypt certificate
   automatically once DNS resolves; until then HTTPS is unavailable but HTTP works.
 - **Artifact hosting**: R2 was intentionally not used; APK/AAB live on the VM
-  (`/opt/tcm/dist`, served by Caddy at `/dl/`) and on GitHub Releases.
+  (`/opt/tcm/dist`, served by Caddy at `/dl/` behind basic auth) and on GitHub
+  Releases (private repo — downloads require a collaborator login).
 - **Working directory**: the EAS steps run with `working-directory: frontend`
   because `app.json`/`eas.json` live there; `npm ci` runs at the repo root
   (npm-workspaces installs everything).

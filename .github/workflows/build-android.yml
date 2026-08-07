@@ -26,6 +26,8 @@ jobs:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       OCI_HOST: ${{ secrets.OCI_HOST }}
       OCI_USER: ${{ secrets.OCI_USER }}
+      TCM_DL_USER: ${{ secrets.TCM_DL_USER }}
+      TCM_DL_PASS: ${{ secrets.TCM_DL_PASS }}
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
       MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
       MAIL_TO: ${{ secrets.MAIL_TO }}
@@ -144,15 +146,24 @@ jobs:
             Install on device (Expo, no app store needed):
             - EAS builds page: https://expo.dev/accounts/tcmacademics-team/projects/the-code-munk/builds
 
-            Download links:
+            IMPORTANT:
+            - app-preview.apk is the INSTALLABLE app. Download this to install on a phone.
+            - app-release.aab is the PLAY STORE upload file only — it CANNOT be installed
+              directly on a device (if you install that, the app won't open).
+            - If a download saves as 0 KB, the file/link is stale — use the latest email.
+
+            Download links (VM /dl is password-protected; user "${{ secrets.TCM_DL_USER }}"
+            / password below):
             - GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${{ env.RELEASE_TAG || 'latest' }}
-            - APK (OCI VM): https://api.thecodemunk.in/dl/app-preview.apk
-            - AAB (OCI VM): https://api.thecodemunk.in/dl/app-release.aab
+            - APK (installable) - OCI VM: https://api.thecodemunk.in/dl/app-preview.apk
+            - AAB (Play upload only) - OCI VM: https://api.thecodemunk.in/dl/app-release.aab
             - Builds index (OCI VM): https://api.thecodemunk.in/dl/
 
             Direct (no domain yet): http://140.245.209.147/dl/app-preview.apk
+            Download password: ${{ secrets.TCM_DL_PASS }}
 
-            Note: The EAS builds page is the primary install source. GitHub Releases and the
-            OCI VM /dl links are the immediate APK/AAB download sources.
+            Note: The EAS builds page is the primary install source (requires an Expo login
+            with project access). GitHub Releases and the OCI VM /dl links are the direct
+            APK/AAB download sources; /dl is protected with the password above.
 
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
