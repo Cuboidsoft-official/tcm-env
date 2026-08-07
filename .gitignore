@@ -10,3 +10,16 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .DS_Store
+
+# Cloudflare / build
+backend/.wrangler/
+backend/.dev.vars
+*.keystore
+# local secrets dumps (contain real credentials — never commit)
+/env
+/env (1)
+/env (2)
+/env (3)
+verify-*.log
+backend/verify-*.log
+frontend/android/
