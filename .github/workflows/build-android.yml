@@ -78,20 +78,19 @@ jobs:
           download_build() {
             local profile="$1"
             local buildjson="$2"
+            local outfile="$3"
             local out
             out="$(read_build "$buildjson")"
             local build_id="${out%% *}"
             local build_url="${out#* }"
             echo "Profile '$profile' -> build $build_id"
             echo "Artifact URL: $build_url"
-            npx eas-cli@latest build:download --build-id "$build_id" --non-interactive
+            curl -fsSL --retry 3 -o "$outfile" "$build_url"
           }
 
-          download_build preview build-preview.json
-          download_build production build-production.json
+          download_build preview build-preview.json app-preview.apk
+          download_build production build-production.json app-release.aab
 
-          mv ./*.apk app-preview.apk
-          mv ./*.aab app-release.aab
           ls -lh
 
       - name: Upload to R2 (best-effort until bucket enabled)
