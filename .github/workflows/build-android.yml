@@ -99,14 +99,6 @@ jobs:
             echo "::warning::R2 upload failed - GitHub Release and EAS install links remain the download sources. Enable R2 in the Cloudflare dashboard to activate the tcm-dist URLs."
           fi
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: tcm-android-build
-          path: frontend/dist/**
-          if-no-files-found: error
-          retention-days: 14
-
       - name: Publish to GitHub Release (temporary hosting until R2 is enabled)
         run: |
           set -euo pipefail
