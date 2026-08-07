@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import { requireAuth } from "../middleware/auth.js";
 import { CommunityPost } from "../models/CommunityPost.js";
+import { Community } from "../models/Community.js";
 import { Mentor } from "../models/Mentor.js";
 import { Story } from "../models/Story.js";
 import { User } from "../models/User.js";
@@ -9,9 +10,23 @@ import { Course } from "../models/Course.js";
 import { Webinar } from "../models/Webinar.js";
 import { DoubtRoom } from "../models/DoubtRoom.js";
 import { KnowledgeBaseItem } from "../models/KnowledgeBaseItem.js";
-import { askGeminiAi } from "../services/geminiService.js";
+import {
+  registerPushToken,
+  notifyCoursePublished,
+  notifyNewCommunityPost,
+  notifyPostLiked,
+  notifyPostCommented
+} from "../services/pushNotificationService.js";
 
 export const homeRouter = express.Router();
+
+homeRouter.post("/notifications/register-token", requireAuth, (req, res) => {
+  const { pushToken, platform } = req.body;
+  if (pushToken) {
+    registerPushToken(req.user._id, pushToken, platform);
+  }
+  res.json({ success: true, registered: true });
+});
 
 const categories = ["For You", "Following", "Trending", "UPSC", "JEE", "NEET", "Coding", "AI / ML", "Design"];
 const tabs = [
@@ -269,6 +284,12 @@ function mapPost(post) {
     verified: post.verified || isMentor,
     isMentor,
     category: post.category,
+    privacy: post.privacy || "public",
+    postType: post.postType || "general",
+    targetCourseId: post.targetCourseId || null,
+    documentUrl: post.documentUrl || null,
+    documentName: post.documentName || null,
+    documentSize: post.documentSize || "4.2 MB",
     text: post.text,
     media: post.media,
     metrics: post.metrics,
@@ -387,9 +408,241 @@ homeRouter.get("/", requireAuth, async (req, res) => {
   });
 });
 
+homeRouter.get("/communities", async (req, res) => {
+  try {
+    let dbCommunities = [];
+    try {
+      dbCommunities = await Community.find().sort({ createdAt: -1 }).lean();
+    } catch (e) {}
+
+    const formatted = dbCommunities.map((c) => ({
+      id: c._id || c.id,
+      name: c.name,
+      privacy: c.privacy || "public",
+      category: c.category || "General",
+      description: c.description || "",
+      creatorName: c.creatorName,
+      creatorRole: c.creatorRole || "TCM Mentor",
+      membersCount: c.membersCount || 1,
+      postsCount: c.postsCount || 0,
+      coverImage: c.coverImage
+    }));
+
+    res.json({ communities: formatted });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch communities." });
+  }
+});
+
+homeRouter.post("/communities", requireAuth, async (req, res) => {
+  if (req.user.role !== "mentor") {
+    return res.status(403).json({ message: "Only verified mentors can create community channels." });
+  }
+
+  try {
+    const { name, privacy = "public", category = "General", description, coverImage } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Community name is required." });
+    }
+
+    const newComm = await Community.create({
+      name: name.trim(),
+      creatorId: req.user._id?.toString(),
+      creatorName: req.user.name,
+      creatorRole: req.user.memberBadge || "TCM Senior Mentor",
+      creatorAvatarUrl: req.user.avatarUrl,
+      privacy,
+      category,
+      description: (description || "").trim(),
+      coverImage: coverImage?.trim() || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80",
+      membersCount: 1,
+      members: [req.user._id?.toString()]
+    });
+
+    res.status(201).json({
+      community: {
+        id: newComm._id,
+        name: newComm.name,
+        privacy: newComm.privacy,
+        category: newComm.category,
+        description: newComm.description,
+        creatorName: newComm.creatorName,
+        creatorRole: newComm.creatorRole,
+        membersCount: newComm.membersCount,
+        postsCount: 0,
+        coverImage: newComm.coverImage
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to create community channel." });
+  }
+});
+
+homeRouter.delete("/communities/:id", requireAuth, async (req, res) => {
+  try {
+    const commId = req.params.id;
+    if (req.user.role !== "mentor") {
+      return res.status(403).json({ message: "Only mentors can delete community channels." });
+    }
+
+    try {
+      await Community.findByIdAndDelete(commId);
+      await CommunityPost.deleteMany({ targetCommunityId: commId });
+    } catch (e) {}
+
+    res.json({ message: "Community channel deleted successfully.", deletedId: commId });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete community channel." });
+  }
+});
+
+homeRouter.post("/communities/:id/join", requireAuth, async (req, res) => {
+  try {
+    const commId = req.params.id;
+    const userId = req.user._id?.toString();
+
+    let joined = true;
+    let membersCount = 1;
+
+    try {
+      const comm = await Community.findById(commId);
+      if (comm) {
+        const isMember = comm.members.includes(userId);
+        if (isMember) {
+          comm.members = comm.members.filter((m) => m !== userId);
+          joined = false;
+        } else {
+          comm.members.push(userId);
+          joined = true;
+        }
+        comm.membersCount = Math.max(1, comm.members.length);
+        await comm.save();
+        membersCount = comm.membersCount;
+      }
+    } catch (e) {}
+
+    res.json({ joined, membersCount });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to toggle community membership." });
+  }
+});
+
+homeRouter.patch("/communities/:id", requireAuth, async (req, res) => {
+  try {
+    const commId = req.params.id;
+    const { name, description, coverImage, category, privacy } = req.body;
+
+    let updatedComm = null;
+    try {
+      const comm = await Community.findById(commId);
+      if (comm) {
+        if (name) comm.name = name.trim();
+        if (description !== undefined) comm.description = description.trim();
+        if (coverImage) comm.coverImage = coverImage.trim();
+        if (category) comm.category = category;
+        if (privacy) comm.privacy = privacy;
+        await comm.save();
+        updatedComm = comm;
+      }
+    } catch (e) {}
+
+    res.json({
+      message: "Community channel profile updated.",
+      community: updatedComm
+        ? {
+            id: updatedComm._id || updatedComm.id,
+            name: updatedComm.name,
+            privacy: updatedComm.privacy,
+            category: updatedComm.category,
+            description: updatedComm.description,
+            coverImage: updatedComm.coverImage,
+            creatorName: updatedComm.creatorName,
+            creatorRole: updatedComm.creatorRole,
+            membersCount: updatedComm.membersCount || 1
+          }
+        : { id: commId, name, description, coverImage, category, privacy }
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update community channel." });
+  }
+});
+
+homeRouter.post("/communities/:id/request-access", requireAuth, async (req, res) => {
+  try {
+    const commId = req.params.id;
+    const user = req.user;
+
+    try {
+      const comm = await Community.findById(commId);
+      if (comm) {
+        comm.joinRequests = comm.joinRequests || [];
+        const existing = comm.joinRequests.find((r) => String(r.userId) === String(user._id));
+        if (!existing) {
+          comm.joinRequests.push({
+            userId: user._id?.toString(),
+            name: user.name,
+            role: user.role || "student",
+            avatarUrl: user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+          });
+          await comm.save();
+        }
+      }
+    } catch (e) {}
+
+    res.json({ message: "Join request submitted to batch mentor.", requested: true });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to submit join request." });
+  }
+});
+
+homeRouter.post("/communities/:id/manage-request", requireAuth, async (req, res) => {
+  try {
+    const commId = req.params.id;
+    const { targetUserId, action } = req.body; // action: "approve" | "decline"
+
+    let joinRequests = [];
+    let membersCount = 1;
+
+    try {
+      const comm = await Community.findById(commId);
+      if (comm) {
+        comm.joinRequests = (comm.joinRequests || []).filter((r) => String(r.userId) !== String(targetUserId));
+        if (action === "approve") {
+          if (!comm.members.includes(targetUserId)) {
+            comm.members.push(targetUserId);
+          }
+          comm.membersCount = Math.max(1, comm.members.length);
+        }
+        await comm.save();
+        joinRequests = comm.joinRequests;
+        membersCount = comm.membersCount;
+      }
+    } catch (e) {}
+
+    res.json({ message: `Request ${action}d successfully.`, joinRequests, membersCount });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to manage join request." });
+  }
+});
+
 homeRouter.post("/posts", requireAuth, async (req, res) => {
+  // Only mentors are authorized to create community posts and updates
+  if (req.user.role !== "mentor") {
+    return res.status(403).json({ message: "Only verified mentors are authorized to create community posts and updates." });
+  }
+
   const memoryStore = req.app.locals.memoryStore;
-  const { category = "Community", tags = [], media = { kind: "none" } } = req.body;
+  const {
+    category = "Community",
+    privacy = "public",
+    postType = "general",
+    targetCourseId,
+    documentUrl,
+    documentName,
+    documentSize,
+    tags = [],
+    media = { kind: "none" }
+  } = req.body;
   const rawText = [req.body?.text, req.body?.content, req.body?.caption, req.body?.body].find(
     (value) => typeof value === "string" && value.trim()
   );
@@ -405,15 +658,21 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))
     .slice(0, 6);
 
-  const isUserMentor = req.user.role === "mentor";
+  const isUserMentor = true;
   const postPayload = {
     authorName: req.user.name,
     authorId: req.user._id?.toString(),
-    authorRole: isUserMentor ? (req.user.memberBadge || "TCM Mentor") : "TCM Learner",
+    authorRole: req.user.memberBadge || "TCM Senior Mentor",
     authorAvatarUrl: req.user.avatarUrl,
-    verified: isUserMentor ? true : (req.user.verified || false),
-    isMentor: isUserMentor,
+    verified: true,
+    isMentor: true,
     category,
+    privacy,
+    postType,
+    targetCourseId: targetCourseId || null,
+    documentUrl: documentUrl || null,
+    documentName: documentName || null,
+    documentSize: documentSize || "4.2 MB",
     text: postText,
     media,
     metrics: {
@@ -439,10 +698,24 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
       userInMem.stats.postsCount = (userInMem.stats.postsCount || 0) + 1;
     }
 
+    notifyNewCommunityPost({
+      authorName: req.user.name,
+      channelName: category || "TCM Community",
+      postTitle: postText,
+      channelId: targetCourseId || category
+    }).catch(() => {});
+
     return res.status(201).json({ post: mapPost(post) });
   }
 
   const post = await CommunityPost.create(postPayload);
+
+  notifyNewCommunityPost({
+    authorName: req.user.name,
+    channelName: category || "TCM Community",
+    postTitle: postText,
+    channelId: targetCourseId || category
+  }).catch(() => {});
 
   // Increment user post count in MongoDB
   try {
@@ -488,6 +761,14 @@ homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
 
   if (typeof post.save === "function") {
     await post.save();
+  }
+
+  if (isLiked && post.authorId && String(post.authorId) !== userId) {
+    notifyPostLiked({
+      likerName: req.user.name || "A learner",
+      postAuthorId: post.authorId,
+      postId: String(post._id || post.id)
+    }).catch(() => {});
   }
 
   res.json({
@@ -541,6 +822,15 @@ homeRouter.post("/post/:postId/comment", requireAuth, async (req, res) => {
 
   if (typeof post.save === "function") {
     await post.save();
+  }
+
+  if (post.authorId && String(post.authorId) !== userId) {
+    notifyPostCommented({
+      commenterName: req.user.name || "A learner",
+      postAuthorId: post.authorId,
+      commentText: text.trim(),
+      postId: String(post._id || post.id)
+    }).catch(() => {});
   }
 
   res.status(201).json({
@@ -707,6 +997,12 @@ homeRouter.post("/courses", requireAuth, async (req, res) => {
     }
   }
 
+  notifyCoursePublished({
+    mentorName: req.user.name || "TCM Mentor",
+    courseTitle: title,
+    courseId: courseObj.id
+  }).catch(() => {});
+
   res.status(201).json({ course: courseObj });
 });
 
@@ -714,18 +1010,56 @@ homeRouter.post("/courses", requireAuth, async (req, res) => {
 homeRouter.post("/courses/:courseId/schedule-live", requireAuth, async (req, res) => {
   try {
     const { courseId } = req.params;
-    const { topic, meetingUrl, time } = req.body;
+    const { topic, meetingUrl, time, moduleId, recordedUrl, notesPdfUrl } = req.body;
 
-    if (!meetingUrl) {
-      return res.status(400).json({ message: "Meeting URL is required." });
+    if (!meetingUrl && !recordedUrl && !notesPdfUrl) {
+      return res.status(400).json({ message: "Meeting URL, Recorded Video URL or PDF Notes Link is required." });
     }
 
     const liveData = {
       topic: topic || "Daily Live Session",
-      meetingUrl: meetingUrl.trim(),
+      meetingUrl: (meetingUrl || "").trim(),
+      recordedUrl: (recordedUrl || "").trim(),
+      notesPdfUrl: (notesPdfUrl || "").trim(),
       time: time || "Today • 10:00 AM – 11:30 AM",
       scheduledAt: new Date()
     };
+
+    if (!req.app.locals.courseModuleLinks) {
+      req.app.locals.courseModuleLinks = {};
+    }
+    if (!req.app.locals.courseModuleLinks[courseId]) {
+      req.app.locals.courseModuleLinks[courseId] = {};
+    }
+
+    if (!req.app.locals.courseModuleRecordedLinks) {
+      req.app.locals.courseModuleRecordedLinks = {};
+    }
+    if (!req.app.locals.courseModuleRecordedLinks[courseId]) {
+      req.app.locals.courseModuleRecordedLinks[courseId] = {};
+    }
+
+    if (!req.app.locals.courseModulePdfLinks) {
+      req.app.locals.courseModulePdfLinks = {};
+    }
+    if (!req.app.locals.courseModulePdfLinks[courseId]) {
+      req.app.locals.courseModulePdfLinks[courseId] = {};
+    }
+
+    if (meetingUrl) {
+      if (moduleId) req.app.locals.courseModuleLinks[courseId][moduleId] = meetingUrl.trim();
+      if (topic) req.app.locals.courseModuleLinks[courseId][topic] = meetingUrl.trim();
+    }
+
+    if (recordedUrl) {
+      if (moduleId) req.app.locals.courseModuleRecordedLinks[courseId][moduleId] = recordedUrl.trim();
+      if (topic) req.app.locals.courseModuleRecordedLinks[courseId][topic] = recordedUrl.trim();
+    }
+
+    if (notesPdfUrl) {
+      if (moduleId) req.app.locals.courseModulePdfLinks[courseId][moduleId] = notesPdfUrl.trim();
+      if (topic) req.app.locals.courseModulePdfLinks[courseId][topic] = notesPdfUrl.trim();
+    }
 
     // Update in MongoDB
     try {
@@ -1749,6 +2083,18 @@ homeRouter.get("/continue-learning", requireAuth, async (req, res) => {
         { dayNum: "Day 5", topic: `Production Capstone Project` }
       ];
 
+  const moduleLinksMap = (req.app.locals.courseModuleLinks && (req.app.locals.courseModuleLinks[activeCourse.id] || req.app.locals.courseModuleLinks[activeCourse.customId])) || {};
+  const moduleRecordedLinksMap = (req.app.locals.courseModuleRecordedLinks && (req.app.locals.courseModuleRecordedLinks[activeCourse.id] || req.app.locals.courseModuleRecordedLinks[activeCourse.customId])) || {};
+  const modulePdfLinksMap = (req.app.locals.courseModulePdfLinks && (req.app.locals.courseModulePdfLinks[activeCourse.id] || req.app.locals.courseModulePdfLinks[activeCourse.customId])) || {};
+
+  const activeLive = activeCourse.activeLiveClass || req.app.locals.latestGlobalLiveClass || {
+    topic: `${rawModules[0]?.topic || rawModules[0]?.title || activeCourse.title}`,
+    meetingUrl: "https://meet.jit.si/tcm-live-fullstack",
+    recordedUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    notesPdfUrl: "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
+    time: "Today • 10:00 AM – 11:30 AM"
+  };
+
   // 3. Map real mentor course modules into Day-by-Day learningJourney
   const learningJourney = rawModules.map((m, idx) => {
     let dayLabel = m.dayNum || `Day ${idx + 1}`;
@@ -1761,21 +2107,35 @@ homeRouter.get("/continue-learning", requireAuth, async (req, res) => {
 
     const icons = ["flag-variant", "code-tags", "database", "cloud-outline", "shield-check-outline", "trophy-outline"];
 
+    const modId = m.id || `day_${idx + 1}`;
+    let meetingUrl = m.meetingUrl || moduleLinksMap[modId] || moduleLinksMap[m.topic] || moduleLinksMap[topicText];
+    let recordedUrl = m.recordedUrl || moduleRecordedLinksMap[modId] || moduleRecordedLinksMap[m.topic] || moduleRecordedLinksMap[topicText];
+    let notesPdfUrl = m.notesPdfUrl || modulePdfLinksMap[modId] || modulePdfLinksMap[m.topic] || modulePdfLinksMap[topicText];
+
+    if (!meetingUrl && idx === 0) {
+      meetingUrl = activeLive.meetingUrl || "https://meet.jit.si/tcm-live-fullstack";
+    }
+    if (!recordedUrl && idx === 0) {
+      recordedUrl = activeLive.recordedUrl || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    }
+    if (!notesPdfUrl) {
+      notesPdfUrl = "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view";
+    }
+
     return {
-      id: m.id || `day_${idx + 1}`,
+      id: modId,
       moduleNum: dayLabel,
       title: topicText,
       icon: icons[idx % icons.length],
       sub: idx === 0 ? "Live class active" : "Upcoming session",
-      status: idx === 0 ? "in_progress" : "upcoming"
+      status: idx === 0 ? "in_progress" : "upcoming",
+      meetingUrl: meetingUrl || null,
+      recordedUrl: recordedUrl || null,
+      notesPdfUrl: notesPdfUrl || null,
+      notesTitle: `${topicText} - Official Class Notes.pdf`,
+      hasMentorJoiningLink: Boolean(meetingUrl)
     };
   });
-
-  const activeLive = activeCourse.activeLiveClass || req.app.locals.latestGlobalLiveClass || {
-    topic: `${rawModules[0]?.topic || rawModules[0]?.title || activeCourse.title}`,
-    meetingUrl: "https://meet.jit.si/tcm-live-fullstack",
-    time: "Today • 10:00 AM – 11:30 AM"
-  };
 
   return res.json({
     courseId: activeCourse.customId || activeCourse.id || activeCourse._id,
@@ -2316,9 +2676,22 @@ homeRouter.post("/user/:targetId/friend-request", requireAuth, async (req, res) 
   } else if (action === "accept") {
     friendStatus = "friends";
     isMutual = true;
-    if (req.app.locals.friendRequests[reqKey]) {
-      req.app.locals.friendRequests[reqKey].status = "friends";
+    if (!req.app.locals.friendRequests[reqKey]) {
+      req.app.locals.friendRequests[reqKey] = {};
     }
+    req.app.locals.friendRequests[reqKey].status = "friends";
+
+    if (!req.app.locals.globalFriendStore) {
+      req.app.locals.globalFriendStore = {};
+    }
+    req.app.locals.globalFriendStore[`${senderId}_${targetId}`] = true;
+    req.app.locals.globalFriendStore[`${targetId}_${senderId}`] = true;
+
+    // Persist in MongoDB User model
+    try {
+      await User.updateOne({ _id: senderId }, { $addToSet: { friends: String(targetId) } });
+      await User.updateOne({ _id: String(targetId) }, { $addToSet: { friends: senderId } });
+    } catch (e) {}
 
     // Push confirmation notification back to sender
     const existingReq = req.app.locals.friendRequests[reqKey];
@@ -2344,6 +2717,16 @@ homeRouter.post("/user/:targetId/friend-request", requireAuth, async (req, res) 
     friendStatus = "none";
     isMutual = false;
     delete req.app.locals.friendRequests[reqKey];
+
+    if (req.app.locals.globalFriendStore) {
+      delete req.app.locals.globalFriendStore[`${senderId}_${targetId}`];
+      delete req.app.locals.globalFriendStore[`${targetId}_${senderId}`];
+    }
+
+    try {
+      await User.updateOne({ _id: senderId }, { $pull: { friends: String(targetId) } });
+      await User.updateOne({ _id: String(targetId) }, { $pull: { friends: senderId } });
+    } catch (e) {}
   }
 
   return res.json({ success: true, friendStatus, isMutual });
@@ -2674,6 +3057,22 @@ homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, async (req, res) => 
 
     const currentUserId = String(req.user._id || req.user.id);
     const isAdmin = (room.admins || []).includes(currentUserId) || room.creatorId === currentUserId;
+
+    if (action === "delete_group" || action === "delete_room") {
+      if (!isAdmin) {
+        return res.status(403).json({ message: "Only room admins can delete this group." });
+      }
+      await DoubtRoom.deleteOne({ roomId });
+      return res.json({ success: true, deleted: true, message: "Group room deleted successfully." });
+    }
+
+    if (action === "leave_room") {
+      if (!room.members) room.members = [];
+      room.members = room.members.filter((m) => String(m) !== currentUserId);
+      room.membersCount = Math.max(0, (room.membersCount || 1) - 1);
+      await room.save();
+      return res.json({ success: true, room, left: true, message: "Left group room successfully." });
+    }
 
     if (!isAdmin) {
       return res.status(403).json({ message: "Only room admins can manage settings." });

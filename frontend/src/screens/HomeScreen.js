@@ -43,6 +43,7 @@ import CreateWebinarScreen from "./CreateWebinarScreen";
 import AllMentorsScreen from "./AllMentorsScreen";
 import ChatListScreen from "./ChatListScreen";
 import DoubtRoomScreen from "./DoubtRoomScreen";
+import CommunityScreen from "./CommunityScreen";
 import SidebarDrawer from "../components/SidebarDrawer";
 
 const fallbackTabs = [
@@ -217,6 +218,7 @@ export default function HomeScreen({ session, onLogout }) {
   const [showSearchScreen, setShowSearchScreen] = useState(false);
   const [selectedMentorId, setSelectedMentorId] = useState(null);
   const [activeChatUser, setActiveChatUser] = useState(null);
+  const [isCommChannelOpen, setIsCommChannelOpen] = useState(false);
   const [showNotificationsScreen, setShowNotificationsScreen] = useState(false);
   const [exploreCategoryKey, setExploreCategoryKey] = useState(null);
   const [showWalletScreen, setShowWalletScreen] = useState(false);
@@ -224,6 +226,7 @@ export default function HomeScreen({ session, onLogout }) {
   const [showCreateCourseScreen, setShowCreateCourseScreen] = useState(false);
   const [showCreateWebinarScreen, setShowCreateWebinarScreen] = useState(false);
   const [showAllMentorsScreen, setShowAllMentorsScreen] = useState(false);
+  const [showCommunityScreen, setShowCommunityScreen] = useState(false);
   const [courseToEdit, setCourseToEdit] = useState(null);
   const [activeDoubtRoom, setActiveDoubtRoom] = useState(null);
 
@@ -244,6 +247,7 @@ export default function HomeScreen({ session, onLogout }) {
     setShowCreateCourseScreen(false);
     setShowCreateWebinarScreen(false);
     setShowAllMentorsScreen(false);
+    setShowCommunityScreen(false);
     setTargetUserProfile(null);
     setCourseToEdit(null);
   }
@@ -340,6 +344,8 @@ export default function HomeScreen({ session, onLogout }) {
       setActiveTab("Learn");
     } else if (itemKey === "Doubts") {
       setActiveTab("Doubts");
+    } else if (itemKey === "TCM Community" || itemKey === "Community") {
+      setShowCommunityScreen(true);
     } else if (itemKey === "Notifications") {
       setShowNotificationsScreen(true);
     } else if (itemKey === "Profile") {
@@ -555,6 +561,11 @@ export default function HomeScreen({ session, onLogout }) {
                   setSelectedMentorId(mId || "m1");
                 }}
               />
+            ) : showCommunityScreen ? (
+              <CommunityScreen
+                session={session}
+                navigation={{ goBack: () => setShowCommunityScreen(false) }}
+              />
             ) : showWalletScreen ? (
               <WalletScreen
                 session={session}
@@ -615,7 +626,7 @@ export default function HomeScreen({ session, onLogout }) {
         ) : (
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={[styles.page, { width: contentWidth }]}>
-              {!targetUserProfile && activeTab === "Learn" ? null : (
+              {!targetUserProfile && (activeTab === "Learn" || (activeTab === "Community" && isCommChannelOpen)) ? null : (
                 <Header
                   user={user}
                   notifications={home?.notifications || 0}
@@ -676,12 +687,22 @@ export default function HomeScreen({ session, onLogout }) {
                           />
                         ))
                       ) : (
-                        <EmptyState title="No matching posts" text="Try another search or category." />
+                        <EmptyState
+                          title={search || (activeCategory && activeCategory !== "For You") ? "No matching posts" : "No posts in Feed yet"}
+                          text={search || (activeCategory && activeCategory !== "For You") ? "Try another search or category." : "Be the first to share an update, notes, or question!"}
+                        />
                       )}
                     </View>
                   </>
                 ) : null}
               </>
+            ) : activeTab === "Community" ? (
+              <CommunityScreen
+                session={session}
+                navigation={{ goBack: () => setActiveTab("Home") }}
+                onChannelStateChange={(isOpen) => setIsCommChannelOpen(isOpen)}
+                onOpenChannelChat={(targetChannel) => setActiveChatUser(targetChannel)}
+              />
             ) : activeTab === "Learn" ? (
               <LearnScreen
                 learn={home?.learn}
