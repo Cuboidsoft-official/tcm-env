@@ -71,12 +71,12 @@ The frontend uses `EXPO_PUBLIC_API_URL` when present, otherwise it falls back to
 
 ## CI/CD
 
-- **CI Checks** (`.github/workflows/ci-checks.yml`) run on every push to `main` and pull request: backend health check (starts the server without a DB, asserts `/api/health` returns `"ok":true`) and a frontend Android Metro bundle export.
-- **Backend** auto-deploys to Cloudflare Containers on push to `main`.
-- **Frontend** Android APK/AAB auto-builds in EAS, publishes to GitHub Releases + R2 (best-effort until R2 is enabled), and emails install/download links to `cuboidsoft@gmail.com`.
+- **CI Checks** (`.github/workflows/ci-checks.yml`) run on every push to `main` and pull request (path-scoped to `backend/**` and `frontend/**`): backend health check (starts the server without a DB, asserts `/api/health` returns `"ok":true`) and a frontend Android Metro bundle export.
+- **Backend** auto-deploys to the OCI Always-Free VM (`140.245.209.147`) via SSH + rsync on push to `main`, served through Caddy (HTTPS at `api.thecodemunk.in` once DNS is set).
+- **Frontend** Android APK/AAB auto-builds in EAS, publishes to GitHub Releases + the OCI VM `/dl` static hosting, and emails install/download links to `cuboidsoft@gmail.com`.
 - **OTA** JS updates auto-publish to installed builds (`eas update`, preview + production channels).
-- Required GitHub secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, `EXPO_TOKEN`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET`, `MAIL_USERNAME`, `MAIL_APP_PASSWORD`, `MAIL_TO`.
+- Required GitHub secrets: `OCI_SSH_KEY`, `OCI_HOST`, `OCI_USER`, `MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, `EXPO_TOKEN`, `MAIL_USERNAME`, `MAIL_APP_PASSWORD`, `MAIL_TO`.
 
 ## CI/CD & Hosting
 
-Full pipeline docs: [`docs/CI-CD.md`](docs/CI-CD.md). Push to `main` → CI checks, backend auto-deploys to Cloudflare Containers, Android APK + AAB auto-build in EAS, OTA updates publish to the preview channel, and install/download links are emailed to `cuboidsoft@gmail.com`.
+Full pipeline docs: [`docs/CI-CD.md`](docs/CI-CD.md). Push to `main` → CI checks, backend auto-deploys to the OCI VM, Android APK + AAB auto-build in EAS, OTA updates publish to the preview channel, and install/download links are emailed to `cuboidsoft@gmail.com`.

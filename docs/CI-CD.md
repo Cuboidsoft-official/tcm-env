@@ -1,4 +1,4 @@
-# CI/CD & Hosting
+﻿# CI/CD & Hosting
 
 Continuous integration and deployment for the TCM monorepo (npm-workspaces):
 an Express + Mongoose backend and an Expo SDK 54 / React Native 0.81.5 frontend.
@@ -10,8 +10,9 @@ CI runs on **GitHub Actions**. Deploy targets:
   SSH on every `main` push touching `backend/**`. Served in production through
   **Caddy** (HTTPS) at `https://api.thecodemunk.in/api`.
 - **Android** → **EAS Build** (cloud) producing an APK (preview) and an AAB
-  (production), uploaded to Cloudflare **R2** bucket `tcm-dist` and served by the
-  distribution worker `tcm-dist` (config `dist-worker/wrangler.toml`).
+  (production), published to **GitHub Releases** and hosted statically on the
+  OCI VM itself (`https://api.thecodemunk.in/dl/...`, or
+  `http://140.245.209.147/dl/...` before DNS).
 - **OTA updates** → **EAS Update** to the `preview` channel (JS-only fixes reach
   installed builds instantly).
 - **Build notifications** → emailed to `cuboidsoft@gmail.com` via Gmail SMTP.
@@ -22,8 +23,7 @@ CI runs on **GitHub Actions**. Deploy targets:
 |---|---|---|
 | **CI Checks** (`ci-checks.yml`) | Push/PR to `main` touching `backend/**`, `frontend/**`, or the workflow file; manual | Backend health check: starts the server without a DB and asserts `GET /api/health` returns `"ok":true`. Frontend check: `npx expo export --platform android` (Metro bundle must succeed). |
 | **Deploy Backend to OCI VM** (`deploy-backend-oci.yml`) | Push to `main` touching `backend/**` or the workflow file; manual | SSH (key `OCI_SSH_KEY`) into `OCI_USER@OCI_HOST`, `rsync --delete` the backend (excluding `node_modules`, `.env`, `dist`), `npm install --omit=dev`, restart the systemd unit `tcm-backend`, and poll `GET http://OCI_HOST/api/health` until it's healthy. |
-| **Build Android & Publish** (`build-android.yml`) | Push to `main` touching `frontend/**` or the workflow file; push of a `v*` tag; manual | Builds the APK (EAS **preview**) and the AAB (EAS **production**) in the cloud, downloads both to `frontend/dist/`, uploads `latest-release.apk`/`latest-release.aab` + versioned copies to R2 bucket `tcm-dist`, attaches them as a GitHub Actions artifact, creates a GitHub Release, and emails the **install + download links** to `cuboidsoft@gmail.com`. |
-| **Deploy Distribution Worker** (`deploy-dist.yml`) | Push to `main` touching `dist-worker/**` or the workflow file; manual | Ensures the `tcm-dist` R2 bucket exists, then deploys the distribution worker that serves APK/AAB downloads. |
+| **Build Android & Publish** (`build-android.yml`) | Push to `main` touching `frontend/**` or the workflow file; push of a `v*` tag; manual | Builds the APK (EAS **preview**) and the AAB (EAS **production**) in the cloud, downloads both to `frontend/dist/`, scp's them to `/opt/tcm/dist/` on the OCI VM (served at `/dl/` by Caddy), creates a GitHub Release, and emails the **install + download links** to `cuboidsoft@gmail.com`. |
 | **Deploy OTA Updates** (`deploy-updates.yml`) | Push to `main` touching `frontend/**` or the workflow file; manual | Publishes the JavaScript bundle with `eas update` to the **preview** channel (and **production** on `v*` tag pushes). Devices with an installed build that embeds the matching channel receive the fix instantly — no rebuild, no store release. |
 
 ## Backend server (Oracle VM)
@@ -33,12 +33,14 @@ CI runs on **GitHub Actions**. Deploy targets:
 - Ubuntu 24.04, Node 24 (nodesource), runs as user `ubuntu`, port **5000**,
   supervised by systemd unit `tcm-backend.service`.
 - **Caddy** (systemd, ports 80/443) reverse-proxies to `127.0.0.1:5000`,
-  terminates TLS via Let's Encrypt, and also keeps the raw-IP URL
-  (`http://140.245.209.147/api`) working so CI health polls keep passing.
+  terminates TLS via Let's Encrypt, serves the `/dl/*` static artifact folder,
+  and keeps the raw-IP URL (`http://140.245.209.147/api`) working for CI health
+  polls.
 - Hardening: password SSH disabled, root login disabled, fail2ban active,
   snapd/fwupd/multipathd disabled, 2 GB swap, iptables open on 22/80/443 only.
-- Layout: `/opt/tcm/backend` (deploy target), `/opt/tcm/.env` (root-owned
-  secrets), `/etc/systemd/system/tcm-backend.service`, `/etc/caddy/Caddyfile`.
+- Layout: `/opt/tcm/backend` (deploy target), `/opt/tcm/dist` (APK/AAB static
+  hosting), `/opt/tcm/.env` (root-owned secrets),
+  `/etc/systemd/system/tcm-backend.service`, `/etc/caddy/Caddyfile`.
 
 ## Install & download sources (before app stores)
 
@@ -48,7 +50,7 @@ Devices can get the app without any app store:
 |---|---|---|
 | **EAS builds page** | `https://expo.dev/accounts/tcmacademics-team/projects/the-code-munk/builds` | Primary install — internal distribution APK with QR code, hosted by Expo |
 | **GitHub Release** | `https://github.com/Cuboidsoft-official/tcm-env/releases/latest` | Always-available APK + AAB download |
-| **R2 + dist worker** | `https://tcm-dist.cuboidsoft.workers.dev/` | Content-addressed hosting of `latest-release.{apk,aab}` + versioned copies |
+| **OCI VM static hosting** | `https://api.thecodemunk.in/dl/` (directory listing) | Direct APK/AAB download hosted on our own VM |
 
 Email is a **notification with links** (never attachments) so inboxes and
 builds stay small.
@@ -61,7 +63,7 @@ Just write code, commit, and push to `main`:
 2. **The backend auto-deploys** to the OCI VM on any `main` push that touches
    `backend/`.
 3. **Android APK + AAB auto-build** in EAS (cloud), publish to GitHub Release +
-   R2, and the **install/download links are emailed** to `cuboidsoft@gmail.com`.
+   the OCI VM, and the **install/download links are emailed** to `cuboidsoft@gmail.com`.
 4. **OTA updates auto-publish** to the `preview` channel, so installed builds pick
    up JS fixes immediately.
 
@@ -82,17 +84,11 @@ values in the repo.
 | `OCI_SSH_KEY` | Private SSH key for the deploy to the Oracle VM (`ubuntu@140.245.209.147`). |
 | `OCI_HOST` | Backend VM public IP, `140.245.209.147`. |
 | `OCI_USER` | SSH user on the VM, `ubuntu`. |
-| `CLOUDFLARE_API_TOKEN` | Deploying the `tcm-dist` worker (`wrangler deploy`). |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account for the worker deploy. |
 | `MONGODB_URI` | MongoDB Atlas connection string; written to `/opt/tcm/.env` on the VM. |
 | `JWT_SECRET` | Auth token signing; written to `/opt/tcm/.env` on the VM. |
 | `GEMINI_API_KEY` | Gemini AI service; written to `/opt/tcm/.env` on the VM. |
 | `EXPO_TOKEN` | Authenticates `eas-cli` for cloud Android builds, OTA updates, and artifact downloads. |
 | `EXPO_PUBLIC_API_URL` | Backend base URL baked into builds/updates (`http://140.245.209.147/api`; switch to `https://api.thecodemunk.in/api` once DNS is live). |
-| `R2_ACCESS_KEY_ID` | S3-compatible credentials for uploading APK/AAB to R2. |
-| `R2_SECRET_ACCESS_KEY` | S3-compatible credentials for uploading APK/AAB to R2. |
-| `R2_ENDPOINT` | R2 S3 API endpoint (region `auto`). |
-| `R2_BUCKET` | R2 bucket name, `tcm-dist`. |
 | `ANDROID_KEYSTORE_BASE64` | Base64-encoded Android keystore — for the **local-gradle fallback** (the current EAS build uses EAS-managed credentials, not these). |
 | `ANDROID_KEYSTORE_PASSWORD` | Keystore password (local-gradle fallback). |
 | `ANDROID_KEY_ALIAS` | Signing key alias (local-gradle fallback). |
@@ -106,11 +102,11 @@ values in the repo.
 After any Android build, the APK is available at:
 
 ```
-https://tcm-dist.<workers-subdomain>.workers.dev/apk/latest-release.apk
+https://api.thecodemunk.in/dl/app-preview.apk
 ```
 
-The distribution worker's landing page (`/`) links the latest APK, AAB, and
-versioned artifacts. To install:
+(until DNS is set, use `http://140.245.209.147/dl/app-preview.apk`). The `/dl/`
+directory listing on the VM links every uploaded artifact. To install:
 
 1. Open the APK link on the Android device (or download it on desktop and transfer).
 2. Allow installs from **unknown sources** when prompted.
@@ -141,19 +137,13 @@ versioned artifacts. To install:
 - **HTTPS / domain**: `api.thecodemunk.in` → `140.245.209.147` (A record at the
   Hostinger DNS zone editor). Caddy issues a Let's Encrypt certificate
   automatically once DNS resolves; until then HTTPS is unavailable but HTTP works.
-- **Distribution worker**: `deploy-dist.yml` creates the `tcm-dist` bucket and
-  deploys `dist-worker/wrangler.toml`. GitHub Releases + EAS install links are
-  always-working download sources.
+- **Artifact hosting**: R2 was intentionally not used; APK/AAB live on the VM
+  (`/opt/tcm/dist`, served by Caddy at `/dl/`) and on GitHub Releases.
 - **Working directory**: the EAS steps run with `working-directory: frontend`
   because `app.json`/`eas.json` live there; `npm ci` runs at the repo root
   (npm-workspaces installs everything).
 - **Concurrency**: backend deploys and EAS publishes are serialized with
   `concurrency` groups so rapid pushes don't race.
-
-## Cloudflare features in use
-
-- **Workers** — `tcm-dist` serves the Android artifact downloads.
-- **R2** — object storage for Android APK/AAB artifacts (bucket `tcm-dist`).
 
 ## Expo features in use / available
 
