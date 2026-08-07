@@ -84,7 +84,7 @@ jobs:
             local build_url="${out#* }"
             echo "Profile '$profile' -> build $build_id"
             echo "Artifact URL: $build_url"
-            npx eas-cli@latest build:download --build-id "$build_id" -o .
+            npx eas-cli@latest build:download --build-id "$build_id" --non-interactive
           }
 
           download_build preview build-preview.json
