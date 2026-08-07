@@ -1,0 +1,46 @@
+name: Deploy OTA Updates (EAS Update)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-updates.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: eas-update
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_PUBLIC_API_URL: http://140.245.209.147/api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish OTA update to preview channel
+        working-directory: frontend
+        run: npx eas-cli@latest update --channel preview --non-interactive --message "CI OTA preview ${{ github.sha }}"
+
+      - name: Publish OTA update to production channel (tag push)
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: frontend
+        run: npx eas-cli@latest update --channel production --non-interactive --message "CI OTA production ${{ github.sha }}"

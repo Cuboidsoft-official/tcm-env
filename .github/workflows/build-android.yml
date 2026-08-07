@@ -1,0 +1,158 @@
+name: Build Android & Publish (EAS + Email)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - main
+    paths:
+      - "frontend/**"
+      - ".github/workflows/build-android.yml"
+
+concurrency:
+  group: build-android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      OCI_HOST: ${{ secrets.OCI_HOST }}
+      OCI_USER: ${{ secrets.OCI_USER }}
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
+      MAIL_TO: ${{ secrets.MAIL_TO }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compute app version
+        run: echo "TCM_APP_VERSION=$(node -e "console.log(require('./frontend/app.json').expo.version)")" >> "$GITHUB_ENV"
+
+      - name: Prepare dist directory
+        run: mkdir -p frontend/dist
+
+      - name: Build APK (EAS preview)
+        working-directory: frontend
+        run: npx eas-cli@latest build --platform android --profile preview --non-interactive --wait --json > dist/build-preview.json
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build AAB (EAS production)
+        working-directory: frontend
+        run: npx eas-cli@latest build --platform android --profile production --non-interactive --wait --json > dist/build-production.json
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Download EAS artifacts (APK + AAB)
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cd dist
+
+          read_build() {
+            local buildjson="$1"
+            node -e "const fs=require('fs');let s=fs.readFileSync('$buildjson','utf8');const a=s.indexOf('['),b=s.lastIndexOf(']');if(a<0||b<a)throw new Error('no JSON array in $buildjson');const arr=JSON.parse(s.slice(a,b+1));const o=Array.isArray(arr)?arr[0]:arr;process.stdout.write(o.id+' '+((o.artifacts&&o.artifacts.buildUrl)||''))"
+          }
+
+          download_build() {
+            local profile="$1"
+            local buildjson="$2"
+            local outfile="$3"
+            local out
+            out="$(read_build "$buildjson")"
+            local build_id="${out%% *}"
+            local build_url="${out#* }"
+            echo "Profile '$profile' -> build $build_id"
+            echo "Artifact URL: $build_url"
+            curl -fsSL --retry 3 -o "$outfile" "$build_url"
+          }
+
+          download_build preview build-preview.json app-preview.apk
+          download_build production build-production.json app-release.aab
+
+          ls -lh
+
+      - name: Upload artifacts to OCI VM (temporary hosting)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.OCI_SSH_KEY }}
+
+      - name: Push APK + AAB to OCI VM
+        run: |
+          set -euo pipefail
+          HOST="$OCI_HOST"
+          USER="$OCI_USER"
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh -q "$USER@$HOST" 'mkdir -p /opt/tcm/dist'
+          scp -q frontend/dist/app-preview.apk frontend/dist/app-release.aab "$USER@$HOST:/opt/tcm/dist/"
+
+      - name: Publish to GitHub Release (temporary hosting)
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            RELEASE_TAG="${GITHUB_REF_NAME}"
+          else
+            RELEASE_TAG="v${TCM_APP_VERSION}"
+          fi
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
+          gh release delete "$RELEASE_TAG" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+          gh release create "$RELEASE_TAG" \
+            frontend/dist/app-preview.apk \
+            frontend/dist/app-release.aab \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "TCM Android Build ${{ env.TCM_APP_VERSION || '0.1.0' }}" \
+            --notes "TCM Android APK + AAB build. App version: ${{ env.TCM_APP_VERSION || '0.1.0' }}."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Email build notification with install + download links
+        if: env.MAIL_APP_PASSWORD != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_APP_PASSWORD }}
+          from: ${{ secrets.MAIL_USERNAME }}
+          to: ${{ secrets.MAIL_TO || 'cuboidsoft@gmail.com' }}
+          subject: TCM Android build ${{ env.TCM_APP_VERSION || '0.1.0' }} ready (APK + AAB)
+          body: |
+            TCM Android build complete.
+
+            App version: ${{ env.TCM_APP_VERSION || '0.1.0' }}
+
+            Install on device (Expo, no app store needed):
+            - EAS builds page: https://expo.dev/accounts/tcmacademics-team/projects/the-code-munk/builds
+
+            Download links:
+            - GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${{ env.RELEASE_TAG || 'latest' }}
+            - APK (OCI VM): https://api.thecodemunk.in/dl/app-preview.apk
+            - AAB (OCI VM): https://api.thecodemunk.in/dl/app-release.aab
+            - Builds index (OCI VM): https://api.thecodemunk.in/dl/
+
+            Direct (no domain yet): http://140.245.209.147/dl/app-preview.apk
+
+            Note: The EAS builds page is the primary install source. GitHub Releases and the
+            OCI VM /dl links are the immediate APK/AAB download sources.
+
+            Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
