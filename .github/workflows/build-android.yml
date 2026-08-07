@@ -97,8 +97,9 @@ jobs:
           set -euo pipefail
           HOST="$OCI_HOST"
           USER="$OCI_USER"
-          ssh -o StrictHostKeyChecking=accept-new "$USER@$HOST" 'mkdir -p /opt/tcm/dist'
-          scp -q frontend/dist/app-preview.apk frontend/dist/app-release.aab "$USER@$HOST:/opt/tcm/dist/.upload-"
+          ssh -o StrictHostKeyChecking=accept-new "$USER@$HOST" 'mkdir -p /opt/tcm/dist && rm -rf /opt/tcm/dist/.upload-'
+          scp -q frontend/dist/app-preview.apk "$USER@$HOST:/opt/tcm/dist/.upload-app-preview.apk"
+          scp -q frontend/dist/app-release.aab "$USER@$HOST:/opt/tcm/dist/.upload-app-release.aab"
           ssh -q "$USER@$HOST" 'cd /opt/tcm/dist && mv -f .upload-app-preview.apk app-preview.apk && mv -f .upload-app-release.aab app-release.aab'
 
       - name: Publish to GitHub Release (temporary hosting)
