@@ -1,5 +1,7 @@
 // Push Notification Service supporting FCM & Expo Push API for Outside-of-App Notifications
 
+export const VAPID_PUBLIC_KEY = "BKfFsEAwiqI4h42Z0OC0sx0In8j8g3CrjmyN_TNjHaj4kLlu26_h1gFwdsj4uDURFcljxo4-3F3NBVLWG3ly3So";
+
 const userPushTokens = {}; // userId -> Array of { token, platform, registeredAt }
 
 export function registerPushToken(userId, token, platform = "android") {

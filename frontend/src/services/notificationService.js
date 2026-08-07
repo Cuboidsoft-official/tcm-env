@@ -1,6 +1,8 @@
 import { Platform } from "react-native";
 import { registerPushTokenApi } from "../api/client";
 
+export const VAPID_PUBLIC_KEY = "BKfFsEAwiqI4h42Z0OC0sx0In8j8g3CrjmyN_TNjHaj4kLlu26_h1gFwdsj4uDURFcljxo4-3F3NBVLWG3ly3So";
+
 let isRegistered = false;
 
 export async function setupPushNotifications(sessionToken) {
@@ -40,10 +42,12 @@ export async function setupPushNotifications(sessionToken) {
       return;
     }
 
-    // 3. Obtain Expo Push Token / FCM Device Push Token
+    // 3. Obtain Expo Push Token / FCM Device Push Token using VAPID Keypair
     let token = null;
     try {
-      token = (await Notifications.getExpoPushTokenAsync()).data;
+      token = (await Notifications.getExpoPushTokenAsync({
+        vapidPublicKey: VAPID_PUBLIC_KEY
+      })).data;
     } catch (e) {
       try {
         token = (await Notifications.getDevicePushTokenAsync()).data;
