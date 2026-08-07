@@ -232,9 +232,9 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
 
   const stats = {
     postsCount: profileUser.stats?.postsCount !== undefined ? profileUser.stats.postsCount : posts.length,
-    followers: profileUser.stats?.followers !== undefined ? profileUser.stats.followers : followersList.length.toString(),
+    followers: profileUser.stats?.followers !== undefined ? profileUser.stats.followers : followersList.length,
     following: profileUser.stats?.following !== undefined ? profileUser.stats.following : followingList.length,
-    reputation: profileUser.stats?.reputation !== undefined ? profileUser.stats.reputation : "0"
+    reviews: profileUser.stats?.reviews !== undefined ? profileUser.stats.reviews : posts.reduce((sum, p) => sum + (p.commentsCount || p.metrics?.comments || 0), 0).toString()
   };
 
   const filteredUserList = (followersModalOpen ? followersList : followingList).filter((u) => {
@@ -352,14 +352,14 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
         <Pressable
           onPress={() =>
             Alert.alert(
-              "Reputation Score",
-              `Reputation: ${stats.reputation || "4.8K"}\nBased on community activity, helpful doubt resolutions, and course progress.`
+              "User Reviews",
+              `Total Reviews: ${stats.reviews || "0"}\nBased on community activity, helpful doubt resolutions, and student interactions.`
             )
           }
           style={styles.statCol}
         >
-          <Text style={styles.statVal}>{stats.reputation || "4.8K"}</Text>
-          <Text style={styles.statLbl}>Reputation</Text>
+          <Text style={styles.statVal}>{stats.reviews || "0"}</Text>
+          <Text style={styles.statLbl}>Reviews</Text>
         </Pressable>
       </View>
 

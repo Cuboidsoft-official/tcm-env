@@ -801,22 +801,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: "100%",
-    backgroundColor: "#F8F7FF",
-    paddingHorizontal: 2
+    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 0
   },
 
   topHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    marginBottom: 6,
-    borderWidth: 1,
-    borderColor: "#F0EFFF",
-    ...shadow.soft
+    borderRadius: 0,
+    marginBottom: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0"
   },
   backBtn: {
     width: 36,

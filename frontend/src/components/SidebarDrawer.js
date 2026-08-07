@@ -112,16 +112,16 @@ export default function SidebarDrawer({
                 onPress={() => handleNavigate("Home")}
               />
               <MenuItem
+                icon={<Feather name="users" size={18} />}
+                label="TCM Community"
+                active={activeItem === "TCM Community" || activeItem === "Community"}
+                onPress={() => handleNavigate("TCM Community")}
+              />
+              <MenuItem
                 icon={<Feather name="tv" size={18} />}
                 label="My Classes"
                 active={activeItem === "My Classes"}
                 onPress={() => handleNavigate("My Classes")}
-              />
-              <MenuItem
-                icon={<Feather name="help-circle" size={18} />}
-                label="Help Request"
-                active={activeItem === "Help Request"}
-                onPress={() => handleNavigate("Help Request")}
               />
               <MenuItem
                 icon={<Feather name="message-circle" size={18} />}
@@ -130,75 +130,9 @@ export default function SidebarDrawer({
                 active={activeItem === "Doubts"}
                 onPress={() => handleNavigate("Doubts")}
               />
-              <MenuItem
-                icon={<Feather name="award" size={18} />}
-                label="Top Mentors"
-                active={activeItem === "Top Mentors"}
-                onPress={() => handleNavigate("Top Mentors")}
-              />
-              <MenuItem
-                icon={<Ionicons name="school-outline" size={18} />}
-                label="TCM Academy"
-                active={activeItem === "TCM Academy"}
-                onPress={() => handleNavigate("TCM Academy")}
-              />
-              <MenuItem
-                icon={<Feather name="briefcase" size={18} />}
-                label="TCM Career"
-                active={activeItem === "TCM Career"}
-                onPress={() => handleNavigate("TCM Career")}
-              />
-              <MenuItem
-                icon={<Feather name="book-open" size={18} />}
-                label="TCM Guide"
-                active={activeItem === "TCM Guide"}
-                onPress={() => handleNavigate("TCM Guide")}
-              />
-              <MenuItem
-                icon={<MaterialIcons name="devices" size={18} />}
-                label="TCM Inform Tech"
-                active={activeItem === "TCM Inform Tech"}
-                onPress={() => handleNavigate("TCM Inform Tech")}
-              />
             </View>
 
-            {/* 4. LEAVE MANAGEMENT Section */}
-            <View style={styles.sectionWrap}>
-              <Text style={styles.sectionTitle}>LEAVE MANAGEMENT</Text>
-
-              <MenuItem
-                icon={<MaterialCommunityIcons name="calendar-plus" size={18} color="#7D45EA" />}
-                label="My Leaves"
-                active={activeItem === "My Leaves"}
-                onPress={() => handleNavigate("My Leaves")}
-              />
-              <MenuItem
-                icon={<MaterialCommunityIcons name="calendar-edit" size={18} color="#2E7D32" />}
-                label="Apply for Leave"
-                active={activeItem === "Apply for Leave"}
-                onPress={() => handleNavigate("Apply for Leave")}
-              />
-              <MenuItem
-                icon={<MaterialCommunityIcons name="calendar-month" size={18} color="#E7A900" />}
-                label="Leave Calendar"
-                active={activeItem === "Leave Calendar"}
-                onPress={() => handleNavigate("Leave Calendar")}
-              />
-              <MenuItem
-                icon={<MaterialCommunityIcons name="clock-outline" size={18} color="#2F79B9" />}
-                label="Leave Balance"
-                active={activeItem === "Leave Balance"}
-                onPress={() => handleNavigate("Leave Balance")}
-              />
-              <MenuItem
-                icon={<MaterialCommunityIcons name="file-document-outline" size={18} color="#5B3CF5" />}
-                label="Leave Requests"
-                active={activeItem === "Leave Requests"}
-                onPress={() => handleNavigate("Leave Requests")}
-              />
-            </View>
-
-            {/* 5. ACCOUNT Section */}
+            {/* 4. ACCOUNT Section */}
             <View style={styles.sectionWrap}>
               <Text style={styles.sectionTitle}>ACCOUNT</Text>
 
@@ -213,12 +147,6 @@ export default function SidebarDrawer({
                 label="Settings"
                 active={activeItem === "Settings"}
                 onPress={() => handleNavigate("Settings")}
-              />
-              <MenuItem
-                icon={<Feather name="credit-card" size={18} />}
-                label="Payment & Billing"
-                active={activeItem === "Payment & Billing"}
-                onPress={() => handleNavigate("Payment & Billing")}
               />
               <MenuItem
                 icon={<Feather name="bell" size={18} />}

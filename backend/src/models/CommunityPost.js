@@ -26,6 +26,23 @@ const communityPostSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    privacy: {
+      type: String,
+      enum: ["public", "private"],
+      default: "public"
+    },
+    postType: {
+      type: String,
+      enum: ["daily_update", "exam_news", "job_news", "study_doc", "general"],
+      default: "general"
+    },
+    targetCourseId: {
+      type: String,
+      trim: true
+    },
+    documentUrl: String,
+    documentName: String,
+    documentSize: String,
     text: {
       type: String,
       required: true,

@@ -269,7 +269,14 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         room={room}
         isAdmin={isAdmin}
         onClose={() => setShowRoomDetails(false)}
-        onRoomUpdated={(updatedRoom) => setRoom(updatedRoom)}
+        onRoomUpdated={(updatedRoom) => {
+          if (!updatedRoom) {
+            setShowRoomDetails(false);
+            if (onClose) onClose();
+          } else {
+            setRoom(updatedRoom);
+          }
+        }}
       />
     );
   }
@@ -609,6 +616,11 @@ function isQuestionMessage(item) {
           <View style={styles.menuContainer}>
             <Text style={styles.menuHeaderTitle}>Doubt Room Options</Text>
 
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setShowRoomDetails(true); }}>
+              <MaterialCommunityIcons name="information-outline" size={20} color="#5B3CF5" />
+              <Text style={styles.menuItemText}>Group Room Details & Settings</Text>
+            </TouchableOpacity>
+
             {isAdmin ? (
               <>
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setManageModalVisible(true); }}>
@@ -866,7 +878,10 @@ const styles = StyleSheet.create({
     flex: 1
   },
   scrollContent: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
+    width: "100%",
+    maxWidth: 1200,
+    alignSelf: "center",
     paddingTop: 12,
     paddingBottom: 30
   },
@@ -986,7 +1001,7 @@ const styles = StyleSheet.create({
     marginBottom: 2
   },
   msgBodyLeft: {
-    maxWidth: "88%"
+    maxWidth: "92%"
   },
   authorHeaderRow: {
     flexDirection: "row",

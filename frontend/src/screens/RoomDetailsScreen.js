@@ -133,6 +133,61 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
     }
   }
 
+  async function handleDeleteGroup() {
+    Alert.alert(
+      "Delete Group Room 🗑️",
+      "Are you sure you want to permanently delete this Doubt Room? All messages, files and member permissions will be removed.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Group",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setUpdating(true);
+              const res = await manageDoubtRoom(session?.token, room.roomId, { action: "delete_group" });
+              if (res && (res.success || res.deleted)) {
+                Alert.alert("Group Deleted 🗑️", "This doubt room has been deleted permanently.");
+                if (onRoomUpdated) onRoomUpdated(null);
+                if (onClose) onClose();
+              }
+            } catch (e) {
+              Alert.alert("Error", e.message || "Failed to delete group room.");
+            } finally {
+              setUpdating(false);
+            }
+          }
+        }
+      ]
+    );
+  }
+
+  async function handleLeaveGroup() {
+    Alert.alert(
+      "Leave Group Room",
+      "Are you sure you want to leave this room?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setUpdating(true);
+              await manageDoubtRoom(session?.token, room.roomId, { action: "leave_room" });
+              Alert.alert("Left Room", "You have left this doubt room.");
+              if (onClose) onClose();
+            } catch (e) {
+              if (onClose) onClose();
+            } finally {
+              setUpdating(false);
+            }
+          }
+        }
+      ]
+    );
+  }
+
   function handleCopyGroupId() {
     try {
       Clipboard.setString(room?.roomId || "NEET-DOUBT-001");
@@ -382,7 +437,17 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
 
         {/* DANGER ZONE */}
         <View style={[styles.actionsCard, { marginTop: 16 }]}>
-          <Pressable onPress={() => Alert.alert("Report", "Group reported for review.")} style={styles.actionRow}>
+          {isAdmin ? (
+            <Pressable onPress={handleDeleteGroup} style={styles.actionRow}>
+              <View style={styles.actionLeft}>
+                <Feather name="trash-2" size={18} color="#EF4444" style={{ marginRight: 12 }} />
+                <Text style={[styles.actionLabel, { color: "#EF4444", fontWeight: "700" }]}>Delete Group Room</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color="#FCA5A5" />
+            </Pressable>
+          ) : null}
+
+          <Pressable onPress={() => Alert.alert("Report Group", "Group reported for review.")} style={styles.actionRow}>
             <View style={styles.actionLeft}>
               <Feather name="flag" size={18} color="#EF4444" style={{ marginRight: 12 }} />
               <Text style={[styles.actionLabel, { color: "#EF4444" }]}>Report Group</Text>
@@ -390,7 +455,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
             <Feather name="chevron-right" size={18} color="#FCA5A5" />
           </Pressable>
 
-          <Pressable onPress={() => Alert.alert("Leave Group", "Are you sure you want to leave?", [{ text: "Cancel" }, { text: "Leave", style: "destructive", onPress: onClose }])} style={[styles.actionRow, { borderBottomWidth: 0 }]}>
+          <Pressable onPress={handleLeaveGroup} style={[styles.actionRow, { borderBottomWidth: 0 }]}>
             <View style={styles.actionLeft}>
               <Feather name="log-out" size={18} color="#EF4444" style={{ marginRight: 12 }} />
               <Text style={[styles.actionLabel, { color: "#EF4444" }]}>Leave Group</Text>
