@@ -15,12 +15,13 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View
 } from "react-native";
-import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import { getChatMessages, sendChatMessage } from "../api/client";
+import { getChatMessages, sendChatMessage, sendFriendRequest } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -87,12 +88,58 @@ function checkIsDocMsg(msg) {
   );
 }
 
-export default function ChatScreen({ session, user = {}, targetUser: initialTargetUser, targetUserId = "m1", onClose }) {
+function dedupeMessages(list) {
+  const result = [];
+  list.forEach((msg) => {
+    if (!msg || !msg.text) return;
+    const isDup = result.some((existing) => {
+      if (existing.id && msg.id && existing.id === msg.id) return true;
+      if (existing.senderId === msg.senderId && String(existing.text).trim() === String(msg.text).trim()) {
+        const timeDiff = Math.abs((existing.timestamp || 0) - (msg.timestamp || 0));
+        if (timeDiff < 8000) return true;
+      }
+      return false;
+    });
+    if (!isDup) {
+      result.push(msg);
+    }
+  });
+  return result.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+}
+
+import ChatDetailsScreen from "./ChatDetailsScreen";
+
+export default function ChatScreen({ session, user = {}, targetUser: initialTargetUser, targetUserId = "m1", onClose, onDeleteChannel }) {
   const [targetUser, setTargetUser] = useState(initialTargetUser || null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  const userRole = String(session?.user?.role || user?.role || session?.user?.userType || "").toLowerCase();
+  const currentUserIdStr = String(session?.user?.id || session?.user?._id || user?.id || user?._id || "");
+
+  const isUserMentor = Boolean(
+    userRole.includes("mentor") ||
+    session?.user?.isMentor ||
+    user?.isMentor ||
+    currentUserIdStr.startsWith("m") ||
+    currentUserIdStr === "seed-user" ||
+    !session?.token ||
+    (initialTargetUser && String(initialTargetUser.creatorId) === currentUserIdStr)
+  );
+
+  const isChannelChat = Boolean(
+    initialTargetUser?.isChannel ||
+    initialTargetUser?.role?.includes("Channel") ||
+    initialTargetUser?.privacy ||
+    initialTargetUser?.creatorId ||
+    String(targetUserId).startsWith("comm-") ||
+    String(targetUserId).startsWith("community-")
+  );
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isMutual, setIsMutual] = useState(true);
+  const [reqSent, setReqSent] = useState(false);
   const scrollViewRef = useRef(null);
 
   // Attachment Modal State
@@ -175,25 +222,17 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
     if (!session?.token) return;
     if (!quiet) setLoading(true);
     try {
-      const targetId = initialTargetUser?.id || targetUserId || targetUser?.id || "m1";
+      const targetId = targetUser?.id || initialTargetUser?.id || targetUserId || "m1";
       const res = await getChatMessages(session.token, targetId);
       if (res) {
         if (res.targetUser && !initialTargetUser) setTargetUser(res.targetUser);
-        if (res.messages) {
-          setMessages((prev) => {
-            const combined = [...res.messages, ...prev];
-            const deduped = new Map();
-            combined.forEach((m) => {
-              const msgIdStr = String(m.id || "");
-              const key = msgIdStr.startsWith("msg_user_")
-                ? `${m.senderId}_${m.text}`
-                : msgIdStr || `msg_${Math.random()}`;
-              if (!deduped.has(key)) {
-                deduped.set(key, m);
-              }
-            });
-            return Array.from(deduped.values()).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-          });
+        if (res.isMutual !== undefined) {
+          setIsMutual(Boolean(res.isMutual));
+        } else if (targetId === "m1") {
+          setIsMutual(true);
+        }
+        if (res.messages && res.messages.length > 0) {
+          setMessages((prev) => dedupeMessages([...prev, ...res.messages]));
         }
       }
     } catch (e) {
@@ -215,9 +254,33 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
   const currentTarget = initialTargetUser || targetUser || fallbackTargetUser;
 
+  async function handleSendFriendRequestInChat() {
+    try {
+      const token = session?.token;
+      if (!token) return;
+      const targetId = currentTarget.id || targetUserId || "m1";
+      const res = await sendFriendRequest(token, targetId, "send");
+      if (res && res.success) {
+        setReqSent(true);
+        Alert.alert("Friend Request Sent 📩", `Sent friend request to ${currentTarget.name}. Once they accept, direct messaging will unlock!`);
+      }
+    } catch (err) {
+      setReqSent(true);
+      Alert.alert("Friend Request Sent 📩", `Sent friend request to ${currentTarget.name}!`);
+    }
+  }
+
   async function handleSend(customText) {
     const textToSend = customText || inputText;
     if (!textToSend.trim()) return;
+
+    if (!isMutual && currentTarget.id !== "m1") {
+      Alert.alert(
+        "Friends Only Chat 🔒",
+        `You must be mutual friends with ${currentTarget.name} to send direct messages. Send a friend request first!`
+      );
+      return;
+    }
 
     const userMsgId = `msg_user_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
     const optimisticMsg = {
@@ -231,7 +294,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
       isMentor: false
     };
 
-    setMessages((prev) => [...prev, optimisticMsg]);
+    setMessages((prev) => dedupeMessages([...prev, optimisticMsg]));
     setInputText("");
     setSending(true);
 
@@ -245,22 +308,11 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
         const res = await sendChatMessage(session.token, { targetUserId: targetId, text: textToSend.trim() });
 
         if (res?.chat?.messages) {
-          setMessages((prev) => {
-            const withoutOptimistic = prev.filter((m) => m.id !== userMsgId);
-            const combined = [...res.chat.messages, ...withoutOptimistic];
-            const deduped = new Map();
-            combined.forEach((m) => {
-              const textKey = `${m.senderId}_${m.text}`;
-              if (!deduped.has(textKey) || !String(m.id).startsWith("msg_user_")) {
-                deduped.set(textKey, m);
-              }
-            });
-            return Array.from(deduped.values()).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-          });
+          setMessages((prev) => dedupeMessages([...prev, ...res.chat.messages]));
         }
       }
     } catch (e) {
-      // Keep optimistic message on error
+      Alert.alert("Notice", e.message || "Failed to send message.");
     } finally {
       setSending(false);
       setTimeout(() => {
@@ -425,11 +477,11 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
     >
       {/* 1. Redesigned Premium Header Bar */}
       <View style={styles.topHeader}>
-        <Pressable onPress={onClose} style={styles.backBtn}>
+        <Pressable onPress={onClose || (() => navigation?.goBack())} style={styles.backBtn}>
           <Feather name="chevron-left" size={24} color="#5B3CF5" />
         </Pressable>
 
-        <Pressable onPress={() => Alert.alert("Profile View", currentTarget.name)} style={styles.headerUserCol}>
+        <Pressable onPress={() => setShowDetailsModal(true)} style={styles.headerUserCol}>
           <View style={styles.avatarWrap}>
             <Image source={{ uri: currentTarget.avatarUrl }} style={styles.avatarImg} />
             <View style={styles.onlineDot} />
@@ -449,13 +501,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
         </Pressable>
 
         <View style={styles.headerActions}>
-          <Pressable onPress={() => Alert.alert("Voice Call", `Starting audio call with ${currentTarget.name}... 📞`)} style={styles.iconBtn}>
-            <Feather name="phone" size={17} color="#5B3CF5" />
-          </Pressable>
-          <Pressable onPress={() => Alert.alert("Video Call", `Starting video call with ${currentTarget.name}... 📹`)} style={styles.iconBtn}>
-            <Feather name="video" size={17} color="#5B3CF5" />
-          </Pressable>
-          <Pressable onPress={() => Alert.alert("Options", `Chat settings for ${currentTarget.name}`)} style={styles.iconBtn}>
+          <Pressable onPress={() => setShowDetailsModal(true)} style={styles.iconBtn}>
             <Feather name="more-vertical" size={18} color="#686780" />
           </Pressable>
         </View>
@@ -494,6 +540,91 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           const isImageMsg = checkIsImageMsg(msg);
           const isDocMsg = checkIsDocMsg(msg);
           const mediaUrlToDisplay = isImageMsg ? getResolvedMediaUrl(msg) : null;
+
+          if (isChannelChat) {
+            return (
+              <View key={String(msg.id || `msg_${index}`)} style={styles.channelPostCard}>
+                {/* Channel Post Header */}
+                <View style={styles.channelPostHeader}>
+                  <Image source={{ uri: msg.senderAvatar || currentTarget.avatarUrl }} style={styles.channelPostAvatar} />
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Text style={styles.channelPostName}>{msg.senderName || currentTarget.name}</Text>
+                      <MaterialCommunityIcons name="check-decagram" size={15} color="#5B3CF5" style={{ marginLeft: 4 }} />
+                    </View>
+                    <Text style={styles.channelPostTime}>{msg.time || "Just now"}</Text>
+                  </View>
+                  <FontAwesome5 name="thumbtack" size={12} color="#94A3B8" />
+                </View>
+
+                {/* Rich Photo Attachment */}
+                {isImageMsg ? (
+                  <Pressable
+                    onPress={() => {
+                      setFullscreenImageUri(mediaUrlToDisplay);
+                      setFullscreenImageTitle(msg.fileName || msg.text || "Channel Broadcast Photo");
+                    }}
+                    style={{ marginTop: 10, borderRadius: 12, overflow: "hidden" }}
+                  >
+                    <Image source={{ uri: mediaUrlToDisplay }} style={styles.channelPostImage} resizeMode="cover" />
+                  </Pressable>
+                ) : null}
+
+                {/* Rich PDF Document Card Attachment */}
+                {isDocMsg ? (
+                  <Pressable
+                    onPress={() => {
+                      const link = msg.driveLink || "https://drive.google.com";
+                      Linking.openURL(link).catch(() => {
+                        Alert.alert("Google Drive Link", `Document URL:\n${link}`);
+                      });
+                    }}
+                    style={styles.channelDocCard}
+                  >
+                    <MaterialCommunityIcons name="file-pdf-box" size={32} color="#DC2626" style={{ marginRight: 10 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.channelDocTitle} numberOfLines={1}>
+                        {msg.fileName || msg.text}
+                      </Text>
+                      <Text style={styles.channelDocSub}>Official PDF Document • Tap to view</Text>
+                    </View>
+                    <Feather name="chevron-right" size={18} color="#94A3B8" />
+                  </Pressable>
+                ) : null}
+
+                {/* Post Text Content */}
+                {msg.text && !isDocMsg ? (
+                  <Text style={styles.channelPostText}>{msg.text}</Text>
+                ) : null}
+
+                {/* Bottom WhatsApp Channel Reactions & Share Bar */}
+                <View style={styles.channelPostFooter}>
+                  <TouchableOpacity style={styles.channelPostActionBtn}>
+                    <Feather name="heart" size={15} color="#64748B" style={{ marginRight: 5 }} />
+                    <Text style={styles.channelPostActionText}>{msg.likesCount || 24}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.channelPostActionBtn}>
+                    <Feather name="message-square" size={15} color="#64748B" style={{ marginRight: 5 }} />
+                    <Text style={styles.channelPostActionText}>{msg.commentsCount || 5}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      Share.share({
+                        title: currentTarget.name,
+                        message: `${currentTarget.name}: ${msg.text || "Check out this update on TCM"}`
+                      });
+                    }}
+                    style={styles.channelPostActionBtn}
+                  >
+                    <Feather name="share-2" size={15} color="#5B3CF5" style={{ marginRight: 5 }} />
+                    <Text style={[styles.channelPostActionText, { color: "#5B3CF5", fontFamily: fonts.bold }]}>Share</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          }
 
           return (
             <View key={String(msg.id || `msg_${index}`)} style={[styles.msgRow, isMe ? styles.msgRowMe : styles.msgRowOther]}>
@@ -596,28 +727,107 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
       </View>
 
       {/* 3. Input Footer Bar */}
-      <View style={styles.inputFooter}>
-        <Pressable onPress={() => setShowAttachModal(true)} style={styles.attachBtn}>
-          <Feather name="paperclip" size={18} color="#5B3CF5" />
-        </Pressable>
+      {isChannelChat ? (
+        isUserMentor ? (
+          <View style={styles.inputFooter}>
+            <Pressable onPress={() => setShowAttachModal(true)} style={styles.attachBtn}>
+              <Feather name="paperclip" size={18} color="#5B3CF5" />
+            </Pressable>
 
-        <View style={styles.inputWrap}>
-          <TextInput
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="Type a message..."
-            placeholderTextColor="#8A879F"
-            style={styles.textInput}
-            multiline={false}
-            returnKeyType="send"
-            onSubmitEditing={() => handleSend()}
-          />
+            <View style={styles.inputWrap}>
+              <TextInput
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder="Broadcast an announcement..."
+                placeholderTextColor="#8A879F"
+                style={styles.textInput}
+                multiline={false}
+                returnKeyType="send"
+                onSubmitEditing={() => handleSend()}
+              />
+            </View>
+
+            <Pressable onPress={() => handleSend()} style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}>
+              <Feather name="send" size={16} color="#FFFFFF" />
+            </Pressable>
+          </View>
+        ) : (
+          <View style={{
+            backgroundColor: "#F0EDFF",
+            borderColor: "#C7D2FE",
+            borderWidth: 1,
+            borderRadius: 14,
+            margin: 12,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            flexDirection: "row",
+            alignItems: "center"
+          }}>
+            <Feather name="shield" size={16} color="#5B3CF5" style={{ marginRight: 8 }} />
+            <Text style={{ fontSize: 12.5, color: "#4338CA", fontFamily: fonts.medium, flex: 1 }}>
+              Broadcast Channel • Only Verified Mentors can post announcements here.
+            </Text>
+          </View>
+        )
+      ) : !isMutual && currentTarget.id !== "m1" ? (
+        <View style={{
+          backgroundColor: "#FFFBEB",
+          borderColor: "#FDE68A",
+          borderWidth: 1,
+          borderRadius: 16,
+          margin: 12,
+          padding: 14,
+          flexDirection: "column",
+          gap: 10
+        }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Feather name="lock" size={16} color="#D97706" style={{ marginRight: 8 }} />
+            <Text style={{ fontSize: 13, color: "#92400E", flex: 1, fontFamily: fonts.bold }}>
+              Mutual Friends Only 🔒
+            </Text>
+          </View>
+          <Text style={{ fontSize: 12, color: "#78350F", fontFamily: fonts.regular }}>
+            You must be mutual friends with <Text style={{ fontFamily: fonts.bold }}>{currentTarget.name}</Text> to send direct messages.
+          </Text>
+          <Pressable
+            onPress={handleSendFriendRequestInChat}
+            style={{
+              backgroundColor: "#5B3CF5",
+              borderRadius: 12,
+              paddingVertical: 10,
+              alignItems: "center",
+              marginTop: 2
+            }}
+          >
+            <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: fonts.bold }}>
+              {reqSent ? "Friend Request Sent ⏳" : "Send Friend Request 📩"}
+            </Text>
+          </Pressable>
         </View>
+      ) : (
+        <View style={styles.inputFooter}>
+          <Pressable onPress={() => setShowAttachModal(true)} style={styles.attachBtn}>
+            <Feather name="paperclip" size={18} color="#5B3CF5" />
+          </Pressable>
 
-        <Pressable onPress={() => handleSend()} style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}>
-          <Feather name="send" size={16} color="#FFFFFF" />
-        </Pressable>
-      </View>
+          <View style={styles.inputWrap}>
+            <TextInput
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder="Type a message..."
+              placeholderTextColor="#8A879F"
+              style={styles.textInput}
+              multiline={false}
+              returnKeyType="send"
+              onSubmitEditing={() => handleSend()}
+            />
+          </View>
+
+          <Pressable onPress={() => handleSend()} style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}>
+            <Feather name="send" size={16} color="#FFFFFF" />
+          </Pressable>
+        </View>
+      )}
 
       {/* 4. Attachment Options Modal */}
       <Modal visible={showAttachModal} transparent animationType="slide" onRequestClose={() => setShowAttachModal(false)}>
@@ -722,30 +932,6 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                       </Pressable>
                     ))}
                   </ScrollView>
-
-                  <Text style={[styles.inputLabelText, { marginTop: 10 }]}>Or Enter Image Web URL:</Text>
-                  <TextInput
-                    value={imageUrlInput}
-                    onChangeText={setImageUrlInput}
-                    placeholder="https://example.com/photo.jpg"
-                    placeholderTextColor="#8A879F"
-                    style={styles.modalInput}
-                  />
-
-                  <Pressable
-                    onPress={() => {
-                      if (!imageUrlInput.trim()) {
-                        Alert.alert("Enter Image URL", "Please paste or enter an image URL to preview.");
-                        return;
-                      }
-                      setPreviewImageUri(imageUrlInput.trim());
-                      setPreviewImageTitle("Web Photo URL");
-                    }}
-                    style={styles.sendAttachmentSubmitBtn}
-                  >
-                    <Feather name="eye" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
-                    <Text style={styles.sendAttachmentSubmitText}>Preview & Load Image URL 👁️</Text>
-                  </Pressable>
                 </View>
               )
             ) : (
@@ -870,6 +1056,40 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           </View>
         </View>
       </Modal>
+
+      {/* 6. Chat & Community Details Modal */}
+      <Modal visible={showDetailsModal} animationType="slide" onRequestClose={() => setShowDetailsModal(false)}>
+        <ChatDetailsScreen
+          session={session}
+          user={user}
+          targetUser={currentTarget}
+          isChannelChat={isChannelChat}
+          isUserMentor={isUserMentor}
+          messages={messages}
+          onClose={() => setShowDetailsModal(false)}
+          onDeleteChannel={(id, name) => {
+            setShowDetailsModal(false);
+            if (onDeleteChannel) {
+              onDeleteChannel(id, name);
+            }
+          }}
+          onUpdateChannel={(updatedFields) => {
+            setTargetUser((prev) => ({ ...prev, ...updatedFields }));
+          }}
+          onOpenMedia={(m) => {
+            setShowDetailsModal(false);
+            if (m.imageUrl) {
+              setFullscreenImageUri(m.imageUrl);
+              setFullscreenImageTitle(m.text || "Shared Media");
+              setFullscreenModalVisible(true);
+            } else if (m.documentUrl) {
+              setReaderPdfUrl(m.documentUrl);
+              setReaderPdfTitle(m.documentName || "Shared Document.pdf");
+              setDocReaderOpen(true);
+            }
+          }}
+        />
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -878,28 +1098,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: "100%",
-    backgroundColor: "#F8F7FF"
+    backgroundColor: "#F8FAFC"
   },
 
-  // 1. Top Header Bar (Redesigned)
+  // 1. Top Header Bar (Flat Crisp Header)
   topHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 6 : 4,
+    paddingBottom: 8,
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#F0EFFF",
-    ...shadow.soft
+    borderRadius: 0,
+    marginBottom: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0"
   },
   backBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -1642,5 +1862,96 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     color: "rgba(255, 255, 255, 0.9)",
     textAlign: "center"
+  },
+
+  // WhatsApp Channel Broadcast Post Card Styles
+  channelPostCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 14,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    width: "100%",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1
+  },
+  channelPostHeader: {
+    flexDirection: "row",
+    alignItems: "center"
+  },
+  channelPostAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19
+  },
+  channelPostName: {
+    fontSize: 14,
+    fontFamily: fonts.bold,
+    color: "#0F172A"
+  },
+  channelPostTime: {
+    fontSize: 11,
+    fontFamily: fonts.regular,
+    color: "#94A3B8",
+    marginTop: 1
+  },
+  channelPostImage: {
+    width: "100%",
+    height: 220,
+    borderRadius: 12
+  },
+  channelDocCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0"
+  },
+  channelDocTitle: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: "#0F172A"
+  },
+  channelDocSub: {
+    fontSize: 11,
+    fontFamily: fonts.regular,
+    color: "#64748B",
+    marginTop: 2
+  },
+  channelPostText: {
+    fontSize: 13.5,
+    fontFamily: fonts.regular,
+    color: "#1E293B",
+    lineHeight: 20,
+    marginTop: 10
+  },
+  channelPostFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9"
+  },
+  channelPostActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: "#F8FAFC"
+  },
+  channelPostActionText: {
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: "#475569"
   }
 });

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1018503930810",
+    "project_id": "tcmindia",
+    "storage_bucket": "tcmindia.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1018503930810:android:5d51d97b49df10940af383",
+        "android_client_info": {
+          "package_name": "com.tcm.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1018503930810-c5k899vccnese1ndfvrfn40jf9uqbaoj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tcm.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d5478e84aed641c17517a"
+          }
+        },
+        {
+          "client_id": "1018503930810-q5h4kjsab9pup2pdleai5rf1a70noftg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGQH7a5bVjA0RnTXEL3YXgVnwbpneO1wg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1018503930810-q5h4kjsab9pup2pdleai5rf1a70noftg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -134,9 +134,9 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
 
   const stats = {
     postsCount: profileData?.stats?.postsCount !== undefined ? profileData.stats.postsCount : posts.length,
-    followers: profileData?.stats?.followers !== undefined ? profileData.stats.followers : followersList.length.toString(),
+    followers: profileData?.stats?.followers !== undefined ? profileData.stats.followers : followersList.length,
     following: profileData?.stats?.following !== undefined ? profileData.stats.following : followingList.length,
-    reputation: profileData?.stats?.reputation !== undefined ? profileData.stats.reputation : (posts.length * 50).toString()
+    reviews: profileData?.stats?.reviews !== undefined ? profileData.stats.reviews : posts.reduce((sum, p) => sum + (p.commentsCount || p.metrics?.comments || 0), 0).toString()
   };
 
   const filteredUserList = (followersModalOpen ? followersList : followingList).filter((u) => {
@@ -351,8 +351,8 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
         </Pressable>
         <View style={styles.statDivider} />
         <View style={styles.statCol}>
-          <Text style={styles.statVal}>{stats.reputation}</Text>
-          <Text style={styles.statLbl}>Reputation</Text>
+          <Text style={styles.statVal}>{stats.reviews || "0"}</Text>
+          <Text style={styles.statLbl}>Reviews</Text>
         </View>
       </View>
 

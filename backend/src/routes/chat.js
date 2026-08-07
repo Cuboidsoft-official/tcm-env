@@ -1,6 +1,8 @@
 import express from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { User } from "../models/User.js";
+import { ChatMessage } from "../models/ChatMessage.js";
+import { notifyChatMessage } from "../services/pushNotificationService.js";
 
 export const chatRouter = express.Router();
 
@@ -128,6 +130,33 @@ function getGlobalChatStore(req) {
   return req.app.locals.globalChatStore;
 }
 
+async function checkIsMutualFriend(req, userId, targetUserId) {
+  const uId = String(userId);
+  const tId = String(targetUserId);
+
+  if (tId === "m1" || uId === "m1" || uId === tId) return true;
+
+  const gStore = req.app.locals.globalFriendStore || {};
+  if (gStore[`${uId}_${tId}`] || gStore[`${tId}_${uId}`]) return true;
+
+  const reqs = req.app.locals.friendRequests || {};
+  const reqKey = [uId, tId].sort().join("_");
+  if (reqs[reqKey] && reqs[reqKey].status === "friends") return true;
+
+  try {
+    const userDoc = await User.findById(uId).lean();
+    if (userDoc && Array.isArray(userDoc.friends) && userDoc.friends.map(String).includes(tId)) {
+      return true;
+    }
+    const targetDoc = await User.findById(tId).lean();
+    if (targetDoc && Array.isArray(targetDoc.friends) && targetDoc.friends.map(String).includes(uId)) {
+      return true;
+    }
+  } catch (e) {}
+
+  return false;
+}
+
 chatRouter.get("/conversations", requireAuth, async (req, res) => {
   try {
     const currentUserId = String(req.user?._id || req.user?.id || "");
@@ -245,104 +274,195 @@ chatRouter.get("/conversations", requireAuth, async (req, res) => {
 });
 
 chatRouter.get("/messages/:targetUserId", requireAuth, async (req, res) => {
-  const userId = String(req.user?._id || req.user?.id || "seed-user");
-  const targetUserId = req.params.targetUserId || "m1";
-  const targetUserObj = await resolveChatTargetAsync(req, targetUserId);
-  const key = getChatKey(userId, targetUserObj.id);
-  const store = getGlobalChatStore(req);
+  try {
+    const userId = String(req.user?._id || req.user?.id || "seed-user");
+    const targetUserId = req.params.targetUserId || "m1";
+    const targetUserObj = await resolveChatTargetAsync(req, targetUserId);
+    const key = getChatKey(userId, targetUserObj.id);
+    const store = getGlobalChatStore(req);
+    const isMutual = await checkIsMutualFriend(req, userId, targetUserObj.id);
 
-  if (!store[key]) {
-    const preset = defaultConversations[targetUserId] || {
-      targetUser: targetUserObj,
-      messages: [
-        {
-          id: `c_${Date.now()}`,
-          senderId: targetUserObj.id,
-          senderName: targetUserObj.name,
-          senderAvatar: targetUserObj.avatarUrl,
-          text: `Hey! Connected via TCM. How can I help you today? 👋`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          timestamp: Date.now(),
-          isMentor: false
-        }
-      ]
-    };
+    // Fetch messages from MongoDB
+    let dbMsgs = [];
+    try {
+      dbMsgs = await ChatMessage.find({ pairKey: key }).sort({ timestamp: 1 }).lean();
+    } catch (e) {}
 
-    store[key] = {
-      targetUser: targetUserObj,
-      messages: [...preset.messages]
-    };
+    if (!store[key]) {
+      const preset = defaultConversations[targetUserId] || {
+        targetUser: targetUserObj,
+        messages: [
+          {
+            id: `c_${Date.now()}`,
+            senderId: targetUserObj.id,
+            senderName: targetUserObj.name,
+            senderAvatar: targetUserObj.avatarUrl,
+            text: `Hey! Connected via TCM. How can I help you today? 👋`,
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            timestamp: Date.now(),
+            isMentor: false
+          }
+        ]
+      };
+
+      store[key] = {
+        targetUser: targetUserObj,
+        messages: [...preset.messages]
+      };
+    }
+
+    if (dbMsgs.length > 0) {
+      const formattedDbMsgs = dbMsgs.map((m) => ({
+        id: String(m._id || m.id || `msg_${m.timestamp}`),
+        senderId: m.senderId,
+        senderName: m.senderName,
+        senderAvatar: m.senderAvatar,
+        text: m.text,
+        mediaType: m.mediaType,
+        mediaUrl: m.mediaUrl,
+        driveLink: m.driveLink,
+        fileName: m.fileName,
+        time: m.time,
+        timestamp: m.timestamp,
+        isMentor: m.isMentor
+      }));
+
+      // Merge & deduplicate
+      const msgMap = new Map();
+      [...store[key].messages, ...formattedDbMsgs].forEach((m) => {
+        msgMap.set(String(m.id || `${m.senderId}_${m.timestamp}`), m);
+      });
+      store[key].messages = Array.from(msgMap.values()).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    }
+
+    return res.json({
+      ...store[key],
+      isMutual
+    });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
-
-  return res.json(store[key]);
 });
 
 chatRouter.post("/send", requireAuth, async (req, res) => {
-  const userId = String(req.user?._id || req.user?.id || "seed-user");
-  const userName = req.user?.name || "Learner";
-  const userAvatar = req.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80";
+  try {
+    const userId = String(req.user?._id || req.user?.id || "seed-user");
+    const userName = req.user?.name || "Learner";
+    const userAvatar = req.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80";
 
-  const { targetUserId = "m1", text = "", mediaType, mediaUrl, driveLink, fileName } = req.body;
-  if (!text.trim() && !mediaUrl && !driveLink) {
-    return res.status(400).json({ message: "Message content or attachment is required" });
-  }
+    const { targetUserId = "m1", text = "", mediaType, mediaUrl, driveLink, fileName } = req.body;
+    if (!text.trim() && !mediaUrl && !driveLink) {
+      return res.status(400).json({ message: "Message content or attachment is required" });
+    }
 
-  const targetUserObj = await resolveChatTargetAsync(req, targetUserId);
-  const key = getChatKey(userId, targetUserObj.id);
-  const store = getGlobalChatStore(req);
+    const targetUserObj = await resolveChatTargetAsync(req, targetUserId);
+    const isMutual = await checkIsMutualFriend(req, userId, targetUserObj.id);
 
-  if (!store[key]) {
-    store[key] = {
-      targetUser: targetUserObj,
-      messages: []
-    };
-  }
+    if (!isMutual) {
+      return res.status(403).json({
+        success: false,
+        message: `You must be mutual friends with ${targetUserObj.name} to send direct messages! Send a friend request first.`,
+        isMutual: false
+      });
+    }
 
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const key = getChatKey(userId, targetUserObj.id);
+    const store = getGlobalChatStore(req);
 
-  const userMsg = {
-    id: `msg_${Date.now()}`,
-    senderId: userId,
-    senderName: userName,
-    senderAvatar: userAvatar,
-    text: text.trim() || (driveLink ? `📁 Google Drive Doc: ${fileName || "Shared File"}` : "📷 Shared Image"),
-    mediaType: mediaType || (driveLink ? "document" : mediaUrl ? "image" : null),
-    mediaUrl: mediaUrl || null,
-    driveLink: driveLink || null,
-    fileName: fileName || null,
-    time: timeStr,
-    timestamp: Date.now(),
-    isMentor: false
-  };
-
-  store[key].messages.push(userMsg);
-
-  // If chatting with mentor m1, generate mentor reply
-  if (targetUserId === "m1" || targetUserObj.id === "m1") {
-    setTimeout(() => {
-      const randomReply = mentorAutoReplies[Math.floor(Math.random() * mentorAutoReplies.length)];
-      const replyNow = new Date();
-      const replyTimeStr = replyNow.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-      const mentorMsg = {
-        id: `msg_reply_${Date.now()}`,
-        senderId: targetUserObj.id,
-        senderName: store[key].targetUser.name,
-        senderAvatar: store[key].targetUser.avatarUrl,
-        text: randomReply,
-        time: replyTimeStr,
-        timestamp: Date.now(),
-        isMentor: true
+    if (!store[key]) {
+      store[key] = {
+        targetUser: targetUserObj,
+        messages: []
       };
+    }
 
-      store[key].messages.push(mentorMsg);
-    }, 1000);
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    const userMsg = {
+      id: `msg_${Date.now()}`,
+      senderId: userId,
+      senderName: userName,
+      senderAvatar: userAvatar,
+      text: text.trim() || (driveLink ? `📁 Google Drive Doc: ${fileName || "Shared File"}` : "📷 Shared Image"),
+      mediaType: mediaType || (driveLink ? "document" : mediaUrl ? "image" : null),
+      mediaUrl: mediaUrl || null,
+      driveLink: driveLink || null,
+      fileName: fileName || null,
+      time: timeStr,
+      timestamp: Date.now(),
+      isMentor: false
+    };
+
+    store[key].messages.push(userMsg);
+
+    // Trigger push notification outside of app
+    notifyChatMessage({
+      senderId: userId,
+      senderName: userName,
+      targetUserId: targetUserObj.id,
+      text: userMsg.text
+    }).catch(() => {});
+
+    // Save to MongoDB
+    try {
+      await ChatMessage.create({
+        pairKey: key,
+        senderId: userId,
+        senderName: userName,
+        senderAvatar: userAvatar,
+        text: userMsg.text,
+        mediaType: userMsg.mediaType,
+        mediaUrl: userMsg.mediaUrl,
+        driveLink: userMsg.driveLink,
+        fileName: userMsg.fileName,
+        time: timeStr,
+        timestamp: userMsg.timestamp,
+        isMentor: false
+      });
+    } catch (e) {}
+
+    // If chatting with mentor m1, generate mentor reply
+    if (targetUserId === "m1" || targetUserObj.id === "m1") {
+      setTimeout(async () => {
+        const randomReply = mentorAutoReplies[Math.floor(Math.random() * mentorAutoReplies.length)];
+        const replyNow = new Date();
+        const replyTimeStr = replyNow.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+        const mentorMsg = {
+          id: `msg_reply_${Date.now()}`,
+          senderId: targetUserObj.id,
+          senderName: store[key].targetUser.name,
+          senderAvatar: store[key].targetUser.avatarUrl,
+          text: randomReply,
+          time: replyTimeStr,
+          timestamp: Date.now(),
+          isMentor: true
+        };
+
+        store[key].messages.push(mentorMsg);
+
+        try {
+          await ChatMessage.create({
+            pairKey: key,
+            senderId: targetUserObj.id,
+            senderName: store[key].targetUser.name,
+            senderAvatar: store[key].targetUser.avatarUrl,
+            text: randomReply,
+            time: replyTimeStr,
+            timestamp: mentorMsg.timestamp,
+            isMentor: true
+          });
+        } catch (e) {}
+      }, 1000);
+    }
+
+    return res.json({
+      success: true,
+      message: userMsg,
+      chat: store[key]
+    });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
-
-  return res.json({
-    success: true,
-    message: userMsg,
-    chat: store[key]
-  });
 });

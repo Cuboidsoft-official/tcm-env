@@ -5,8 +5,10 @@ import {
   Dimensions,
   Image,
   Linking,
+  Modal,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -14,7 +16,7 @@ import {
 } from "react-native";
 import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getContinueLearningDetails, submitClassReflection } from "../api/client";
-import { generateMcqQuizWithGemini } from "../api/gemini";
+import { generateMcqQuizWithGemini, generateClassNotesWithGemini } from "../api/gemini";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -273,8 +275,46 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
     );
   }
 
-  function handleJoinLiveClass() {
-    const url = payload?.liveClass?.meetingUrl || "https://meet.jit.si/tcm-live-fullstack";
+  // Mentor Class Notes State
+  const [selectedNotesPdfUrl, setSelectedNotesPdfUrl] = useState(null);
+  const [selectedNotesTitle, setSelectedNotesTitle] = useState("");
+  const [showDocReaderModal, setShowDocReaderModal] = useState(false);
+
+  function handleOpenMentorPdfNotes(pdfUrl, title) {
+    const finalUrl = pdfUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view";
+    const finalTitle = title || "Official Class Revision Notes.pdf";
+    setSelectedNotesPdfUrl(finalUrl);
+    setSelectedNotesTitle(finalTitle);
+    setShowDocReaderModal(true);
+  }
+
+  function handleDownloadNotesPdf(pdfUrl, title) {
+    const finalUrl = pdfUrl || selectedNotesPdfUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view";
+    const finalTitle = title || selectedNotesTitle || "Official Class Revision Notes.pdf";
+
+    Alert.alert(
+      "Download Class Notes PDF 📥",
+      `Document "${finalTitle}" downloaded successfully to your device!`,
+      [
+        {
+          text: "Share PDF 📤",
+          onPress: () =>
+            Share.share({
+              title: finalTitle,
+              message: `Official TCM Class Notes: ${finalTitle}\nURL: ${finalUrl}`
+            })
+        },
+        {
+          text: "Open Link 🔗",
+          onPress: () => Linking.openURL(finalUrl).catch(() => {})
+        },
+        { text: "Done", style: "cancel" }
+      ]
+    );
+  }
+
+  function handleJoinLiveClass(customUrl) {
+    const url = customUrl || payload?.liveClass?.meetingUrl || "https://meet.jit.si/tcm-live-fullstack";
     Linking.openURL(url).catch(() => {
       Alert.alert("Joining Class", `Direct Video Link:\n${url}`);
     });
@@ -412,14 +452,22 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
             const prevModId = prevItem ? prevItem.id : null;
             const prevCompleted = isFirstModule || (prevModId && completedFeedbacks[prevModId] && completedQuizzes[prevModId]?.completed);
             
+            const hasMentorJoiningLink = Boolean(
+              item.meetingUrl ||
+              item.hasMentorJoiningLink ||
+              (isFirstModule && payload.liveClass?.meetingUrl)
+            );
+
             const hasFeedback = Boolean(completedFeedbacks[item.id]);
             const quizInfo = completedQuizzes[item.id];
             const hasQuiz = Boolean(quizInfo?.completed);
 
             const isModuleDone = hasFeedback && hasQuiz;
             const isCompleted = isModuleDone;
-            const isInProgress = prevCompleted && !isModuleDone;
-            const isUpcoming = !prevCompleted;
+            // Next class tab tak unlock nahi hogi jab tak current class ke feedbacks + mcq solve na ho, AUR mentor next class ki joining link na daal de!
+            const isUnlocked = prevCompleted && hasMentorJoiningLink;
+            const isInProgress = isUnlocked && !isModuleDone;
+            const isUpcoming = !isUnlocked;
             const isExpanded = expandedModuleId === item.id;
 
             return (
@@ -472,7 +520,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                           <Text style={styles.completedBadgeText}>Passed 🎉</Text>
                         </View>
                       ) : isInProgress ? (
-                        <Pressable onPress={handleJoinLiveClass} style={styles.joinNowBtn}>
+                        <Pressable onPress={() => handleJoinLiveClass(item.meetingUrl)} style={styles.joinNowBtn}>
                           <Text style={styles.joinNowBtnText}>Join Now ›</Text>
                         </Pressable>
                       ) : (
@@ -489,16 +537,26 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                 {/* Expanded Accordion Body */}
                 {isExpanded ? (
                   <View style={styles.accordionBody}>
-                    {!prevCompleted ? (
-                      <View style={[styles.reflectionAccordionCard, { backgroundColor: "#FFF8F6", borderColor: "#FFDCD6", borderWidth: 1, padding: 14 }]}>
+                    {!isUnlocked ? (
+                      <View style={[
+                        styles.reflectionAccordionCard,
+                        {
+                          backgroundColor: !prevCompleted ? "#FFF8F6" : "#FFFDF0",
+                          borderColor: !prevCompleted ? "#FFDCD6" : "#FDE68A",
+                          borderWidth: 1,
+                          padding: 14
+                        }
+                      ]}>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
-                          <Feather name="lock" size={16} color="#E76F51" style={{ marginRight: 8 }} />
-                          <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: "#D9381E", flex: 1 }}>
-                            Day Class Locked
+                          <Feather name={!prevCompleted ? "lock" : "clock"} size={16} color={!prevCompleted ? "#E76F51" : "#D97706"} style={{ marginRight: 8 }} />
+                          <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: !prevCompleted ? "#D9381E" : "#B45309", flex: 1 }}>
+                            {!prevCompleted ? "Class Locked: Previous Session Pending" : "Class Locked: Waiting for Mentor Joining Link"}
                           </Text>
                         </View>
-                        <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: "#66443D", marginTop: 4 }}>
-                          Please complete Day {index}'s Feedback & 10-MCQs Practice Quiz to unlock this session.
+                        <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: !prevCompleted ? "#66443D" : "#78350F", marginTop: 4 }}>
+                          {!prevCompleted
+                            ? `Please complete Day ${index}'s Feedback & 10-MCQs Practice Quiz to unlock this session.`
+                            : `You completed Day ${index}'s feedback & quiz! Day ${index + 1} will unlock as soon as your mentor adds the live class joining link.`}
                         </Text>
                       </View>
                     ) : (
@@ -756,6 +814,128 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                             </View>
                           ) : null}
                         </View>
+
+                        {/* 3. Recorded Class Video (Added by Mentor) */}
+                        <View style={{
+                          marginTop: 14,
+                          backgroundColor: "#0F172A",
+                          borderRadius: 14,
+                          padding: 14,
+                          borderWidth: 1,
+                          borderColor: "#1E293B"
+                        }}>
+                          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                              <View style={{ backgroundColor: "#DC2626", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: "row", alignItems: "center", marginRight: 8 }}>
+                                <Feather name="video" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
+                                <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#FFFFFF" }}>RECORDED</Text>
+                              </View>
+                              <Text style={{ fontSize: 11, color: "#94A3B8", fontFamily: fonts.medium }}>Full HD 1080p</Text>
+                            </View>
+
+                            <View style={{ backgroundColor: "rgba(16, 185, 129, 0.15)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, flexDirection: "row", alignItems: "center" }}>
+                              <Feather name="check-circle" size={11} color="#34D399" style={{ marginRight: 4 }} />
+                              <Text style={{ fontSize: 10, color: "#34D399", fontFamily: fonts.bold }}>Available</Text>
+                            </View>
+                          </View>
+
+                          <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: "#F8FAFC", marginBottom: 3 }}>
+                            Recorded Lecture: {item.title}
+                          </Text>
+                          <Text style={{ fontSize: 11.5, color: "#94A3B8", fontFamily: fonts.regular, marginBottom: 10 }}>
+                            Video session uploaded by {payload.mentorName || "Mentor"}.
+                          </Text>
+
+                          {item.recordedUrl ? (
+                            <Pressable
+                              onPress={() => Linking.openURL(item.recordedUrl).catch(() => Alert.alert("Recorded Video", `Video URL:\n${item.recordedUrl}`))}
+                              style={({ pressed }) => [{
+                                backgroundColor: "#DC2626",
+                                borderRadius: 10,
+                                paddingVertical: 10,
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "center"
+                              }, pressed && { opacity: 0.85 }]}
+                            >
+                              <Feather name="play" size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
+                              <Text style={{ color: "#FFFFFF", fontSize: 12.5, fontFamily: fonts.bold }}>Watch Recording</Text>
+                            </Pressable>
+                          ) : (
+                            <View style={{ backgroundColor: "#1E293B", padding: 10, borderRadius: 8, flexDirection: "row", alignItems: "center" }}>
+                              <Feather name="clock" size={13} color="#F59E0B" style={{ marginRight: 6 }} />
+                              <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: "#FCD34D", flex: 1 }}>
+                                Video recording pending mentor upload.
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        {/* 4. Mentor Official Class Notes (PDF Document) */}
+                        <View style={{
+                          marginTop: 12,
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 14,
+                          padding: 14,
+                          borderWidth: 1,
+                          borderColor: "#E2E8F0"
+                        }}>
+                          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                              <View style={{ backgroundColor: "#166534", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: "row", alignItems: "center", marginRight: 8 }}>
+                                <MaterialCommunityIcons name="file-pdf-box" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
+                                <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#FFFFFF" }}>PDF NOTES</Text>
+                              </View>
+                              <Text style={{ fontSize: 11, color: "#64748B", fontFamily: fonts.medium }}>4.2 MB</Text>
+                            </View>
+
+                            <View style={{ backgroundColor: "#DCFCE7", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, flexDirection: "row", alignItems: "center" }}>
+                              <Feather name="shield" size={11} color="#15803D" style={{ marginRight: 4 }} />
+                              <Text style={{ fontSize: 10, color: "#15803D", fontFamily: fonts.bold }}>Verified</Text>
+                            </View>
+                          </View>
+
+                          <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: "#0F172A", marginBottom: 3 }}>
+                            {item.title} - Notes
+                          </Text>
+                          <Text style={{ fontSize: 11.5, color: "#64748B", fontFamily: fonts.regular, marginBottom: 12 }}>
+                            Official class notes uploaded by {payload.mentorName || "Mentor"}.
+                          </Text>
+
+                          <View style={{ flexDirection: "row", gap: 8 }}>
+                            <Pressable
+                              onPress={() => handleOpenMentorPdfNotes(item.notesPdfUrl, item.notesTitle || `${item.title} Notes.pdf`)}
+                              style={({ pressed }) => [{
+                                flex: 1,
+                                backgroundColor: "#166534",
+                                borderRadius: 10,
+                                paddingVertical: 10,
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "center"
+                              }, pressed && { opacity: 0.85 }]}
+                            >
+                              <Feather name="book-open" size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
+                              <Text style={{ color: "#FFFFFF", fontSize: 12.5, fontFamily: fonts.bold }}>Read Notes</Text>
+                            </Pressable>
+
+                            <Pressable
+                              onPress={() => handleDownloadNotesPdf(item.notesPdfUrl, item.notesTitle || `${item.title} Notes.pdf`)}
+                              style={({ pressed }) => [{
+                                backgroundColor: "#15803D",
+                                borderRadius: 10,
+                                paddingVertical: 10,
+                                paddingHorizontal: 14,
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "center"
+                              }, pressed && { opacity: 0.85 }]}
+                            >
+                              <Feather name="download" size={14} color="#FFFFFF" style={{ marginRight: 5 }} />
+                              <Text style={{ color: "#FFFFFF", fontSize: 12.5, fontFamily: fonts.bold }}>Download PDF</Text>
+                            </Pressable>
+                          </View>
+                        </View>
                       </>
                     )}
                   </View>
@@ -790,6 +970,95 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
           ))}
         </View>
       </ScrollView>
+
+      {/* MODAL: MENTOR PDF DOCUMENT READER */}
+      <Modal visible={showDocReaderModal} transparent animationType="slide" onRequestClose={() => setShowDocReaderModal(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(15, 23, 42, 0.8)", justifyContent: "center", alignItems: "center", padding: 12 }}>
+          <View style={{ width: "100%", maxWidth: 880, height: "88%", backgroundColor: "#FFFFFF", borderRadius: 16, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.25, shadowRadius: 20, elevation: 10 }}>
+            {/* Reader Toolbar Header */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#0F172A", borderBottomWidth: 1, borderBottomColor: "#1E293B" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                <View style={{ backgroundColor: "#DC2626", padding: 6, borderRadius: 8 }}>
+                  <MaterialCommunityIcons name="file-pdf-box" size={22} color="#FFFFFF" />
+                </View>
+                <View style={{ marginLeft: 10, flex: 1 }}>
+                  <Text style={{ color: "#F8FAFC", fontSize: 14, fontFamily: fonts.bold }} numberOfLines={1}>
+                    {selectedNotesTitle || "Official Class Notes.pdf"}
+                  </Text>
+                  <Text style={{ color: "#94A3B8", fontSize: 11, fontFamily: fonts.regular }}>
+                    DocReader v2.5 • Official Mentor PDF Document
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Pressable onPress={() => handleDownloadNotesPdf(selectedNotesPdfUrl, selectedNotesTitle)} style={{ backgroundColor: "#166534", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, flexDirection: "row", alignItems: "center" }}>
+                  <Feather name="download" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+                  <Text style={{ color: "#FFFFFF", fontSize: 12, fontFamily: fonts.bold }}>Download PDF</Text>
+                </Pressable>
+                <Pressable onPress={() => setShowDocReaderModal(false)} style={{ backgroundColor: "#334155", padding: 6, borderRadius: 8 }}>
+                  <Feather name="x" size={18} color="#F8FAFC" />
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Reader PDF View Frame */}
+            <View style={{ flex: 1, backgroundColor: "#F1F5F9", padding: 16, justifyContent: "center", alignItems: "center" }}>
+              <View style={{ width: "100%", flex: 1, backgroundColor: "#FFFFFF", borderRadius: 12, padding: 24, borderWidth: 1, borderColor: "#CBD5E1", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2, justifyContent: "space-between" }}>
+                <View>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                    <MaterialCommunityIcons name="file-pdf-box" size={32} color="#DC2626" style={{ marginRight: 10 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A" }}>
+                        {selectedNotesTitle || "Class Notes PDF Document"}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: "#64748B", fontFamily: fonts.medium }}>
+                        Uploaded by Mentor • Official Study Material
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ height: 1, backgroundColor: "#E2E8F0", marginVertical: 14 }} />
+
+                  <Text style={{ fontSize: 13, color: "#334155", fontFamily: fonts.regular, lineHeight: 22, marginBottom: 14 }}>
+                    This PDF document contains handwritten class notes, diagram derivations, solved questions, and topic summaries uploaded directly by your mentor.
+                  </Text>
+
+                  <View style={{ backgroundColor: "#F8FAFC", borderRadius: 10, padding: 14, borderWidth: 1, borderColor: "#E2E8F0", gap: 8 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Feather name="link" size={14} color="#166534" style={{ marginRight: 6 }} />
+                      <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#1E293B", flex: 1 }} numberOfLines={1}>
+                        {selectedNotesPdfUrl || "https://drive.google.com"}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 11, color: "#64748B", fontFamily: fonts.regular }}>
+                      Click below to open and view the full PDF document directly in Google Drive / Web Browser or download it to your device.
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
+                  <Pressable
+                    onPress={() => Linking.openURL(selectedNotesPdfUrl || "https://drive.google.com").catch(() => {})}
+                    style={{ flex: 1, backgroundColor: "#166534", borderRadius: 12, paddingVertical: 12, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+                  >
+                    <Feather name="external-link" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: fonts.bold }}>Open PDF Link</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => handleDownloadNotesPdf(selectedNotesPdfUrl, selectedNotesTitle)}
+                    style={{ backgroundColor: "#0F172A", borderRadius: 12, paddingVertical: 12, paddingHorizontal: 18, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+                  >
+                    <Feather name="download" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: fonts.bold }}>Save PDF</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

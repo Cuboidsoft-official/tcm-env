@@ -13,6 +13,8 @@ import LoginScreen from "./src/screens/LoginScreen";
 import SplashScreen from "./src/screens/SplashScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 
+import { setupPushNotifications } from "./src/services/notificationService";
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
@@ -32,6 +34,9 @@ export default function App() {
   function handleLogin(nextSession) {
     setSession(nextSession);
     setScreen("home");
+    if (nextSession?.token) {
+      setupPushNotifications(nextSession.token);
+    }
   }
 
   function handleLogout() {
