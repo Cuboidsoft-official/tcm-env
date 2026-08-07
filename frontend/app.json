@@ -19,7 +19,8 @@
       "supportsTablet": false
     },
     "android": {
-      "package": "com.tcm.app"
+      "package": "com.tcm.app",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro"

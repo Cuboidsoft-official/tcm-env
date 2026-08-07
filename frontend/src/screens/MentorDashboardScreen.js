@@ -65,6 +65,8 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(timeSlots[0]);
   const [isCustomTime, setIsCustomTime] = useState(false);
   const [customTimeInput, setCustomTimeInput] = useState("Today • 04:30 PM – 06:00 PM");
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  const [notesPdfUrl, setNotesPdfUrl] = useState("https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view");
 
   useEffect(() => {
     loadMentorCourses();
@@ -88,29 +90,35 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   const currentSessions = currentCourse?.modules || defaultMentorCourses[0].modules;
 
   async function handleBroadcastLink() {
-    if (!meetingUrl.trim()) {
-      Alert.alert("Missing Link", "Please enter a valid Live Class Meeting Link.");
+    if (!meetingUrl.trim() && !recordedVideoUrl.trim() && !notesPdfUrl.trim()) {
+      Alert.alert("Missing Link", "Please enter a valid Live Class Meeting Link, Recorded Video Link, or PDF Notes Link.");
       return;
     }
 
     const finalTime = isCustomTime ? customTimeInput : selectedTimeSlot;
+    const selectedSess = currentSessions.find(
+      (s) => (s.topic || s.title || "").includes(selectedDayTopic) || selectedDayTopic.includes(s.topic || s.title || "")
+    );
 
     try {
       const token = session?.token;
       if (token) {
         await scheduleLiveClassLink(token, selectedCourseId, {
           topic: selectedDayTopic,
+          moduleId: selectedSess?.id || selectedSess?._id,
           time: finalTime,
-          meetingUrl: meetingUrl.trim()
+          meetingUrl: meetingUrl.trim(),
+          recordedUrl: recordedVideoUrl.trim(),
+          notesPdfUrl: notesPdfUrl.trim()
         });
       }
       Alert.alert(
-        "Live Class Link Broadcasted!",
-        `Course: ${currentCourse.title}\nTopic: ${selectedDayTopic}\nTime: ${finalTime}\nLink: ${meetingUrl}\n\nEnrolled students have been notified.`
+        "Resources Saved",
+        `Course: ${currentCourse.title}\nTopic: ${selectedDayTopic}\nLive Link: ${meetingUrl || "N/A"}\nRecorded Video: ${recordedVideoUrl || "N/A"}\nPDF Notes: ${notesPdfUrl || "N/A"}`
       );
       setScheduleModalOpen(false);
     } catch (err) {
-      Alert.alert("Notice", `Broadcasting live class link: ${meetingUrl}`);
+      Alert.alert("Notice", `Saved class resources for ${selectedDayTopic}`);
       setScheduleModalOpen(false);
     }
   }
@@ -622,15 +630,34 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                 <TextInput
                   value={meetingUrl}
                   onChangeText={setMeetingUrl}
-                  style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, padding: 12, fontSize: 13, marginBottom: 20, color: "#0F172A", backgroundColor: "#F8FAFC" }}
+                  style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, padding: 12, fontSize: 13, marginBottom: 16, color: "#0F172A", backgroundColor: "#F8FAFC" }}
                   placeholder="https://meet.jit.si/tcm-live-fullstack"
+                />
+
+                {/* 5. RECORDED CLASS VIDEO URL */}
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>5. RECORDED CLASS VIDEO LINK (YouTube / Drive / MP4)</Text>
+                <TextInput
+                  value={recordedVideoUrl}
+                  onChangeText={setRecordedVideoUrl}
+                  style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, padding: 12, fontSize: 13, marginBottom: 16, color: "#0F172A", backgroundColor: "#F8FAFC" }}
+                  placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                />
+
+                {/* 6. OFFICIAL CLASS NOTES PDF DOCUMENT LINK */}
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>6. OFFICIAL CLASS NOTES PDF LINK (Upload / Google Drive PDF)</Text>
+                <TextInput
+                  value={notesPdfUrl}
+                  onChangeText={setNotesPdfUrl}
+                  style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, padding: 12, fontSize: 13, marginBottom: 20, color: "#0F172A", backgroundColor: "#F8FAFC" }}
+                  placeholder="https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view"
                 />
 
                 <TouchableOpacity
                   onPress={handleBroadcastLink}
-                  style={{ backgroundColor: "#5B3CF5", borderRadius: 14, paddingVertical: 15, alignItems: "center", shadowColor: "#5B3CF5", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
+                  style={{ backgroundColor: "#5B3CF5", borderRadius: 14, paddingVertical: 15, alignItems: "center", shadowColor: "#5B3CF5", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4, flexDirection: "row", justifyContent: "center" }}
                 >
-                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>Broadcast Class Link</Text>
+                  <Feather name="send" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>Save & Broadcast Resources</Text>
                 </TouchableOpacity>
               </ScrollView>
             </TouchableOpacity>

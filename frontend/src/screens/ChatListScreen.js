@@ -569,7 +569,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F7FF",
+    backgroundColor: "#F8FAFC",
     paddingHorizontal: 16,
     paddingTop: 12
   },

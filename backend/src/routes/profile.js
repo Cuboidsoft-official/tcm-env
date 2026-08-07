@@ -84,91 +84,7 @@ const initialFollowing = [
   }
 ];
 
-const initialProfilePosts = [
-  {
-    id: "prof-post-1",
-    title: "Spiti Valley",
-    category: "Posts",
-    type: "image",
-    tags: ["#Travel", "#Mountains"],
-    likes: 198,
-    comments: 24,
-    bookmarked: true,
-    isLiked: false,
-    imageUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=640&q=80"
-  },
-  {
-    id: "prof-post-2",
-    title: "Two Sum in Python",
-    category: "Posts",
-    type: "code",
-    tags: ["#Python", "#DSA"],
-    likes: 245,
-    comments: 18,
-    bookmarked: false,
-    isLiked: false,
-    codeSnippet: `def two_sum(nums, target):
-    seen = {}
-    for i, n in enumerate(nums):
-        if target - n in seen:
-            return [seen[target - n], i]
-        seen[n] = i
-    return []`
-  },
-  {
-    id: "prof-post-3",
-    title: "Polity Revision Notes",
-    category: "Notes",
-    type: "image",
-    tags: ["#UPSC", "#Polity", "#Notes"],
-    likes: 312,
-    comments: 31,
-    bookmarked: true,
-    isLiked: true,
-    imageUrl: "https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=640&q=80"
-  },
-  {
-    id: "prof-post-4",
-    title: "The future is AI. Are you ready?",
-    category: "Videos",
-    type: "video",
-    tags: ["#AI", "#Future"],
-    likes: 420,
-    comments: 36,
-    bookmarked: false,
-    isLiked: true,
-    imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=640&q=80"
-  },
-  {
-    id: "prof-post-5",
-    title: "Full Stack Development Certificate",
-    category: "Certificates",
-    type: "certificate",
-    tags: ["#Certificate"],
-    likes: 156,
-    comments: 12,
-    bookmarked: true,
-    isLiked: false,
-    imageUrl: "https://images.unsplash.com/photo-1589330694653-ded6df03f754?auto=format&fit=crop&w=640&q=80"
-  },
-  {
-    id: "prof-post-6",
-    title: "JavaScript Arrow Function Example",
-    category: "Posts",
-    type: "code",
-    tags: ["#JavaScript", "#Code"],
-    likes: 142,
-    comments: 9,
-    bookmarked: false,
-    isLiked: false,
-    codeSnippet: `const sum = (a, b) => {
-  return a + b;
-};
-
-console.log(sum(5, 3));
-// Output: 8`
-  }
-];
+const initialProfilePosts = [];
 
 function formatCommunityPostToProfileCard(post) {
   const media = post.media || {};
@@ -220,12 +136,13 @@ profileRouter.get("/", requireAuth, async (req, res) => {
 
       const allPosts = [...userCreatedPosts, ...memoryStore.profilePosts];
 
+      const totalReviews = allPosts.reduce((sum, p) => sum + (p.metrics?.comments || 0), 0);
       const pubUser = publicUser(userInMem);
       pubUser.stats = {
         postsCount: allPosts.length,
-        followers: memoryStore.followers.length.toString(),
+        followers: memoryStore.followers.length,
         following: memoryStore.following.length,
-        reputation: calculateReputationString(allPosts)
+        reviews: totalReviews.toString()
       };
 
       return res.json({
@@ -249,13 +166,14 @@ profileRouter.get("/", requireAuth, async (req, res) => {
 
     const formattedUserPosts = userPosts.map(formatCommunityPostToProfileCard);
     const combinedPosts = [...formattedUserPosts, ...initialProfilePosts];
+    const totalReviews = combinedPosts.reduce((sum, p) => sum + (p.metrics?.comments || 0), 0);
 
     const pubUser = publicUser(dbUser);
     pubUser.stats = {
       postsCount: combinedPosts.length,
-      followers: dbUser.stats?.followers || initialFollowers.length.toString(),
-      following: dbUser.stats?.following !== undefined ? dbUser.stats.following : initialFollowing.length,
-      reputation: dbUser.stats?.reputation || calculateReputationString(combinedPosts)
+      followers: (dbUser.followers || initialFollowers).length,
+      following: (dbUser.following || initialFollowing).length,
+      reviews: totalReviews.toString()
     };
 
     res.json({
@@ -504,9 +422,9 @@ profileRouter.get("/user/:targetUserId", requireAuth, async (req, res) => {
         website: userInMem?.website || "thecodemunk.in",
         stats: {
           postsCount: targetUserPosts.length,
-          followers: userFollowersList.length.toString(),
+          followers: userFollowersList.length,
           following: userFollowingList.length,
-          reputation: calculateReputationString(targetUserPosts)
+          reviews: targetUserPosts.reduce((sum, p) => sum + (p.metrics?.comments || 0), 0).toString()
         }
       };
 
@@ -553,9 +471,9 @@ profileRouter.get("/user/:targetUserId", requireAuth, async (req, res) => {
 
     pubUser.stats = {
       postsCount: formattedPosts.length,
-      followers: userFollowersList.length.toString(),
+      followers: userFollowersList.length,
       following: userFollowingList.length,
-      reputation: calculateReputationString(formattedPosts)
+      reviews: formattedPosts.reduce((sum, p) => sum + (p.metrics?.comments || 0), 0).toString()
     };
 
     res.json({

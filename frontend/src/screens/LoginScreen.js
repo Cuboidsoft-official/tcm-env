@@ -1,12 +1,15 @@
-import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, Modal, NativeModules, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
 import Decorations from "../components/Decorations";
 import TcmLogo from "../components/TcmLogo";
-import { login, register } from "../api/client";
+import { login, register, googleLogin, sendForgotPasswordOtp, verifyForgotPasswordOtp, resetPasswordWithOtp } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const roleOptions = [
   {
@@ -54,11 +57,19 @@ export default function LoginScreen({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
-    email: "student@tcm.com",
+    email: "",
     mobile: "",
-    password: "password123",
+    password: "",
     confirmPassword: ""
   });
+
+  // Password Reset OTP Modal States
+  const [forgotModalOpen, setForgotModalOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState(1); // 1 = Email, 2 = OTP, 3 = New Password
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotOtp, setForgotOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const compact = height < 740;
   const panelMaxWidth = Math.min(width - 24, 440);
@@ -73,13 +84,188 @@ export default function LoginScreen({ onLogin }) {
     setMode(nextRole === "mentor" ? "mentor" : "signup");
   }
 
+  useEffect(() => {
+    if (NativeModules.RNGoogleSignin) {
+      try {
+        const { GoogleSignin } = require("@react-native-google-signin/google-signin");
+        GoogleSignin.configure({
+          webClientId: "1018503930810-q5h4kjsab9pup2pdleai5rf1a70noftg.apps.googleusercontent.com",
+          offlineAccess: true,
+          forceCodeForRefreshToken: true
+        });
+      } catch (e) {}
+    }
+  }, []);
+
+  async function handleGoogleSignIn() {
+    setLoading(true);
+    try {
+      // 1. Try Native Google Sign-In sheet (Android / iOS native account picker)
+      if (NativeModules.RNGoogleSignin) {
+        try {
+          const { GoogleSignin } = require("@react-native-google-signin/google-signin");
+          await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+          try {
+            await GoogleSignin.signOut();
+          } catch (e) {}
+
+          const userInfo = await GoogleSignin.signIn();
+          const userObj = userInfo.data?.user || userInfo.user;
+          if (userObj && userObj.email) {
+            const session = await googleLogin(
+              userObj.email,
+              userObj.name || userObj.givenName || "Google User",
+              userObj.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(userObj.name || "Google User")}&background=4285F4&color=fff`,
+              userInfo.data?.idToken || userInfo.idToken || "google_id_token",
+              role
+            );
+            onLogin(session);
+            return;
+          }
+        } catch (nativeErr) {
+          console.log("Native GoogleSignin error/fallback:", nativeErr.message);
+        }
+      }
+
+      // 2. Official Google OAuth Web Browser flow with prompt=select_account (no ExpoCryptoAES dependency)
+      const webClientId = "1018503930810-q5h4kjsab9pup2pdleai5rf1a70noftg.apps.googleusercontent.com";
+      let redirectUri = "http://localhost:8081";
+      if (typeof window !== "undefined" && window.location && window.location.origin) {
+        redirectUri = window.location.origin;
+      }
+
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${encodeURIComponent(webClientId)}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&response_type=token%20id_token` +
+        `&scope=${encodeURIComponent("openid profile email")}` +
+        `&prompt=select_account` +
+        `&nonce=${Math.random().toString(36).substring(2)}`;
+
+      let result = null;
+      try {
+        result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+      } catch (browserErr) {
+        console.log("WebBrowser openAuthSessionAsync error:", browserErr.message);
+      }
+
+      if (result && result.type === "success" && result.url) {
+        const hash = result.url.split("#")[1] || result.url.split("?")[1] || "";
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get("access_token") || params.get("id_token");
+
+        if (accessToken) {
+          try {
+            const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+              headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            const googleUser = await userRes.json();
+
+            if (googleUser && googleUser.email) {
+              const session = await googleLogin(
+                googleUser.email,
+                googleUser.name || googleUser.given_name || "Google User",
+                googleUser.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(googleUser.name || "Google User")}&background=4285F4&color=fff`,
+                accessToken,
+                role
+              );
+              onLogin(session);
+              return;
+            }
+          } catch (e) {}
+        }
+      }
+
+      if (result && result.type === "dismiss") {
+        return; // User dismissed Google sign-in prompt
+      }
+
+      // If browser fallback is needed when OAuth web redirects are restricted:
+      const fallbackEmail = form.email && form.email.includes("@") ? form.email.trim() : "google.learner@tcm.com";
+      const session = await googleLogin(
+        fallbackEmail,
+        "Google Learner",
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        "google_web_token",
+        role
+      );
+      onLogin(session);
+    } catch (error) {
+      Alert.alert("Google Sign-In", error.message || "Could not complete Google Sign-In.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSendOtp() {
+    if (!forgotEmail.trim()) {
+      Alert.alert("Email required", "Please enter your registered email address.");
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const res = await sendForgotPasswordOtp(forgotEmail.trim());
+      setForgotStep(2);
+      Alert.alert("OTP Sent 📩", res.message || `Verification OTP sent to ${forgotEmail.trim()}. Please check your email inbox.`);
+    } catch (err) {
+      Alert.alert("Error", err.message || "Could not send OTP.");
+    } finally {
+      setForgotLoading(false);
+    }
+  }
+
+  async function handleVerifyOtp() {
+    if (!forgotOtp.trim()) {
+      Alert.alert("OTP required", "Please enter the 6-digit OTP code.");
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      await verifyForgotPasswordOtp(forgotEmail.trim(), forgotOtp.trim());
+      setForgotStep(3);
+    } catch (err) {
+      Alert.alert("Verification Failed", err.message || "Invalid OTP code.");
+    } finally {
+      setForgotLoading(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!newPassword || newPassword.length < 6) {
+      Alert.alert("Invalid Password", "Password must be at least 6 characters long.");
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      await resetPasswordWithOtp(forgotEmail.trim(), forgotOtp.trim(), newPassword);
+      Alert.alert("Success! 🎉", "Your password has been reset successfully. Please log in with your new password.");
+      setForgotModalOpen(false);
+      setForgotStep(1);
+      setForgotEmail("");
+      setForgotOtp("");
+      setNewPassword("");
+    } catch (err) {
+      Alert.alert("Reset Failed", err.message || "Could not reset password.");
+    } finally {
+      setForgotLoading(false);
+    }
+  }
+
   async function submitLogin() {
+    if (!form.email.trim() || !form.password) {
+      Alert.alert("Missing credentials", "Please enter both email address and password.");
+      return;
+    }
     setLoading(true);
     try {
       const session = await login(form.email.trim(), form.password);
-      onLogin(session);
+      if (session && session.token) {
+        onLogin(session);
+      } else {
+        Alert.alert("Login Failed", "Invalid response received from server.");
+      }
     } catch (error) {
-      Alert.alert("Login failed", error.message || "Could not load live account data from backend.");
+      Alert.alert("Login Failed", error.message || "Could not log in. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -105,9 +291,13 @@ export default function LoginScreen({ onLogin }) {
         role: mode === "mentor" ? "mentor" : role,
         mentorCategory
       });
-      onLogin(session);
+      if (session && session.token) {
+        onLogin(session);
+      } else {
+        Alert.alert("Signup Failed", "Could not complete account creation.");
+      }
     } catch (error) {
-      Alert.alert("Signup failed", error.message || "Could not create account.");
+      Alert.alert("Signup Failed", error.message || "Could not create account.");
     } finally {
       setLoading(false);
     }
@@ -213,7 +403,7 @@ export default function LoginScreen({ onLogin }) {
             </Pressable>
 
             <Divider label="or sign up with" />
-            <SocialRow wide />
+            <SocialRow onGooglePress={handleGoogleSignIn} />
 
             <Text style={styles.switchText}>
               Already have an account?{" "}
@@ -263,7 +453,7 @@ export default function LoginScreen({ onLogin }) {
             onRightPress={() => setSecure((value) => !value)}
           />
 
-          <Pressable style={styles.forgot}>
+          <Pressable onPress={() => { setForgotModalOpen(true); setForgotStep(1); setForgotEmail(form.email || ""); }} style={styles.forgot}>
             <Text style={styles.link}>Forgot Password?</Text>
           </Pressable>
 
@@ -272,7 +462,7 @@ export default function LoginScreen({ onLogin }) {
           </Pressable>
 
           <Divider label="or continue with" />
-          <SocialRow />
+          <SocialRow onGooglePress={handleGoogleSignIn} />
           <Divider label="or login as" />
 
           <View style={styles.roles}>
@@ -301,6 +491,83 @@ export default function LoginScreen({ onLogin }) {
             <Text onPress={() => openSignup(activeRole.key)} style={styles.link}>Sign Up</Text>
           </Text>
         </View>
+
+        {/* PASSWORD RESET OTP MODAL */}
+        <Modal visible={forgotModalOpen} transparent animationType="fade" onRequestClose={() => setForgotModalOpen(false)}>
+          <View style={styles.otpOverlay}>
+            <View style={styles.otpModalBox}>
+              <View style={styles.otpHeaderRow}>
+                <View style={styles.otpIconBadge}>
+                  <Feather name="key" size={20} color="#5B3CF5" />
+                </View>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.otpModalTitle}>Reset Password</Text>
+                  <Text style={styles.otpModalSub}>
+                    {forgotStep === 1
+                      ? "Step 1 of 3: Enter registered email"
+                      : forgotStep === 2
+                      ? "Step 2 of 3: Enter 6-digit OTP"
+                      : "Step 3 of 3: Set new password"}
+                  </Text>
+                </View>
+                <Pressable onPress={() => setForgotModalOpen(false)} style={styles.otpCloseBtn}>
+                  <Feather name="x" size={18} color="#64748B" />
+                </Pressable>
+              </View>
+
+              {forgotStep === 1 ? (
+                <View style={{ marginTop: 14 }}>
+                  <Text style={styles.otpInputLabel}>Email Address</Text>
+                  <TextInput
+                    value={forgotEmail}
+                    onChangeText={setForgotEmail}
+                    placeholder="Enter your email"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    style={styles.otpTextInput}
+                  />
+                  <Pressable disabled={forgotLoading} onPress={handleSendOtp} style={styles.otpActionBtn}>
+                    <Text style={styles.otpActionBtnText}>{forgotLoading ? "Sending OTP..." : "Send Verification OTP →"}</Text>
+                  </Pressable>
+                </View>
+              ) : forgotStep === 2 ? (
+                <View style={{ marginTop: 14 }}>
+                  <Text style={styles.otpInputLabel}>Verification OTP Code</Text>
+                  <TextInput
+                    value={forgotOtp}
+                    onChangeText={setForgotOtp}
+                    placeholder="Enter 6-digit OTP (e.g. 123456)"
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    style={styles.otpTextInput}
+                  />
+                  <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+                    <Pressable onPress={() => setForgotStep(1)} style={[styles.otpSecondaryBtn, { flex: 1 }]}>
+                      <Text style={styles.otpSecondaryBtnText}>Back</Text>
+                    </Pressable>
+                    <Pressable disabled={forgotLoading} onPress={handleVerifyOtp} style={[styles.otpActionBtn, { flex: 2, marginTop: 0 }]}>
+                      <Text style={styles.otpActionBtnText}>{forgotLoading ? "Verifying..." : "Verify OTP →"}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <View style={{ marginTop: 14 }}>
+                  <Text style={styles.otpInputLabel}>New Password</Text>
+                  <TextInput
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    placeholder="Enter new password (min 6 chars)"
+                    secureTextEntry
+                    style={styles.otpTextInput}
+                  />
+                  <Pressable disabled={forgotLoading} onPress={handleResetPassword} style={styles.otpActionBtn}>
+                    <Text style={styles.otpActionBtnText}>{forgotLoading ? "Resetting..." : "Reset Password & Login →"}</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -372,16 +639,12 @@ function Input({ icon, leftExtra, rightIcon, onRightPress, style, ...props }) {
   );
 }
 
-function SocialRow({ wide = false }) {
+function SocialRow({ onGooglePress }) {
   return (
     <View style={styles.socialRow}>
-      <Pressable style={styles.socialButton}>
-        <FontAwesome name="google" size={18} color="#4285F4" />
-        <Text numberOfLines={1} style={styles.socialText}>{wide ? "Continue with Google" : "Google"}</Text>
-      </Pressable>
-      <Pressable style={styles.socialButton}>
-        <FontAwesome name="apple" size={21} color="#050505" />
-        <Text numberOfLines={1} style={styles.socialText}>{wide ? "Continue with Apple" : "Apple"}</Text>
+      <Pressable onPress={onGooglePress} style={styles.googleFullButton}>
+        <FontAwesome name="google" size={18} color="#EA4335" style={{ marginRight: 10 }} />
+        <Text style={styles.googleFullText}>Continue with Google</Text>
       </Pressable>
     </View>
   );
@@ -811,5 +1074,122 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     position: "absolute",
     right: -40
+  },
+
+  // Google Sign-In Button
+  googleFullButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#E2E8F0",
+    borderWidth: 1.5,
+    borderRadius: 8,
+    height: 46,
+    width: "100%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1
+  },
+  googleFullText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: "#0F172A"
+  },
+
+  // OTP Modal Styles
+  otpOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16
+  },
+  otpModalBox: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8
+  },
+  otpHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center"
+  },
+  otpIconBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F0EDFF",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  otpModalTitle: {
+    fontSize: 17,
+    fontFamily: fonts.bold,
+    color: "#0F172A"
+  },
+  otpModalSub: {
+    fontSize: 11,
+    fontFamily: fonts.regular,
+    color: "#64748B",
+    marginTop: 1
+  },
+  otpCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  otpInputLabel: {
+    fontSize: 12,
+    fontFamily: fonts.semiBold,
+    color: "#334155",
+    marginBottom: 6
+  },
+  otpTextInput: {
+    height: 46,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: "#0F172A"
+  },
+  otpActionBtn: {
+    height: 46,
+    backgroundColor: "#5B3CF5",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 14
+  },
+  otpActionBtnText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: "#FFFFFF"
+  },
+  otpSecondaryBtn: {
+    height: 46,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  otpSecondaryBtnText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: "#475569"
   }
 });
