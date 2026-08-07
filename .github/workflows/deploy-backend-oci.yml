@@ -32,4 +32,4 @@ jobs:
       - name: Install deps and restart service
         run: |
           ssh -o StrictHostKeyChecking=accept-new ${{ secrets.OCI_USER }}@${{ secrets.OCI_HOST }} \
-            "cd /opt/tcm/backend && npm install --omit=dev --no-audit --no-fund && sudo systemctl restart tcm-backend && sleep 3 && echo '--- health ---' && curl -s http://localhost/api/health"
+            "cd /opt/tcm/backend && npm install --omit=dev --no-audit --no-fund && sudo systemctl restart tcm-backend && for i in \$(seq 1 15); do sleep 2; if curl -sf http://localhost/api/health; then echo; echo HEALTH_OK; exit 0; fi; done; echo 'health check failed after 30s'; exit 1"
