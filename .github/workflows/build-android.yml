@@ -121,12 +121,38 @@ jobs:
             --title "TCM Android Build ${{ env.TCM_APP_VERSION || '0.1.0' }}" \
             --notes "TCM Android APK + AAB build. App version: ${{ env.TCM_APP_VERSION || '0.1.0' }}."
 
+      - name: Mint one-time secret download links
+        env:
+          OCI_USER: ${{ secrets.OCI_USER }}
+          OCI_HOST: ${{ secrets.OCI_HOST }}
+        run: |
+          set -euo pipefail
+          HOST="$OCI_HOST"
+          USER="$OCI_USER"
+          mint_link() {
+            local file="$1"
+            ssh -q -o StrictHostKeyChecking=accept-new "$USER@$HOST" \
+              "DL_TOKEN=\$(grep '^DL_ADMIN_TOKEN=' /opt/tcm/dl-server/.env | cut -d= -f2-) && \
+               curl -fsS --max-time 15 -X POST \
+                 -H \"X-DL-Admin: \$DL_TOKEN\" \
+                 -H 'Content-Type: application/json' \
+                 -d '{\"file\":\"$file\"}' \
+                 https://api.thecodemunk.in/dl/_mint" | \
+              sed -n 's/.*"url":"\([^"]*\)".*/\1/p'
+          }
+          APK_URL="$(mint_link app-preview.apk)"
+          AAB_URL="$(mint_link app-release.aab)"
+          test -n "$APK_URL" || { echo "failed to mint APK link"; exit 1; }
+          test -n "$AAB_URL" || { echo "failed to mint AAB link"; exit 1; }
+          echo "APK_URL=$APK_URL" >> "$GITHUB_ENV"
+          echo "AAB_URL=$AAB_URL" >> "$GITHUB_ENV"
+          echo "minted one-time links:"
+          echo "  $APK_URL"
+          echo "  $AAB_URL"
+
       - name: Email build notification with install + download links
         if: env.MAIL_APP_PASSWORD != ''
         uses: dawidd6/action-send-mail@v3
-        env:
-          TCM_DL_USER: ${{ secrets.TCM_DL_USER }}
-          TCM_DL_PASS: ${{ secrets.TCM_DL_PASS }}
         with:
           server_address: smtp.gmail.com
           server_port: 465
@@ -145,17 +171,13 @@ jobs:
             - app-preview.apk is the INSTALLABLE app. Download this to install on a phone.
             - app-release.aab is the PLAY STORE upload file only — it CANNOT be installed
               directly on a device (if you install that, the app won't open).
-            - If a download saves as 0 KB, the file/link is stale — use the latest email.
+            - Each OCI VM link below is SECRET + SINGLE-USE: it works exactly ONCE, then
+              expires. If it says "token already used", run a new build to get fresh links.
 
-            Download links (VM /dl is password-protected; user "${{ env.TCM_DL_USER }}"
-            / password below):
-            - GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${{ env.RELEASE_TAG || 'latest' }}
-            - APK (installable) - OCI VM: https://api.thecodemunk.in/dl/app-preview.apk
-            - AAB (Play upload only) - OCI VM: https://api.thecodemunk.in/dl/app-release.aab
-            - Builds index (OCI VM): https://api.thecodemunk.in/dl/
-
-            Direct: https://api.thecodemunk.in/dl/app-preview.apk
-            Download password: ${{ env.TCM_DL_PASS }}
+            Download links:
+            - APK (installable) - one-time link: ${{ env.APK_URL }}
+            - AAB (Play upload only) - one-time link: ${{ env.AAB_URL }}
+            - GitHub Release (works while logged in): https://github.com/${{ github.repository }}/releases/tag/${{ env.RELEASE_TAG || 'latest' }}
 
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 

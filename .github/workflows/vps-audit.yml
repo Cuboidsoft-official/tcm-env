@@ -40,6 +40,8 @@ jobs:
           echo
           echo "===== APP TESTS FROM VM ====="
           echo "health:"; curl -sS --max-time 8 http://127.0.0.1:5000/api/health; echo
+          echo "dl-server active:"; systemctl is-active tcm-dl 2>/dev/null || echo "tcm-dl: not installed"
+          echo "dl-server no-token ->:"; curl -sS -o /dev/null -w "%{http_code}\n" --max-time 8 http://127.0.0.1:5200/app-preview.apk
           echo "communities (DB read):"; curl -sS --max-time 8 http://127.0.0.1:5000/api/home/communities | head -c 300; echo
           echo "webinars (DB read):"; curl -sS --max-time 8 http://127.0.0.1:5000/api/home/webinars | head -c 200; echo
           echo "course fetch (DB read):"; curl -sS -o /dev/null -w "%{http_code}\n" --max-time 8 http://127.0.0.1:5000/api/home/course/b_neet
