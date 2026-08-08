@@ -2,6 +2,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 import { connectDatabase } from "./config/db.js";
 import { createVisualSeedData } from "./data/visualSeed.js";
 import { authRouter } from "./routes/auth.js";
@@ -23,7 +24,11 @@ app.use(
 app.use(express.json());
 
 app.get("/api/health", (req, res) => {
-  res.json({ ok: true, service: "tcm-backend" });
+  res.json({
+    ok: true,
+    service: "tcm-backend",
+    mongo: mongoose.connection.readyState
+  });
 });
 
 app.use("/api/auth", authRouter);

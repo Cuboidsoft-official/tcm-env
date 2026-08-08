@@ -35,6 +35,22 @@ jobs:
             -e "ssh -o StrictHostKeyChecking=accept-new" \
             ./backend/ "$OCI_USER@$OCI_HOST:/opt/tcm/backend/"
 
+      - name: Provision backend .env from secret
+        env:
+          TCM_BACKEND_ENV: ${{ secrets.TCM_BACKEND_ENV }}
+          OCI_USER: ${{ secrets.OCI_USER }}
+          OCI_HOST: ${{ secrets.OCI_HOST }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TCM_BACKEND_ENV:-}" ]; then
+            echo "TCM_BACKEND_ENV not set — skipping .env provisioning"
+            exit 0
+          fi
+          printf '%s\n' "$TCM_BACKEND_ENV" > /tmp/tcm-backend.env
+          scp -q -o StrictHostKeyChecking=accept-new /tmp/tcm-backend.env "$OCI_USER@$OCI_HOST:/tmp/tcm-backend.env"
+          ssh -q -o StrictHostKeyChecking=accept-new "$OCI_USER@$OCI_HOST" \
+            "sudo mv /tmp/tcm-backend.env /opt/tcm/backend/.env && sudo chown root:root /opt/tcm/backend/.env && sudo chmod 600 /opt/tcm/backend/.env && echo 'ENV_WRITTEN'"
+
       - name: Install deps, restart service, verify health
         env:
           OCI_USER: ${{ secrets.OCI_USER }}
@@ -42,4 +58,4 @@ jobs:
         run: |
           set -euo pipefail
           ssh -o StrictHostKeyChecking=accept-new "$OCI_USER@$OCI_HOST" \
-            "cd /opt/tcm/backend && npm ci --omit=dev --no-audit --no-fund && sudo systemctl restart tcm-backend && for i in \$(seq 1 30); do if curl -fsS --max-time 5 http://127.0.0.1:5000/api/health | grep -q '\"ok\":true'; then echo 'HEALTH_OK after '\$i' polls'; exit 0; fi; sleep 2; done; echo 'health check failed after 60s'; exit 1"
+            "cd /opt/tcm/backend && npm ci --omit=dev --no-audit --no-fund && sudo systemctl restart tcm-backend && for i in \$(seq 1 30); do if body=\$(curl -fsS --max-time 5 http://127.0.0.1:5000/api/health 2>/dev/null); then if echo \"\$body\" | grep -q '\"ok\":true'; then echo 'HEALTH_OK after '\$i' polls: '\$body; exit 0; fi; fi; sleep 2; done; echo 'health check failed after 60s'; exit 1"
