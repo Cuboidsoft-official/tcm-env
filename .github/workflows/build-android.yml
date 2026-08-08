@@ -132,7 +132,7 @@ jobs:
           mint_link() {
             local file="$1"
             ssh -q -o StrictHostKeyChecking=accept-new "$USER@$HOST" \
-              "DL_TOKEN=\$(grep '^DL_ADMIN_TOKEN=' /opt/tcm/dl-server/.env | cut -d= -f2-) && \
+              "DL_TOKEN=\$(sudo grep '^DL_ADMIN_TOKEN=' /opt/tcm/dl-server/.env | cut -d= -f2-) && \
                curl -fsS --max-time 15 -X POST \
                  -H \"X-DL-Admin: \$DL_TOKEN\" \
                  -H 'Content-Type: application/json' \
