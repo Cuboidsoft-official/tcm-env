@@ -52,17 +52,15 @@ Devices can get the app without any app store:
 
 | Source | What it is | Best for |
 |---|---|---|
-| **OCI VM static hosting** | `https://api.thecodemunk.in/dl/` (basic-auth protected; user `TCM_DL_USER` / password from the build email) | Primary install — direct APK download hosted on our own VM, gated by a tester password |
+| **OCI VM /dl (one-time link)** | `https://api.thecodemunk.in/dl/<file>?t=<token>` — secret, **single-use** link minted per build and emailed to the recipient | Primary install — direct APK download hosted on our own VM; the link works exactly once, then 410 |
 | **GitHub Release** | `https://github.com/Cuboidsoft-official/tcm-env/releases/latest` | Always-available APK + AAB download (private repo — downloads require a collaborator login) |
 
 The `api` A record → `140.245.209.147` at Hostinger is live (verified resolving
 against 8.8.8.8 and 1.1.1.1 on **2026-08-08**); Caddy holds a valid Let's
-Encrypt cert for `api.thecodemunk.in`. Direct fallback links:
-
-```
-https://api.thecodemunk.in/dl/app-preview.apk
-https://api.thecodemunk.in/dl/app-release.aab
-```
+Encrypt cert for `api.thecodemunk.in`. The `/dl` path is reverse-proxied to the
+`tcm-dl` service (`127.0.0.1:5200`), which only serves a file if the request
+carries a valid one-time token. There is **no longer any basic-auth password** —
+access is gated purely by the per-build single-use token in the emailed link.
 
 - `app-preview.apk` is the **installable** app — download this to sideload.
 - `app-release.aab` is the **Play Store upload file only** — it CANNOT be
@@ -102,8 +100,9 @@ values in the repo.
 | `OCI_SSH_KEY` | Private SSH key for the deploy to the Oracle VM. |
 | `OCI_HOST` | Backend VM public IP, `140.245.209.147`. |
 | `OCI_USER` | SSH user on the VM. |
-| `TCM_DL_USER` | Basic-auth user for the VM `/dl/` artifact downloads. |
-| `TCM_DL_PASS` | Basic-auth password for the VM `/dl/` artifact downloads. |
+| `TCM_DL_USER` | (obsolete) Former basic-auth user for the VM `/dl/`. Kept for history — the one-time link system (`DL_ADMIN_TOKEN`) replaced basic auth on 2026-08-08. |
+| `TCM_DL_PASS` | (obsolete) Former basic-auth password for the VM `/dl/`. Kept for history — no longer used. |
+| `DL_ADMIN_TOKEN` | Admin secret for the `tcm-dl` service. It is written to `/opt/tcm/dl-server/.env` (root 0600) by the `deploy-dl-server.yml` workflow; the build workflow reads it **on the VM** to mint one-time download links, so it never appears in GitHub Actions logs or on the runner. |
 | `MAIL_USERNAME` | Gmail address used as the SMTP sender for build emails. |
 | `MAIL_APP_PASSWORD` | Gmail app password (2FA app-specific) for SMTP. |
 | `MAIL_TO` | Recipient of build emails — defaults to `cuboidsoft@gmail.com` when unset. |
@@ -131,17 +130,18 @@ EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'https://api.thecodemunk.in/api' }}
 
 ## Immediate device install
 
-After any Android build, the APK is available at:
+After any Android build, the emailed **one-time link** opens the APK directly:
 
 ```
-https://api.thecodemunk.in/dl/app-preview.apk
+https://api.thecodemunk.in/dl/app-preview.apk?t=<single-use-token>
 ```
 
-The `/dl/`
-folder on the VM serves every uploaded artifact and is **password-protected**
-(basic auth, user from `TCM_DL_USER` / password from the build email). To install:
+The `/dl/` path on the VM is served by the `tcm-dl` service and only responds
+when the request carries a valid, **unused** token (minted by the build
+workflow). A used/expired token returns `410`; a missing token returns `403`.
+To install:
 
-1. Open the APK link on the Android device (or download it on desktop and transfer).
+1. Open the APK link from the build email on the Android device (or download it on desktop and transfer).
 2. Allow installs from **unknown sources** when prompted.
 3. Install — `app-preview.apk` is signed (Expo prebuild default debug keystore)
    and can be sideloaded directly.
@@ -183,7 +183,8 @@ folder on the VM serves every uploaded artifact and is **password-protected**
   editor) is live and `https://api.thecodemunk.in/...` works. Caddy holds a
   valid Let's Encrypt certificate (auto-issued once the record propagated).
 - **Artifact hosting**: Cloudflare R2 is **not** used. APK/AAB live on the VM
-  (`/opt/tcm/dist`, served by Caddy at `/dl/` behind basic auth) and on GitHub
+  (`/opt/tcm/dist`), served by the `tcm-dl` service at `/dl/` behind a
+  **single-use token** (no basic auth since 2026-08-08), and on GitHub
   Releases (private repo — downloads require a collaborator login).
 - **Android build runs on the runner** (Expo prebuild + local Gradle) instead
   of EAS Build because the EAS free-plan build quota was exhausted; the free
