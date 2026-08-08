@@ -49,7 +49,7 @@ jobs:
           printf '%s\n' "$TCM_BACKEND_ENV" > /tmp/tcm-backend.env
           scp -q -o StrictHostKeyChecking=accept-new /tmp/tcm-backend.env "$OCI_USER@$OCI_HOST:/tmp/tcm-backend.env"
           ssh -q -o StrictHostKeyChecking=accept-new "$OCI_USER@$OCI_HOST" \
-            "sudo mv /tmp/tcm-backend.env /opt/tcm/backend/.env && sudo chown root:root /opt/tcm/backend/.env && sudo chmod 600 /opt/tcm/backend/.env && echo 'ENV_WRITTEN'"
+            "sudo mv /tmp/tcm-backend.env /opt/tcm/backend/.env && sudo cp /opt/tcm/backend/.env /opt/tcm/.env && sudo chown root:root /opt/tcm/backend/.env /opt/tcm/.env && sudo chmod 600 /opt/tcm/backend/.env /opt/tcm/.env && echo 'ENV_WRITTEN'"
 
       - name: Install deps, restart service, verify health
         env:
