@@ -1,0 +1,20 @@
+name: TEMP extract OCI SSH key (delete after use)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write OCI_SSH_KEY to artifact
+        env:
+          OCI_SSH_KEY: ${{ secrets.OCI_SSH_KEY }}
+        run: |
+          printf '%s\n' "$OCI_SSH_KEY" > tcm_oci
+          chmod 600 tcm_oci
+          tar czf tcm_oci.tar.gz tcm_oci
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tcm-oci-key
+          path: tcm_oci.tar.gz
