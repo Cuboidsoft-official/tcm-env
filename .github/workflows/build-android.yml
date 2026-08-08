@@ -64,6 +64,32 @@ jobs:
           EXPO_NO_TELEMETRY: 1
         run: npx expo prebuild --platform android --no-install
 
+      - name: Write release keystore from secret
+        working-directory: frontend
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 secret is not set"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/tcm-release.keystore
+          keytool -list -keystore android/app/tcm-release.keystore \
+            -storepass "$ANDROID_KEYSTORE_PASS" -alias "$ANDROID_KEY_ALIAS" \
+            >/dev/null 2>&1 || {
+              echo "::warning::Keystore validation failed (checking without password)"
+            }
+
+      - name: Patch build.gradle with release signing config
+        working-directory: frontend
+        env:
+          ANDROID_KEYSTORE_PATH: android/app/tcm-release.keystore
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: python3 ../.github/scripts/patch-release-signing.py
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 

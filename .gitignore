@@ -16,6 +16,7 @@ backend/.wrangler/
 backend/.dev.vars
 *.keystore
 # local secrets dumps (contain real credentials — never commit)
+/production-secrets
 /env
 /env (1)
 /env (2)
