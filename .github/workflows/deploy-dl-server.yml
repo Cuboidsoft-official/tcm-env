@@ -53,33 +53,35 @@ jobs:
         env:
           OCI_USER: ${{ secrets.OCI_USER }}
           OCI_HOST: ${{ secrets.OCI_HOST }}
+          SYSTEMD_UNIT: |-
+            [Unit]
+            Description=TCM one-time download link server
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=root
+            WorkingDirectory=/opt/tcm/dl-server
+            EnvironmentFile=/opt/tcm/dl-server/.env
+            ExecStart=/usr/bin/node server.js
+            Restart=always
+            RestartSec=3
+            NoNewPrivileges=true
+
+            [Install]
+            WantedBy=multi-user.target
         run: |
           set -euo pipefail
+          printf '%s\n' "$SYSTEMD_UNIT" > /tmp/tcm-dl.service
+          scp -q -o StrictHostKeyChecking=accept-new /tmp/tcm-dl.service "$OCI_USER@$OCI_HOST:/tmp/tcm-dl.service"
           ssh -o StrictHostKeyChecking=accept-new "$OCI_USER@$OCI_HOST" 'sudo bash -s' <<'UNIT'
           set -euo pipefail
           cd /opt/tcm/dl-server
           if [ -f package.json ]; then npm ci --omit=dev --no-audit --no-fund 2>/dev/null || true; fi
-          cat > /etc/systemd/system/tcm-dl.service <<'EOF'
-[Unit]
-Description=TCM one-time download link server
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/opt/tcm/dl-server
-EnvironmentFile=/opt/tcm/dl-server/.env
-ExecStart=/usr/bin/node server.js
-Restart=always
-RestartSec=3
-NoNewPrivileges=true
-
-[Install]
-WantedBy=multi-user.target
-EOF
-          systemctl daemon-reload
-          systemctl enable tcm-dl
-          systemctl restart tcm-dl
+          sudo mv /tmp/tcm-dl.service /etc/systemd/system/tcm-dl.service
+          sudo systemctl daemon-reload
+          sudo systemctl enable tcm-dl
+          sudo systemctl restart tcm-dl
           sleep 2
           systemctl is-active tcm-dl
           echo "DL_SERVICE_STARTED"
@@ -89,40 +91,42 @@ EOF
         env:
           OCI_USER: ${{ secrets.OCI_USER }}
           OCI_HOST: ${{ secrets.OCI_HOST }}
+          CADDYFILE: |-
+            api.thecodemunk.in {
+                encode gzip
+
+                handle /dl/* {
+                    uri strip_prefix /dl
+                    reverse_proxy 127.0.0.1:5200
+                }
+
+                handle {
+                    reverse_proxy 127.0.0.1:5000
+                }
+            }
+
+            http://140.245.209.147 {
+                encode gzip
+
+                handle /dl/* {
+                    uri strip_prefix /dl
+                    reverse_proxy 127.0.0.1:5200
+                }
+
+                handle {
+                    reverse_proxy 127.0.0.1:5000
+                }
+            }
         run: |
           set -euo pipefail
+          printf '%s\n' "$CADDYFILE" > /tmp/tcm-Caddyfile
+          scp -q -o StrictHostKeyChecking=accept-new /tmp/tcm-Caddyfile "$OCI_USER@$OCI_HOST:/tmp/tcm-Caddyfile"
           ssh -o StrictHostKeyChecking=accept-new "$OCI_USER@$OCI_HOST" 'sudo bash -s' <<'CADDY'
           set -euo pipefail
           TS=$(date +%s)
           sudo cp /etc/caddy/Caddyfile "/etc/caddy/Caddyfile.bak.$TS"
           echo "backed up Caddyfile to Caddyfile.bak.$TS"
-          sudo tee /etc/caddy/Caddyfile > /dev/null <<'CFG'
-api.thecodemunk.in {
-	encode gzip
-
-	handle /dl/* {
-		uri strip_prefix /dl
-		reverse_proxy 127.0.0.1:5200
-	}
-
-	handle {
-		reverse_proxy 127.0.0.1:5000
-	}
-}
-
-http://140.245.209.147 {
-	encode gzip
-
-	handle /dl/* {
-		uri strip_prefix /dl
-		reverse_proxy 127.0.0.1:5200
-	}
-
-	handle {
-		reverse_proxy 127.0.0.1:5000
-	}
-}
-CFG
+          sudo mv /tmp/tcm-Caddyfile /etc/caddy/Caddyfile
           sudo caddy validate --config /etc/caddy/Caddyfile
           sudo systemctl reload caddy
           sleep 2
