@@ -2,9 +2,16 @@
   "expo": {
     "name": "TCM",
     "slug": "the-code-munk",
+    "scheme": "com.tcm.app",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#261B94"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -20,7 +27,12 @@
     },
     "android": {
       "package": "com.tcm.app",
-      "googleServicesFile": "./google-services.json"
+      "versionCode": 2,
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#261B94"
+      }
     },
     "web": {
       "bundler": "metro"
