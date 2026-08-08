@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'http://140.245.209.147/api' }}
+      EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'https://api.thecodemunk.in/api' }}
       EXPO_UPDATES_CHANNEL: preview
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
       MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
@@ -154,7 +154,7 @@ jobs:
             - AAB (Play upload only) - OCI VM: https://api.thecodemunk.in/dl/app-release.aab
             - Builds index (OCI VM): https://api.thecodemunk.in/dl/
 
-            Direct (no domain yet): http://140.245.209.147/dl/app-preview.apk
+            Direct: https://api.thecodemunk.in/dl/app-preview.apk
             Download password: ${{ env.TCM_DL_PASS }}
 
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

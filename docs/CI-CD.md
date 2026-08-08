@@ -8,14 +8,13 @@ CI runs on **GitHub Actions**. Deploy targets:
 - **Backend** → Oracle Cloud **Always Free** VM (`tcm-backend`,
   `140.245.209.147`). Deployed by `rsync` over SSH on every `main` push
   touching `backend/**`. Served in production through **Caddy** (HTTPS) at
-  `https://api.thecodemunk.in/api` once DNS resolves.
+  `https://api.thecodemunk.in/api`.
 - **Android** → built **on the GitHub Actions runner** (Expo prebuild + local
   Gradle, no EAS cloud builds). Produces `app-preview.apk` (installable,
   debug-keystore signed via the Expo prebuild default) and `app-release.aab`
   (Play Store upload file — not store-submittable without a production
   keystore). Artifacts are published to **GitHub Releases** and hosted
-  statically on the OCI VM at `https://api.thecodemunk.in/dl/...` (or
-  `http://140.245.209.147/dl/...` until DNS resolves).
+  statically on the OCI VM at `https://api.thecodemunk.in/dl/...`.
 - **OTA updates** → **EAS Update** to the `preview` channel on every `main`
   push (JS-only fixes reach installed builds instantly) and to `production` on
   `v*` tag pushes.
@@ -56,14 +55,13 @@ Devices can get the app without any app store:
 | **OCI VM static hosting** | `https://api.thecodemunk.in/dl/` (basic-auth protected; user `TCM_DL_USER` / password from the build email) | Primary install — direct APK download hosted on our own VM, gated by a tester password |
 | **GitHub Release** | `https://github.com/Cuboidsoft-official/tcm-env/releases/latest` | Always-available APK + AAB download (private repo — downloads require a collaborator login) |
 
-**Important** — DNS is **not live yet**. The `api` A record →
-`140.245.209.147` at Hostinger is REQUIRED for the HTTPS/domain links above,
-and as of **2026-08-07** it is not resolving (verified NXDOMAIN against
-8.8.8.8 and 1.1.1.1). Until it resolves, use the direct fallback:
+The `api` A record → `140.245.209.147` at Hostinger is live (verified resolving
+against 8.8.8.8 and 1.1.1.1 on **2026-08-08**); Caddy holds a valid Let's
+Encrypt cert for `api.thecodemunk.in`. Direct fallback links:
 
 ```
-http://140.245.209.147/dl/app-preview.apk
-http://140.245.209.147/dl/app-release.aab
+https://api.thecodemunk.in/dl/app-preview.apk
+https://api.thecodemunk.in/dl/app-release.aab
 ```
 
 - `app-preview.apk` is the **installable** app — download this to sideload.
@@ -123,12 +121,11 @@ workflow writes them. Keep them out of GitHub Secrets.
 builds and updates as `EXPO_PUBLIC_API_URL`:
 
 ```yaml
-EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'http://140.245.209.147/api' }}
+EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'https://api.thecodemunk.in/api' }}
 ```
 
-- Default (no variable set): `http://140.245.209.147/api`.
-- To flip to HTTPS once DNS is live: set the repo variable to
-  `https://api.thecodemunk.in/api` and rebuild.
+- Default (no variable set): `https://api.thecodemunk.in/api`.
+- The repo variable is currently set to `https://api.thecodemunk.in/api`.
 
 ## Immediate device install
 
@@ -138,7 +135,7 @@ After any Android build, the APK is available at:
 https://api.thecodemunk.in/dl/app-preview.apk
 ```
 
-(until DNS is set, use `http://140.245.209.147/dl/app-preview.apk`). The `/dl/`
+The `/dl/`
 folder on the VM serves every uploaded artifact and is **password-protected**
 (basic auth, user from `TCM_DL_USER` / password from the build email). To install:
 
@@ -177,10 +174,8 @@ folder on the VM serves every uploaded artifact and is **password-protected**
   seed data from memory so the app remains navigable (this is also how CI checks
   pass without a DB).
 - **DNS / HTTPS**: the `api` A record → `140.245.209.147` (Hostinger DNS zone
-  editor) is REQUIRED for `https://api.thecodemunk.in/...`. As of **2026-08-07**
-  it is **not resolving** (NXDOMAIN on 8.8.8.8/1.1.1.1), so HTTPS/domain links
-  do not work — use `http://140.245.209.147/...`. Caddy issues a Let's Encrypt
-  certificate automatically once DNS resolves.
+  editor) is live and `https://api.thecodemunk.in/...` works. Caddy holds a
+  valid Let's Encrypt certificate (auto-issued once the record propagated).
 - **Artifact hosting**: Cloudflare R2 is **not** used. APK/AAB live on the VM
   (`/opt/tcm/dist`, served by Caddy at `/dl/` behind basic auth) and on GitHub
   Releases (private repo — downloads require a collaborator login).
