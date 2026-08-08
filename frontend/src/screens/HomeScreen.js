@@ -3,9 +3,11 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Dimensions,
   Image,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -1246,6 +1248,7 @@ function VideoFeedPlayer({ media }) {
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [showControls, setShowControls] = useState(false);
+  const containerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
 
   const frameKey = media.frameKey || "portrait";
@@ -1261,6 +1264,51 @@ function VideoFeedPlayer({ media }) {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     };
   }, []);
+
+  // Web IntersectionObserver: Auto-pauses video when it is half off-screen (less than 45% visible)
+  useEffect(() => {
+    if (Platform.OS === "web" && containerRef.current && typeof IntersectionObserver !== "undefined") {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry.isIntersecting || entry.intersectionRatio < 0.45) {
+            try {
+              player?.pause();
+            } catch (e) {}
+            setPlaying(false);
+          }
+        },
+        { threshold: [0, 0.45, 0.9] }
+      );
+
+      observer.observe(containerRef.current);
+      return () => observer.disconnect();
+    }
+  }, [player]);
+
+  // Native / Cross-Platform Viewport Scroll Check while playing
+  useEffect(() => {
+    let checkInterval;
+    if (playing) {
+      checkInterval = setInterval(() => {
+        if (containerRef.current && containerRef.current.measureInWindow) {
+          containerRef.current.measureInWindow((x, y, width, height) => {
+            const windowHeight = Dimensions.get("window").height;
+            // If top of video card is below screen bottom or bottom of card is above screen top (or half off-screen)
+            const isOutOfView = y + height * 0.5 < 0 || y + height * 0.45 > windowHeight;
+            if (isOutOfView) {
+              try {
+                player?.pause();
+              } catch (e) {}
+              setPlaying(false);
+            }
+          });
+        }
+      }, 350);
+    }
+    return () => {
+      if (checkInterval) clearInterval(checkInterval);
+    };
+  }, [playing, player]);
 
   function togglePlay() {
     if (!sourceUri) return;
@@ -1288,6 +1336,7 @@ function VideoFeedPlayer({ media }) {
 
   return (
     <View
+      ref={containerRef}
       style={[
         styles.videoMedia,
         frameKey === "square" && styles.videoMediaSquare,
