@@ -109,7 +109,7 @@ function dedupeMessages(list) {
 
 import ChatDetailsScreen from "./ChatDetailsScreen";
 
-export default function ChatScreen({ session, user = {}, targetUser: initialTargetUser, targetUserId = "m1", onClose, onDeleteChannel }) {
+export default function ChatScreen({ session, user = {}, targetUser: initialTargetUser, targetUserId = "m1", onClose, onDeleteChannel, onOpenUserProfile }) {
   const [targetUser, setTargetUser] = useState(initialTargetUser || null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
@@ -254,19 +254,29 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
   const currentTarget = initialTargetUser || targetUser || fallbackTargetUser;
 
-  async function handleSendFriendRequestInChat() {
+  async function handleSendFriendRequest() {
+    if (!currentTarget?.id) return;
+    setSendingRequest(true);
     try {
-      const token = session?.token;
-      if (!token) return;
-      const targetId = currentTarget.id || targetUserId || "m1";
-      const res = await sendFriendRequest(token, targetId, "send");
-      if (res && res.success) {
-        setReqSent(true);
-        Alert.alert("Friend Request Sent 📩", `Sent friend request to ${currentTarget.name}. Once they accept, direct messaging will unlock!`);
+      if (session?.token) {
+        await sendFriendRequestAction(session.token, currentTarget.id, "send");
       }
-    } catch (err) {
-      setReqSent(true);
-      Alert.alert("Friend Request Sent 📩", `Sent friend request to ${currentTarget.name}!`);
+      setFriendStatus("pending_sent");
+      Alert.alert("Friend Request Sent", `Sent friend request to ${currentTarget.name}. Once they accept, direct messaging will unlock!`);
+    } catch (e) {
+      setFriendStatus("pending_sent");
+      Alert.alert("Friend Request Sent", `Sent friend request to ${currentTarget.name}!`);
+    } finally {
+      setSendingRequest(false);
+    }
+  }
+
+  function handleDisabledSendPress() {
+    if (!isUnlocked) {
+      Alert.alert(
+        "Friends Only Chat",
+        `You can only direct message ${currentTarget.name} if you are connected as friends. Send a friend request to unlock messaging!`
+      );
     }
   }
 
@@ -276,7 +286,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
     if (!isMutual && currentTarget.id !== "m1") {
       Alert.alert(
-        "Friends Only Chat 🔒",
+        "Friends Only Chat",
         `You must be mutual friends with ${currentTarget.name} to send direct messages. Send a friend request first!`
       );
       return;
@@ -783,7 +793,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Feather name="lock" size={16} color="#D97706" style={{ marginRight: 8 }} />
             <Text style={{ fontSize: 13, color: "#92400E", flex: 1, fontFamily: fonts.bold }}>
-              Mutual Friends Only 🔒
+              Mutual Friends Only
             </Text>
           </View>
           <Text style={{ fontSize: 12, color: "#78350F", fontFamily: fonts.regular }}>
@@ -800,7 +810,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
             }}
           >
             <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: fonts.bold }}>
-              {reqSent ? "Friend Request Sent ⏳" : "Send Friend Request 📩"}
+              {reqSent ? "Friend Request Sent" : "Send Friend Request"}
             </Text>
           </Pressable>
         </View>
@@ -866,7 +876,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
               previewImageUri ? (
                 <View style={{ marginTop: 12 }}>
                   <View style={styles.previewHeaderRow}>
-                    <Text style={styles.previewTitle}>Photo Attachment Preview 🖼️</Text>
+                    <Text style={styles.previewTitle}>Photo Attachment Preview</Text>
                     <Pressable onPress={() => setPreviewImageUri(null)} style={styles.clearPreviewBtn}>
                       <Feather name="x" size={16} color="#7C7C9A" />
                     </Pressable>
@@ -899,7 +909,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                       style={styles.confirmSendPhotoBtn}
                     >
                       <Feather name="send" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
-                      <Text style={styles.confirmSendPhotoBtnText}>Send Photo Now 🚀</Text>
+                      <Text style={styles.confirmSendPhotoBtnText}>Send Photo Now</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -1067,6 +1077,11 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           isUserMentor={isUserMentor}
           messages={messages}
           onClose={() => setShowDetailsModal(false)}
+          onOpenUserProfile={(u) => {
+            setShowDetailsModal(false);
+            if (onClose) onClose();
+            if (onOpenUserProfile) onOpenUserProfile(u || currentTarget);
+          }}
           onDeleteChannel={(id, name) => {
             setShowDetailsModal(false);
             if (onDeleteChannel) {

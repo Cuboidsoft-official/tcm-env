@@ -74,7 +74,7 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
       { text: "Cancel", style: "cancel" },
       {
         text: "Proceed to Payment",
-        onPress: () => Alert.alert("Success! 🎉", `Payment successful! You now have lifetime access to ${courseData.title}.`)
+        onPress: () => Alert.alert("Success", `Payment successful! You now have lifetime access to ${courseData.title}.`)
       }
     ]);
   }
@@ -83,8 +83,12 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
     Alert.alert("Share Course", `Course Link: https://thecodemunk.in/course/${courseId}`);
   }
 
-  const isNeet = String(courseId).toLowerCase().includes("neet");
-  const isJee = String(courseId).toLowerCase().includes("jee");
+  const isNeet = courseData.title?.toLowerCase().includes("neet");
+  const isJee = courseData.title?.toLowerCase().includes("jee");
+
+  const heroBadge = {
+    tag: isNeet ? "NEET 2026 LIVE" : isJee ? "JEE MAIN & ADV" : "POPULAR BATCH"
+  };
 
   const fallbackTitle = isNeet
     ? "NEET Ultimate Crash Course 2026"

@@ -132,7 +132,10 @@ export default function PopularCoursesScreen({ session, onBack, onNotifications,
 
         {/* 4. Popular Right Now Header Row */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>🔥 Popular Right Now</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Feather name="trending-up" size={16} color="#FF6B00" />
+            <Text style={styles.sectionTitle}>Popular Right Now</Text>
+          </View>
           <Pressable onPress={() => Alert.alert("Sort Courses", "Sorting options: Popularity, Rating, Price Low-High")} style={styles.sortRow}>
             <Text style={styles.sortLabel}>Sort by </Text>
             <Text style={styles.sortVal}>Popularity</Text>
@@ -152,7 +155,7 @@ export default function PopularCoursesScreen({ session, onBack, onNotifications,
               <View style={styles.thumbnailWrap}>
                 <Image source={{ uri: course.image }} style={styles.thumbnailImg} />
                 <View style={styles.liveBadge}>
-                  <Text style={styles.liveBadgeText}>{course.badge || "🔴 LIVE"}</Text>
+                  <Text style={styles.liveBadgeText}>{(course.badge || "LIVE").replace(/[^a-zA-Z0-9\s]/g, "").trim()}</Text>
                 </View>
               </View>
 

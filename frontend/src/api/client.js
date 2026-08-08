@@ -217,6 +217,26 @@ export function createCommunityPost(token, payload) {
   });
 }
 
+export function toggleSavePost(token, postId) {
+  return request(`/home/post/${postId}/save`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+export function getSavedPosts(token) {
+  return request(`/home/saved-posts`, {
+    headers: { Authorization: token ? `Bearer ${token}` : "" }
+  });
+}
+
+export function toggleCommentLike(token, postId, commentId) {
+  return request(`/home/post/${postId}/comment/${commentId}/like`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
 export function getCommunities(token) {
   return request("/home/communities", {
     headers: {
@@ -487,13 +507,13 @@ export function togglePostLike(token, postId) {
   });
 }
 
-export function addPostComment(token, postId, text) {
+export function addPostComment(token, postId, text, parentCommentId) {
   return request(`/home/post/${postId}/comment`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`
     },
-    body: JSON.stringify({ text })
+    body: JSON.stringify({ text, parentCommentId })
   });
 }
 
@@ -660,10 +680,10 @@ export function registerPushTokenApi(token, pushToken, platform) {
   });
 }
 
-export function googleLogin(email, name, avatarUrl, idToken, role = "student") {
+export function googleLogin(email, name, avatarUrl, idToken, role = "student", referralCode = "") {
   return request("/auth/google", {
     method: "POST",
-    body: JSON.stringify({ email, name, avatarUrl, idToken, role })
+    body: JSON.stringify({ email, name, avatarUrl, idToken, role, referralCode })
   });
 }
 
@@ -687,3 +707,46 @@ export function resetPasswordWithOtp(email, otp, newPassword) {
     body: JSON.stringify({ email, otp, newPassword })
   });
 }
+
+export function convertCoinsToCash(token, coins = 100) {
+  return request("/home/wallet/convert-coins", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ coins })
+  });
+}
+
+export function convertReferralBonus(token, referralId, friendName) {
+  return request("/home/wallet/convert-referral", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ referralId, friendName })
+  });
+}
+
+export function submitMentorStudentReview(token, payload) {
+  return request("/profile/class-reviews/mentor-review", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload)
+  });
+}
+
+export function getMentorClassReviews(token) {
+  return request("/profile/class-reviews/mentor", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+export function getUserClassReviews(userId, token) {
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  return request(`/profile/class-reviews/user/${userId}`, { headers });
+}
+
+export function getEnrolledStudents(token) {
+  return request("/profile/enrolled-students", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+

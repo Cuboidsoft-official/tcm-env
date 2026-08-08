@@ -64,9 +64,9 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
       if (res && res.room) {
         setRoom(res.room);
         if (res.status === "requested") {
-          Alert.alert("Request Sent ⏳", "Your request to join this Private Room has been sent to the Room Admin for approval.");
+          Alert.alert("Request Sent", "Your request to join this Private Room has been sent to the Room Admin for approval.");
         } else {
-          Alert.alert("Welcome 🎉", `You joined ${res.room.title}! You can now participate in discussions.`);
+          Alert.alert("Welcome", `You joined ${res.room.title}! You can now participate in discussions.`);
         }
       }
     } catch (err) {
@@ -82,7 +82,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
       const res = await manageDoubtRoom(token, roomId, { action, ...extra });
       if (res && res.room) {
         setRoom(res.room);
-        Alert.alert("Updated ⚡", "Room settings updated successfully!");
+        Alert.alert("Updated", "Room settings updated successfully!");
         setManageModalVisible(false);
       }
     } catch (err) {
@@ -488,7 +488,7 @@ function isQuestionMessage(item) {
                       >
                         <MaterialCommunityIcons name="robot" size={16} color="#5B3CF5" />
                         <Text style={styles.askAiText}>
-                          {aiLoading ? "Asking AI..." : "Ask with AI 🤖"}
+                          {aiLoading ? "Asking AI..." : "Ask with AI"}
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -527,7 +527,7 @@ function isQuestionMessage(item) {
                     >
                       <MaterialCommunityIcons name="robot" size={16} color="#5B3CF5" />
                       <Text style={styles.askAiText}>
-                        {aiLoading ? "Asking AI..." : "Ask with AI 🤖"}
+                        {aiLoading ? "Asking AI..." : "Ask with AI"}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -537,10 +537,10 @@ function isQuestionMessage(item) {
                     <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
                       <TouchableOpacity
                         style={[styles.mentorHelpBtn, { flex: 1 }]}
-                        onPress={() => Alert.alert("Mentor Alerted 🆘", `${assignedMentor.name} has been notified and will review this doubt.`)}
+                        onPress={() => Alert.alert("Mentor Alerted", `${assignedMentor.name} has been notified and will review this doubt.`)}
                       >
                         <MaterialCommunityIcons name="shield-account" size={16} color="#EF4444" />
-                        <Text style={styles.mentorHelpText}>Need Mentor Help 🆘</Text>
+                        <Text style={styles.mentorHelpText}>Need Mentor Help</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -548,7 +548,7 @@ function isQuestionMessage(item) {
                         onPress={() => setPollModalVisible(true)}
                       >
                         <MaterialCommunityIcons name="poll" size={16} color="#5B3CF5" />
-                        <Text style={[styles.mentorHelpText, { color: "#5B3CF5" }]}>Create Poll 📊</Text>
+                        <Text style={[styles.mentorHelpText, { color: "#5B3CF5" }]}>Create Poll</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -737,7 +737,7 @@ function isQuestionMessage(item) {
       <Modal visible={pollModalVisible} transparent animationType="slide" onRequestClose={() => setPollModalVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.pollModalBox}>
-            <Text style={styles.modalBoxTitle}>Create Live Poll 📊</Text>
+            <Text style={styles.modalBoxTitle}>Create Live Poll</Text>
             <Text style={styles.modalBoxLabel}>Poll Question:</Text>
             <TextInput
               style={styles.modalTextInput}
@@ -761,7 +761,7 @@ function isQuestionMessage(item) {
       <Modal visible={codeModalVisible} transparent animationType="slide" onRequestClose={() => setCodeModalVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.pollModalBox}>
-            <Text style={styles.modalBoxTitle}>Share Code Snippet 💻</Text>
+            <Text style={styles.modalBoxTitle}>Share Code Snippet</Text>
             <TextInput
               style={[styles.modalTextInput, { height: 120 }]}
               multiline

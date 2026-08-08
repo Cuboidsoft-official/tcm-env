@@ -21,7 +21,7 @@ const { width } = Dimensions.get("window");
 const defaultHeroBanners = [
   {
     id: "b_neet",
-    tag: "🔴 NEET 2026 LIVE",
+    tag: "NEET 2026 LIVE",
     title: "NEET Ultimate\nCrash Course 2026",
     subtitle: "Physics • Chemistry • Biology • 5000+ MCQs & Mock Tests",
     buttonText: "Join NEET Batch →",
@@ -29,7 +29,7 @@ const defaultHeroBanners = [
   },
   {
     id: "b_jee",
-    tag: "⚡ JEE MAIN & ADV",
+    tag: "JEE MAIN & ADV",
     title: "JEE Rank Booster\nBatch 2026",
     subtitle: "Advanced Maths • Physics • Organic Chemistry • IITian Mentors",
     buttonText: "Enroll for JEE →",
@@ -200,7 +200,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
       { text: "Cancel", style: "cancel" },
       {
         text: "Enroll Now",
-        onPress: () => Alert.alert("Enrolled! 🎉", `Successfully enrolled in ${course.title}. Happy learning!`)
+        onPress: () => Alert.alert("Enrolled", `Successfully enrolled in ${course.title}. Happy learning!`)
       }
     ]);
   }

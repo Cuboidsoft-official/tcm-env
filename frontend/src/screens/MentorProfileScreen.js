@@ -43,7 +43,7 @@ export default function MentorProfileScreen({ session, user = {}, mentorId, onCl
     id: "m1",
     name: "Rahul Sharma",
     verified: true,
-    badge: "🏆 Top Mentor",
+    badge: "Top Mentor",
     role: "Full Stack Developer & Mentor",
     rating: "4.9",
     reviewsCount: "1.2K",

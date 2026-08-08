@@ -4,12 +4,15 @@ import {
   Alert,
   Animated,
   Image,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   useWindowDimensions,
   View
 } from "react-native";
@@ -21,7 +24,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as VideoThumbnails from "expo-video-thumbnails";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
-import { addPostComment, createCommunityPost, getHome, getPostComments, sharePost, togglePostLike } from "../api/client";
+import { addPostComment, createCommunityPost, getHome, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import ProfileScreen from "./ProfileScreen";
@@ -45,6 +48,8 @@ import ChatListScreen from "./ChatListScreen";
 import DoubtRoomScreen from "./DoubtRoomScreen";
 import CommunityScreen from "./CommunityScreen";
 import SidebarDrawer from "../components/SidebarDrawer";
+import GetVerifiedModal from "../components/GetVerifiedModal";
+import { useTheme } from "../context/ThemeContext";
 
 const fallbackTabs = [
   { key: "Home", icon: "home" },
@@ -229,6 +234,8 @@ export default function HomeScreen({ session, onLogout }) {
   const [showCommunityScreen, setShowCommunityScreen] = useState(false);
   const [courseToEdit, setCourseToEdit] = useState(null);
   const [activeDoubtRoom, setActiveDoubtRoom] = useState(null);
+  const [getVerifiedModalOpen, setGetVerifiedModalOpen] = useState(false);
+  const { theme } = useTheme();
 
   const user = home?.user || session?.user || {};
 
@@ -352,6 +359,8 @@ export default function HomeScreen({ session, onLogout }) {
       setActiveTab("Profile");
     } else if (itemKey === "Settings") {
       setActiveTab("ProfileSettings");
+    } else if (itemKey === "Go Premium" || itemKey === "Get Premium" || itemKey === "Get TCM Verified Pro") {
+      setGetVerifiedModalOpen(true);
     } else {
       setDrawerFeatureModal(itemKey);
     }
@@ -436,8 +445,8 @@ export default function HomeScreen({ session, onLogout }) {
   const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen);
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.appShell}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
+      <View style={[styles.appShell, { backgroundColor: theme.bg }]}>
         {isFullScreenView ? (
           <View style={[styles.page, { width: contentWidth, flex: 1, paddingBottom: 0 }]}>
             {activeDoubtRoom ? (
@@ -457,6 +466,10 @@ export default function HomeScreen({ session, onLogout }) {
                 targetUser={activeChatUser}
                 targetUserId={activeChatUser?.id || "m1"}
                 onClose={() => setActiveChatUser(null)}
+                onOpenUserProfile={(u) => {
+                  setActiveChatUser(null);
+                  handleSelectUser(u || activeChatUser);
+                }}
               />
             ) : selectedMentorId ? (
               <MentorProfileScreen
@@ -659,6 +672,13 @@ export default function HomeScreen({ session, onLogout }) {
                     setTargetUserProfile(null);
                     setActiveChatUser(targetU || targetUserProfile);
                   }}
+                  onSelectPost={(post) => {
+                    setTargetUserProfile(null);
+                    resetSubScreens();
+                    setActiveTab("Home");
+                    setActiveDrawerItem("Home");
+                    setCommentsPost(post);
+                  }}
                 />
               ) : activeTab === "Home" ? (
               <>
@@ -738,6 +758,13 @@ export default function HomeScreen({ session, onLogout }) {
                 onOpenWallet={() => setShowWalletScreen(true)}
                 onNotifications={() => handleSelectDrawerItem("Notifications")}
                 onOpenMentorDashboard={() => setShowMentorDashboard(true)}
+                onSelectPost={(post) => {
+                  setTargetUserProfile(null);
+                  resetSubScreens();
+                  setActiveTab("Home");
+                  setActiveDrawerItem("Home");
+                  setCommentsPost(post);
+                }}
               />
             ) : activeTab === "ProfileSettings" ? (
               <ProfileSettingsScreen
@@ -785,6 +812,7 @@ export default function HomeScreen({ session, onLogout }) {
           user={user}
           activeItem={activeDrawerItem}
           onSelectMenuItem={handleSelectDrawerItem}
+          onOpenGetVerified={() => setGetVerifiedModalOpen(true)}
           onLogout={() => {
             setSidebarOpen(false);
             if (session?.onLogout) {
@@ -793,6 +821,16 @@ export default function HomeScreen({ session, onLogout }) {
               onLogout();
             } else {
               Alert.alert("Logged Out", "You have been logged out successfully.");
+            }
+          }}
+        />
+
+        <GetVerifiedModal
+          visible={getVerifiedModalOpen}
+          onClose={() => setGetVerifiedModalOpen(false)}
+          onVerifySuccess={() => {
+            if (setHome) {
+              setHome((prev) => (prev ? { ...prev, user: { ...prev.user, verified: true } } : prev));
             }
           }}
         />
@@ -806,7 +844,15 @@ export default function HomeScreen({ session, onLogout }) {
         {/* UserProfileScreen is now rendered inline in the ScrollView above */}
 
         <MediaPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
-        <CommentsBottomSheet session={session} post={commentsPost} onClose={() => setCommentsPost(null)} />
+        <CommentsBottomSheet
+          session={session}
+          post={commentsPost}
+          onClose={() => setCommentsPost(null)}
+          onSelectUser={(u) => {
+            setCommentsPost(null);
+            handleSelectUser(u);
+          }}
+        />
       </View>
     </SafeAreaView>
   );
@@ -1321,20 +1367,21 @@ function PostActions({ post, session, metrics = {}, onComment }) {
   const [likesCount, setLikesCount] = useState(metrics?.likes || 0);
   const [commentsCount, setCommentsCount] = useState(metrics?.comments || 0);
   const [sharesCount, setSharesCount] = useState(metrics?.shares || 0);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(Boolean(post?.bookmarked));
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
-  // Animated scale for Heart bounce
-  const heartScaleAnim = useRef(new Animated.Value(1)).current;
+  // Animated scale for Clapping bounce animation
+  const clapScaleAnim = useRef(new Animated.Value(1)).current;
 
-  async function handleToggleLike() {
+  async function handleToggleClap() {
     const nextLiked = !liked;
     setLiked(nextLiked);
     setLikesCount((prev) => Math.max(0, prev + (nextLiked ? 1 : -1)));
 
-    // Pop / bounce spring animation
+    // Pop / bounce spring animation for clapping
     Animated.sequence([
-      Animated.timing(heartScaleAnim, { toValue: 1.45, duration: 110, useNativeDriver: true }),
-      Animated.spring(heartScaleAnim, { toValue: 1, friction: 3, tension: 150, useNativeDriver: true })
+      Animated.timing(clapScaleAnim, { toValue: 1.5, duration: 110, useNativeDriver: true }),
+      Animated.spring(clapScaleAnim, { toValue: 1, friction: 3, tension: 150, useNativeDriver: true })
     ]).start();
 
     if (session?.token && post?.id) {
@@ -1346,42 +1393,139 @@ function PostActions({ post, session, metrics = {}, onComment }) {
     }
   }
 
-  async function handleShare() {
-    setSharesCount((prev) => prev + 1);
-    Alert.alert("Share Post", "Post link copied to clipboard! 📋");
+  async function handleToggleSave() {
+    const nextSaved = !saved;
+    setSaved(nextSaved);
 
     if (session?.token && post?.id) {
       try {
-        const res = await sharePost(session.token, post.id);
-        if (res && typeof res.shares === "number") {
-          setSharesCount(res.shares);
-        }
+        await toggleSavePost(session.token, post.id);
       } catch (e) {}
     }
+    Alert.alert(
+      nextSaved ? "Post Saved" : "Post Removed",
+      nextSaved ? "Added to your Saved Posts in Profile Settings!" : "Removed from Saved Posts."
+    );
+  }
+
+  const postText = post?.content || post?.title || "Check out this post on TCM Academy!";
+  const shareUrl = `https://thecodemunk.in/post/${post?.id || "p1"}`;
+
+  async function handleNativeShare() {
+    setShareModalOpen(false);
+    setSharesCount((prev) => prev + 1);
+    try {
+      await Share.share({
+        title: post?.title || "TCM Post",
+        message: `${postText}\n\nJoin conversation on TCM Academy: ${shareUrl}`
+      });
+      if (session?.token && post?.id) {
+        sharePost(session.token, post.id).catch(() => {});
+      }
+    } catch (e) {}
+  }
+
+  function handleShareWhatsApp() {
+    setShareModalOpen(false);
+    setSharesCount((prev) => prev + 1);
+    const text = encodeURIComponent(`*${post?.authorName || "TCM Member"}* on TCM Academy:\n"${postText}"\n\nRead more: ${shareUrl}`);
+    Linking.openURL(`whatsapp://send?text=${text}`).catch(() => {
+      Alert.alert("WhatsApp Not Installed", "Could not open WhatsApp app directly.");
+    });
+  }
+
+  function handleShareFacebook() {
+    setShareModalOpen(false);
+    setSharesCount((prev) => prev + 1);
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    Linking.openURL(fbUrl).catch(() => {});
+  }
+
+  function handleCopyLink() {
+    setShareModalOpen(false);
+    Alert.alert("Link Copied", "Post URL copied to clipboard.");
   }
 
   return (
     <View style={styles.actionsRow}>
-      <Pressable onPress={handleToggleLike} style={styles.metric}>
-        <Animated.View style={{ transform: [{ scale: heartScaleAnim }] }}>
-          <Ionicons name={liked ? "heart" : "heart-outline"} size={26} color={liked ? "#FF304D" : colors.ink} />
+      {/* 1. Clapping Hands Button with Micro Animation */}
+      <Pressable onPress={handleToggleClap} style={styles.metric}>
+        <Animated.View style={{ transform: [{ scale: clapScaleAnim }] }}>
+          <MaterialCommunityIcons
+            name={liked ? "hand-clap" : "hand-clap"}
+            size={24}
+            color={liked ? "#5B3CF5" : "#64748B"}
+          />
         </Animated.View>
-        <Text style={[styles.metricText, liked && { color: "#FF304D", fontFamily: fonts.bold }]}>{likesCount}</Text>
+        <Text style={[styles.metricText, liked && { color: "#5B3CF5", fontFamily: fonts.bold }]}>{likesCount} Claps</Text>
       </Pressable>
 
+      {/* 2. Comments Button */}
       <Pressable onPress={onComment} style={styles.metric}>
-        <Feather name="message-circle" size={24} color={colors.ink} />
+        <Feather name="message-circle" size={22} color="#64748B" />
         <Text style={styles.metricText}>{commentsCount}</Text>
       </Pressable>
 
-      <Pressable onPress={handleShare} style={styles.metric}>
-        <Feather name="send" size={24} color={colors.ink} />
+      {/* 3. Social Share Button */}
+      <Pressable onPress={() => setShareModalOpen(true)} style={styles.metric}>
+        <Feather name="send" size={22} color="#64748B" />
         <Text style={styles.metricText}>{sharesCount}</Text>
       </Pressable>
 
-      <Pressable onPress={() => setSaved((value) => !value)} style={styles.saveAction}>
-        <Feather name="bookmark" size={25} color={saved ? colors.primary : colors.ink} />
+      {/* 4. Save Bookmark Button (Filled Icon when Saved) */}
+      <Pressable onPress={handleToggleSave} style={styles.saveAction}>
+        <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={23} color={saved ? "#5B3CF5" : "#64748B"} />
       </Pressable>
+
+      {/* Social Share Sheet Modal (Clean Vector Icons, No Emojis) */}
+      <Modal visible={shareModalOpen} transparent animationType="fade" onRequestClose={() => setShareModalOpen(false)}>
+        <Pressable onPress={() => setShareModalOpen(false)} style={styles.modalOverlay}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={styles.modalContent}>
+            <View style={styles.sheetHandle} />
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 16, color: "#0F172A" }}>Share Post</Text>
+              <Pressable onPress={() => setShareModalOpen(false)}>
+                <Feather name="x" size={18} color="#64748B" />
+              </Pressable>
+            </View>
+            <Text style={{ fontSize: 12, color: "#64748B", marginBottom: 16 }}>Share this post across social media networks</Text>
+
+            <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 12 }}>
+              <TouchableOpacity onPress={handleShareWhatsApp} activeOpacity={0.8} style={{ alignItems: "center", gap: 6 }}>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#25D366", alignItems: "center", justifyContent: "center" }}>
+                  <FontAwesome name="whatsapp" size={24} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: "#0F172A" }}>WhatsApp</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={handleShareFacebook} activeOpacity={0.8} style={{ alignItems: "center", gap: 6 }}>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#1877F2", alignItems: "center", justifyContent: "center" }}>
+                  <FontAwesome name="facebook" size={22} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: "#0F172A" }}>Facebook</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={handleCopyLink} activeOpacity={0.8} style={{ alignItems: "center", gap: 6 }}>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#64748B", alignItems: "center", justifyContent: "center" }}>
+                  <Feather name="copy" size={20} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: "#0F172A" }}>Copy Link</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={handleNativeShare} activeOpacity={0.8} style={{ alignItems: "center", gap: 6 }}>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#5B3CF5", alignItems: "center", justifyContent: "center" }}>
+                  <Feather name="share-2" size={20} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: "#0F172A" }}>More</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity onPress={() => setShareModalOpen(false)} style={{ marginTop: 12, backgroundColor: "#F1F5F9", borderRadius: 12, paddingVertical: 12, alignItems: "center" }}>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: "#64748B" }}>Close</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1490,14 +1634,37 @@ function MediaPreviewModal({ item, onClose }) {
   );
 }
 
-function CommentsBottomSheet({ session, post, onClose }) {
+function renderFormattedCommentText(text) {
+  if (!text) return null;
+  const regex = /(@[A-Za-z0-9_.\-]+)/g;
+  const parts = text.split(regex);
+
+  return (
+    <Text style={styles.commentText}>
+      {parts.map((part, index) => {
+        if (part.match(regex)) {
+          return (
+            <Text key={index} style={{ color: "#3897F0", fontFamily: fonts.bold }}>
+              {part}
+            </Text>
+          );
+        }
+        return <Text key={index}>{part}</Text>;
+      })}
+    </Text>
+  );
+}
+
+function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
 
   useEffect(() => {
     setCommentText("");
+    setReplyingTo(null);
     if (post?.id) {
       loadComments();
     }
@@ -1517,21 +1684,104 @@ function CommentsBottomSheet({ session, post, onClose }) {
     }
   }
 
+  function handleReplyComment(comment) {
+    setReplyingTo(comment);
+    const authorName = comment.name || comment.userName || "Learner";
+    setCommentText(`@${authorName} `);
+  }
+
+  async function handleToggleCommentLike(commentId) {
+    setComments((prev) =>
+      prev.map((c) => {
+        if (c.id === commentId || c._id === commentId) {
+          const isLikedNow = !c.isLiked;
+          return {
+            ...c,
+            isLiked: isLikedNow,
+            likes: Math.max(0, (c.likes || 0) + (isLikedNow ? 1 : -1))
+          };
+        }
+        return c;
+      })
+    );
+
+    if (session?.token && post?.id) {
+      try {
+        await toggleCommentLike(session.token, post.id, commentId);
+      } catch (e) {}
+    }
+  }
+
+  function handleCommentUserClick(comment) {
+    onClose();
+    if (onSelectUser) {
+      onSelectUser({
+        id: comment.authorId || comment.userId || `u-${comment.name}`,
+        name: comment.name || comment.userName || "Learner",
+        avatarUrl: comment.avatarUrl
+      });
+    }
+  }
+
   async function submitComment() {
     if (!commentText.trim()) return;
     setSubmittingComment(true);
     const textToSend = commentText.trim();
+    const currentReplyTarget = replyingTo;
     setCommentText("");
+    setReplyingTo(null);
 
     try {
       if (session?.token && post?.id) {
-        const res = await addPostComment(session.token, post.id, textToSend);
-        if (res?.comment) {
+        const parentId = currentReplyTarget ? (currentReplyTarget.id || currentReplyTarget._id) : undefined;
+        const res = await addPostComment(session.token, post.id, textToSend, parentId);
+
+        if (currentReplyTarget) {
+          const newReply = res?.comment || {
+            id: `r-${Date.now()}`,
+            name: session?.user?.name || "You",
+            avatarUrl: session?.user?.avatarUrl,
+            text: textToSend,
+            time: "Just now",
+            likes: 0
+          };
+          setComments((prev) =>
+            prev.map((c) => {
+              if (c.id === currentReplyTarget.id || c._id === currentReplyTarget.id) {
+                return {
+                  ...c,
+                  replies: [...(c.replies || []), newReply]
+                };
+              }
+              return c;
+            })
+          );
+        } else if (res?.comment) {
           setComments((prev) => [res.comment, ...prev]);
         }
+      } else if (currentReplyTarget) {
+        const newReply = {
+          id: `r-${Date.now()}`,
+          name: session?.user?.name || "You",
+          avatarUrl: session?.user?.avatarUrl,
+          text: textToSend,
+          time: "Just now",
+          likes: 0
+        };
+        setComments((prev) =>
+          prev.map((c) => {
+            if (c.id === currentReplyTarget.id || c._id === currentReplyTarget.id) {
+              return {
+                ...c,
+                replies: [...(c.replies || []), newReply]
+              };
+            }
+            return c;
+          })
+        );
       } else {
         setComments((prev) => [
-          { id: `c-${Date.now()}`, name: "You", text: textToSend, time: "Just now", likes: 0 },
+          { id: `c-${Date.now()}`, name: "You", text: textToSend, time: "Just now", likes: 0, replies: [] },
           ...prev
         ]);
       }
@@ -1570,26 +1820,76 @@ function CommentsBottomSheet({ session, post, onClose }) {
             </View>
           ) : (
             <ScrollView contentContainerStyle={styles.commentList} showsVerticalScrollIndicator={false}>
-              {comments.map((comment) => (
-                <View key={comment.id || comment._id} style={styles.commentRow}>
-                  <Avatar name={comment.name || comment.userName || "Learner"} uri={comment.avatarUrl} size={36} />
-                  <View style={styles.commentBody}>
-                    <View style={styles.commentBubble}>
-                      <Text numberOfLines={1} style={styles.commentName}>{comment.name || comment.userName || "Learner"}</Text>
-                      <Text style={styles.commentText}>{comment.text}</Text>
+              {comments.map((comment) => {
+                const commentId = comment.id || comment._id;
+                const authorName = comment.name || comment.userName || "Learner";
+                return (
+                  <View key={commentId} style={{ marginBottom: 12 }}>
+                    <View style={styles.commentRow}>
+                      <TouchableOpacity onPress={() => handleCommentUserClick(comment)} activeOpacity={0.8}>
+                        <Avatar name={authorName} uri={comment.avatarUrl} size={36} />
+                      </TouchableOpacity>
+                      <View style={styles.commentBody}>
+                        <View style={styles.commentBubble}>
+                          <TouchableOpacity onPress={() => handleCommentUserClick(comment)} activeOpacity={0.8}>
+                            <Text numberOfLines={1} style={styles.commentName}>{authorName}</Text>
+                          </TouchableOpacity>
+                          {renderFormattedCommentText(comment.text)}
+                        </View>
+                        <View style={styles.commentActions}>
+                          <Text style={styles.commentActionText}>{comment.time || "Just now"}</Text>
+                          <Text style={styles.commentActionText}>{comment.likes || 0} likes</Text>
+                          <TouchableOpacity onPress={() => handleReplyComment(comment)}>
+                            <Text style={[styles.commentActionText, { color: "#3897F0", fontFamily: fonts.semiBold }]}>Reply</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <Pressable hitSlop={8} onPress={() => handleToggleCommentLike(commentId)} style={styles.commentLike}>
+                        <Ionicons name={comment.isLiked ? "heart" : "heart-outline"} size={16} color={comment.isLiked ? "#FF304D" : "#68677D"} />
+                      </Pressable>
                     </View>
-                    <View style={styles.commentActions}>
-                      <Text style={styles.commentActionText}>{comment.time || "Just now"}</Text>
-                      <Text style={styles.commentActionText}>{comment.likes || 0} likes</Text>
-                      <Text style={styles.commentActionText}>Reply</Text>
-                    </View>
+
+                    {/* Instagram-Style Nested Replies */}
+                    {Array.isArray(comment.replies) && comment.replies.length > 0 && (
+                      <View style={{ paddingLeft: 42, borderLeftWidth: 1.5, borderLeftColor: "#E2E8F0", marginLeft: 18, marginTop: 4, gap: 8 }}>
+                        {comment.replies.map((reply) => (
+                          <View key={reply.id} style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
+                            <TouchableOpacity onPress={() => handleCommentUserClick(reply)} activeOpacity={0.8}>
+                              <Avatar name={reply.name} uri={reply.avatarUrl} size={26} />
+                            </TouchableOpacity>
+                            <View style={{ flex: 1 }}>
+                              <View style={styles.commentBubble}>
+                                <TouchableOpacity onPress={() => handleCommentUserClick(reply)} activeOpacity={0.8}>
+                                  <Text numberOfLines={1} style={styles.commentName}>{reply.name}</Text>
+                                </TouchableOpacity>
+                                {renderFormattedCommentText(reply.text)}
+                              </View>
+                              <View style={styles.commentActions}>
+                                <Text style={styles.commentActionText}>{reply.time || "Just now"}</Text>
+                                <TouchableOpacity onPress={() => handleReplyComment(comment)}>
+                                  <Text style={[styles.commentActionText, { color: "#3897F0", fontFamily: fonts.semiBold }]}>Reply</Text>
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </View>
-                  <Pressable hitSlop={8} style={styles.commentLike}>
-                    <Feather name="heart" size={15} color="#68677D" />
-                  </Pressable>
-                </View>
-              ))}
+                );
+              })}
             </ScrollView>
+          )}
+
+          {replyingTo && (
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#EFF6FF", paddingHorizontal: 12, paddingVertical: 6, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderWidth: 1, borderColor: "#BFDBFE" }}>
+              <Text style={{ fontSize: 11, color: "#3897F0", fontFamily: fonts.semiBold }}>
+                Replying to @{replyingTo.name || replyingTo.userName || "Learner"}
+              </Text>
+              <Pressable onPress={() => { setReplyingTo(null); setCommentText(""); }}>
+                <Feather name="x" size={14} color="#3897F0" />
+              </Pressable>
+            </View>
           )}
 
           <View style={styles.commentInputRow}>
@@ -4991,5 +5291,23 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.78
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.55)",
+    justifyContent: "flex-end"
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 20
   }
 });

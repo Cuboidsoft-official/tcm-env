@@ -4,20 +4,23 @@ import {
   Alert,
   Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Share,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { getTargetUserProfile, sendFriendRequestAction, toggleFollowUser } from "../api/client";
+import GetVerifiedModal from "../components/GetVerifiedModal";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
-export default function UserProfileScreen({ session, targetUser, onClose, onOpenChat }) {
+export default function UserProfileScreen({ session, targetUser, onClose, onOpenChat, onSelectPost }) {
   const [profileData, setProfileData] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
   const [followersList, setFollowersList] = useState([]);
@@ -32,6 +35,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
   const [followingModalOpen, setFollowingModalOpen] = useState(false);
   const [avatarEnlargedOpen, setAvatarEnlargedOpen] = useState(false);
   const [optionsSheetOpen, setOptionsSheetOpen] = useState(false);
+  const [getVerifiedModalOpen, setGetVerifiedModalOpen] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
 
   const targetId = targetUser?.id || targetUser?._id || targetUser?.authorId || "user-rohit";
@@ -112,9 +116,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
 
   const isSelf = Boolean(
     targetUser?.isSelf ||
-    (currentUserId && (String(targetId).trim() === currentUserId || String(userObj.id || userObj._id || "").trim() === currentUserId)) ||
-    (currentUserName && name && name.toLowerCase().trim() === currentUserName) ||
-    (currentUserHandle && handle && handle.toLowerCase().replace(/^@/, "").trim() === currentUserHandle)
+    (currentUserId && String(targetId).trim() === currentUserId)
   );
 
   const initials = name
@@ -234,7 +236,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           style={[styles.joinBtn, styles.pendingBtn]}
         >
           <Feather name="clock" size={15} color="#5B3CF5" />
-          <Text style={[styles.joinBtnText, styles.pendingBtnText]}>Request Sent ⏳</Text>
+          <Text style={[styles.joinBtnText, styles.pendingBtnText]}>Request Sent</Text>
         </Pressable>
       );
     }
@@ -257,7 +259,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
         style={styles.joinBtn}
       >
         <Feather name="user-plus" size={15} color="#FFFFFF" />
-        <Text style={styles.joinBtnText}>Add Friend ✨</Text>
+        <Text style={styles.joinBtnText}>Add Friend</Text>
       </Pressable>
     );
   }
@@ -267,22 +269,38 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
       {/* Profile Card */}
       <View style={styles.profileCard}>
         <Pressable onPress={() => setAvatarEnlargedOpen(true)} style={styles.avatarWrapper}>
-          {avatarUrl ? (
+          {avatarUrl && !(Platform.OS === "web" && typeof avatarUrl === "string" && avatarUrl.startsWith("file://")) ? (
             <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
           ) : (
             <View style={styles.avatarInitialsContainer}>
               <Text style={styles.avatarInitialsText}>{initials}</Text>
             </View>
           )}
-          {verified ? (
-            <View style={styles.verifiedCheckBadge}>
-              <MaterialCommunityIcons name="check-decagram" size={17} color="#FFFFFF" />
-            </View>
-          ) : null}
         </Pressable>
 
         <View style={styles.userMainInfo}>
-          <Text style={styles.userName}>{name}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <Text style={styles.userName}>{name}</Text>
+            {verified ? (
+              <TouchableOpacity
+                onPress={() => setGetVerifiedModalOpen(true)}
+                activeOpacity={0.85}
+                style={styles.verifiedPill}
+              >
+                <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" />
+                <Text style={styles.verifiedPillText}>Verified</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => setGetVerifiedModalOpen(true)}
+                activeOpacity={0.85}
+                style={styles.getVerifiedPill}
+              >
+                <Ionicons name="sparkles" size={11} color="#FFFFFF" />
+                <Text style={styles.getVerifiedPillText}>Get Verified</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           <Text style={styles.userHandle}>@{handle}</Text>
 
           <Text style={styles.bioText}>{bio}</Text>
@@ -306,13 +324,13 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           <View style={styles.actionBtnRow}>
             {renderFriendButton()}
 
-            {/* Message Button - Only visible when users mutually follow each other */}
-            {!isSelf && (userObj.isMutual || friendStatus === "friends" || (userObj.isFollowing && userObj.isFollower) || profileData?.isMutual) ? (
+            {/* Message Button - Available for direct chat with all users */}
+            {!isSelf ? (
               <Pressable
                 onPress={() => (onOpenChat ? onOpenChat(userObj) : Alert.alert("Message", `Opening direct chat with ${name}.`))}
                 style={styles.messageBtn}
               >
-                <Feather name="send" size={15} color="#33334F" />
+                <Feather name="message-square" size={15} color="#33334F" />
                 <Text style={styles.messageBtnText}>Message</Text>
               </Pressable>
             ) : null}
@@ -374,8 +392,13 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
         ))}
       </ScrollView>
 
-      {/* 5. Tabs Header */}
-      <View style={styles.tabsRow}>
+      {/* 5. Tabs Header - Horizontal Slider */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabsScrollView}
+        contentContainerStyle={styles.tabsScrollContent}
+      >
         {[
           { key: "Posts", icon: "grid" },
           { key: "Notes", icon: "file-text" },
@@ -394,7 +417,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       {/* 6. Content Grid Feed */}
       <View style={styles.gridFeed}>
@@ -402,12 +425,12 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           <ActivityIndicator size="large" color="#5B3CF5" style={{ marginVertical: 35, alignSelf: "center", width: "100%" }} />
         ) : filteredPosts.length > 0 ? (
           filteredPosts.map((post) => (
-            <View key={post.id} style={styles.gridCard}>
+            <TouchableOpacity key={post.id || post._id} onPress={() => onSelectPost && onSelectPost(post)} activeOpacity={0.85} style={styles.gridCard}>
               {post.type === "code" ? (
                 <View style={styles.codePostCard}>
                   <View style={styles.codeHeader}>
                     <Text style={styles.codeLangText}>
-                      {post.title.toLowerCase().includes("python") ? "def two_sum(nums, target):" : "const sum = (a, b) => {"}
+                      {post.title?.toLowerCase().includes("python") ? "def two_sum(nums, target):" : "const sum = (a, b) => {"}
                     </Text>
                     <Feather name="code" size={14} color="#FFFFFF" />
                   </View>
@@ -417,7 +440,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                 </View>
               ) : (
                 <View style={styles.imagePostCard}>
-                  <Image source={{ uri: post.imageUrl }} style={styles.cardImg} />
+                  <Image source={{ uri: post.imageUrl || post.media?.imageUrl }} style={styles.cardImg} />
                   {post.type === "video" && (
                     <View style={styles.mediaOverlayBadge}>
                       <Ionicons name="play" size={14} color="#FFFFFF" />
@@ -432,7 +455,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
               )}
 
               <View style={styles.cardBody}>
-                <Text numberOfLines={1} style={styles.cardTitle}>{post.title}</Text>
+                <Text numberOfLines={1} style={styles.cardTitle}>{post.title || post.content || post.text}</Text>
                 <Text numberOfLines={1} style={styles.cardTags}>
                   {post.tags?.join(" ")}
                 </Text>
@@ -449,7 +472,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                   />
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         ) : (
           <View style={{ paddingVertical: 40, alignItems: "center", width: "100%" }}>
@@ -665,6 +688,14 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           </Pressable>
         </Pressable>
       </Modal>
+
+      <GetVerifiedModal
+        visible={getVerifiedModalOpen}
+        onClose={() => setGetVerifiedModalOpen(false)}
+        onVerifySuccess={() => {
+          setProfileData((prev) => (prev ? { ...prev, user: { ...prev.user, verified: true } } : prev));
+        }}
+      />
     </View>
   );
 }
@@ -708,20 +739,35 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 32
   },
-  verifiedCheckBadge: {
-    position: "absolute",
-    bottom: 2,
-    right: 2,
-    backgroundColor: "#5B3CF5",
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  getVerifiedPill: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center"
-  },
-
-  userMainInfo: {
+    backgroundColor: "#5B3CF5",
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 14,
     gap: 4
+  },
+  getVerifiedPillText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontFamily: fonts.bold
+  },
+  verifiedPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0EDFF",
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 14,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: "#DDD6FE"
+  },
+  verifiedPillText: {
+    color: "#5B3CF5",
+    fontSize: 11,
+    fontFamily: fonts.bold
   },
   userName: {
     fontFamily: fonts.bold,
@@ -863,8 +909,8 @@ const styles = StyleSheet.create({
   statsCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -918,19 +964,25 @@ const styles = StyleSheet.create({
     color: "#4A4A6A"
   },
 
-  tabsRow: {
-    flexDirection: "row",
+  // Tabs (Horizontal Slider)
+  tabsScrollView: {
     borderBottomWidth: 1,
     borderBottomColor: "#EAE7FF",
     marginBottom: 16
   },
+  tabsScrollContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 2,
+    gap: 8
+  },
   tabItem: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderBottomWidth: 2,
     borderBottomColor: "transparent"
   },

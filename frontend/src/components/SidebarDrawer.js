@@ -1,5 +1,5 @@
 import React from "react";
-import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
   Feather,
   FontAwesome5,
@@ -16,7 +16,8 @@ export default function SidebarDrawer({
   user = {},
   activeItem = "Home",
   onSelectMenuItem,
-  onLogout
+  onLogout,
+  onOpenGetVerified
 }) {
   const name = user.name || "Ayushman";
   const handle = user.handle ? `@${user.handle}` : "@ayushman.dev";
@@ -70,7 +71,17 @@ export default function SidebarDrawer({
 
               <View style={styles.userInfoRow}>
                 <Text style={styles.userName}>{name}</Text>
-                <MaterialCommunityIcons name="check-decagram" size={17} color="#5B3CF5" />
+                <TouchableOpacity
+                  onPress={() => {
+                    onClose();
+                    if (onOpenGetVerified) onOpenGetVerified();
+                  }}
+                  activeOpacity={0.8}
+                  style={styles.drawerGetVerifiedBtn}
+                >
+                  <Ionicons name="sparkles" size={10} color="#FFFFFF" />
+                  <Text style={styles.drawerGetVerifiedBtnText}>Get Verified</Text>
+                </TouchableOpacity>
               </View>
               <Text style={styles.userHandle}>{handle}</Text>
 
@@ -159,7 +170,14 @@ export default function SidebarDrawer({
 
             {/* 6. Go Premium Banner */}
             <Pressable
-              onPress={() => handleNavigate("Go Premium")}
+              onPress={() => {
+                onClose();
+                if (onOpenGetVerified) {
+                  onOpenGetVerified();
+                } else {
+                  handleNavigate("Go Premium");
+                }
+              }}
               style={({ pressed }) => [
                 styles.premiumCard,
                 activeItem === "Go Premium" && styles.premiumCardActive,
@@ -170,8 +188,8 @@ export default function SidebarDrawer({
                 <FontAwesome5 name="crown" size={14} color="#FFFFFF" />
               </View>
               <View style={styles.premiumTextWrap}>
-                <Text style={styles.premiumTitle}>Go Premium</Text>
-                <Text style={styles.premiumSub}>Unlock all premium features and courses</Text>
+                <Text style={styles.premiumTitle}>Get TCM Verified Pro</Text>
+                <Text style={styles.premiumSub}>Verified Badge, Real Projects & ATS Resume from ₹29/mo</Text>
               </View>
               <Feather name="chevron-right" size={18} color="#5B3CF5" />
             </Pressable>
@@ -322,6 +340,20 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 18,
     color: "#18172B"
+  },
+  drawerGetVerifiedBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#5B3CF5",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    gap: 4
+  },
+  drawerGetVerifiedBtnText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "700"
   },
   userHandle: {
     fontFamily: fonts.regular,

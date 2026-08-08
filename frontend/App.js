@@ -12,10 +12,10 @@ import {
 import LoginScreen from "./src/screens/LoginScreen";
 import SplashScreen from "./src/screens/SplashScreen";
 import HomeScreen from "./src/screens/HomeScreen";
-
+import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import { setupPushNotifications } from "./src/services/notificationService";
 
-export default function App() {
+function AppContent() {
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
     Poppins_500Medium,
@@ -25,6 +25,7 @@ export default function App() {
   });
   const [screen, setScreen] = useState("splash");
   const [session, setSession] = useState(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const timer = setTimeout(() => setScreen("login"), 1900);
@@ -45,13 +46,21 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style={screen === "home" ? "dark" : "dark"} />
+    <SafeAreaProvider style={{ backgroundColor: theme.bg }}>
+      <StatusBar style={theme.isDark ? "light" : "dark"} backgroundColor={theme.bg} />
       {(!fontsLoaded || screen === "splash") && <SplashScreen />}
       {fontsLoaded && screen === "login" && <LoginScreen onLogin={handleLogin} />}
       {fontsLoaded && screen === "home" && (
         <HomeScreen session={{ ...session, onLogout: handleLogout }} onLogout={handleLogout} />
       )}
     </SafeAreaProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

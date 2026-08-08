@@ -102,6 +102,10 @@ const communityPostSchema = new mongoose.Schema(
           type: Number,
           default: 0
         },
+        replies: {
+          type: Array,
+          default: []
+        },
         createdAt: {
           type: Date,
           default: Date.now
