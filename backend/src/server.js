@@ -49,8 +49,8 @@ async function start() {
     app.locals.memoryStore = createVisualSeedData(passwordHash);
   }
 
-  app.listen(port, () => {
-    console.log(`API running on http://localhost:${port}`);
+  app.listen(port, process.env.HOST || "0.0.0.0", () => {
+    console.log(`API running on http://${process.env.HOST || "0.0.0.0"}:${port}`);
   });
 }
 
