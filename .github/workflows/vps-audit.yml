@@ -1,0 +1,73 @@
+name: VPS Audit (VM security + app tests)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: vps-audit
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.OCI_SSH_KEY }}
+
+      - name: Run audit over SSH (read-only)
+        env:
+          OCI_USER: ${{ secrets.OCI_USER }}
+          OCI_HOST: ${{ secrets.OCI_HOST }}
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new "$OCI_USER@$OCI_HOST" 'sudo bash -s' <<'AUDIT'
+          set +e
+          echo "===== SYSTEM ====="
+          date -u; uname -a
+          grep PRETTY_NAME /etc/os-release
+          uptime
+          nproc; grep -m1 "model name" /proc/cpuinfo
+          free -h
+          df -h / /opt 2>/dev/null
+          echo
+          echo "===== NODE / SERVICES ====="
+          node -v; npm -v
+          systemctl is-active tcm-backend caddy
+          echo "-- unit --"
+          cat /etc/systemd/system/tcm-backend.service 2>/dev/null || systemctl cat tcm-backend 2>/dev/null
+          echo
+          echo "===== APP TESTS FROM VM ====="
+          echo "health:"; curl -sS --max-time 8 http://127.0.0.1:5000/api/health; echo
+          echo "communities (DB read):"; curl -sS --max-time 8 http://127.0.0.1:5000/api/home/communities | head -c 300; echo
+          echo "webinars (DB read):"; curl -sS --max-time 8 http://127.0.0.1:5000/api/home/webinars | head -c 200; echo
+          echo "course fetch (DB read):"; curl -sS -o /dev/null -w "%{http_code}\n" --max-time 8 http://127.0.0.1:5000/api/home/course/b_neet
+          echo "-- /opt/tcm/dist --"; ls -la /opt/tcm/dist
+          echo "-- recent backend log (err/warn) --"
+          journalctl -u tcm-backend --no-pager -n 40 2>/dev/null | grep -iE "error|warn|fail|mongo|unhandled|rejected" | tail -8
+          echo
+          echo "===== CADDY ====="
+          /usr/bin/caddy version 2>/dev/null || caddy version 2>/dev/null
+          echo "-- Caddyfile --"; cat /etc/caddy/Caddyfile 2>/dev/null
+          echo "-- certs on disk --"; ls -la /var/lib/caddy/.local/share/caddy/certificates/*/ 2>/dev/null | head -6
+          echo
+          echo "===== SECURITY ====="
+          echo "-- listening sockets --"; ss -tulpn | grep LISTEN
+          echo "-- firewall ufw --"; ufw status verbose 2>/dev/null || echo "ufw: not installed/inactive"
+          echo "-- iptables --"; iptables -S 2>/dev/null | head -15 || true
+          echo "-- sshd --"; grep -rE "^\s*(PasswordAuthentication|PermitRootLogin|PubkeyAuthentication|ChallengeResponseAuthentication|MaxAuthTries|AllowUsers|AllowGroups)" /etc/ssh/sshd_config /etc/ssh/sshd_config.d/ 2>/dev/null
+          echo "-- users with login shell --"; awk -F: '$7 ~ /(bash|sh)$/ {print $1" uid="$3}' /etc/passwd
+          echo "-- sudo group --"; getent group sudo
+          echo "-- recent failed logins --"; grep "Failed password" /var/log/auth.log 2>/dev/null | tail -5
+          echo "-- security tools active --"; systemctl is-active unattended-upgrades fail2ban 2>/dev/null
+          echo "-- sshd version --"; ssh -V 2>&1
+          echo
+          echo "===== OPTIMIZATION ====="
+          echo "-- swap --"; swapon --show 2>/dev/null; free -h | head -2
+          echo "-- top mem procs --"; ps aux --sort=-%mem | head -6
+          echo "-- /opt/tcm sizes --"; du -sh /opt/tcm/backend/node_modules /opt/tcm/dist 2>/dev/null
+          echo "-- enabled units --"; systemctl is-enabled tcm-backend caddy 2>/dev/null
+          echo "-- kernel params --"; sysctl vm.swappiness net.ipv4.tcp_tw_reuse 2>/dev/null
+          echo "AUDIT_DONE"
+          AUDIT
