@@ -23,13 +23,16 @@ npm install
 
 3. Start MongoDB locally or update `MONGODB_URI` in `backend/.env`.
 
-For Android emulator, keep the frontend API URL as:
+For local development against the backend on your laptop, use the Android
+emulator loopback host:
 
 ```bash
 EXPO_PUBLIC_API_URL=http://10.0.2.2:5000/api
 ```
 
-`10.0.2.2` points from the Android emulator back to your laptop.
+`10.0.2.2` points from the Android emulator back to your laptop. Note this is
+only for local dev — production builds bake the API URL from the `TCM_API_URL`
+repo variable at build time (see [docs/CI-CD.md](docs/CI-CD.md)).
 
 4. Run the backend:
 
@@ -67,16 +70,16 @@ If the backend is not running, the mobile app opens the home screen with demo fa
 
 ## Default API
 
-The frontend uses `EXPO_PUBLIC_API_URL` when present, otherwise it falls back to `http://localhost:5000/api`.
+The frontend uses `EXPO_PUBLIC_API_URL` when present, otherwise it falls back to `http://localhost:5000/api`. In CI/CD, `EXPO_PUBLIC_API_URL` is baked into builds at build time from the `TCM_API_URL` repo variable (default `http://140.245.209.147/api`).
 
 ## CI/CD
 
 - **CI Checks** (`.github/workflows/ci-checks.yml`) run on every push to `main` and pull request (path-scoped to `backend/**` and `frontend/**`): backend health check (starts the server without a DB, asserts `/api/health` returns `"ok":true`) and a frontend Android Metro bundle export.
-- **Backend** auto-deploys to the OCI Always-Free VM (`140.245.209.147`) via SSH + rsync on push to `main`, served through Caddy (HTTPS at `api.thecodemunk.in` once DNS is set).
-- **Frontend** Android APK/AAB auto-builds in EAS, publishes to GitHub Releases + the OCI VM `/dl` static hosting, and emails install/download links to `cuboidsoft@gmail.com`.
+- **Backend** auto-deploys to the OCI Always-Free VM (`140.245.209.147`) via SSH + rsync, installs deps with `npm ci`, restarts the systemd service, and polls the health endpoint; served through Caddy (HTTPS at `api.thecodemunk.in` once DNS resolves — DNS is currently pending).
+- **Frontend** Android APK/AAB auto-builds on the GitHub Actions runner (Expo prebuild + local Gradle, no EAS cloud builds), publishes to GitHub Releases + the OCI VM `/dl` static hosting, and emails install/download links to `cuboidsoft@gmail.com`.
 - **OTA** JS updates auto-publish to installed builds (`eas update`, preview + production channels).
-- Required GitHub secrets: `OCI_SSH_KEY`, `OCI_HOST`, `OCI_USER`, `MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, `EXPO_TOKEN`, `MAIL_USERNAME`, `MAIL_APP_PASSWORD`, `MAIL_TO`.
+- Required GitHub secrets: `OCI_SSH_KEY`, `OCI_HOST`, `OCI_USER`, `TCM_DL_USER`, `TCM_DL_PASS`, `EXPO_TOKEN` (OTA only), `MAIL_USERNAME`, `MAIL_APP_PASSWORD`, `MAIL_TO`. `MONGODB_URI`, `JWT_SECRET`, and `GEMINI_API_KEY` live in `/opt/tcm/.env` on the VM, not in GitHub.
 
 ## CI/CD & Hosting
 
-Full pipeline docs: [`docs/CI-CD.md`](docs/CI-CD.md). Push to `main` → CI checks, backend auto-deploys to the OCI VM, Android APK + AAB auto-build in EAS, OTA updates publish to the preview channel, and install/download links are emailed to `cuboidsoft@gmail.com`.
+Full pipeline docs: [`docs/CI-CD.md`](docs/CI-CD.md). Push to `main` → CI checks, backend auto-deploys to the OCI VM, Android APK + AAB auto-build on the GitHub Actions runner, OTA updates publish to the preview channel, and install/download links are emailed to `cuboidsoft@gmail.com`.

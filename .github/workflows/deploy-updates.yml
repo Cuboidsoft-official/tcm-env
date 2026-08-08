@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 20
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      EXPO_PUBLIC_API_URL: http://140.245.209.147/api
+      EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'http://140.245.209.147/api' }}
 
     steps:
       - name: Checkout
@@ -38,9 +38,9 @@ jobs:
 
       - name: Publish OTA update to preview channel
         working-directory: frontend
-        run: npx eas-cli@latest update --channel preview --non-interactive --message "CI OTA preview ${{ github.sha }}"
+        run: npx eas-cli@21 update --channel preview --non-interactive --message "CI OTA preview ${{ github.sha }}"
 
       - name: Publish OTA update to production channel (tag push)
         if: startsWith(github.ref, 'refs/tags/')
         working-directory: frontend
-        run: npx eas-cli@latest update --channel production --non-interactive --message "CI OTA production ${{ github.sha }}"
+        run: npx eas-cli@21 update --channel production --non-interactive --message "CI OTA production ${{ github.sha }}"
