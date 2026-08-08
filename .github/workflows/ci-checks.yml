@@ -75,5 +75,5 @@ jobs:
         env:
           CI: true
           EXPO_NO_TELEMETRY: 1
-          EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'http://140.245.209.147/api' }}
+          EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'https://api.thecodemunk.in/api' }}
         run: npx expo export --platform android

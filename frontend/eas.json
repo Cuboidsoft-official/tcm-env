@@ -15,7 +15,7 @@
       },
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://140.245.209.147/api"
+        "EXPO_PUBLIC_API_URL": "https://api.thecodemunk.in/api"
       }
     },
     "production": {
@@ -24,7 +24,7 @@
       },
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://140.245.209.147/api"
+        "EXPO_PUBLIC_API_URL": "https://api.thecodemunk.in/api"
       }
     }
   }
