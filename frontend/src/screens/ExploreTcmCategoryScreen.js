@@ -196,7 +196,7 @@ const categoryDetails = {
 
   academy: {
     id: "academy",
-    badge: "🟢 ACADEMIC EXCELLENCE",
+    badge: "ACADEMIC EXCELLENCE",
     badgeBg: "#EAF7EC",
     badgeColor: "#2E7D32",
     title: "TCM Academy",
@@ -204,11 +204,11 @@ const categoryDetails = {
     icon: "school",
     iconBg: "#EAF7EC",
     iconColor: "#2E7D32",
-    tickerText: "🟢 TCM ACADEMY: NEET Ultimate Crash Course 2026 • JEE Main & Advanced Rank Booster • Class 12th Board Exam Topper Batch • 5000+ MCQs & Mock Tests",
+    tickerText: "TCM ACADEMY: NEET Ultimate Crash Course 2026 • JEE Main & Advanced Rank Booster • Class 12th Board Exam Topper Batch • 5000+ MCQs & Mock Tests",
     banners: [
       {
         id: "b_ac1",
-        tag: "🔴 NEET 2026 LIVE",
+        tag: "NEET 2026 LIVE",
         title: "NEET Ultimate\nCrash Course 2026",
         subtitle: "Physics • Chemistry • Biology • 5000+ MCQs & Mock Tests",
         buttonText: "Join NEET Batch →",
@@ -218,7 +218,7 @@ const categoryDetails = {
       },
       {
         id: "b_ac2",
-        tag: "⚡ JEE MAIN & ADV",
+        tag: "JEE MAIN & ADV",
         title: "JEE Rank Booster\nBatch 2026",
         subtitle: "Advanced Maths • Physics • Organic Chemistry • IITian Mentors",
         buttonText: "Enroll for JEE →",
@@ -228,7 +228,7 @@ const categoryDetails = {
       },
       {
         id: "b_ac3",
-        tag: "🏆 BOARD TOPPER",
+        tag: "BOARD TOPPER",
         title: "Class 12th Board\nPhysics & Maths",
         subtitle: "NCERT Complete Coverage • 10-Yr Solved Papers",
         buttonText: "Start Learning →",
@@ -297,7 +297,7 @@ const categoryDetails = {
 
   govt: {
     id: "govt",
-    badge: "🏛️ GOVT EXAM PREP",
+    badge: "GOVT EXAM PREP",
     badgeBg: "#FFF8EC",
     badgeColor: "#E7A900",
     title: "TCM Government",
@@ -305,11 +305,11 @@ const categoryDetails = {
     icon: "bank",
     iconBg: "#FFF8EC",
     iconColor: "#E7A900",
-    tickerText: "🏛️ TCM GOVERNMENT: UPSC CSE 2026 Foundation Batch • SSC CGL Tier I & II Complete Course • IBPS PO / SBI PO Banking Special • Railway RRB NTPC • Daily Current Affairs & Mock Tests",
+    tickerText: "TCM GOVERNMENT: UPSC CSE 2026 Foundation Batch • SSC CGL Tier I & II Complete Course • IBPS PO / SBI PO Banking Special • Railway RRB NTPC • Daily Current Affairs & Mock Tests",
     banners: [
       {
         id: "b_gv1",
-        tag: "🏛️ UPSC CSE 2026",
+        tag: "UPSC CSE 2026",
         title: "UPSC Civil Services\nTarget 2026",
         subtitle: "GS Paper I-IV • CSAT • Essay Writing • Optional Subjects",
         buttonText: "Join UPSC Batch →",
@@ -319,7 +319,7 @@ const categoryDetails = {
       },
       {
         id: "b_gv2",
-        tag: "⚡ SSC CGL & CHSL",
+        tag: "SSC CGL & CHSL",
         title: "SSC CGL Complete\nSelection Batch 2026",
         subtitle: "Quantitative Aptitude • Reasoning • English • General Awareness",
         buttonText: "Enroll for SSC →",
@@ -329,7 +329,7 @@ const categoryDetails = {
       },
       {
         id: "b_gv3",
-        tag: "🏦 BANKING & RAILWAYS",
+        tag: "BANKING & RAILWAYS",
         title: "SBI PO & IBPS\nBanking Special",
         subtitle: "Data Interpretation • Puzzles • Financial Awareness • Mock Tests",
         buttonText: "Start Prep →",
@@ -344,11 +344,6 @@ const categoryDetails = {
         title: "UPSC Civil Services IAS/IPS Foundation 2026",
         tags: "GS 1-4, CSAT, Daily Current Affairs & Answer Writing",
         rating: "4.9",
-        reviews: "4.2K",
-        lessons: "60 Live Classes",
-        image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=500&q=80"
-      },
-      {
         id: "gv_2",
         title: "SSC CGL & CHSL Complete Target Batch",
         tags: "Quant, Reasoning, English, General Awareness",

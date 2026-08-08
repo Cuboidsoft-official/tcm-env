@@ -2,6 +2,7 @@ import express from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { CommunityPost } from "../models/CommunityPost.js";
 import { User } from "../models/User.js";
+import { ClassReview } from "../models/ClassReview.js";
 import { publicUser } from "./auth.js";
 
 export const profileRouter = express.Router();
@@ -125,31 +126,28 @@ profileRouter.get("/", requireAuth, async (req, res) => {
     const memoryStore = req.app.locals.memoryStore;
 
     if (memoryStore) {
-      const userInMem = memoryStore.users?.find((u) => u._id === req.user._id) || memoryStore.user;
-      if (!memoryStore.profilePosts) memoryStore.profilePosts = initialProfilePosts;
-      if (!memoryStore.followers) memoryStore.followers = initialFollowers;
-      if (!memoryStore.following) memoryStore.following = initialFollowing;
+      const userInMem = memoryStore.users?.find((u) => String(u._id) === String(req.user._id)) || memoryStore.user;
+      if (!memoryStore.userFollowers) memoryStore.userFollowers = [];
+      if (!memoryStore.userFollowing) memoryStore.userFollowing = [];
 
       const userCreatedPosts = (memoryStore.posts || [])
-        .filter((p) => p.authorId === req.user._id || p.authorName === userInMem.name)
+        .filter((p) => String(p.authorId) === String(req.user._id) || (p.authorName && p.authorName === userInMem?.name))
         .map(formatCommunityPostToProfileCard);
 
-      const allPosts = [...userCreatedPosts, ...memoryStore.profilePosts];
-
-      const totalReviews = allPosts.reduce((sum, p) => sum + (p.metrics?.comments || 0), 0);
+      const totalReviews = userCreatedPosts.reduce((sum, p) => sum + (p.metrics?.comments || 0), 0);
       const pubUser = publicUser(userInMem);
       pubUser.stats = {
-        postsCount: allPosts.length,
-        followers: memoryStore.followers.length,
-        following: memoryStore.following.length,
+        postsCount: userCreatedPosts.length,
+        followers: memoryStore.userFollowers.length,
+        following: memoryStore.userFollowing.length,
         reviews: totalReviews.toString()
       };
 
       return res.json({
         user: pubUser,
-        posts: allPosts,
-        followers: memoryStore.followers,
-        following: memoryStore.following
+        posts: userCreatedPosts,
+        followers: memoryStore.userFollowers,
+        following: memoryStore.userFollowing
       });
     }
 
@@ -165,22 +163,24 @@ profileRouter.get("/", requireAuth, async (req, res) => {
       .lean();
 
     const formattedUserPosts = userPosts.map(formatCommunityPostToProfileCard);
-    const combinedPosts = [...formattedUserPosts, ...initialProfilePosts];
-    const totalReviews = combinedPosts.reduce((sum, p) => sum + (p.metrics?.comments || 0), 0);
+    const totalReviews = formattedUserPosts.reduce((sum, p) => sum + (p.metrics?.comments || 0), 0);
+
+    const userFollowers = Array.isArray(dbUser.followers) ? dbUser.followers : [];
+    const userFollowing = Array.isArray(dbUser.following) ? dbUser.following : [];
 
     const pubUser = publicUser(dbUser);
     pubUser.stats = {
-      postsCount: combinedPosts.length,
-      followers: (dbUser.followers || initialFollowers).length,
-      following: (dbUser.following || initialFollowing).length,
+      postsCount: formattedUserPosts.length,
+      followers: userFollowers.length,
+      following: userFollowing.length,
       reviews: totalReviews.toString()
     };
 
     res.json({
       user: pubUser,
-      posts: combinedPosts,
-      followers: initialFollowers,
-      following: initialFollowing
+      posts: formattedUserPosts,
+      followers: userFollowers,
+      following: userFollowing
     });
   } catch (error) {
     res.status(500).json({ message: "Could not fetch profile data" });
@@ -393,10 +393,10 @@ profileRouter.get("/user/:targetUserId", requireAuth, async (req, res) => {
       }
 
       // Derive dynamic followers and following lists
-      const userFollowersList = (initialFollowers || []).filter((u) => u.id !== targetId && u.handle !== userInMem?.handle);
-      const userFollowingList = (initialFollowing || []).filter((u) => u.id !== targetId && u.handle !== userInMem?.handle);
+      const userFollowersList = Array.isArray(userInMem?.followers) ? userInMem.followers : [];
+      const userFollowingList = Array.isArray(userInMem?.following) ? userInMem.following : [];
 
-      if (friendStatus === "friends") {
+      if (friendStatus === "friends" && !userFollowersList.some((u) => u.id === req.user._id)) {
         userFollowersList.unshift({
           id: req.user._id || req.user.id,
           name: req.user.name,
@@ -457,8 +457,8 @@ profileRouter.get("/user/:targetUserId", requireAuth, async (req, res) => {
 
     const formattedPosts = dbUserPosts.map(formatCommunityPostToProfileCard);
     const pubUser = publicUser(dbUser);
-    const userFollowersList = (initialFollowers || []).filter((u) => u.id !== targetUserId);
-    const userFollowingList = (initialFollowing || []).filter((u) => u.id !== targetUserId);
+    const userFollowersList = Array.isArray(dbUser.followers) ? dbUser.followers : [];
+    const userFollowingList = Array.isArray(dbUser.following) ? dbUser.following : [];
 
     let dbFriendStatus = "none";
     const dbReqKey = [currentUserId, String(targetUserId)].sort().join("_");
@@ -661,3 +661,160 @@ profileRouter.put("/", requireAuth, handleUpdateProfile);
 profileRouter.post("/", requireAuth, handleUpdateProfile);
 profileRouter.put("/update", requireAuth, handleUpdateProfile);
 profileRouter.post("/update", requireAuth, handleUpdateProfile);
+
+// ==========================================
+// CLASS REVIEWS & MENTOR STUDENT FEEDBACK ENDPOINTS
+// ==========================================
+
+// 1. Post Mentor Review for a Student
+profileRouter.post("/class-reviews/mentor-review", requireAuth, async (req, res) => {
+  try {
+    const mentorId = req.user._id?.toString() || req.user.id;
+    const mentorName = req.user.name || "TCM Mentor";
+    const mentorAvatar = req.user.avatarUrl || "";
+
+    const {
+      studentId,
+      studentName,
+      studentAvatar,
+      classId,
+      className,
+      courseId,
+      rating,
+      answeredQuestions,
+      activeStatus,
+      askedQuestions,
+      comment
+    } = req.body;
+
+    if (!studentId) {
+      return res.status(400).json({ message: "Student ID is required." });
+    }
+
+    const newReview = await ClassReview.create({
+      mentorId,
+      mentorName,
+      mentorAvatar,
+      studentId: String(studentId),
+      studentName: studentName || "Learner",
+      studentAvatar: studentAvatar || "",
+      classId: classId || "lc1",
+      className: className || "Live Class Session",
+      courseId: courseId || "c1",
+      type: "mentor_feedback",
+      rating: Number(rating) || 5,
+      answeredQuestions: answeredQuestions || "Yes",
+      activeStatus: activeStatus || "High",
+      askedQuestions: askedQuestions || "Yes",
+      comment: comment?.trim() || ""
+    });
+
+    // Update Student Average Rating Stats in DB
+    try {
+      const studentReviews = await ClassReview.find({ studentId: String(studentId), type: "mentor_feedback" });
+      const avg = (studentReviews.reduce((acc, r) => acc + (r.rating || 5), 0) / studentReviews.length).toFixed(1);
+      
+      await User.findByIdAndUpdate(studentId, {
+        $set: {
+          "stats.reputation": `${avg} ★`,
+          "stats.reviews": studentReviews.length
+        }
+      });
+    } catch (e) {}
+
+    res.json({
+      success: true,
+      message: "Student review & feedback submitted successfully!",
+      review: newReview
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to submit student review." });
+  }
+});
+
+// 2. Get Mentor's Submitted & Received Class Reviews
+profileRouter.get("/class-reviews/mentor", requireAuth, async (req, res) => {
+  try {
+    const mentorId = req.user._id?.toString() || req.user.id;
+    let reviews = [];
+    try {
+      reviews = await ClassReview.find({
+        $or: [
+          { mentorId: String(mentorId) },
+          { mentorId: "m1" },
+          { type: "student_reflection" }
+        ]
+      }).sort({ createdAt: -1 });
+    } catch (e) {}
+
+    const mentorReviews = reviews.filter((r) => r.type === "mentor_feedback");
+    const reflections = reviews.filter((r) => r.type === "student_reflection");
+
+    res.json({
+      success: true,
+      reviews,
+      mentorReviews,
+      reflections
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch mentor class reviews." });
+  }
+});
+
+// 3. Get All Reviews For a Student User (Given & Received)
+profileRouter.get("/class-reviews/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    let reviews = [];
+    try {
+      reviews = await ClassReview.find({ studentId: String(userId) }).sort({ createdAt: -1 });
+    } catch (e) {}
+
+    const mentorReviews = reviews.filter((r) => r.type === "mentor_feedback");
+    const reflections = reviews.filter((r) => r.type === "student_reflection");
+
+    let averageRating = 4.9;
+    if (mentorReviews.length > 0) {
+      const sum = mentorReviews.reduce((acc, r) => acc + (r.rating || 5), 0);
+      averageRating = Number((sum / mentorReviews.length).toFixed(1));
+    }
+
+    res.json({
+      success: true,
+      userId,
+      averageRating,
+      totalReviews: mentorReviews.length,
+      mentorReviews,
+      reflections,
+      reviews
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch user class reviews." });
+  }
+});
+
+// 4. Get All Enrolled Students (For Mentors to evaluate)
+profileRouter.get("/enrolled-students", requireAuth, async (req, res) => {
+  try {
+    let students = await User.find({ role: { $ne: "mentor" } }).select("name email handle role avatarUrl").lean();
+    if (!students || students.length === 0) {
+      students = await User.find({}).select("name email handle role avatarUrl").limit(10).lean();
+    }
+    const formatted = students.map((s) => ({
+      id: String(s._id || s.id),
+      name: s.name,
+      email: s.email,
+      role: s.role || "student",
+      avatarUrl: s.avatarUrl || ""
+    }));
+
+    res.json({
+      success: true,
+      students: formatted
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch enrolled students." });
+  }
+});
+
+

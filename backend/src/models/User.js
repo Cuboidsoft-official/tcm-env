@@ -78,16 +78,17 @@ const userSchema = new mongoose.Schema(
       type: Array,
       default: ["System Architecture", "AI & Machine Learning", "Student Mentorship"]
     },
+    savedPosts: [{ type: String }],
     stats: {
-      postsCount: { type: Number, default: 64 },
-      followers: { type: String, default: "1.24K" },
-      following: { type: Number, default: 356 },
-      reputation: { type: String, default: "4.8K" }
+      postsCount: { type: Number, default: 0 },
+      followers: { type: String, default: "0" },
+      following: { type: Number, default: 0 },
+      reputation: { type: String, default: "0" }
     },
     quickTools: {
-      savedCount: { type: Number, default: 48 },
-      draftsCount: { type: Number, default: 5 },
-      deletedCount: { type: Number, default: 12 }
+      savedCount: { type: Number, default: 0 },
+      draftsCount: { type: Number, default: 0 },
+      deletedCount: { type: Number, default: 0 }
     },
     progress: {
       type: Number,

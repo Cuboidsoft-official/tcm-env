@@ -79,7 +79,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
       if (res && res.room) {
         setRoom(res.room);
         if (onRoomUpdated) onRoomUpdated(res.room);
-        Alert.alert("Approved 🎉", "Member joined the room successfully.");
+        Alert.alert("Approved", "Member joined the room successfully.");
       }
     } catch (e) {
       Alert.alert("Error", "Failed to approve request.");
@@ -110,7 +110,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
       if (res && res.room) {
         setRoom(res.room);
         if (onRoomUpdated) onRoomUpdated(res.room);
-        Alert.alert("Admin Promoted 👑", "Member is now a Room Admin.");
+        Alert.alert("Admin Promoted", "Member is now a Room Admin.");
       }
     } catch (e) {
       Alert.alert("Error", "Failed to promote admin.");
@@ -135,7 +135,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
 
   async function handleDeleteGroup() {
     Alert.alert(
-      "Delete Group Room 🗑️",
+      "Delete Group Room",
       "Are you sure you want to permanently delete this Doubt Room? All messages, files and member permissions will be removed.",
       [
         { text: "Cancel", style: "cancel" },
@@ -147,7 +147,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
               setUpdating(true);
               const res = await manageDoubtRoom(session?.token, room.roomId, { action: "delete_group" });
               if (res && (res.success || res.deleted)) {
-                Alert.alert("Group Deleted 🗑️", "This doubt room has been deleted permanently.");
+                Alert.alert("Group Deleted", "This doubt room has been deleted permanently.");
                 if (onRoomUpdated) onRoomUpdated(null);
                 if (onClose) onClose();
               }
@@ -191,7 +191,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
   function handleCopyGroupId() {
     try {
       Clipboard.setString(room?.roomId || "NEET-DOUBT-001");
-      Alert.alert("Copied 📋", `Group ID "${room?.roomId}" copied to clipboard!`);
+      Alert.alert("Copied", `Group ID "${room?.roomId}" copied to clipboard!`);
     } catch (e) {
       Alert.alert("Group ID", room?.roomId || "NEET-DOUBT-001");
     }
@@ -289,7 +289,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
           ) : (
             <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
               <Text style={styles.descText}>
-                {room?.description || "A place for learners to ask doubts, share resources and grow together! 🚀"}
+                {room?.description || "A place for learners to ask doubts, share resources and grow together!"}
               </Text>
               {isAdmin ? (
                 <Pressable onPress={() => setIsEditingDesc(true)} style={{ padding: 4, marginLeft: 6 }}>
@@ -358,7 +358,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
               ))}
             </ScrollView>
 
-            <Text style={styles.lockNoticeText}>🔒 Only admins can see and manage requests</Text>
+            <Text style={styles.lockNoticeText}>Only admins can see and manage requests</Text>
           </View>
         ) : null}
 
@@ -485,7 +485,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
                     </View>
                     <View style={{ marginLeft: 10 }}>
                       <Text style={styles.memberName}>User_{String(mId).slice(-4)}</Text>
-                      <Text style={styles.memberRole}>{(room?.admins || []).includes(mId) ? "Admin 👑" : "Student Member"}</Text>
+                      <Text style={styles.memberRole}>{(room?.admins || []).includes(mId) ? "Admin" : "Student Member"}</Text>
                     </View>
                   </View>
 

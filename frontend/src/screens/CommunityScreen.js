@@ -383,16 +383,14 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
             <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A" }}>Official Channels</Text>
           </View>
 
-          {isMentor ? (
-            <TouchableOpacity
-              onPress={() => setCreateCommModalOpen(true)}
-              activeOpacity={0.8}
-              style={styles.createChannelBtnPill}
-            >
-              <Feather name="plus" size={14} color="#5B3CF5" style={{ marginRight: 4 }} />
-              <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#5B3CF5" }}>Create Channel</Text>
-            </TouchableOpacity>
-          ) : null}
+          <TouchableOpacity
+            onPress={() => setCreateCommModalOpen(true)}
+            activeOpacity={0.8}
+            style={styles.createChannelBtnPill}
+          >
+            <Feather name="plus" size={14} color="#5B3CF5" style={{ marginRight: 4 }} />
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#5B3CF5" }}>Create Channel</Text>
+          </TouchableOpacity>
         </View>
 
         {/* 5. Dynamic Channel List Cards */}
@@ -402,18 +400,14 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
               <Feather name="users" size={36} color="#CBD5E1" />
               <Text style={styles.emptyTitle}>No Community Channels Yet</Text>
               <Text style={styles.emptySub}>
-                {isMentor
-                  ? "Tap '+ Create Channel' to create your first community channel!"
-                  : "Verified mentors will create and post updates in community channels here."}
+                Tap '+ Create Channel' to create your first community channel!
               </Text>
-              {isMentor ? (
-                <TouchableOpacity
-                  onPress={() => setCreateCommModalOpen(true)}
-                  style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: "#5B3CF5" }}
-                >
-                  <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>+ Create Channel</Text>
-                </TouchableOpacity>
-              ) : null}
+              <TouchableOpacity
+                onPress={() => setCreateCommModalOpen(true)}
+                style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: "#5B3CF5" }}
+              >
+                <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>+ Create Channel</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             communities.map((ch) => (
@@ -511,24 +505,22 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
             </View>
           </View>
 
-          {isMentor ? (
-            <TouchableOpacity
-              onPress={() => setComposerOpen(true)}
-              activeOpacity={0.85}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "#5B3CF5",
-                paddingHorizontal: 12,
-                paddingVertical: 7,
-                borderRadius: 20,
-                flexShrink: 0
-              }}
-            >
-              <Feather name="edit-3" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
-              <Text style={{ color: "#FFFFFF", fontSize: 12, fontFamily: fonts.bold }}>Post</Text>
-            </TouchableOpacity>
-          ) : null}
+          <TouchableOpacity
+            onPress={() => setComposerOpen(true)}
+            activeOpacity={0.85}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#5B3CF5",
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderRadius: 20,
+              flexShrink: 0
+            }}
+          >
+            <Feather name="edit-3" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+            <Text style={{ color: "#FFFFFF", fontSize: 12, fontFamily: fonts.bold }}>Post</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Channel Announcements Stream */}

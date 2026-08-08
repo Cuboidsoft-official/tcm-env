@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getMentorCourses, scheduleLiveClassLink } from "../api/client";
+import MentorReviewsModal from "../components/MentorReviewsModal";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -21,6 +22,7 @@ const { width } = Dimensions.get("window");
 
 export default function MentorDashboardScreen({ session, user = {}, onBack, onNavigateActivity, onEditCourse }) {
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
   const [sessionName, setSessionName] = useState("Full Stack Web Dev - Session 1");
   const [classTitle, setClassTitle] = useState("Day 1: Frontend Foundations & React Setup");
   const [classTime, setClassTime] = useState("Today • 10:00 AM – 11:30 AM");
@@ -358,7 +360,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
           {/* Activity 3: Student Reviews & Feedbacks */}
           <Pressable
-            onPress={() => handleCardPress("Give Reviews", "Open separate student reviews & feedback page.")}
+            onPress={() => setReviewsModalOpen(true)}
             style={({ pressed }) => [styles.activityTouchCard, pressed && styles.pressed]}
           >
             <View style={[styles.activityIconBox, { backgroundColor: "#FFF8EC" }]}>
@@ -367,7 +369,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
             <View style={styles.activityCopy}>
               <Text style={styles.activityTitle}>Student Reviews & Feedbacks</Text>
-              <Text style={styles.activitySub}>4.9 ★ Rating • 128 Reviews</Text>
+              <Text style={styles.activitySub}>View & Write Class Student Reviews</Text>
             </View>
 
             <View style={[styles.arrowCircle, { backgroundColor: "#FFF8EC" }]}>
@@ -663,6 +665,13 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
             </TouchableOpacity>
           </TouchableOpacity>
         </Modal>
+
+        <MentorReviewsModal
+          visible={reviewsModalOpen}
+          session={session}
+          courses={activeCourseList}
+          onClose={() => setReviewsModalOpen(false)}
+        />
 
         {/* ============================================================ */}
         {/* 6. RECENT STUDENT TIMELINE */}

@@ -13,7 +13,7 @@ import {
   View
 } from "react-native";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { addWalletMoney, getWallet, withdrawWalletFunds } from "../api/client";
+import { addWalletMoney, convertCoinsToCash, convertReferralBonus, getWallet, withdrawWalletFunds } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -74,14 +74,95 @@ export default function WalletScreen({ session, user = {}, onBack }) {
   function handleCopyReferral() {
     setCopiedToast(true);
     setTimeout(() => setCopiedToast(false), 2500);
-    Alert.alert("Referral Code Copied! 🎉", `Code: ${referralCode}\nShare with friends to earn ₹100 & 50 TCM Coins per referral!`);
+    Alert.alert("Referral Code Copied", `Code: ${referralCode}\nShare with friends to earn ₹100 & 50 TCM Coins per referral!`);
   }
 
   function handleShareReferral() {
     Alert.alert(
-      "Share Referral Link 🚀",
-      `Join me on TCM Academy using my code ${referralCode} and get ₹100 discount on your first course enrollment!\n\nLink: https://tcm.app/ref/${referralCode}`
+      "Share Referral Link",
+      `Join me on TCM Academy using my code ${referralCode} and get 10 TCM Coins & ₹500 converted referral reward!\n\nLink: https://tcm.app/ref/${referralCode}`
     );
+  }
+
+  async function handleConvertCoins() {
+    if (walletData.tcmCoins < 100) {
+      Alert.alert(
+        "Coins Requirement",
+        `You currently have ${walletData.tcmCoins} TCM Coins. You need at least 100 coins to convert to ₹100 cash.\n\nEarn 10 coins for every friend who signs up with your referral code (${referralCode})!`
+      );
+      return;
+    }
+
+    setActionSubmitting(true);
+    try {
+      if (session?.token) {
+        const res = await convertCoinsToCash(session.token, 100);
+        if (res?.wallet) setWalletData(res.wallet);
+      } else {
+        setWalletData((prev) => ({
+          ...prev,
+          tcmCoins: Math.max(0, prev.tcmCoins - 100),
+          availableBalance: prev.availableBalance + 100,
+          totalBalance: prev.totalBalance + 100,
+          totalEarned: prev.totalEarned + 100,
+          transactions: [
+            {
+              id: `tx_conv_${Date.now()}`,
+              type: "credit",
+              title: "Coins Converted to Cash",
+              subtitle: "Converted 100 TCM Coins to ₹100.00 Cash",
+              amount: "+ ₹100.00",
+              date: "Just now",
+              icon: "gift",
+              iconBg: "#ECFDF5",
+              iconColor: "#10B981"
+            },
+            ...prev.transactions
+          ]
+        }));
+      }
+      Alert.alert("Coins Converted!", "100 TCM Coins converted successfully! ₹100.00 cash added to your available balance.");
+    } catch (err) {
+      Alert.alert("Conversion Failed", err.message || "Failed to convert coins.");
+    } finally {
+      setActionSubmitting(false);
+    }
+  }
+
+  async function handleClaimConvertedReferral(refId, friendName) {
+    setActionSubmitting(true);
+    try {
+      if (session?.token) {
+        const res = await convertReferralBonus(session.token, refId, friendName);
+        if (res?.wallet) setWalletData(res.wallet);
+      } else {
+        setWalletData((prev) => ({
+          ...prev,
+          availableBalance: prev.availableBalance + 500,
+          totalBalance: prev.totalBalance + 500,
+          totalEarned: prev.totalEarned + 500,
+          transactions: [
+            {
+              id: `tx_ref_bonus_${Date.now()}`,
+              type: "credit",
+              title: "Converted Referral Cash Bonus",
+              subtitle: `Successful converted referral by ${friendName}`,
+              amount: "+ ₹500.00",
+              date: "Just now",
+              icon: "star",
+              iconBg: "#F0EDFF",
+              iconColor: "#5B3CF5"
+            },
+            ...prev.transactions
+          ]
+        }));
+      }
+      Alert.alert("₹500 Bonus Credited!", `₹500.00 converted referral bonus credited for ${friendName}!`);
+    } catch (err) {
+      Alert.alert("Error", err.message || "Could not claim referral bonus.");
+    } finally {
+      setActionSubmitting(false);
+    }
   }
 
   async function handleWithdrawSubmit() {
@@ -130,7 +211,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
       setWithdrawModalOpen(false);
       setWithdrawAmount("");
       setUpiId("");
-      Alert.alert("Withdrawal Initiated! 💸", `₹${amt.toFixed(2)} will be credited to ${upiId} within 24 hours.`);
+      Alert.alert("Withdrawal Initiated", `₹${amt.toFixed(2)} will be credited to ${upiId} within 24 hours.`);
     } catch (err) {
       Alert.alert("Error", err.message || "Failed to process withdrawal.");
     } finally {
@@ -175,7 +256,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
 
       setAddMoneyModalOpen(false);
       setAddAmount("");
-      Alert.alert("Money Added Successfully! 🎉", `₹${amt.toFixed(2)} added to your TCM Wallet balance.`);
+      Alert.alert("Money Added Successfully", `₹${amt.toFixed(2)} added to your TCM Wallet balance.`);
     } catch (err) {
       Alert.alert("Error", err.message || "Failed to add money.");
     } finally {
@@ -329,6 +410,78 @@ export default function WalletScreen({ session, user = {}, onBack }) {
           ) : null}
         </View>
 
+        {/* 4.5. Coin Conversion & Converted Referral Rewards Card */}
+        <View style={styles.coinConvCard}>
+          <View style={styles.coinConvHeaderRow}>
+            <View style={styles.coinIconWrap}>
+              <MaterialCommunityIcons name="coins" size={22} color="#10B981" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.coinConvTitle}>Coin Conversion & Rewards</Text>
+              <Text style={styles.coinConvSub}>10 Coins per signup • 100 Coins = ₹100 Cash • ₹500 Converted Referral</Text>
+            </View>
+          </View>
+
+          <View style={styles.coinProgressRow}>
+            <Text style={styles.coinProgressText}>Current Balance: <Text style={{ fontFamily: fonts.bold, color: "#10B981" }}>{walletData.tcmCoins} Coins</Text></Text>
+            <Text style={styles.coinReqText}>Target: 100 Coins = ₹100.00</Text>
+          </View>
+
+          <Pressable
+            onPress={handleConvertCoins}
+            disabled={actionSubmitting}
+            style={[
+              styles.convertCoinsBtn,
+              walletData.tcmCoins < 100 && { backgroundColor: "#94A3B8" }
+            ]}
+          >
+            <MaterialCommunityIcons name="swap-horizontal" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+            <Text style={styles.convertCoinsBtnText}>
+              {walletData.tcmCoins >= 100 ? "Convert 100 Coins to ₹100 Cash" : `Need ${Math.max(0, 100 - walletData.tcmCoins)} More Coins to Convert`}
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Referral Tracking List */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Referrals Track History</Text>
+          <Text style={styles.viewAllText}>{walletData.referrals?.length || 0} Referred</Text>
+        </View>
+
+        {Array.isArray(walletData.referrals) && walletData.referrals.length > 0 ? (
+          <View style={styles.referralsList}>
+            {walletData.referrals.map((ref) => (
+              <View key={ref.id || Math.random()} style={styles.refRowItem}>
+                <View style={styles.refAvatarWrap}>
+                  <Text style={styles.refAvatarText}>{ref.name?.[0]?.toUpperCase() || "U"}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.refNameText}>{ref.name}</Text>
+                  <Text style={styles.refDateText}>{ref.date || "Recently"}</Text>
+                </View>
+                <View style={styles.refBadgeCol}>
+                  <View style={[styles.refBadgePill, ref.status === "Converted" ? { backgroundColor: "#F0EDFF" } : { backgroundColor: "#ECFDF5" }]}>
+                    <Text style={[styles.refBadgeText, ref.status === "Converted" ? { color: "#5B3CF5" } : { color: "#10B981" }]}>
+                      {ref.status === "Converted" ? "Converted (+₹500)" : "Joined (+10 Coins)"}
+                    </Text>
+                  </View>
+                  {ref.status !== "Converted" && (
+                    <Pressable onPress={() => handleClaimConvertedReferral(ref.id, ref.name)} style={styles.claimBonusBtn}>
+                      <Text style={styles.claimBonusText}>Claim ₹500 Bonus</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.emptyRefCard}>
+            <MaterialCommunityIcons name="account-group-outline" size={32} color="#94A3B8" />
+            <Text style={styles.emptyRefText}>No referrals tracked yet</Text>
+            <Text style={styles.emptyRefSub}>Share your code {referralCode} to get 10 coins per join & ₹500 on converted referrals!</Text>
+          </View>
+        )}
+
         {/* 5. Recent Transactions Section */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Recent Transactions</Text>
@@ -437,7 +590,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
             />
 
             <Pressable onPress={handleWithdrawSubmit} style={styles.modalSubmitBtn}>
-              <Text style={styles.modalSubmitBtnText}>Confirm Withdrawal 💸</Text>
+              <Text style={styles.modalSubmitBtnText}>Confirm Withdrawal</Text>
             </Pressable>
           </View>
         </View>
@@ -473,7 +626,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
             </View>
 
             <Pressable onPress={handleAddMoneySubmit} style={styles.modalSubmitBtn}>
-              <Text style={styles.modalSubmitBtnText}>Proceed to Pay with UPI 🎉</Text>
+              <Text style={styles.modalSubmitBtnText}>Proceed to Pay with UPI</Text>
             </Pressable>
           </View>
         </View>
@@ -971,6 +1124,156 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end"
+  },
+
+  // Coin Conversion & Referrals List Styles
+  coinConvCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    ...shadow.soft
+  },
+  coinConvHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 10
+  },
+  coinIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#ECFDF5",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  coinConvTitle: {
+    fontSize: 15,
+    fontFamily: fonts.bold,
+    color: "#0F172A"
+  },
+  coinConvSub: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2
+  },
+  coinProgressRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+    backgroundColor: "#F8FAFC",
+    padding: 10,
+    borderRadius: 10
+  },
+  coinProgressText: {
+    fontSize: 12,
+    color: "#334155"
+  },
+  coinReqText: {
+    fontSize: 11,
+    color: "#64748B"
+  },
+  convertCoinsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#10B981",
+    paddingVertical: 12,
+    borderRadius: 12
+  },
+  convertCoinsBtnText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: "#FFFFFF"
+  },
+  referralsList: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 16,
+    gap: 10
+  },
+  refRowItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9"
+  },
+  refAvatarWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#5B3CF5",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  refAvatarText: {
+    color: "#FFFFFF",
+    fontFamily: fonts.bold,
+    fontSize: 14
+  },
+  refNameText: {
+    fontSize: 14,
+    fontFamily: fonts.semiBold,
+    color: "#0F172A"
+  },
+  refDateText: {
+    fontSize: 11,
+    color: "#64748B"
+  },
+  refBadgeCol: {
+    alignItems: "flex-end",
+    gap: 4
+  },
+  refBadgePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8
+  },
+  refBadgeText: {
+    fontSize: 11,
+    fontFamily: fonts.bold
+  },
+  claimBonusBtn: {
+    backgroundColor: "#F0EDFF",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#DDD6FE"
+  },
+  claimBonusText: {
+    fontSize: 10,
+    fontFamily: fonts.bold,
+    color: "#5B3CF5"
+  },
+  emptyRefCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#F1F5F9"
+  },
+  emptyRefText: {
+    fontSize: 14,
+    fontFamily: fonts.bold,
+    color: "#475569",
+    marginTop: 6
+  },
+  emptyRefSub: {
+    fontSize: 12,
+    color: "#94A3B8",
+    textAlign: "center",
+    marginTop: 4
   },
   modalContent: {
     backgroundColor: "#FFFFFF",

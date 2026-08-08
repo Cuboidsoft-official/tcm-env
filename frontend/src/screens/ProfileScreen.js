@@ -4,17 +4,21 @@ import {
   Alert,
   Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View
 } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { getProfile, toggleFollowUser, updateProfile } from "../api/client";
+import { getProfile, getSavedPosts, toggleFollowUser, updateProfile } from "../api/client";
 import EditMentorProfileModal from "../components/EditMentorProfileModal";
+import GetVerifiedModal from "../components/GetVerifiedModal";
+import MyReviewsModal from "../components/MyReviewsModal";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -27,7 +31,9 @@ function ProfileAvatar({ name = "", uri, size = 90 }) {
     .join("")
     .toUpperCase() || "TCM";
 
-  if (uri) {
+  const isInvalidWebUri = Platform.OS === "web" && typeof uri === "string" && uri.startsWith("file://");
+
+  if (uri && !isInvalidWebUri) {
     return <Image source={{ uri }} style={[styles.avatarImg, { width: size, height: size, borderRadius: size / 2 }]} />;
   }
 
@@ -38,9 +44,12 @@ function ProfileAvatar({ name = "", uri, size = 90 }) {
   );
 }
 
-export default function ProfileScreen({ session, user: initialUser, onOpenSettings, onOpenWallet, onNotifications, onOpenMentorDashboard }) {
+export default function ProfileScreen({ session, user: initialUser, onOpenSettings, onOpenWallet, onNotifications, onOpenMentorDashboard, onSelectPost }) {
+  // Fixed JSX structure & Saved tab responsiveness
   const [profileUser, setProfileUser] = useState(initialUser || {});
   const [posts, setPosts] = useState([]);
+  const [savedPostsList, setSavedPostsList] = useState([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
   const [followersList, setFollowersList] = useState([]);
   const [followingList, setFollowingList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +58,8 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
   const [followersModalOpen, setFollowersModalOpen] = useState(false);
   const [followingModalOpen, setFollowingModalOpen] = useState(false);
   const [avatarEnlargedOpen, setAvatarEnlargedOpen] = useState(false);
+  const [getVerifiedModalOpen, setGetVerifiedModalOpen] = useState(false);
+  const [myReviewsModalOpen, setMyReviewsModalOpen] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [updating, setUpdating] = useState(false);
 
@@ -65,6 +76,26 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
   useEffect(() => {
     fetchProfileData();
   }, [session?.token]);
+
+  useEffect(() => {
+    if (activeTab === "Saved" && session?.token) {
+      loadSavedPosts();
+    }
+  }, [activeTab, session?.token]);
+
+  async function loadSavedPosts() {
+    setLoadingSaved(true);
+    try {
+      const res = await getSavedPosts(session.token);
+      if (res?.posts) {
+        setSavedPostsList(res.posts);
+      }
+    } catch (e) {
+      // quiet
+    } finally {
+      setLoadingSaved(false);
+    }
+  }
 
   async function fetchProfileData() {
     if (!session?.token) {
@@ -122,10 +153,18 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8
+      quality: 0.8,
+      base64: true
     });
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setForm((prev) => ({ ...prev, avatarUrl: result.assets[0].uri }));
+    if (!result.canceled && result.assets?.[0]) {
+      const asset = result.assets[0];
+      let selectedUri = asset.uri;
+      if (asset.base64) {
+        selectedUri = `data:${asset.mimeType || "image/jpeg"};base64,${asset.base64}`;
+      } else if (Platform.OS === "web" && selectedUri?.startsWith("file://")) {
+        selectedUri = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80";
+      }
+      setForm((prev) => ({ ...prev, avatarUrl: selectedUri }));
     }
   }
 
@@ -260,8 +299,24 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
           <View style={styles.nameRow}>
             <Text style={styles.userName}>{profileUser.name || "TCM Member"}</Text>
             {profileUser.verified ? (
-              <MaterialCommunityIcons name="check-decagram" size={18} color="#5B3CF5" style={styles.verifiedCheck} />
-            ) : null}
+              <TouchableOpacity
+                onPress={() => setGetVerifiedModalOpen(true)}
+                activeOpacity={0.85}
+                style={styles.verifiedPill}
+              >
+                <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" />
+                <Text style={styles.verifiedPillText}>Verified</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => setGetVerifiedModalOpen(true)}
+                activeOpacity={0.85}
+                style={styles.getVerifiedPill}
+              >
+                <Ionicons name="sparkles" size={11} color="#FFFFFF" />
+                <Text style={styles.getVerifiedPillText}>Get Verified</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.handleRow}>
@@ -298,13 +353,12 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
           <View style={styles.actionBtnRow}>
             <Pressable onPress={() => setEditModalOpen(true)} style={styles.editBtn}>
               <Feather name="edit-3" size={14} color="#FFFFFF" />
-              <Text style={styles.editBtnText}>Edit Profile</Text>
+              <Text style={styles.editBtnText}>Edit</Text>
             </Pressable>
 
             {onOpenSettings ? (
-              <Pressable onPress={onOpenSettings} style={styles.settingsIconBtn}>
-                <Feather name="settings" size={14} color="#5B3CF5" />
-                <Text style={styles.settingsIconBtnText}>Settings</Text>
+              <Pressable onPress={onOpenSettings} style={styles.settingsGearBtn}>
+                <Feather name="settings" size={16} color="#5B3CF5" />
               </Pressable>
             ) : null}
 
@@ -315,7 +369,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               style={styles.shareBtn}
             >
               <Feather name="share-2" size={14} color="#33334F" />
-              <Text style={styles.shareBtnText}>Share Profile</Text>
+              <Text style={styles.shareBtnText}>Share</Text>
             </Pressable>
           </View>
 
@@ -350,12 +404,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
         </Pressable>
         <View style={styles.statDivider} />
         <Pressable
-          onPress={() =>
-            Alert.alert(
-              "User Reviews",
-              `Total Reviews: ${stats.reviews || "0"}\nBased on community activity, helpful doubt resolutions, and student interactions.`
-            )
-          }
+          onPress={() => setMyReviewsModalOpen(true)}
           style={styles.statCol}
         >
           <Text style={styles.statVal}>{stats.reviews || "0"}</Text>
@@ -363,13 +412,20 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
         </Pressable>
       </View>
 
-      {/* Tabs Header */}
-      <View style={styles.tabsRow}>
+      {/* Tabs Header - Horizontal Slider for all screen sizes */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabsScrollView}
+        contentContainerStyle={styles.tabsScrollContent}
+      >
         {[
           { key: "Posts", icon: "grid" },
+          { key: "Saved", icon: "bookmark" },
           { key: "Notes", icon: "file-text" },
           { key: "Videos", icon: "video" },
-          { key: "Certificates", icon: "award" }
+          { key: "Certificates", icon: "award" },
+          { key: "Reviews", icon: "star" }
         ].map((tab) => {
           const isActive = activeTab === tab.key;
           return (
@@ -389,20 +445,53 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       {/* Content Grid Feed */}
-      {loading ? (
+      {loading || (activeTab === "Saved" && loadingSaved) ? (
         <ActivityIndicator size="large" color="#5B3CF5" style={{ marginVertical: 30 }} />
+      ) : activeTab === "Saved" ? (
+        <View style={styles.gridFeed}>
+          {(() => {
+            const combinedSaved = [...savedPostsList, ...posts.filter((p) => p.bookmarked)].filter(
+              (p, idx, arr) => idx === arr.findIndex((item) => String(item.id || item._id) === String(p.id || p._id))
+            );
+            if (combinedSaved.length === 0) {
+              return (
+                <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: 40, width: "100%" }}>
+                  <Feather name="bookmark" size={34} color="#94A3B8" />
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: "#181725", marginTop: 8 }}>No Saved Posts Yet</Text>
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: "#7C7C9A", textAlign: "center", marginTop: 2 }}>
+                    Bookmark posts from the home feed to save them here for quick access!
+                  </Text>
+                </View>
+              );
+            }
+            return combinedSaved.map((post) => (
+              <TouchableOpacity key={post.id || post._id} onPress={() => onSelectPost && onSelectPost(post)} activeOpacity={0.85} style={styles.gridCard}>
+                <View style={styles.imagePostCard}>
+                  <Image source={{ uri: post.imageUrl || post.media?.imageUrl || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=400" }} style={styles.cardImg} />
+                  <View style={styles.mediaOverlayBadge}>
+                    <Ionicons name="bookmark" size={14} color="#5B3CF5" />
+                  </View>
+                </View>
+                <View style={styles.cardBody}>
+                  <Text numberOfLines={1} style={styles.cardTitle}>{post.title || post.content || post.text || "Saved Post"}</Text>
+                  <Text numberOfLines={1} style={styles.cardTags}>{post.tags?.join(" ") || "#saved"}</Text>
+                </View>
+              </TouchableOpacity>
+            ));
+          })()}
+        </View>
       ) : (
         <View style={styles.gridFeed}>
           {filteredPosts.map((post) => (
-            <View key={post.id} style={styles.gridCard}>
+            <TouchableOpacity key={post.id || post._id} onPress={() => onSelectPost && onSelectPost(post)} activeOpacity={0.85} style={styles.gridCard}>
               {post.type === "code" ? (
                 <View style={styles.codePostCard}>
                   <View style={styles.codeHeader}>
                     <Text style={styles.codeLangText}>
-                      {post.title.toLowerCase().includes("python") ? "def two_sum(nums, target):" : "const sum = (a, b) => {"}
+                      {post.title?.toLowerCase().includes("python") ? "def two_sum(nums, target):" : "const sum = (a, b) => {"}
                     </Text>
                     <Feather name="code" size={14} color="#FFFFFF" />
                   </View>
@@ -412,7 +501,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                 </View>
               ) : (
                 <View style={styles.imagePostCard}>
-                  <Image source={{ uri: post.imageUrl }} style={styles.cardImg} />
+                  <Image source={{ uri: post.imageUrl || post.media?.imageUrl }} style={styles.cardImg} />
                   {post.type === "video" && (
                     <View style={styles.mediaOverlayBadge}>
                       <Ionicons name="play" size={14} color="#FFFFFF" />
@@ -432,43 +521,41 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               )}
 
               <View style={styles.cardBody}>
-                <Text numberOfLines={1} style={styles.cardTitle}>{post.title}</Text>
-                <Text numberOfLines={1} style={styles.cardTags}>
-                  {post.tags?.join(" ")}
-                </Text>
+                <Text numberOfLines={1} style={styles.cardTitle}>{post.title || post.content || post.text}</Text>
+                <Text numberOfLines={1} style={styles.cardTags}>{post.tags?.join(" ")}</Text>
 
                 <View style={styles.cardFooter}>
                   <View style={styles.metricRow}>
-                    <Pressable onPress={() => handleToggleLikePost(post.id)} style={styles.metricItem}>
-                      <Ionicons
-                        name={post.isLiked ? "heart" : "heart-outline"}
-                        size={15}
-                        color={post.isLiked ? "#FF465F" : "#7C7C9A"}
-                      />
-                      <Text style={[styles.metricCount, post.isLiked && { color: "#FF465F", fontFamily: fonts.bold }]}>
-                        {post.likes}
-                      </Text>
-                    </Pressable>
-
+                    <View style={styles.metricItem}>
+                      <Ionicons name={post.isLiked ? "heart" : "heart-outline"} size={15} color={post.isLiked ? "#FF465F" : "#7C7C9A"} />
+                      <Text style={[styles.metricCount, post.isLiked && { color: "#FF465F", fontFamily: fonts.bold }]}>{post.likes}</Text>
+                    </View>
                     <View style={styles.metricItem}>
                       <Ionicons name="chatbubble-outline" size={13} color="#7C7C9A" />
                       <Text style={styles.metricCount}>{post.comments}</Text>
                     </View>
                   </View>
 
-                  <Pressable onPress={() => handleToggleBookmarkPost(post.id)}>
-                    <Ionicons
-                      name={post.bookmarked ? "bookmark" : "bookmark-outline"}
-                      size={15}
-                      color={post.bookmarked ? "#5B3CF5" : "#7C7C9A"}
-                    />
-                  </Pressable>
+                  <View>
+                    <Ionicons name={post.bookmarked ? "bookmark" : "bookmark-outline"} size={15} color={post.bookmarked ? "#5B3CF5" : "#7C7C9A"} />
+                  </View>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       )}
+
+      <MyReviewsModal
+        visible={myReviewsModalOpen || activeTab === "Reviews"}
+        session={session}
+        userId={profileUser.id || session?.user?.id}
+        user={profileUser}
+        onClose={() => {
+          setMyReviewsModalOpen(false);
+          if (activeTab === "Reviews") setActiveTab("Posts");
+        }}
+      />
 
       {/* Edit Profile Bottom Sheet */}
       {profileUser.role === "mentor" || profileUser.isMentor ? (
@@ -689,6 +776,14 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
           </Pressable>
         </Pressable>
       </Modal>
+
+      <GetVerifiedModal
+        visible={getVerifiedModalOpen}
+        onClose={() => setGetVerifiedModalOpen(false)}
+        onVerifySuccess={(plan) => {
+          setProfileUser((prev) => ({ ...prev, verified: true }));
+        }}
+      />
     </View>
   );
 }
@@ -762,6 +857,38 @@ const styles = StyleSheet.create({
   verifiedCheck: {
     marginTop: 2
   },
+  getVerifiedPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#5B3CF5",
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 14,
+    gap: 4,
+    marginLeft: 6
+  },
+  getVerifiedPillText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontFamily: fonts.bold
+  },
+  verifiedPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0EDFF",
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 14,
+    gap: 4,
+    marginLeft: 6,
+    borderWidth: 1,
+    borderColor: "#DDD6FE"
+  },
+  verifiedPillText: {
+    color: "#5B3CF5",
+    fontSize: 11,
+    fontFamily: fonts.bold
+  },
   handleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -834,22 +961,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: 13
   },
-  settingsIconBtn: {
+  settingsGearBtn: {
     backgroundColor: "#F0EDFF",
     borderWidth: 1,
     borderColor: "#E5E1FF",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    width: 38,
+    height: 36,
     borderRadius: 10,
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6
-  },
-  settingsIconBtnText: {
-    color: "#5B3CF5",
-    fontFamily: fonts.semiBold,
-    fontSize: 13
+    justifyContent: "center"
   },
   shareBtn: {
     flex: 1,
@@ -889,8 +1009,8 @@ const styles = StyleSheet.create({
   statsCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -901,16 +1021,17 @@ const styles = StyleSheet.create({
   },
   statCol: {
     flex: 1,
-    alignItems: "center"
+    alignItems: "center",
+    paddingHorizontal: 2
   },
   statVal: {
     fontFamily: fonts.bold,
-    fontSize: 17,
+    fontSize: 16,
     color: "#181725"
   },
   statLbl: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
+    fontFamily: fonts.medium,
+    fontSize: 11,
     color: "#7C7C9A",
     marginTop: 2
   },
@@ -920,20 +1041,25 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F0FA"
   },
 
-  // Tabs
-  tabsRow: {
-    flexDirection: "row",
+  // Tabs (Horizontal Slider)
+  tabsScrollView: {
     borderBottomWidth: 1,
     borderBottomColor: "#EAE7FF",
     marginBottom: 16
   },
+  tabsScrollContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 2,
+    gap: 8
+  },
   tabItem: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderBottomWidth: 2,
     borderBottomColor: "transparent"
   },

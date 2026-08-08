@@ -77,7 +77,7 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
         const doc = result.assets[0];
         setPdfName(doc.name || "Webinar_Notes.pdf");
         setPdfUrl(doc.uri);
-        Alert.alert("Resource Attached 📄", `Successfully attached "${doc.name}"`);
+        Alert.alert("Resource Attached", `Successfully attached "${doc.name}"`);
       }
     } catch (err) {
       console.warn("PDF Pick Error:", err);
@@ -86,10 +86,10 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
 
   function handleAddPoint() {
     if (learningPoints.length >= 8) {
-      Alert.alert("Limit Reached", "You can add up to 8 learning points.");
+      Alert.alert("Limit Reached", "You can add up to 8 learning takeaways.");
       return;
     }
-    setLearningPoints((prev) => [...prev, "Add learning point"]);
+    setLearningPoints((prev) => [...prev, ""]);
   }
 
   function handlePointChange(text, idx) {
@@ -110,7 +110,7 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
 
   async function handlePublish(isDraft = false) {
     if (!title.trim()) {
-      Alert.alert("Required Field", "Please enter a webinar title.");
+      Alert.alert("Validation Error", "Webinar title is required.");
       return;
     }
     if (!description.trim()) {
@@ -142,7 +142,7 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
         await createWebinar(session.token, payload);
       }
       Alert.alert(
-        isDraft ? "Draft Saved 💾" : "Webinar Published 🎉",
+        isDraft ? "Draft Saved" : "Webinar Published",
         `"${title.trim()}" has been ${isDraft ? "saved as draft" : "published live for your students"}!`
       );
       if (onWebinarCreated) onWebinarCreated(payload);
@@ -445,7 +445,7 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
           {submitting ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.publishBtnText}>Publish Webinar & Event 🚀</Text>
+            <Text style={styles.publishBtnText}>Publish Webinar & Event</Text>
           )}
         </Pressable>
       </ScrollView>

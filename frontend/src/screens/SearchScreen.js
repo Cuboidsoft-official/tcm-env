@@ -92,8 +92,9 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
   const postsList = results.posts || [];
   const coursesList = results.courses || [];
   const mentorsList = results.mentors || [];
+  const usersList = results.users || [];
 
-  const totalCount = postsList.length + coursesList.length + mentorsList.length;
+  const totalCount = postsList.length + coursesList.length + mentorsList.length + usersList.length;
 
   return (
     <View style={styles.container}>
@@ -109,7 +110,7 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
             ref={inputRef}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search posts, courses, mentors, topics..."
+            placeholder="Search users, posts, courses, mentors..."
             placeholderTextColor="#8A879F"
             style={styles.searchInput}
             autoCapitalize="none"
@@ -135,7 +136,10 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
             {recentSearches.length > 0 ? (
               <View style={styles.sectionContainer}>
                 <View style={styles.sectionHeaderRow}>
-                  <Text style={styles.sectionTitle}>🕒 Recent Searches</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Feather name="clock" size={14} color="#5B3CF5" />
+                    <Text style={styles.sectionTitle}>Recent Searches</Text>
+                  </View>
                   <Pressable onPress={handleClearAllRecent}>
                     <Text style={styles.clearAllText}>Clear All</Text>
                   </Pressable>
@@ -157,7 +161,10 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
 
             {/* Trending Tags */}
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>🔥 Trending Topics</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <Feather name="trending-up" size={14} color="#FF6B00" />
+                <Text style={styles.sectionTitle}>Trending Topics</Text>
+              </View>
               <View style={styles.tagsFlexWrap}>
                 {defaultTrendingTags.map((tag) => (
                   <Pressable
@@ -175,25 +182,28 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
           /* 3. When Search Query is Non-Empty -> Show Search Results */
           <>
             {/* Results Filter Tabs */}
-            <View style={styles.tabsRow}>
-              {[
-                { id: "all", label: `All (${totalCount})` },
-                { id: "posts", label: `Posts (${postsList.length})` },
-                { id: "courses", label: `Courses (${coursesList.length})` },
-                { id: "mentors", label: `Mentors (${mentorsList.length})` }
-              ].map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <Pressable
-                    key={tab.id}
-                    onPress={() => setActiveTab(tab.id)}
-                    style={[styles.tabItem, isActive && styles.tabItemActive]}
-                  >
-                    <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              <View style={styles.tabsRow}>
+                {[
+                  { id: "all", label: `All (${totalCount})` },
+                  { id: "users", label: `Users (${usersList.length})` },
+                  { id: "posts", label: `Posts (${postsList.length})` },
+                  { id: "courses", label: `Courses (${coursesList.length})` },
+                  { id: "mentors", label: `Mentors (${mentorsList.length})` }
+                ].map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <Pressable
+                      key={tab.id}
+                      onPress={() => setActiveTab(tab.id)}
+                      style={[styles.tabItem, isActive && styles.tabItemActive]}
+                    >
+                      <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
 
             {loading ? (
               <View style={styles.loadingContainer}>
@@ -215,10 +225,46 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
             ) : (
               /* Results List */
               <View style={styles.resultsList}>
+                {/* Users Section */}
+                {(activeTab === "all" || activeTab === "users") && usersList.length > 0 ? (
+                  <View style={styles.resultGroup}>
+                    {activeTab === "all" ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                        <Feather name="users" size={14} color="#5B3CF5" />
+                        <Text style={styles.groupTitle}>People & Learners ({usersList.length})</Text>
+                      </View>
+                    ) : null}
+                    {usersList.map((u) => (
+                      <Pressable
+                        key={u.id}
+                        onPress={() => onSelectUser ? onSelectUser(u) : Alert.alert(u.name)}
+                        style={styles.mentorResultCard}
+                      >
+                        <Image source={{ uri: u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" }} style={styles.mentorAvatar} />
+                        <View style={styles.mentorContentCol}>
+                          <View style={{ flexDirection: "row", alignItems: "center" }}>
+                            <Text style={styles.mentorName}>{u.name}</Text>
+                            {u.verified && <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />}
+                          </View>
+                          <Text style={styles.mentorTitle}>@{u.handle || u.name?.toLowerCase().replace(/\s+/g, "")} • {u.role || "student"}</Text>
+                        </View>
+                        <View style={{ backgroundColor: "#F0EFFF", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                          <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: "#5B3CF5" }}>View Profile</Text>
+                        </View>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+
                 {/* Courses Section */}
                 {(activeTab === "all" || activeTab === "courses") && coursesList.length > 0 ? (
                   <View style={styles.resultGroup}>
-                    {activeTab === "all" ? <Text style={styles.groupTitle}>🎓 Courses ({coursesList.length})</Text> : null}
+                    {activeTab === "all" ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                        <Feather name="book-open" size={14} color="#5B3CF5" />
+                        <Text style={styles.groupTitle}>Courses ({coursesList.length})</Text>
+                      </View>
+                    ) : null}
                     {coursesList.map((course) => (
                       <Pressable
                         key={course.id}
@@ -243,7 +289,12 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
                 {/* Mentors Section */}
                 {(activeTab === "all" || activeTab === "mentors") && mentorsList.length > 0 ? (
                   <View style={styles.resultGroup}>
-                    {activeTab === "all" ? <Text style={styles.groupTitle}>👨‍🏫 Mentors ({mentorsList.length})</Text> : null}
+                    {activeTab === "all" ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                        <Feather name="award" size={14} color="#5B3CF5" />
+                        <Text style={styles.groupTitle}>Mentors ({mentorsList.length})</Text>
+                      </View>
+                    ) : null}
                     {mentorsList.map((mentor) => (
                       <Pressable
                         key={mentor.id}
@@ -270,7 +321,12 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
                 {/* Posts Section */}
                 {(activeTab === "all" || activeTab === "posts") && postsList.length > 0 ? (
                   <View style={styles.resultGroup}>
-                    {activeTab === "all" ? <Text style={styles.groupTitle}>📝 Posts & Notes ({postsList.length})</Text> : null}
+                    {activeTab === "all" ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                        <Feather name="file-text" size={14} color="#5B3CF5" />
+                        <Text style={styles.groupTitle}>Posts & Notes ({postsList.length})</Text>
+                      </View>
+                    ) : null}
                     {postsList.map((post) => (
                       <Pressable
                         key={post.id}

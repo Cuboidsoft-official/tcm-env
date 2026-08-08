@@ -10,6 +10,7 @@ import { Course } from "../models/Course.js";
 import { Webinar } from "../models/Webinar.js";
 import { DoubtRoom } from "../models/DoubtRoom.js";
 import { KnowledgeBaseItem } from "../models/KnowledgeBaseItem.js";
+import { ClassReview } from "../models/ClassReview.js";
 import {
   registerPushToken,
   notifyCoursePublished,
@@ -435,21 +436,20 @@ homeRouter.get("/communities", async (req, res) => {
 });
 
 homeRouter.post("/communities", requireAuth, async (req, res) => {
-  if (req.user.role !== "mentor") {
-    return res.status(403).json({ message: "Only verified mentors can create community channels." });
-  }
-
   try {
     const { name, privacy = "public", category = "General", description, coverImage } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ message: "Community name is required." });
     }
 
+    const isUserMentor = req.user.role === "mentor";
+    const creatorRole = req.user.memberBadge || (isUserMentor ? "TCM Senior Mentor" : "TCM Member");
+
     const newComm = await Community.create({
       name: name.trim(),
       creatorId: req.user._id?.toString(),
       creatorName: req.user.name,
-      creatorRole: req.user.memberBadge || "TCM Senior Mentor",
+      creatorRole,
       creatorAvatarUrl: req.user.avatarUrl,
       privacy,
       category,
@@ -626,11 +626,6 @@ homeRouter.post("/communities/:id/manage-request", requireAuth, async (req, res)
 });
 
 homeRouter.post("/posts", requireAuth, async (req, res) => {
-  // Only mentors are authorized to create community posts and updates
-  if (req.user.role !== "mentor") {
-    return res.status(403).json({ message: "Only verified mentors are authorized to create community posts and updates." });
-  }
-
   const memoryStore = req.app.locals.memoryStore;
   const {
     category = "Community",
@@ -658,14 +653,14 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))
     .slice(0, 6);
 
-  const isUserMentor = true;
+  const isUserMentor = req.user.role === "mentor";
   const postPayload = {
     authorName: req.user.name,
     authorId: req.user._id?.toString(),
-    authorRole: req.user.memberBadge || "TCM Senior Mentor",
+    authorRole: req.user.memberBadge || (isUserMentor ? "TCM Senior Mentor" : "TCM Member"),
     authorAvatarUrl: req.user.avatarUrl,
-    verified: true,
-    isMentor: true,
+    verified: isUserMentor ? true : Boolean(req.user.verified),
+    isMentor: isUserMentor,
     category,
     privacy,
     postType,
@@ -782,7 +777,7 @@ homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
 
 homeRouter.post("/post/:postId/comment", requireAuth, async (req, res) => {
   const { postId } = req.params;
-  const { text } = req.body;
+  const { text, parentCommentId } = req.body;
   const userId = String(req.user._id);
   const memoryStore = req.app.locals.memoryStore;
 
@@ -814,12 +809,27 @@ homeRouter.post("/post/:postId/comment", requireAuth, async (req, res) => {
     text: text.trim(),
     time: "Just now",
     likes: 0,
+    replies: [],
     createdAt: new Date()
   };
 
-  post.commentsList.unshift(newComment);
+  if (parentCommentId) {
+    const parentComment = post.commentsList.find((c) => String(c.id || c._id) === String(parentCommentId));
+    if (parentComment) {
+      if (!parentComment.replies) parentComment.replies = [];
+      parentComment.replies.push(newComment);
+    } else {
+      post.commentsList.unshift(newComment);
+    }
+  } else {
+    post.commentsList.unshift(newComment);
+  }
+
   post.metrics.comments = post.commentsList.length;
 
+  if (typeof post.markModified === "function") {
+    post.markModified("commentsList");
+  }
   if (typeof post.save === "function") {
     await post.save();
   }
@@ -884,6 +894,104 @@ homeRouter.post("/post/:postId/share", requireAuth, async (req, res) => {
     success: true,
     shares: post.metrics.shares
   });
+});
+
+homeRouter.post("/post/:postId/save", requireAuth, async (req, res) => {
+  const { postId } = req.params;
+  const userId = String(req.user._id || req.user.id);
+  if (!req.app.locals.userSavedPosts) {
+    req.app.locals.userSavedPosts = {};
+  }
+  if (!req.app.locals.userSavedPosts[userId]) {
+    req.app.locals.userSavedPosts[userId] = [];
+  }
+
+  const savedList = req.app.locals.userSavedPosts[userId];
+  const index = savedList.indexOf(String(postId));
+  let saved = false;
+
+  if (index > -1) {
+    savedList.splice(index, 1);
+    saved = false;
+  } else {
+    savedList.push(String(postId));
+    saved = true;
+  }
+
+  try {
+    if (saved) {
+      await User.findByIdAndUpdate(userId, { $addToSet: { savedPosts: String(postId) } });
+    } else {
+      await User.findByIdAndUpdate(userId, { $pull: { savedPosts: String(postId) } });
+    }
+  } catch (e) {}
+
+  res.json({ success: true, saved, totalSaved: savedList.length });
+});
+
+homeRouter.get("/saved-posts", requireAuth, async (req, res) => {
+  const userId = String(req.user._id || req.user.id);
+  let savedIds = req.app.locals.userSavedPosts?.[userId] || [];
+
+  try {
+    const dbUser = await User.findById(userId).lean();
+    if (dbUser && Array.isArray(dbUser.savedPosts)) {
+      const merged = new Set([...savedIds, ...dbUser.savedPosts]);
+      savedIds = Array.from(merged);
+    }
+  } catch (e) {}
+
+  const memoryStore = req.app.locals.memoryStore;
+  let allPosts = [];
+
+  try {
+    const dbPosts = await CommunityPost.find({ _id: { $in: savedIds } }).lean();
+    allPosts = dbPosts.map((p) => ({ ...mapPost(p), bookmarked: true }));
+  } catch (e) {}
+
+  if (memoryStore?.posts) {
+    const memSaved = memoryStore.posts.filter((p) => savedIds.includes(String(p.id || p._id)));
+    const existingIds = new Set(allPosts.map((p) => String(p.id)));
+    memSaved.forEach((p) => {
+      if (!existingIds.has(String(p.id || p._id))) {
+        allPosts.push({ ...p, bookmarked: true });
+      }
+    });
+  }
+
+  res.json({ posts: allPosts });
+});
+
+homeRouter.post("/post/:postId/comment/:commentId/like", requireAuth, async (req, res) => {
+  const { postId, commentId } = req.params;
+  const memoryStore = req.app.locals.memoryStore;
+
+  let post = null;
+  try {
+    post = await CommunityPost.findById(postId);
+  } catch (e) {}
+
+  if (!post && memoryStore) {
+    post = memoryStore.posts?.find((p) => String(p.id || p._id) === String(postId));
+  }
+
+  if (!post || !Array.isArray(post.commentsList)) {
+    return res.status(404).json({ message: "Comment not found" });
+  }
+
+  const targetComment = post.commentsList.find((c) => String(c.id || c._id) === String(commentId));
+  if (!targetComment) {
+    return res.status(404).json({ message: "Comment not found" });
+  }
+
+  targetComment.isLiked = !targetComment.isLiked;
+  targetComment.likes = Math.max(0, (targetComment.likes || 0) + (targetComment.isLiked ? 1 : -1));
+
+  if (typeof post.save === "function") {
+    await post.save();
+  }
+
+  res.json({ success: true, isLiked: targetComment.isLiked, likes: targetComment.likes });
 });
 
 homeRouter.post("/courses", requireAuth, async (req, res) => {
@@ -2199,9 +2307,21 @@ homeRouter.get("/continue-learning", requireAuth, async (req, res) => {
   });
 });
 
-homeRouter.post("/class-reflection", requireAuth, (req, res) => {
-  const userId = req.user?.id || "seed-user";
-  const { speakingOpp, questionsAsked, doubtsCleared, mentorInteraction, rating, feedbackNote } = req.body;
+homeRouter.post("/class-reflection", requireAuth, async (req, res) => {
+  const userId = req.user?._id?.toString() || req.user?.id || "seed-user";
+  const {
+    speakingOpp,
+    questionsAsked,
+    doubtsCleared,
+    mentorInteraction,
+    rating,
+    feedbackNote,
+    mentorName,
+    mentorId,
+    className,
+    classId,
+    courseId
+  } = req.body;
 
   if (!req.app.locals.userReflections) {
     req.app.locals.userReflections = {};
@@ -2216,6 +2336,26 @@ homeRouter.post("/class-reflection", requireAuth, (req, res) => {
   };
 
   req.app.locals.userReflections[userId] = reflectionEntry;
+
+  try {
+    await ClassReview.create({
+      mentorId: mentorId ? String(mentorId) : "m1",
+      mentorName: mentorName || "Fhalak Chourasiya",
+      mentorAvatar: "",
+      studentId: String(userId),
+      studentName: req.user?.name || "TCM Learner",
+      studentAvatar: req.user?.avatarUrl || "",
+      classId: classId || "lc1",
+      className: className || "Day 1: Environment Setup & Tooling Configuration for UI & UX Designing",
+      courseId: courseId || "c1",
+      type: "student_reflection",
+      rating: Number(rating) || 5,
+      answeredQuestions: doubtsCleared || "Yes",
+      activeStatus: speakingOpp || "High",
+      askedQuestions: questionsAsked || "Yes",
+      comment: feedbackNote || "Submitted live class reflection & mentor feedback."
+    });
+  } catch (e) {}
 
   return res.json({
     success: true,
@@ -2401,99 +2541,81 @@ homeRouter.get("/all-mentors", requireAuth, async (req, res) => {
   });
 });
 
-homeRouter.get("/search", requireAuth, (req, res) => {
+homeRouter.get("/search", requireAuth, async (req, res) => {
   const query = (req.query.q || "").toLowerCase().trim();
-
-  const allPosts = [
-    {
-      id: "sr1",
-      authorName: "Rahul Dev",
-      authorRole: "Senior Full Stack Developer",
-      authorAvatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
-      category: "Development",
-      text: "Mastering React Native Architecture & Performance: 10 clean patterns for scalable mobile apps.",
-      timeLabel: "2h ago"
-    },
-    {
-      id: "sr2",
-      authorName: "Ananya Sharma",
-      authorRole: "Python Developer",
-      authorAvatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
-      category: "Python",
-      text: "Python Data Structures Cheat Sheet: Arrays, Linked Lists, Trees & Graph Traversals explained simply.",
-      timeLabel: "5h ago"
-    },
-    {
-      id: "sr3",
-      authorName: "Karan Singh",
-      authorRole: "Senior UI/UX Designer",
-      authorAvatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80",
-      category: "Design",
-      text: "Glassmorphism & Micro-animations in modern design systems: A step-by-step UI guide.",
-      timeLabel: "1d ago"
-    }
-  ];
-
-  const allCourses = [
-    {
-      id: "p1",
-      title: "Full Stack Web Development",
-      subtitle: "MERN Stack (MongoDB, Express, React, Node.js)",
-      rating: "4.8",
-      price: "₹699",
-      image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=400&q=80"
-    },
-    {
-      id: "p2",
-      title: "Python Programming",
-      subtitle: "From Basics to Advanced",
-      rating: "4.7",
-      price: "₹499",
-      image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=400&q=80"
-    },
-    {
-      id: "p3",
-      title: "UI/UX Design Mastery",
-      subtitle: "Design Beautiful, Functional Experiences",
-      rating: "4.9",
-      price: "₹599",
-      image: "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?auto=format&fit=crop&w=400&q=80"
-    }
-  ];
-
-  const allMentors = [
-    {
-      id: "m1",
-      name: "Rahul Dev",
-      title: "Senior Full Stack Developer",
-      rating: "4.9",
-      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80"
-    },
-    {
-      id: "m2",
-      name: "Ananya Sharma",
-      title: "Python & Machine Learning Specialist",
-      rating: "4.8",
-      avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80"
-    },
-    {
-      id: "m3",
-      name: "Karan Singh",
-      title: "Principal UI/UX Designer",
-      rating: "4.9",
-      avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80"
-    }
-  ];
-
   if (!query) {
-    return res.json({ posts: [], courses: [], mentors: [] });
+    return res.json({ posts: [], courses: [], mentors: [], users: [] });
   }
 
-  const posts = allPosts.filter((p) => p.text.toLowerCase().includes(query) || p.authorName.toLowerCase().includes(query) || p.category.toLowerCase().includes(query));
-  const courses = allCourses.filter((c) => c.title.toLowerCase().includes(query) || c.subtitle.toLowerCase().includes(query));
-  const mentors = allMentors.filter((m) => m.name.toLowerCase().includes(query) || m.title.toLowerCase().includes(query));
+  const regex = new RegExp(query, "i");
+  const memoryStore = req.app.locals.memoryStore;
 
-  return res.json({ posts, courses, mentors });
+  let dbUsers = [];
+  let dbPosts = [];
+  let dbCourses = [];
+
+  try {
+    dbUsers = await User.find({
+      $or: [{ name: regex }, { handle: regex }, { bio: regex }, { role: regex }]
+    }).lean();
+  } catch (e) {}
+
+  try {
+    dbPosts = await CommunityPost.find({
+      $or: [{ text: regex }, { authorName: regex }, { category: regex }]
+    }).lean();
+  } catch (e) {}
+
+  try {
+    dbCourses = await Course.find({
+      $or: [{ title: regex }, { category: regex }]
+    }).lean();
+  } catch (e) {}
+
+  // Formatted Users
+  const users = dbUsers.map((u) => ({
+    id: String(u._id || u.id),
+    name: u.name,
+    handle: u.handle,
+    role: u.role || "student",
+    bio: u.bio,
+    avatarUrl: u.avatarUrl,
+    verified: u.verified
+  }));
+
+  // Formatted Mentors
+  const mentors = dbUsers.filter((u) => u.role === "mentor").map((u) => ({
+    id: String(u._id || u.id),
+    name: u.name,
+    title: u.bio || "TCM Mentor",
+    rating: "4.9",
+    avatarUrl: u.avatarUrl,
+    role: "mentor"
+  }));
+
+  // Add default search mock data if query matches
+  const sampleMentors = [
+    { id: "m1", name: "Rahul Dev", title: "Senior Full Stack Developer", rating: "4.9", avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", role: "mentor" },
+    { id: "m2", name: "Ananya Sharma", title: "Python & Machine Learning Specialist", rating: "4.8", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100", role: "mentor" }
+  ];
+  sampleMentors.forEach((sm) => {
+    if (sm.name.toLowerCase().includes(query) || sm.title.toLowerCase().includes(query)) {
+      if (!mentors.some((m) => m.name === sm.name)) mentors.push(sm);
+      if (!users.some((u) => u.name === sm.name)) users.push(sm);
+    }
+  });
+
+  const posts = dbPosts.map(mapPost);
+  const courses = dbCourses.map((c) => ({
+    id: c.customId || String(c._id),
+    title: c.title,
+    subtitle: c.category,
+    rating: String(c.rating || "5.0"),
+    price: c.price || "₹699",
+    image: c.imageUrl || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400"
+  }));
+
+  res.json({ posts, courses, mentors, users });
 });
 
 homeRouter.get("/mentor/:mentorId", requireAuth, async (req, res) => {
@@ -2844,8 +2966,12 @@ function getOrCreateUserWallet(req, userId) {
       tcmCoins: 0,
       pendingBalance: 0.0,
       referralCode,
-      transactions: []
+      transactions: [],
+      referrals: []
     };
+  }
+  if (!Array.isArray(req.app.locals.wallets[uId].referrals)) {
+    req.app.locals.wallets[uId].referrals = [];
   }
   return req.app.locals.wallets[uId];
 }
@@ -2907,6 +3033,76 @@ homeRouter.post("/wallet/add-money", requireAuth, (req, res) => {
   });
 
   res.json({ wallet, message: "Money added to wallet." });
+});
+
+homeRouter.post("/wallet/convert-coins", requireAuth, (req, res) => {
+  const wallet = getOrCreateUserWallet(req, req.user._id || req.user.id);
+  const { coins = 100 } = req.body;
+  const coinsToConvert = parseInt(coins, 10) || 100;
+
+  if (wallet.tcmCoins < coinsToConvert) {
+    return res.status(400).json({ message: `Insufficient TCM Coins. You have ${wallet.tcmCoins} coins, but ${coinsToConvert} coins are required.` });
+  }
+
+  const cashReward = (coinsToConvert / 100) * 100;
+  wallet.tcmCoins -= coinsToConvert;
+  wallet.availableBalance += cashReward;
+  wallet.totalBalance += cashReward;
+  wallet.totalEarned += cashReward;
+
+  wallet.transactions.unshift({
+    id: `tx_conv_${Date.now()}`,
+    type: "credit",
+    title: "Coins Converted to Cash",
+    subtitle: `Converted ${coinsToConvert} TCM Coins to ₹${cashReward.toFixed(2)} Cash`,
+    amount: `+ ₹${cashReward.toFixed(2)}`,
+    date: "Just now",
+    icon: "gift",
+    iconBg: "#ECFDF5",
+    iconColor: "#10B981"
+  });
+
+  res.json({ wallet, message: `Successfully converted ${coinsToConvert} coins to ₹${cashReward.toFixed(2)} cash!` });
+});
+
+homeRouter.post("/wallet/convert-referral", requireAuth, (req, res) => {
+  const wallet = getOrCreateUserWallet(req, req.user._id || req.user.id);
+  const { referralId, friendName } = req.body;
+  const bonusCash = 500.0;
+
+  wallet.availableBalance += bonusCash;
+  wallet.totalBalance += bonusCash;
+  wallet.totalEarned += bonusCash;
+
+  if (!Array.isArray(wallet.referrals)) wallet.referrals = [];
+  const refIndex = wallet.referrals.findIndex((r) => String(r.id) === String(referralId));
+  if (refIndex >= 0) {
+    wallet.referrals[refIndex].status = "Converted";
+    wallet.referrals[refIndex].convertedReward = bonusCash;
+  } else {
+    wallet.referrals.unshift({
+      id: referralId || `ref_${Date.now()}`,
+      name: friendName || "Referred Friend",
+      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      status: "Converted",
+      coinsEarned: 10,
+      convertedReward: bonusCash
+    });
+  }
+
+  wallet.transactions.unshift({
+    id: `tx_ref_bonus_${Date.now()}`,
+    type: "credit",
+    title: "Converted Referral Cash Bonus",
+    subtitle: `Successful converted referral by ${friendName || "Friend"}`,
+    amount: `+ ₹${bonusCash.toFixed(2)}`,
+    date: "Just now",
+    icon: "star",
+    iconBg: "#F0EDFF",
+    iconColor: "#5B3CF5"
+  });
+
+  res.json({ wallet, message: `₹500.00 converted referral bonus credited successfully!` });
 });
 
 homeRouter.get("/doubts", requireAuth, (req, res) => {

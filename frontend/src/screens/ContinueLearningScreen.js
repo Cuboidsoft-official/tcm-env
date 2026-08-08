@@ -135,7 +135,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
     },
     liveClass: {
       id: "lc1",
-      tag: "🔴 LIVE CLASS",
+      tag: "LIVE CLASS",
       time: "Today • 10:00 AM – 11:30 AM",
       title: "Full Stack Web Development",
       instructor: "Rahul Dev",
@@ -213,7 +213,12 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
           doubtsCleared: answers.q3,
           mentorInteraction: answers.q4,
           rating: answers.q5,
-          feedbackNote
+          feedbackNote,
+          mentorName: payload.currentClass?.instructor || payload.mentorName || "Fhalak Chourasiya",
+          mentorId: payload.currentClass?.mentorId || "m1",
+          className: payload.currentClass?.title || "Day 1: Environment Setup & Tooling Configuration for UI & UX Designing",
+          classId: payload.currentClass?.id || "lc1",
+          courseId: payload.courseId || "c1"
         });
       }
       setReflectionJustSubmitted(true);
@@ -517,7 +522,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                     <View style={styles.moduleHeaderRight}>
                       {isCompleted ? (
                         <View style={styles.completedBadge}>
-                          <Text style={styles.completedBadgeText}>Passed 🎉</Text>
+                          <Text style={styles.completedBadgeText}>Passed ✓</Text>
                         </View>
                       ) : isInProgress ? (
                         <Pressable onPress={() => handleJoinLiveClass(item.meetingUrl)} style={styles.joinNowBtn}>
@@ -525,7 +530,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                         </Pressable>
                       ) : (
                         <View style={styles.upcomingBadge}>
-                          <Text style={styles.upcomingBadgeText}>Locked 🔒</Text>
+                          <Text style={styles.upcomingBadgeText}>Locked</Text>
                         </View>
                       )}
 

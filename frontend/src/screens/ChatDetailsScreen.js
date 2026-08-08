@@ -28,7 +28,8 @@ export default function ChatDetailsScreen({
   onClose,
   onDeleteChannel,
   onUpdateChannel,
-  onOpenMedia
+  onOpenMedia,
+  onOpenUserProfile
 }) {
   const [muted, setMuted] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -281,7 +282,16 @@ export default function ChatDetailsScreen({
           </View>
         ) : (
           /* 1-on-1 User Details Hero */
-          <View style={styles.userHeroCard}>
+          <TouchableOpacity
+            onPress={() => {
+              if (onOpenUserProfile) {
+                onClose();
+                onOpenUserProfile(targetUser);
+              }
+            }}
+            activeOpacity={0.85}
+            style={styles.userHeroCard}
+          >
             <Image
               source={{ uri: targetUser?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200" }}
               style={styles.userAvatarLarge}
@@ -291,11 +301,42 @@ export default function ChatDetailsScreen({
               <MaterialCommunityIcons name="check-decagram" size={18} color="#5B3CF5" style={{ marginLeft: 6 }} />
             </View>
             <Text style={styles.userRoleText}>{targetUser?.role || "Active Member"}</Text>
-          </View>
+
+            <View style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              backgroundColor: "#EEF2FF",
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 20,
+              marginTop: 12
+            }}>
+              <Feather name="user" size={14} color="#4F46E5" />
+              <Text style={{ fontSize: 13, color: "#4F46E5", fontFamily: fonts.bold }}>View Profile</Text>
+            </View>
+          </TouchableOpacity>
         )}
 
         {/* 3. Action Controls */}
         <View style={styles.actionGrid}>
+          {!isChannelChat && (
+            <TouchableOpacity
+              onPress={() => {
+                if (onOpenUserProfile) {
+                  onClose();
+                  onOpenUserProfile(targetUser);
+                }
+              }}
+              style={styles.actionGridItem}
+            >
+              <View style={[styles.actionIconBox, { backgroundColor: "#EEF2FF" }]}>
+                <Feather name="user" size={18} color="#4F46E5" />
+              </View>
+              <Text style={styles.actionGridLabel}>Profile</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity onPress={handleShareLink} style={styles.actionGridItem}>
             <View style={[styles.actionIconBox, { backgroundColor: "#E0F2FE" }]}>
               <Feather name="share-2" size={18} color="#0284C7" />
@@ -322,7 +363,21 @@ export default function ChatDetailsScreen({
         {isChannelChat ? (
           <View style={styles.infoSection}>
             <Text style={styles.sectionHeaderTitle}>Channel Host & Mentor</Text>
-            <View style={styles.mentorCard}>
+            <TouchableOpacity
+              onPress={() => {
+                if (onOpenUserProfile) {
+                  onClose();
+                  onOpenUserProfile({
+                    id: targetUser.creatorId || "m1",
+                    name: creatorName,
+                    role: creatorRole,
+                    avatarUrl: creatorAvatar
+                  });
+                }
+              }}
+              activeOpacity={0.8}
+              style={styles.mentorCard}
+            >
               <Image source={{ uri: creatorAvatar }} style={styles.mentorAvatar} />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -335,7 +390,7 @@ export default function ChatDetailsScreen({
                 <Feather name="shield" size={12} color="#166534" style={{ marginRight: 4 }} />
                 <Text style={styles.verifiedBadgeText}>Verified</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
         ) : null}
 

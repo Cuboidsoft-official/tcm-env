@@ -62,7 +62,7 @@ export default function NotificationsScreen({
               actionTaken: action,
               subtitle:
                 action === "accept"
-                  ? `You accepted ${item.senderName || "User"}'s friend request. You can now chat! 🎉`
+                  ? `You accepted ${item.senderName || "User"}'s friend request. You can now chat!`
                   : `Friend request declined.`
             }
           : n
@@ -73,7 +73,7 @@ export default function NotificationsScreen({
       try {
         await respondToFriendRequestNotification(session.token, item.id, action);
         if (action === "accept") {
-          Alert.alert("Connected! 🎉", `You and ${item.senderName || "User"} are now friends! Direct chat unlocked.`);
+          Alert.alert("Connected", `You and ${item.senderName || "User"} are now friends! Direct chat unlocked.`);
         }
       } catch (e) {}
     }

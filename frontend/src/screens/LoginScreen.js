@@ -60,7 +60,8 @@ export default function LoginScreen({ onLogin }) {
     email: "",
     mobile: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    referralCode: ""
   });
 
   // Password Reset OTP Modal States
@@ -89,7 +90,7 @@ export default function LoginScreen({ onLogin }) {
       try {
         const { GoogleSignin } = require("@react-native-google-signin/google-signin");
         GoogleSignin.configure({
-          webClientId: "1018503930810-q5h4kjsab9pup2pdleai5rf1a70noftg.apps.googleusercontent.com",
+          webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID || "1018503930810-nuht0vf2crgh0k5e5da65f6hb4g3p7qn.apps.googleusercontent.com",
           offlineAccess: true,
           forceCodeForRefreshToken: true
         });
@@ -128,7 +129,7 @@ export default function LoginScreen({ onLogin }) {
       }
 
       // 2. Official Google OAuth Web Browser flow with prompt=select_account (no ExpoCryptoAES dependency)
-      const webClientId = "1018503930810-q5h4kjsab9pup2pdleai5rf1a70noftg.apps.googleusercontent.com";
+      const webClientId = process.env.EXPO_PUBLIC_WEB_CLIENT_ID || "1018503930810-nuht0vf2crgh0k5e5da65f6hb4g3p7qn.apps.googleusercontent.com";
       let redirectUri = "http://localhost:8081";
       if (typeof window !== "undefined" && window.location && window.location.origin) {
         redirectUri = window.location.origin;
@@ -238,7 +239,7 @@ export default function LoginScreen({ onLogin }) {
     setForgotLoading(true);
     try {
       await resetPasswordWithOtp(forgotEmail.trim(), forgotOtp.trim(), newPassword);
-      Alert.alert("Success! 🎉", "Your password has been reset successfully. Please log in with your new password.");
+      Alert.alert("Success", "Your password has been reset successfully. Please log in with your new password.");
       setForgotModalOpen(false);
       setForgotStep(1);
       setForgotEmail("");
@@ -289,7 +290,8 @@ export default function LoginScreen({ onLogin }) {
         email: form.email.trim(),
         password: form.password,
         role: mode === "mentor" ? "mentor" : role,
-        mentorCategory
+        mentorCategory,
+        referralCode: form.referralCode ? form.referralCode.trim().toUpperCase() : ""
       });
       if (session && session.token) {
         onLogin(session);
@@ -389,6 +391,12 @@ export default function LoginScreen({ onLogin }) {
               onChangeText={(value) => updateField("confirmPassword", value)}
               rightIcon={confirmSecure ? "eye" : "eye-off"}
               onRightPress={() => setConfirmSecure((value) => !value)}
+            />
+            <Input
+              icon="gift"
+              placeholder="Referral Code (Optional, e.g. ANK25X)"
+              value={form.referralCode}
+              onChangeText={(value) => updateField("referralCode", value.toUpperCase())}
             />
 
             {mode === "signup" ? (
