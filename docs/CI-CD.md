@@ -107,12 +107,14 @@ values in the repo.
 | `MAIL_USERNAME` | Gmail address used as the SMTP sender for build emails. |
 | `MAIL_APP_PASSWORD` | Gmail app password (2FA app-specific) for SMTP. |
 | `MAIL_TO` | Recipient of build emails — defaults to `cuboidsoft@gmail.com` when unset. |
+| `TCM_BACKEND_ENV` | **Multiline** content of the backend `.env` (`PORT`, `MONGODB_URI`, `JWT_SECRET`, `CLIENT_ORIGIN`, `GEMINI_API_KEY`, `SMTP_*`). The deploy workflow writes it to `/opt/tcm/backend/.env` on the VM (root-owned, 0600). Optional — skip and provision `.env` manually. |
 | `EXPO_TOKEN` | **OTA updates only** — authenticates `eas-cli` for EAS Update. Not used for Android builds (those run on the GitHub runner). |
 
-**Not GitHub secrets:** `MONGODB_URI`, `JWT_SECRET`, and `GEMINI_API_KEY` are
-**not** read by any workflow. They are used by the backend at runtime and live
-in `/opt/tcm/.env` on the VM (root-owned, 0600), provisioned manually — no
-workflow writes them. Keep them out of GitHub Secrets.
+The backend runtime env (`MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`,
+`SMTP_*`, ...) is stored as the single secret `TCM_BACKEND_ENV` and is only
+referenced by the deploy workflow's provisioning step — no other workflow reads
+it. It lands on the VM as `/opt/tcm/backend/.env` (root 0600), which the
+systemd service loads via `dotenv`.
 
 ### Repo variable (not a secret)
 
@@ -161,12 +163,16 @@ folder on the VM serves every uploaded artifact and is **password-protected**
 ## Operational notes
 
 - **MongoDB Atlas network access**: whitelist the VM IP `140.245.209.147`
-  (Atlas → Network Access → Add IP address). Until then the backend serves the
-  in-memory seed fallback and there is **no real database**.
+  **and** the dev machine IP (this box: `152.59.29.184`)
+  (Atlas → Network Access → Add IP address). Until the VM IP is whitelisted the
+  backend serves the in-memory seed fallback (`mongo:0`) and there is **no real
+  database**.
 - **Health endpoint**: `GET /api/health` returns
-  `{"ok":true,"service":"tcm-backend"}` **unconditionally** — it does **not**
-  report Mongo/DB state. CI and deploy health checks only assert `"ok":true`;
-  they say nothing about the database.
+  `{"ok":true,"service":"tcm-backend","mongo":<readyState>}`. `ok` is **always
+  true** (server up); `mongo` reports Mongoose's `readyState` (`1` = connected
+  to Atlas, `0` = running on the in-memory seed fallback). CI and deploy checks
+  assert `"ok":true` only — they say nothing about the database; use `mongo`
+  to check real DB connectivity.
 - **VM public IP**: `140.245.209.147` is ephemeral — stopping/recreating the
   instance can change it. If it changes, update `OCI_HOST`, the Atlas whitelist,
   and the `api` A record.
