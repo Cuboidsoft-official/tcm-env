@@ -104,65 +104,26 @@ async function request(path, options = {}) {
 }
 
 export async function login(email, password) {
-  try {
-    return await request("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password })
-    });
-  } catch (err) {
-    if (err.status === 401 || err.status === 400 || err.status === 404 || err.status === 409) {
-      throw err;
-    }
-    const userHandle = email ? email.split("@")[0] : "member";
-    return {
-      token: `local_token_${Date.now()}`,
-      user: {
-        id: `local-user-${Date.now()}`,
-        name: userHandle.charAt(0).toUpperCase() + userHandle.slice(1),
-        email: email,
-        role: "student",
-        avatarUrl: "",
-        handle: userHandle,
-        verified: true,
-        memberBadge: "TCM Member",
-        joinedDate: "Joined Aug 2026",
-        stats: { postsCount: 0, followers: "0", following: 0, reviews: "0" },
-        quickTools: { savedCount: 0, draftsCount: 0, deletedCount: 0 },
-        progress: 0
-      }
-    };
-  }
+  return request("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password })
+  });
 }
 
 export async function register(payload) {
-  try {
-    return await request("/auth/register", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-  } catch (err) {
-    if (err.status === 409 || err.status === 400) {
-      throw err;
+  return request("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteAccount(token) {
+  return request("/auth/account", {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
     }
-    const userHandle = payload.email ? payload.email.split("@")[0] : "member";
-    return {
-      token: `local_token_${Date.now()}`,
-      user: {
-        id: `local-user-${Date.now()}`,
-        name: payload.name || "TCM Learner",
-        email: payload.email,
-        role: payload.role || "student",
-        avatarUrl: "",
-        handle: userHandle,
-        verified: true,
-        memberBadge: payload.role === "mentor" ? "TCM Mentor" : "TCM Member",
-        joinedDate: "Joined Aug 2026",
-        stats: { postsCount: 0, followers: "0", following: 0, reviews: "0" },
-        quickTools: { savedCount: 0, draftsCount: 0, deletedCount: 0 },
-        progress: 0
-      }
-    };
-  }
+  });
 }
 
 export async function getHome(token) {
@@ -205,7 +166,7 @@ export async function getHome(token) {
   const allJobs = Array.from(combinedJobMap.values());
 
   const jobPostCards = allJobs.map((j) => {
-    const selectedCount = (j.applicants || []).filter((a) => a.status === "selected").length;
+    const selectedCount = Number(j.selectedCandidates) || (j.applicants || []).filter((a) => a.status === "selected").length || 0;
     const reqLimit = Number(j.requiredCandidates || 1);
     const isFilled = j.status === "filled" || selectedCount >= reqLimit;
 
@@ -234,7 +195,7 @@ export async function getHome(token) {
       jobData: formattedJob,
       likedBy: [],
       likesCount: 12,
-      commentsCount: (j.applicants || []).length,
+      commentsCount: Number(j.applicantsCount) || (j.applicants || []).length,
       comments: []
     };
   });

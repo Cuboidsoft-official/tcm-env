@@ -21,7 +21,7 @@ import {
 import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import { getChatMessages, sendChatMessage, sendFriendRequest } from "../api/client";
+import { getChatMessages, sendChatMessage, sendFriendRequestAction } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 

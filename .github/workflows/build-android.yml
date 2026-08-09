@@ -82,6 +82,31 @@ jobs:
               echo "::warning::Keystore validation failed (checking without password)"
             }
 
+      - name: Verify keystore SHA-1 matches google-services.json
+        working-directory: frontend
+        env:
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          SHA1="$(keytool -list -v -keystore android/app/tcm-release.keystore -storepass "$ANDROID_KEYSTORE_PASS" -alias "$ANDROID_KEY_ALIAS" 2>/dev/null | grep -i 'SHA1:' | awk '{print $NF}' | tr -d ':')"
+          HASH="$(python3 -c "
+import json
+d = json.load(open('google-services.json'))
+hashes = [c['android_info']['certificate_hash'] for c in d['client'][0]['oauth_client'] if c.get('android_info', {}).get('certificate_hash')]
+print(hashes[0] if hashes else '')
+")"
+          test -n "$SHA1" || { echo "::error::Could not read SHA-1 from signing keystore"; exit 1; }
+          test -n "$HASH" || { echo "::error::No Android certificate_hash found in google-services.json"; exit 1; }
+          echo "Signing keystore SHA-1: $SHA1"
+          echo "google-services.json certificate_hash: $HASH"
+          if [ "$SHA1" != "$HASH" ]; then
+            echo "::error::Signing keystore SHA-1 ($SHA1) does NOT match google-services.json certificate_hash ($HASH)."
+            echo "::error::Fix by updating the OAuth SHA-1 fingerprint in the Firebase console to $SHA1, then regenerate google-services.json."
+            exit 1
+          fi
+          echo "certificate_hash matches signing keystore"
+
       - name: Patch build.gradle with release signing config
         working-directory: frontend
         env:
@@ -109,6 +134,25 @@ jobs:
           echo "APK size: $(stat -c%s dist/app-preview.apk) bytes"
           echo "AAB size: $(stat -c%s dist/app-release.aab) bytes"
           ls -lh dist
+
+      - name: Firebase App Distribution (testers)
+        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+        env:
+          FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || '1:1018503930810:android:5d51d97b49df10940af383' }}
+          FIREBASE_TESTER_GROUP: ${{ vars.FIREBASE_TESTER_GROUP || 'testers' }}
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 -d > /tmp/firebase-sa.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-sa.json
+          OUTPUT="$(npx --yes firebase-tools@latest appdistribution:distribute \
+            frontend/dist/app-preview.apk \
+            --app "$FIREBASE_APP_ID" \
+            --groups "$FIREBASE_TESTER_GROUP" \
+            --release-notes "TCM preview ${TCM_APP_VERSION} — built $(date -u +%Y-%m-%dT%H:%MZ)" \
+            --non-interactive)"
+          echo "$OUTPUT"
+          FIREBASE_URL="$(printf '%s' "$OUTPUT" | grep -oE 'https://[^ ]*' | grep -m1 firebase || true)"
+          echo "FIREBASE_URL=$FIREBASE_URL" >> "$GITHUB_ENV"
 
       - name: Set up SSH agent for OCI VM
         uses: webfactory/ssh-agent@v0.9.0
@@ -204,6 +248,7 @@ jobs:
             - APK (installable) - one-time link: ${{ env.APK_URL }}
             - AAB (Play upload only) - one-time link: ${{ env.AAB_URL }}
             - GitHub Release (works while logged in): https://github.com/${{ github.repository }}/releases/tag/${{ env.RELEASE_TAG || 'latest' }}
+            - Firebase App Distribution (testers): ${{ env.FIREBASE_URL || 'not configured — add the FIREBASE_SERVICE_ACCOUNT secret' }}
 
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 

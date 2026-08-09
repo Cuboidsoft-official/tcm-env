@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getContinueLearningDetails, submitClassReflection } from "../api/client";
-import { generateMcqQuizWithGemini, generateClassNotesWithGemini } from "../api/gemini";
+import { generateMcqQuizWithGemini } from "../api/gemini";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 

@@ -2079,11 +2079,6 @@ homeRouter.get("/course/:courseId", async (req, res) => {
         avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80"
       },
       curriculum: {
-        name: "Ananya Sharma",
-        role: "Senior Data Scientist & AI Educator",
-        avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80"
-      },
-      curriculum: {
         totalLessons: "45 Lessons",
         totalModules: "3 Modules",
         modules: [
@@ -2109,6 +2104,10 @@ homeRouter.get("/course/:courseId", async (req, res) => {
       }
     }
   };
+
+  // "p2" (Data Science with Python) has no literal entry; alias it to the
+  // Data Science & AI course so the python/data static course routes resolve.
+  staticCourseRegistry.p2 = staticCourseRegistry.b2;
 
   staticCourseRegistry.b_ac1 = staticCourseRegistry.b_neet;
   staticCourseRegistry.ac_1 = staticCourseRegistry.b_neet;

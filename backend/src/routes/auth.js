@@ -1,11 +1,31 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import express from "express";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
 import { Mentor } from "../models/Mentor.js";
+import { ChatMessage } from "../models/ChatMessage.js";
+import { CommunityPost } from "../models/CommunityPost.js";
+import { requireAuth } from "../middleware/auth.js";
 import { sendOtpEmail } from "../services/emailService.js";
 
 export const authRouter = express.Router();
+
+const TOKEN_ISSUER = "tcm";
+const TOKEN_AUDIENCE = "tcm-app";
+const GOOGLE_WEB_CLIENT_ID =
+  process.env.GOOGLE_WEB_CLIENT_ID || "1018503930810-nuht0vf2crgh0k5e5da65f6hb4g3p7qn.apps.googleusercontent.com";
+const GOOGLE_ANDROID_CLIENT_ID =
+  process.env.GOOGLE_ANDROID_CLIENT_ID || "1018503930810-c5k899vccnese1ndfvrfn40jf9uqbaoj.apps.googleusercontent.com";
+
+// Roles a user may self-assign. "admin" is reserved for the backend owner.
+const SELF_ASSIGNABLE_ROLES = new Set(["student", "mentor"]);
+
+function validateSelfRole(role) {
+  if (!role) return "student";
+  if (!SELF_ASSIGNABLE_ROLES.has(role)) return null;
+  return role;
+}
 
 function signToken(user) {
   return jwt.sign(
@@ -14,7 +34,12 @@ function signToken(user) {
       role: user.role
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    {
+      expiresIn: "7d",
+      algorithm: "HS256",
+      issuer: TOKEN_ISSUER,
+      audience: TOKEN_AUDIENCE
+    }
   );
 }
 
@@ -71,6 +96,35 @@ function getMemoryUsers(memoryStore) {
   return memoryStore.users;
 }
 
+async function verifyGoogleIdToken(idToken) {
+  if (!idToken || typeof idToken !== "string") {
+    return { error: "Missing Google ID token" };
+  }
+
+  let response;
+  try {
+    response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+  } catch (e) {
+    return { error: "Could not reach Google token verification service" };
+  }
+
+  if (!response.ok) {
+    return { error: "Google token verification failed" };
+  }
+
+  const info = await response.json();
+
+  if (info.aud !== GOOGLE_WEB_CLIENT_ID && info.aud !== GOOGLE_ANDROID_CLIENT_ID) {
+    return { error: "Google token audience mismatch" };
+  }
+
+  if (String(info.email_verified) !== "true") {
+    return { error: "Google account email is not verified" };
+  }
+
+  return { payload: info };
+}
+
 authRouter.post("/register", async (req, res) => {
   try {
     const memoryStore = req.app.locals.memoryStore;
@@ -78,6 +132,15 @@ authRouter.post("/register", async (req, res) => {
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Name, email, and password are required" });
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long" });
+    }
+
+    const safeRole = validateSelfRole(role);
+    if (!safeRole) {
+      return res.status(403).json({ message: "You are not allowed to register with this role" });
     }
 
     const normalizedEmail = normalizeEmail(email);
@@ -97,7 +160,7 @@ authRouter.post("/register", async (req, res) => {
         name,
         email: normalizedEmail,
         passwordHash,
-        role,
+        role: safeRole,
         mentorCategory,
         avatarUrl: "",
         progress: 0,
@@ -109,7 +172,7 @@ authRouter.post("/register", async (req, res) => {
 
       users.push(user);
 
-      if (role === "mentor") {
+      if (safeRole === "mentor") {
         if (!Array.isArray(memoryStore.mentors)) {
           memoryStore.mentors = [];
         }
@@ -145,13 +208,13 @@ authRouter.post("/register", async (req, res) => {
       name,
       email: normalizedEmail,
       passwordHash,
-      role,
+      role: safeRole,
       mentorCategory,
       referredBy: cleanRefCode,
       referralAppliedAt: cleanRefCode ? new Date() : null
     });
 
-    if (role === "mentor") {
+    if (safeRole === "mentor") {
       try {
         await Mentor.create({
           userId: user._id.toString(),
@@ -239,9 +302,23 @@ authRouter.post("/google", async (req, res) => {
       return res.status(400).json({ message: "Google user email is required" });
     }
 
+    const safeRole = validateSelfRole(role);
+    if (!safeRole) {
+      return res.status(403).json({ message: "You are not allowed to use this role" });
+    }
+
+    const { error, payload } = await verifyGoogleIdToken(idToken);
+    if (error) {
+      return res.status(401).json({ message: error });
+    }
+
     const normalizedEmail = normalizeEmail(email);
-    const googleName = name || normalizedEmail.split("@")[0];
-    const googleAvatar = avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80";
+    if (payload.email && payload.email.toLowerCase() !== normalizedEmail) {
+      return res.status(401).json({ message: "Google token email mismatch" });
+    }
+
+    const googleName = name || payload.name || normalizedEmail.split("@")[0];
+    const googleAvatar = avatarUrl || payload.picture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80";
     const cleanRefCode = referralCode ? String(referralCode).trim().toUpperCase() : "";
     const nowIso = new Date().toISOString();
 
@@ -255,7 +332,7 @@ authRouter.post("/google", async (req, res) => {
           name: googleName,
           email: normalizedEmail,
           passwordHash: await bcrypt.hash(`google_${Date.now()}`, 10),
-          role,
+          role: safeRole,
           avatarUrl: googleAvatar,
           verified: true,
           progress: 0,
@@ -288,7 +365,7 @@ authRouter.post("/google", async (req, res) => {
         name: googleName,
         email: normalizedEmail,
         passwordHash,
-        role,
+        role: safeRole,
         avatarUrl: googleAvatar,
         verified: true,
         referredBy: cleanRefCode,
@@ -313,8 +390,37 @@ authRouter.post("/google", async (req, res) => {
   }
 });
 
-// Password Reset OTP Store
-const otpStore = {}; // email -> { otp, expiresAt }
+// Account deletion (required by Apple App Store 5.1.1(v) / Google Play data deletion)
+authRouter.delete("/account", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user._id.toString();
+
+    if (req.app.locals.memoryStore) {
+      const users = getMemoryUsers(req.app.locals.memoryStore);
+      req.app.locals.memoryStore.users = users.filter((u) => u._id.toString() !== userId && u.id !== userId);
+      return res.json({ success: true, message: "Account deleted" });
+    }
+
+    await User.deleteOne({ _id: req.user._id });
+    await Mentor.deleteMany({ userId });
+
+    try {
+      await ChatMessage.deleteMany({ $or: [{ senderId: userId }, { receiverId: userId }] });
+    } catch (e) {}
+    try {
+      await CommunityPost.deleteMany({ authorId: userId });
+    } catch (e) {}
+
+    return res.json({ success: true, message: "Account deleted" });
+  } catch (error) {
+    return res.status(500).json({ message: "Could not delete account" });
+  }
+});
+
+// Password Reset OTP Store (in-memory; persisted per-instance only)
+const otpStore = {}; // email -> { otp, expiresAt, verified, attempts }
+const OTP_TTL_MS = 10 * 60 * 1000;
+const MAX_OTP_ATTEMPTS = 5;
 
 // Send Password Reset OTP
 authRouter.post("/forgot-password/send-otp", async (req, res) => {
@@ -328,7 +434,7 @@ authRouter.post("/forgot-password/send-otp", async (req, res) => {
 
     const normalizedEmail = normalizeEmail(email);
 
-    // Verify user exists
+    // Verify user exists (do not reveal existence — return the same message either way)
     let user = null;
     if (memoryStore) {
       const users = getMemoryUsers(memoryStore);
@@ -338,24 +444,31 @@ authRouter.post("/forgot-password/send-otp", async (req, res) => {
     }
 
     if (!user) {
-      return res.status(444).json({ message: "No account found with this email address." });
+      return res.json({ success: true, message: `If an account exists for ${normalizedEmail}, a verification OTP has been sent.` });
     }
 
-    // Generate 6-digit OTP
-    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const generatedOtp = crypto.randomInt(100000, 1000000).toString();
     otpStore[normalizedEmail] = {
       otp: generatedOtp,
-      expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
+      expiresAt: Date.now() + OTP_TTL_MS,
+      verified: false,
+      attempts: 0
     };
 
-    console.log(`🔑 Password Reset OTP for ${normalizedEmail}: ${generatedOtp}`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`🔑 Password Reset OTP for ${normalizedEmail}: ${generatedOtp}`);
+    }
 
-    // Dispatch real email via Nodemailer
-    sendOtpEmail({
+    const result = await sendOtpEmail({
       toEmail: normalizedEmail,
       otp: generatedOtp,
       userName: user.name || "Learner"
-    }).catch(() => {});
+    });
+
+    if (!result.success) {
+      delete otpStore[normalizedEmail];
+      return res.status(500).json({ message: "Could not send the OTP email. Please try again later." });
+    }
 
     return res.json({
       success: true,
@@ -381,14 +494,22 @@ authRouter.post("/forgot-password/verify-otp", async (req, res) => {
       return res.status(400).json({ message: "No OTP request found for this email. Request a new OTP." });
     }
 
+    if (stored.attempts >= MAX_OTP_ATTEMPTS) {
+      delete otpStore[normalizedEmail];
+      return res.status(400).json({ message: "Too many failed attempts. Please request a new OTP." });
+    }
+
     if (Date.now() > stored.expiresAt) {
       delete otpStore[normalizedEmail];
       return res.status(400).json({ message: "OTP has expired. Please request a new OTP." });
     }
 
     if (stored.otp !== String(otp).trim()) {
+      stored.attempts += 1;
       return res.status(400).json({ message: "Invalid OTP code. Please check and try again." });
     }
+
+    stored.verified = true;
 
     res.json({
       success: true,
@@ -416,7 +537,16 @@ authRouter.post("/forgot-password/reset-password", async (req, res) => {
     const normalizedEmail = normalizeEmail(email);
     const stored = otpStore[normalizedEmail];
 
-    if (!stored || stored.otp !== String(otp).trim()) {
+    if (!stored || !stored.verified) {
+      return res.status(400).json({ message: "Please verify the OTP first." });
+    }
+
+    if (Date.now() > stored.expiresAt) {
+      delete otpStore[normalizedEmail];
+      return res.status(400).json({ message: "OTP has expired. Please request a new OTP." });
+    }
+
+    if (stored.otp !== String(otp).trim()) {
       return res.status(400).json({ message: "Invalid or unverified OTP." });
     }
 

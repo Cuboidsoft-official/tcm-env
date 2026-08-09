@@ -1,4 +1,5 @@
-const GEMINI_API_KEY = "GEMINI_API_KEY_FROM_ENV";
+const isConfiguredKey = (k) => !!k && !k.includes("FROM_ENV") && !k.includes("your_");
+const GEMINI_API_KEY = isConfiguredKey(process.env.EXPO_PUBLIC_GEMINI_API_KEY) ? process.env.EXPO_PUBLIC_GEMINI_API_KEY : "";
 
 const CANDIDATE_MODELS = [
   "gemini-1.5-flash",

@@ -10,11 +10,11 @@ CI runs on **GitHub Actions**. Deploy targets:
   touching `backend/**`. Served in production through **Caddy** (HTTPS) at
   `https://api.thecodemunk.in/api`.
 - **Android** → built **on the GitHub Actions runner** (Expo prebuild + local
-  Gradle, no EAS cloud builds). Produces `app-preview.apk` (installable,
-  debug-keystore signed via the Expo prebuild default) and `app-release.aab`
-  (Play Store upload file — not store-submittable without a production
-  keystore). Artifacts are published to **GitHub Releases** and hosted
-  statically on the OCI VM at `https://api.thecodemunk.in/dl/...`.
+  Gradle, no EAS cloud builds). Produces `app-preview.apk` (installable, signed
+  with the **release keystore** from CI secrets) and `app-release.aab` (Play
+  Store upload file — production-signed and ready to submit). Artifacts are
+  published to **GitHub Releases** and hosted statically on the OCI VM at
+  `https://api.thecodemunk.in/dl/...`.
 - **OTA updates** → **EAS Update** to the `preview` channel on every `main`
   push (JS-only fixes reach installed builds instantly) and to `production` on
   `v*` tag pushes.
@@ -27,7 +27,7 @@ CI runs on **GitHub Actions**. Deploy targets:
 |---|---|---|
 | **CI Checks** (`ci-checks.yml`) | Push/PR to `main` touching `backend/**`, `frontend/**`, or the workflow file; manual | Backend health: installs deps with `npm ci --workspace=backend`, starts the server **without a DB**, and polls `http://localhost:5000/api/health` asserting `"ok":true` (up to 15 polls × 2 s). Frontend bundle: `npm ci --workspace=frontend`, then `npx expo export --platform android` (Metro bundle must succeed). |
 | **Deploy Backend to OCI VM** (`deploy-backend-oci.yml`) | Push to `main` touching `backend/**` or the workflow file; manual | SSH (key `OCI_SSH_KEY`) into `OCI_USER@OCI_HOST`, `rsync --delete --delay-updates` the backend (excluding `node_modules` and `.env`), `npm ci --omit=dev` on the VM, restart the systemd unit `tcm-backend`, then poll `http://127.0.0.1:5000/api/health` on the VM for `"ok":true` (up to 30 polls × 2 s = 60 s). Serialized by the `tcm-backend-deploy` concurrency group. |
-| **Build Android & Publish** (`build-android.yml`) | Push to `main` touching `frontend/**` or the workflow file; push of a `v*` tag; manual | Installs deps (`npm ci` at repo root), runs `npx expo prebuild --platform android --no-install` and `./gradlew assembleRelease bundleRelease` **on the GitHub runner**. Copies `app-release.apk` → `dist/app-preview.apk` and `app-release.aab` → `dist/app-release.aab`, with a zero-byte guard (`test -s`). Pushes both to `/opt/tcm/dist/` on the OCI VM via **atomic `scp`** (`.upload-` temp files then `mv`). Creates a GitHub Release (deleting/re-creating the tag with `gh release delete --cleanup-tag`), and emails install + download links; emails a failure notification on failure. Uses the **global** `build-android` concurrency group. |
+| **Build Android & Publish** (`build-android.yml`) | Push to `main` touching `frontend/**` or the workflow file; push of a `v*` tag; manual | Installs deps (`npm ci` at repo root), runs `npx expo prebuild --platform android --no-install` and `./gradlew assembleRelease bundleRelease` **on the GitHub runner**. Copies `app-release.apk` → `dist/app-preview.apk` and `app-release.aab` → `dist/app-release.aab`, with a zero-byte guard (`test -s`). If the `FIREBASE_SERVICE_ACCOUNT` secret is set, distributes the APK to testers via **Firebase App Distribution** (`firebase-tools appdistribution:distribute`, gated on the secret). Pushes both to `/opt/tcm/dist/` on the OCI VM via **atomic `scp`** (`.upload-` temp files then `mv`). Creates a GitHub Release (deleting/re-creating the tag with `gh release delete --cleanup-tag`), and emails install + download + testers links; emails a failure notification on failure. Uses the **global** `build-android` concurrency group. |
 | **Deploy OTA Updates** (`deploy-updates.yml`) | Push to `main` touching `frontend/**` or the workflow file; manual | Publishes the JavaScript bundle with `npx eas-cli@21 update` to the **preview** channel on every push, and to **production** on `v*` tag pushes (requires `EXPO_TOKEN`). Devices with an installed build embedding the matching channel receive the fix instantly — no rebuild, no store release. Uses the global `eas-update` concurrency group. |
 
 ## Backend server (Oracle VM)
@@ -54,6 +54,7 @@ Devices can get the app without any app store:
 |---|---|---|
 | **OCI VM /dl (one-time link)** | `https://api.thecodemunk.in/dl/<file>?t=<token>` — secret, **single-use** link minted per build and emailed to the recipient | Primary install — direct APK download hosted on our own VM; the link works exactly once, then 410 |
 | **GitHub Release** | `https://github.com/Cuboidsoft-official/tcm-env/releases/latest` | Always-available APK + AAB download (private repo — downloads require a collaborator login) |
+| **Firebase App Distribution** | Testers added in the Firebase console (project `tcmindia`) get every `main` build pushed to them automatically | Pre-release builds for trusted testers (max 500) with in-app "install from email" — NOT a public channel |
 
 The `api` A record → `140.245.209.147` at Hostinger is live (verified resolving
 against 8.8.8.8 and 1.1.1.1 on **2026-08-08**); Caddy holds a valid Let's
@@ -63,10 +64,12 @@ carries a valid one-time token. There is **no longer any basic-auth password** �
 access is gated purely by the per-build single-use token in the emailed link.
 
 - `app-preview.apk` is the **installable** app — download this to sideload.
-- `app-release.aab` is the **Play Store upload file only** — it CANNOT be
-  installed on a device, and it is NOT Play-Store submittable as-is: it is
-  signed with the debug keystore that `expo prebuild` generates by default,
-  not a production keystore.
+- `app-release.aab` is the **Play Store upload file** — it CANNOT be
+  installed on a device. Since the production-signing update it is **signed with
+  the release keystore** (provided via the `ANDROID_KEYSTORE_BASE64` /
+  `ANDROID_KEYSTORE_PASS` / `ANDROID_KEY_ALIAS` GitHub secrets), so it is ready to
+  upload to Play Console. The workflow fails the build if the keystore's SHA-1
+  does not match the `certificate_hash` in `frontend/google-services.json`.
 - Email is a **notification with links** (never attachments) so inboxes and
   builds stay small.
 
@@ -108,6 +111,7 @@ values in the repo.
 | `MAIL_TO` | Recipient of build emails — defaults to `cuboidsoft@gmail.com` when unset. |
 | `TCM_BACKEND_ENV` | **Multiline** content of the backend `.env` (`PORT`, `MONGODB_URI`, `JWT_SECRET`, `CLIENT_ORIGIN`, `GEMINI_API_KEY`, `SMTP_*`). The deploy workflow writes it to `/opt/tcm/backend/.env` on the VM (root-owned, 0600). Optional — skip and provision `.env` manually. |
 | `EXPO_TOKEN` | **OTA updates only** — authenticates `eas-cli` for EAS Update. Not used for Android builds (those run on the GitHub runner). |
+| `FIREBASE_SERVICE_ACCOUNT` | **Optional** — base64-encoded Firebase service-account JSON (project `tcmindia`) with the **Firebase App Distribution Admin** role. When set, the Android build distributes `app-preview.apk` to testers via Firebase App Distribution. When unset, that step is skipped entirely. To create it: Firebase console → Project settings → Service accounts → Generate new private key, then `base64 -w0 <file>.json`. Add the service-account email as an **Owner or App Distribution Admin** in IAM. |
 
 The backend runtime env (`MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`,
 `SMTP_*`, ...) is stored as the single secret `TCM_BACKEND_ENV` and is only
@@ -128,6 +132,16 @@ EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'https://api.thecodemunk.in/api' }}
 - Default (no variable set): `https://api.thecodemunk.in/api`.
 - The repo variable is currently set to `https://api.thecodemunk.in/api`.
 
+Optional **repository variables** (Settings → Secrets and variables → Actions → Variables)
+control Firebase App Distribution. Their defaults match the live Firebase app,
+so you only need to set them if that changes:
+
+- `FIREBASE_APP_ID` — default `1:1018503930810:android:5d51d97b49df10940af383`
+  (matches `mobilesdk_app_id` in `google-services.json`).
+- `FIREBASE_TESTER_GROUP` — default `testers`. Must match a tester group that
+  exists in the Firebase console (App Distribution → Testers), otherwise the
+  distribute step fails.
+
 ## Immediate device install
 
 After any Android build, the emailed **one-time link** opens the APK directly:
@@ -143,17 +157,15 @@ To install:
 
 1. Open the APK link from the build email on the Android device (or download it on desktop and transfer).
 2. Allow installs from **unknown sources** when prompted.
-3. Install — `app-preview.apk` is signed (Expo prebuild default debug keystore)
-   and can be sideloaded directly.
+3. Install — `app-preview.apk` is signed (release keystore from CI) and can be sideloaded directly.
 
 ## Next steps for stores
 
-- **Google Play**: the current `app-release.aab` is built with the debug
-  keystore generated by `expo prebuild` and is **NOT submittable**. To ship to
-  the Play Store you must configure a **production Android keystore** (via EAS
-  credentials or a local keystore with the standard signing properties) and
-  build/sign with it. `npx eas-cli submit --platform android` works only after
-  that production keystore exists.
+- **Google Play**: the `app-release.aab` is now signed with the **production
+  release keystore** (the same `ANDROID_KEYSTORE_*` secrets used for CI signing),
+  so it is ready to upload via Play Console or `eas-cli submit`. Note: after
+  uploading to Play with this keystore you must not change it — Play's app
+  signing key becomes permanent.
 - **App Store**: the pipeline only builds Android; there is no iOS build
   configured in CI.
 - **OTA JS updates**: already wired (`expo-updates`). The `deploy-updates.yml`

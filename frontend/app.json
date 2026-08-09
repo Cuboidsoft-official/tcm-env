@@ -23,7 +23,8 @@
       "fallbackToCacheTimeout": 0
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.tcm.app"
     },
     "android": {
       "package": "com.tcm.app",

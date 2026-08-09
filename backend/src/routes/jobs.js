@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import { Job } from "../models/Job.js";
+import { requireAuth } from "../middleware/auth.js";
 import {
   notifyApplicantStatusUpdated,
   notifyJobApplied,
@@ -19,7 +20,30 @@ function getStore(req) {
   return req.app.locals.memoryStore;
 }
 
-// GET /api/jobs
+function isOwner(user, job) {
+  if (!user) return false;
+  const userId = String(user._id || user.id || "");
+  const mentorId = String(job.mentorId || "");
+  return (userId && mentorId === userId) || user.role === "admin" || job.isCreatedByMe === true;
+}
+
+function publicJob(job) {
+  const applicants = job.applicants || [];
+  const selectedCount = applicants.filter((a) => a.status === "selected").length;
+  const reqLimit = Number(job.requiredCandidates || 1);
+  const isFilled = selectedCount >= reqLimit;
+  const { applicants: _omit, ...rest } = job;
+  return {
+    ...rest,
+    id: String(job.id || job._id),
+    applicantsCount: applicants.length,
+    appliedCandidates: job.appliedCandidates || applicants.length,
+    selectedCandidates: selectedCount,
+    status: isFilled ? "filled" : job.status || "active"
+  };
+}
+
+// GET /api/jobs — public listing, NO applicant PII
 jobsRouter.get("/", async (req, res) => {
   try {
     const { filter } = req.query;
@@ -29,33 +53,21 @@ jobsRouter.get("/", async (req, res) => {
 
     if (mongoose.connection.readyState === 1) {
       const dbJobs = await Job.find(query).sort({ createdAt: -1 }).lean();
-      const formatted = dbJobs.map((j) => {
-        const applicants = j.applicants || [];
-        const selectedCount = applicants.filter((a) => a.status === "selected").length;
-        const reqLimit = Number(j.requiredCandidates || 1);
-        const isFilled = selectedCount >= reqLimit;
-        return {
-          ...j,
-          id: String(j._id),
-          selectedCandidates: selectedCount,
-          status: isFilled ? "filled" : j.status || "active"
-        };
-      });
-      return res.json({ ok: true, jobs: formatted });
+      return res.json({ ok: true, jobs: dbJobs.map((j) => publicJob(j)) });
     }
 
     const store = getStore(req);
     let jobs = store.jobs || [];
     if (filter === "active") jobs = jobs.filter((j) => j.status === "active");
     if (filter === "filled") jobs = jobs.filter((j) => j.status === "filled");
-    return res.json({ ok: true, jobs });
+    return res.json({ ok: true, jobs: jobs.map((j) => publicJob(j)) });
   } catch (error) {
-    return res.status(500).json({ ok: false, message: error.message });
+    return res.status(500).json({ ok: false, message: "Could not fetch jobs" });
   }
 });
 
-// POST /api/jobs
-jobsRouter.post("/", async (req, res) => {
+// POST /api/jobs — requires auth
+jobsRouter.post("/", requireAuth, async (req, res) => {
   try {
     const payload = req.body;
     if (!payload.title || !payload.description) {
@@ -65,9 +77,9 @@ jobsRouter.post("/", async (req, res) => {
     const jobData = {
       title: payload.title,
       company: payload.company || "TCM Hiring Partner",
-      mentorId: payload.mentorId || "m-1",
-      mentorName: payload.mentorName || "Mentor",
-      mentorAvatarUrl: payload.mentorAvatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+      mentorId: payload.mentorId || String(req.user._id || req.user.id || "m-1"),
+      mentorName: payload.mentorName || req.user.name || "Mentor",
+      mentorAvatarUrl: payload.mentorAvatarUrl || req.user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
       mentorRole: payload.mentorRole || "Senior Mentor",
       description: payload.description,
       minSalary: payload.minSalary || "3,00,000",
@@ -96,23 +108,24 @@ jobsRouter.post("/", async (req, res) => {
     const newJob = {
       ...jobData,
       id: `job-${Date.now()}`,
+      isCreatedByMe: true,
       createdAt: new Date().toISOString()
     };
     notifyJobPosted({
       mentorName: jobData.mentorName,
       jobTitle: jobData.title,
       company: jobData.company,
-      jobId: mongoose.connection.readyState === 1 ? String(newJob.id || "") : newJob.id
+      jobId: newJob.id
     }).catch(() => {});
 
     return res.status(201).json({ ok: true, job: newJob });
   } catch (error) {
-    return res.status(500).json({ ok: false, message: error.message });
+    return res.status(500).json({ ok: false, message: "Could not create job" });
   }
 });
 
-// PUT /api/jobs/:id
-jobsRouter.put("/:id", async (req, res) => {
+// PUT /api/jobs/:id — requires auth + ownership
+jobsRouter.put("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const cleanId = id.replace(/^post-/, "");
@@ -121,8 +134,10 @@ jobsRouter.put("/:id", async (req, res) => {
     if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(cleanId)) {
       const job = await Job.findById(cleanId);
       if (!job) return res.status(404).json({ ok: false, message: "Job not found" });
+      if (!isOwner(req.user, job)) return res.status(403).json({ ok: false, message: "You can only edit your own job postings" });
 
-      Object.assign(job, payload);
+      const { applicants: _omit, ...editable } = payload;
+      Object.assign(job, editable);
       const selectedCount = (job.applicants || []).filter((a) => a.status === "selected").length;
       job.selectedCandidates = selectedCount;
       if (selectedCount >= Number(job.requiredCandidates || 1)) {
@@ -135,9 +150,11 @@ jobsRouter.put("/:id", async (req, res) => {
     const store = getStore(req);
     const idx = store.jobs.findIndex((j) => j.id === cleanId || j.id === id);
     if (idx === -1) return res.status(404).json({ ok: false, message: "Job not found" });
+    if (!isOwner(req.user, store.jobs[idx])) return res.status(403).json({ ok: false, message: "You can only edit your own job postings" });
 
     const current = store.jobs[idx];
-    const updated = { ...current, ...payload };
+    const { applicants: _omit, ...editable } = payload;
+    const updated = { ...current, ...editable };
     const selectedCount = (updated.applicants || []).filter((a) => a.status === "selected").length;
     updated.selectedCandidates = selectedCount;
     if (selectedCount >= Number(updated.requiredCandidates || 1)) {
@@ -146,46 +163,52 @@ jobsRouter.put("/:id", async (req, res) => {
     store.jobs[idx] = updated;
     return res.json({ ok: true, job: updated });
   } catch (error) {
-    return res.status(500).json({ ok: false, message: error.message });
+    return res.status(500).json({ ok: false, message: "Could not update job" });
   }
 });
 
-// DELETE /api/jobs/:id
-jobsRouter.delete("/:id", async (req, res) => {
+// DELETE /api/jobs/:id — requires auth + ownership
+jobsRouter.delete("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const cleanId = id.replace(/^post-/, "");
 
     if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(cleanId)) {
+      const job = await Job.findById(cleanId);
+      if (!job) return res.status(404).json({ ok: false, message: "Job not found" });
+      if (!isOwner(req.user, job)) return res.status(403).json({ ok: false, message: "You can only delete your own job postings" });
       await Job.findByIdAndDelete(cleanId);
       return res.json({ ok: true, message: "Job deleted successfully" });
     }
 
     const store = getStore(req);
+    const idx = store.jobs.findIndex((j) => j.id === cleanId || j.id === id);
+    if (idx === -1) return res.status(404).json({ ok: false, message: "Job not found" });
+    if (!isOwner(req.user, store.jobs[idx])) return res.status(403).json({ ok: false, message: "You can only delete your own job postings" });
     store.jobs = store.jobs.filter((j) => j.id !== cleanId && j.id !== id);
     return res.json({ ok: true, message: "Job deleted successfully" });
   } catch (error) {
-    return res.status(500).json({ ok: false, message: error.message });
+    return res.status(500).json({ ok: false, message: "Could not delete job" });
   }
 });
 
-// POST /api/jobs/:id/apply
-jobsRouter.post("/:id/apply", async (req, res) => {
+// POST /api/jobs/:id/apply — requires auth; identity from token, not the body
+jobsRouter.post("/:id/apply", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const cleanId = id.replace(/^post-/, "");
     const applicationData = req.body;
 
-    const uId = String(applicationData.userId || applicationData.id || "student-user");
+    const uId = String(req.user._id || req.user.id);
     const applicantRecord = {
       userId: uId,
-      name: applicationData.name || "Student Candidate",
-      email: applicationData.email || "student@tcm.edu",
-      phone: applicationData.phone || "+91 9876543210",
+      name: applicationData.name || req.user.name || "Student Candidate",
+      email: applicationData.email || req.user.email || "",
+      phone: applicationData.phone || "",
       portfolioUrl: applicationData.portfolioUrl || "",
-      resumeUrl: applicationData.resumeUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
-      resumeName: applicationData.resumeName || "Resume.pdf",
-      resumeSize: applicationData.resumeSize || "1.2 MB",
+      resumeUrl: applicationData.resumeUrl || "",
+      resumeName: applicationData.resumeName || (applicationData.resumeUrl ? "Resume.pdf" : ""),
+      resumeSize: applicationData.resumeSize || "",
       coverNote: applicationData.coverNote || "",
       status: "pending",
       appliedAt: new Date().toISOString().slice(0, 10)
@@ -207,7 +230,7 @@ jobsRouter.post("/:id/apply", async (req, res) => {
         job.status = "filled";
       }
       await job.save();
-      return res.json({ ok: true, job: { ...job.toObject(), id: String(job._id) } });
+      return res.json({ ok: true, job: publicJob({ ...job.toObject(), id: String(job._id) }) });
     }
 
     const store = getStore(req);
@@ -242,22 +265,27 @@ jobsRouter.post("/:id/apply", async (req, res) => {
       mentorId: updatedJob.mentorId || "m-1"
     }).catch(() => {});
 
-    return res.json({ ok: true, job: updatedJob });
+    return res.json({ ok: true, job: publicJob(updatedJob) });
   } catch (error) {
-    return res.status(500).json({ ok: false, message: error.message });
+    return res.status(500).json({ ok: false, message: "Could not apply for job" });
   }
 });
 
-// PUT /api/jobs/:id/applicants/:userId/status
-jobsRouter.put("/:id/applicants/:userId/status", async (req, res) => {
+// PUT /api/jobs/:id/applicants/:userId/status — requires auth + ownership
+jobsRouter.put("/:id/applicants/:userId/status", requireAuth, async (req, res) => {
   try {
     const { id, userId } = req.params;
     const { status } = req.body;
     const cleanId = id.replace(/^post-/, "");
 
+    if (!["pending", "selected", "rejected"].includes(status)) {
+      return res.status(400).json({ ok: false, message: "Invalid status" });
+    }
+
     if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(cleanId)) {
       const job = await Job.findById(cleanId);
       if (!job) return res.status(404).json({ ok: false, message: "Job not found" });
+      if (!isOwner(req.user, job)) return res.status(403).json({ ok: false, message: "You can only manage applicants on your own job postings" });
 
       const appIndex = job.applicants.findIndex((a) => String(a.userId) === String(userId));
       if (appIndex !== -1) {
@@ -271,12 +299,13 @@ jobsRouter.put("/:id/applicants/:userId/status", async (req, res) => {
         job.status = "active";
       }
       await job.save();
-      return res.json({ ok: true, job: { ...job.toObject(), id: String(job._id) } });
+      return res.json({ ok: true, job: publicJob({ ...job.toObject(), id: String(job._id) }) });
     }
 
     const store = getStore(req);
     const idx = store.jobs.findIndex((j) => j.id === cleanId || j.id === id);
     if (idx === -1) return res.status(404).json({ ok: false, message: "Job not found" });
+    if (!isOwner(req.user, store.jobs[idx])) return res.status(403).json({ ok: false, message: "You can only manage applicants on your own job postings" });
 
     const job = store.jobs[idx];
     const updatedApplicants = (job.applicants || []).map((app) => {
@@ -306,27 +335,31 @@ jobsRouter.put("/:id/applicants/:userId/status", async (req, res) => {
       mentorName: updatedJob.mentorName
     }).catch(() => {});
 
-    return res.json({ ok: true, job: updatedJob });
+    return res.json({ ok: true, job: publicJob(updatedJob) });
   } catch (error) {
-    return res.status(500).json({ ok: false, message: error.message });
+    return res.status(500).json({ ok: false, message: "Could not update applicant status" });
   }
 });
 
-// GET /api/jobs/:id/applicants
-jobsRouter.get("/:id/applicants", async (req, res) => {
+// GET /api/jobs/:id/applicants — requires auth + ownership (PII only for the job owner)
+jobsRouter.get("/:id/applicants", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const cleanId = id.replace(/^post-/, "");
 
     if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(cleanId)) {
       const job = await Job.findById(cleanId).lean();
-      return res.json({ ok: true, applicants: job?.applicants || [] });
+      if (!job) return res.status(404).json({ ok: false, message: "Job not found" });
+      if (!isOwner(req.user, job)) return res.status(403).json({ ok: false, message: "You can only view applicants on your own job postings" });
+      return res.json({ ok: true, applicants: job.applicants || [] });
     }
 
     const store = getStore(req);
     const job = store.jobs.find((j) => j.id === cleanId || j.id === id);
-    return res.json({ ok: true, applicants: job?.applicants || [] });
+    if (!job) return res.status(404).json({ ok: false, message: "Job not found" });
+    if (!isOwner(req.user, job)) return res.status(403).json({ ok: false, message: "You can only view applicants on your own job postings" });
+    return res.json({ ok: true, applicants: job.applicants || [] });
   } catch (error) {
-    return res.status(500).json({ ok: false, message: error.message });
+    return res.status(500).json({ ok: false, message: "Could not fetch applicants" });
   }
 });

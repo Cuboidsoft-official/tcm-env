@@ -17,7 +17,7 @@ import {
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { applyReferralCode, getProfile, updateProfile } from "../api/client";
+import { applyReferralCode, deleteAccount, getProfile, updateProfile } from "../api/client";
 import MyReviewsModal from "../components/MyReviewsModal";
 import { useTheme } from "../context/ThemeContext";
 import { colors, shadow } from "../constants/theme";
@@ -316,6 +316,37 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
         }
       }
     ]);
+  }
+
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  function handleDeleteAccountPress() {
+    Alert.alert(
+      "Delete Account",
+      "This permanently deletes your account, profile data, posts, and all associated content. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Account",
+          style: "destructive",
+          onPress: async () => {
+            setDeletingAccount(true);
+            try {
+              if (session?.token) {
+                await deleteAccount(session.token);
+              }
+              if (onLogout) {
+                onLogout();
+              }
+            } catch (error) {
+              Alert.alert("Delete Failed", error.message || "Could not delete your account. Please try again.");
+            } finally {
+              setDeletingAccount(false);
+            }
+          }
+        }
+      ]
+    );
   }
 
   return (
@@ -729,6 +760,16 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       <TouchableOpacity onPress={handleLogoutPress} activeOpacity={0.8} style={styles.logoutBtn}>
         <Feather name="log-out" size={18} color="#FF465F" />
         <Text style={styles.logoutBtnText}>Logout Account</Text>
+      </TouchableOpacity>
+
+      {/* 9. Delete Account */}
+      <TouchableOpacity onPress={handleDeleteAccountPress} activeOpacity={0.8} style={styles.deleteAccountBtn} disabled={deletingAccount}>
+        {deletingAccount ? (
+          <ActivityIndicator size="small" color="#FF465F" />
+        ) : (
+          <Feather name="trash-2" size={18} color="#FF465F" />
+        )}
+        <Text style={styles.logoutBtnText}>Delete Account</Text>
       </TouchableOpacity>
 
       <Text style={styles.appVersionText}>TCM Mobile App v2.4.0 • Built for Curious Minds</Text>
@@ -1220,6 +1261,19 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderWidth: 1,
     borderColor: "#FFE0E4"
+  },
+  deleteAccountBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#FFF0F2",
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#FFE0E4",
+    opacity: 0.85
   },
   logoutBtnText: {
     fontFamily: fonts.bold,
