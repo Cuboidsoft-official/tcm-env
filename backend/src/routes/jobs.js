@@ -1,6 +1,11 @@
 import express from "express";
 import mongoose from "mongoose";
 import { Job } from "../models/Job.js";
+import {
+  notifyApplicantStatusUpdated,
+  notifyJobApplied,
+  notifyJobPosted
+} from "../services/pushNotificationService.js";
 
 export const jobsRouter = express.Router();
 
@@ -93,7 +98,13 @@ jobsRouter.post("/", async (req, res) => {
       id: `job-${Date.now()}`,
       createdAt: new Date().toISOString()
     };
-    store.jobs.unshift(newJob);
+    notifyJobPosted({
+      mentorName: jobData.mentorName,
+      jobTitle: jobData.title,
+      company: jobData.company,
+      jobId: mongoose.connection.readyState === 1 ? String(newJob.id || "") : newJob.id
+    }).catch(() => {});
+
     return res.status(201).json({ ok: true, job: newJob });
   } catch (error) {
     return res.status(500).json({ ok: false, message: error.message });
@@ -222,6 +233,15 @@ jobsRouter.post("/:id/apply", async (req, res) => {
     };
 
     store.jobs[idx] = updatedJob;
+
+    notifyJobApplied({
+      studentName: applicantRecord.name,
+      studentId: uId,
+      jobTitle: updatedJob.title,
+      jobId: updatedJob.id,
+      mentorId: updatedJob.mentorId || "m-1"
+    }).catch(() => {});
+
     return res.json({ ok: true, job: updatedJob });
   } catch (error) {
     return res.status(500).json({ ok: false, message: error.message });
@@ -277,6 +297,15 @@ jobsRouter.put("/:id/applicants/:userId/status", async (req, res) => {
     };
 
     store.jobs[idx] = updatedJob;
+
+    notifyApplicantStatusUpdated({
+      studentId: userId,
+      jobTitle: updatedJob.title,
+      status: status,
+      jobId: updatedJob.id,
+      mentorName: updatedJob.mentorName
+    }).catch(() => {});
+
     return res.json({ ok: true, job: updatedJob });
   } catch (error) {
     return res.status(500).json({ ok: false, message: error.message });
