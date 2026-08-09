@@ -19,6 +19,7 @@ import {
   View
 } from "react-native";
 import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { getChatMessages, sendChatMessage, sendFriendRequest } from "../api/client";
@@ -110,6 +111,7 @@ function dedupeMessages(list) {
 import ChatDetailsScreen from "./ChatDetailsScreen";
 
 export default function ChatScreen({ session, user = {}, targetUser: initialTargetUser, targetUserId = "m1", onClose, onDeleteChannel, onOpenUserProfile }) {
+  const insets = useSafeAreaInsets();
   const [targetUser, setTargetUser] = useState(initialTargetUser || null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
@@ -486,7 +488,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
       style={styles.container}
     >
       {/* 1. Redesigned Premium Header Bar */}
-      <View style={styles.topHeader}>
+      <View style={[styles.topHeader, { paddingTop: Platform.OS === "ios" ? Math.max(insets.top, 20) : Math.max(insets.top, 10) + 6 }]}>
         <Pressable onPress={onClose || (() => navigation?.goBack())} style={styles.backBtn}>
           <Feather name="chevron-left" size={24} color="#5B3CF5" />
         </Pressable>
@@ -752,7 +754,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
       {/* 3. Input Footer Bar */}
       {isChannelChat ? (
         isUserMentor ? (
-          <View style={styles.inputFooter}>
+          <View style={[styles.inputFooter, { paddingBottom: Platform.OS === "ios" ? Math.max(insets.bottom, 14) : Math.max(insets.bottom, 10) }]}>
             <Pressable onPress={() => setShowAttachModal(true)} style={styles.attachBtn}>
               <Feather name="paperclip" size={18} color="#5B3CF5" />
             </Pressable>
@@ -828,7 +830,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           </Pressable>
         </View>
       ) : (
-        <View style={styles.inputFooter}>
+        <View style={[styles.inputFooter, { paddingBottom: Platform.OS === "ios" ? Math.max(insets.bottom, 14) : Math.max(insets.bottom, 10) }]}>
           <Pressable onPress={() => setShowAttachModal(true)} style={styles.attachBtn}>
             <Feather name="paperclip" size={18} color="#5B3CF5" />
           </Pressable>

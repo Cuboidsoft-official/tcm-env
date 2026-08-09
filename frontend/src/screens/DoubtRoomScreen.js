@@ -16,6 +16,7 @@ import {
   Share
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   getDoubtRoomDetails,
   sendDoubtRoomMessage,
@@ -96,6 +97,11 @@ function renderAiFormattedResponse(rawText) {
         return;
       }
 
+      if (/^(=+|-+|\*+)$/.test(trimmed)) {
+        elements.push(<View key={`hr_${keyCount++}`} style={{ height: 1, backgroundColor: "#E2E8F0", marginVertical: 8, width: "100%" }} />);
+        return;
+      }
+
       const isHeader = /^(\d+\.|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDDFF]|\u26A1|\u2B50|\uD83D\uDCDDA-Z|#+|\*)+/.test(trimmed) && (trimmed.includes("**") || trimmed.includes(":"));
 
       if (isHeader) {
@@ -136,10 +142,12 @@ function renderAiFormattedResponse(rawText) {
       <View key={`code_${keyCount++}`} style={styles.aiCodeContainer}>
         <View style={styles.aiCodeHeader}>
           <Text style={styles.aiCodeLangText}>{lang.toUpperCase()}</Text>
-          <MaterialCommunityIcons name="code-tags" size={14} color="#94A3B8" />
+          <MaterialCommunityIcons name="code-tags" size={14} color="#5B3CF5" />
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <Text style={styles.aiCodeText}>{codeContent}</Text>
+        <ScrollView nestedScrollEnabled style={{ maxHeight: 150 }} showsVerticalScrollIndicator>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <Text style={styles.aiCodeText}>{codeContent}</Text>
+          </ScrollView>
         </ScrollView>
       </View>
     );
@@ -153,7 +161,108 @@ function renderAiFormattedResponse(rawText) {
   return <View style={{ width: "100%" }}>{elements}</View>;
 }
 
+function CollapsibleMessageContainer({ item, children }) {
+  const isLong = (item?.text || "").length > 180 || (item?.text || "").includes("\n\n");
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <View style={[styles.bubbleLeft, item?.isAi && styles.bubbleAi]}>
+      <View style={isLong && !expanded ? { maxHeight: 150, overflow: "hidden" } : undefined}>
+        {children}
+      </View>
+
+      {isLong ? (
+        <TouchableOpacity
+          onPress={() => setExpanded(!expanded)}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: expanded ? "#F1F5F9" : "#F0EDFF",
+            paddingVertical: 5,
+            paddingHorizontal: 10,
+            borderRadius: 8,
+            marginTop: 8,
+            borderWidth: 1,
+            borderColor: expanded ? "#CBD5E1" : "#C4B5FD"
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={{ fontSize: 11.5, fontWeight: "700", color: expanded ? "#64748B" : "#5B3CF5", marginRight: 4 }}>
+            {expanded ? "Show Less ▲" : "Read Full Answer ▼"}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+}
+
+function CollapsibleCodeSnippet({ code, lang = "JavaScript / Code" }) {
+  const isLong = (code || "").split("\n").length > 5 || (code || "").length > 140;
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <View style={styles.codeSnippetBlock}>
+      <View style={styles.codeHeader}>
+        <Text style={styles.codeLangText}>{lang}</Text>
+        <TouchableOpacity onPress={() => Alert.alert("Copied", "Code snippet copied!")}>
+          <Text style={styles.copyCodeText}>Copy</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        nestedScrollEnabled
+        style={{ maxHeight: expanded ? 400 : 120 }}
+        showsVerticalScrollIndicator
+      >
+        <Text style={styles.codeContentText}>{code}</Text>
+      </ScrollView>
+
+      {isLong ? (
+        <TouchableOpacity
+          onPress={() => setExpanded(!expanded)}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#F1F5F9",
+            paddingVertical: 4,
+            paddingHorizontal: 8,
+            borderRadius: 6,
+            marginTop: 6,
+            borderWidth: 1,
+            borderColor: "#E2E8F0"
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={{ fontSize: 11, fontWeight: "700", color: "#5B3CF5" }}>
+            {expanded ? "Collapse Code ▲" : "Expand Full Code ▼"}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+}
+
+function isQuestionMessage(item) {
+  if (!item || item.isAi || item.type === "poll" || item.type === "ai_response") return false;
+  if (item.canAskAi === true) return true;
+  if (item.canAskAi === false) return false;
+  const str = (item.text || item.codeSnippet || "").toLowerCase().trim();
+  if (item.codeSnippet || str.includes("?")) return true;
+  const questionKeywords = [
+    "what is", "what are", "how to", "how do", "how can", "why does", "why do", "why is",
+    "explain", "define", "difference", "vs", "syntax", "example", "meaning", "solve",
+    "is it", "can i", "can we", "could you", "should i", "where is", "when to", "which one",
+    "error", "bug", "issue", "problem", "not working", "fix", "output of", "value of", "write",
+    "kaise", "kyun", "kyu", "kya", "janna", "bataye", "batao", "samjha", "sikhna", "madad", "help",
+    "kare", "kam", "kaam", "python", "django", "react", "html", "css", "js", "javascript", "node", "code"
+  ];
+  return questionKeywords.some((kw) => str.includes(kw));
+}
+
 export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", onClose, onOpenMentorProfile }) {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [room, setRoom] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -544,11 +653,13 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         {loading ? (
           <ActivityIndicator size="large" color="#5B3CF5" style={{ marginVertical: 20 }} />
         ) : (
-          messages.map((item) => {
+          messages.map((item, index) => {
+            const uniqueKey = String(item.id || item._id || `msg_${index}`);
+
             if (item.type === "poll") {
               // INTERACTIVE POLL CARD MATCHING MOCKUP
               return (
-                <View key={item.id} style={styles.pollCard}>
+                <View key={uniqueKey} style={styles.pollCard}>
                   <View style={styles.pollHeader}>
                     <MaterialCommunityIcons name="poll" size={18} color="#5B3CF5" />
                     <Text style={styles.pollHeaderTitle}>Poll by {item.authorName}</Text>
@@ -561,7 +672,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
                   {item.options?.map((opt) => (
                     <TouchableOpacity
-                      key={opt.id}
+                      key={opt.id || opt.text}
                       style={[styles.pollOptionBox, opt.isVoted && styles.pollOptionBoxVoted]}
                       onPress={() => handleVotePoll(item.pollId || item.id, opt.id)}
                       activeOpacity={0.8}
@@ -593,45 +704,20 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
             // CODE SNIPPET MESSAGE
             if (item.type === "code" || item.codeSnippet) {
               return (
-                <View key={item.id} style={styles.msgRowLeft}>
+                <View key={uniqueKey} style={styles.msgRowLeft}>
                   <Image source={{ uri: item.authorAvatar }} style={styles.msgAvatar} />
                   <View style={styles.msgBodyLeft}>
                     <Text style={styles.msgAuthor}>{item.authorName} <Text style={styles.msgTime}>{item.time}</Text></Text>
-                    <View style={styles.codeSnippetBlock}>
-                      <View style={styles.codeHeader}>
-                        <Text style={styles.codeLangText}>JavaScript / Code</Text>
-                        <TouchableOpacity onPress={() => Alert.alert("Copied", "Code snippet copied!")}>
-                          <Text style={styles.copyCodeText}>Copy</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <Text style={styles.codeContentText}>{item.codeSnippet || item.text}</Text>
-                    </View>
+                    <CollapsibleCodeSnippet code={item.codeSnippet || item.text} />
                   </View>
                 </View>
               );
             }
 
-function isQuestionMessage(item) {
-  if (!item || item.isAi || item.type === "poll" || item.type === "ai_response") return false;
-  if (item.canAskAi === true) return true;
-  if (item.canAskAi === false) return false;
-  const str = (item.text || item.codeSnippet || "").toLowerCase().trim();
-  if (item.codeSnippet || str.includes("?")) return true;
-  const questionKeywords = [
-    "what is", "what are", "how to", "how do", "how can", "why does", "why do", "why is",
-    "explain", "define", "difference", "vs", "syntax", "example", "meaning", "solve",
-    "is it", "can i", "can we", "could you", "should i", "where is", "when to", "which one",
-    "error", "bug", "issue", "problem", "not working", "fix", "output of", "value of", "write",
-    "kaise", "kyun", "kyu", "kya", "janna", "bataye", "batao", "samjha", "sikhna", "madad", "help",
-    "kare", "kam", "kaam", "python", "django", "react", "html", "css", "js", "javascript", "node", "code"
-  ];
-  return questionKeywords.some((kw) => str.includes(kw));
-}
-
             // REGULAR CHAT BUBBLE (Self)
             if (item.isSelf) {
               return (
-                <View key={item.id} style={styles.msgRowRight}>
+                <View key={uniqueKey} style={styles.msgRowRight}>
                   <View style={styles.msgBodyRight}>
                     <Text style={styles.msgTextRight}>{item.text}</Text>
                     <View style={styles.metaRowRight}>
@@ -660,7 +746,7 @@ function isQuestionMessage(item) {
 
             // PARTICIPANT OR AI RESPONSE
             return (
-              <View key={item.id} style={styles.msgRowLeft}>
+              <View key={uniqueKey} style={styles.msgRowLeft}>
                 <Image source={{ uri: item.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }} style={styles.msgAvatar} />
                 <View style={styles.msgBodyLeft}>
                   <View style={styles.authorHeaderRow}>
@@ -674,13 +760,13 @@ function isQuestionMessage(item) {
                     <Text style={styles.msgTime}>{item.time}</Text>
                   </View>
 
-                  <View style={[styles.bubbleLeft, item.isAi && styles.bubbleAi]}>
+                  <CollapsibleMessageContainer item={item}>
                     {item.isAi ? (
                       renderAiFormattedResponse(item.text)
                     ) : (
                       <Text style={[styles.msgTextLeft, item.isAi && styles.msgTextAi]}>{item.text}</Text>
                     )}
-                  </View>
+                  </CollapsibleMessageContainer>
 
                   {/* SEPARATE PROFESSIONAL MENTION FOR AI BUBBLE BELOW THE BUBBLE */}
                   {item.isAi && (
@@ -735,7 +821,7 @@ function isQuestionMessage(item) {
 
       {/* 5. INPUT BAR OR JOIN ROOM BAR */}
       {!isMember ? (
-        <View style={styles.joinRoomContainer}>
+        <View style={[styles.joinRoomContainer, { paddingBottom: Platform.OS === "ios" ? Math.max(insets.bottom, 14) : Math.max(insets.bottom, 10) }]}>
           {hasRequestedJoin ? (
             <View style={[styles.joinRoomButton, { backgroundColor: "#64748B" }]}>
               <MaterialCommunityIcons name="clock-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
@@ -757,7 +843,7 @@ function isQuestionMessage(item) {
           )}
         </View>
       ) : (
-        <View style={[styles.inputContainer, { paddingBottom: Platform.OS === "ios" ? 12 : 8 }]}>
+        <View style={[styles.inputContainer, { paddingBottom: Platform.OS === "ios" ? Math.max(insets.bottom, 14) : Math.max(insets.bottom, 10) }]}>
           <TouchableOpacity style={styles.plusBtn} onPress={() => setPollModalVisible(true)}>
             <MaterialCommunityIcons name="plus" size={24} color="#FFFFFF" />
           </TouchableOpacity>
@@ -967,11 +1053,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
-    paddingTop: Platform.OS === "ios" ? 10 : 14,
+    paddingHorizontal: 12,
+    paddingTop: Platform.OS === "ios" ? 10 : 8,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#F4F3FA"
+    borderBottomColor: "#E2E8F0"
   },
   backBtn: {
     width: 36,
@@ -1063,25 +1149,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 12,
+    padding: 8,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2
+    marginBottom: 8
   },
   mentorAvatarWrap: {
     position: "relative",
-    marginRight: 12
+    marginRight: 10
   },
   mentorAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22
+    width: 36,
+    height: 36,
+    borderRadius: 18
   },
   onlineDot: {
     position: "absolute",
@@ -1115,9 +1196,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F5F3FF",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#DDD6FE"
   },
@@ -1164,18 +1246,20 @@ const styles = StyleSheet.create({
   },
   msgRowLeft: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    marginBottom: 14
+    alignItems: "flex-start",
+    marginBottom: 14,
+    width: "100%"
   },
   msgAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    marginRight: 6,
-    marginBottom: 2
+    marginRight: 8,
+    marginTop: 2
   },
   msgBodyLeft: {
-    maxWidth: "92%"
+    flex: 1,
+    maxWidth: "84%"
   },
   authorHeaderRow: {
     flexDirection: "row",
@@ -1229,33 +1313,37 @@ const styles = StyleSheet.create({
     borderColor: "#CBD5E1",
     borderWidth: 1,
     padding: 12,
-    borderRadius: 14
+    borderRadius: 14,
+    maxWidth: "100%"
   },
   aiCodeContainer: {
-    backgroundColor: "#0F172A",
+    backgroundColor: "#F1F5F9",
     borderRadius: 8,
     marginTop: 6,
     marginBottom: 6,
-    overflow: "hidden"
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    overflow: "hidden",
+    maxWidth: "100%"
   },
   aiCodeHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#1E293B",
+    backgroundColor: "#E2E8F0",
     paddingHorizontal: 10,
     paddingVertical: 5
   },
   aiCodeLangText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#38BDF8",
+    color: "#5B3CF5",
     letterSpacing: 0.5
   },
   aiCodeText: {
-    fontFamily: "monospace",
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     fontSize: 12,
-    color: "#F8FAFC",
+    color: "#0F172A",
     padding: 10,
     lineHeight: 18
   },
@@ -1342,13 +1430,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "flex-end",
-    marginBottom: 14
+    marginBottom: 14,
+    width: "100%"
   },
   msgBodyRight: {
     backgroundColor: "#5B3CF5",
-    borderRadius: 14,
-    padding: 12,
-    maxWidth: "88%"
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    maxWidth: "82%",
+    alignSelf: "flex-end"
   },
   msgTextRight: {
     fontSize: 14,
@@ -1477,33 +1568,38 @@ const styles = StyleSheet.create({
     color: "#5B3CF5"
   },
   codeSnippetBlock: {
-    backgroundColor: "#1E293B",
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 4
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    maxHeight: 180,
+    overflow: "hidden"
   },
   codeHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "#334155",
+    borderBottomColor: "#E2E8F0",
     paddingBottom: 4
   },
   codeLangText: {
     fontSize: 11,
-    color: "#94A3B8",
-    fontWeight: "600"
+    color: "#5B3CF5",
+    fontWeight: "700"
   },
   copyCodeText: {
     fontSize: 11,
-    color: "#38BDF8",
+    color: "#6366F1",
     fontWeight: "600"
   },
   codeContentText: {
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    fontSize: 13,
-    color: "#F8FAFC",
+    fontSize: 12.5,
+    color: "#0F172A",
     lineHeight: 18
   },
   joinRoomContainer: {

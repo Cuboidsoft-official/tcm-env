@@ -512,6 +512,15 @@ export function getNotifications(token) {
   });
 }
 
+export function markAllNotificationsReadApi(token) {
+  return request("/home/notifications/read-all", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
 export function submitClassReflection(token, reflectionData) {
   return request("/home/class-reflection", {
     method: "POST",

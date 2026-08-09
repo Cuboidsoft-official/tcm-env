@@ -1420,18 +1420,25 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
       </Modal>
 
       {/* MODAL: ADD COMMENT */}
-      <Modal visible={Boolean(activeCommentPostId)} transparent animationType="fade" onRequestClose={() => setActiveCommentPostId(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: 240, padding: 16 }]}>
-            <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: "#0F172A", marginBottom: 10 }}>Add Comment</Text>
+      <Modal visible={Boolean(activeCommentPostId)} transparent animationType="slide" onRequestClose={() => setActiveCommentPostId(null)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1, justifyContent: "flex-end" }}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setActiveCommentPostId(null)} />
+          <View style={[styles.modalContent, { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, width: "100%", backgroundColor: "#FFFFFF" }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A", marginBottom: 10 }}>Add Comment</Text>
             <TextInput
               value={commentText}
               onChangeText={setCommentText}
-              style={[styles.textInput, { height: 80 }]}
+              style={[styles.textInput, { height: 90, textAlignVertical: "top", backgroundColor: "#F8FAFC", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: "#E2E8F0" }]}
               multiline
               placeholder="Type your comment..."
+              placeholderTextColor="#94A3B8"
+              autoFocus
             />
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
               <Pressable onPress={() => setActiveCommentPostId(null)} style={[styles.docBtnSecondary, { flex: 1 }]}>
                 <Text style={styles.docBtnSecondaryText}>Cancel</Text>
               </Pressable>
@@ -1440,7 +1447,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
               </Pressable>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

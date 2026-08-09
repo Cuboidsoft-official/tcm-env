@@ -3,7 +3,7 @@
 export const VAPID_PUBLIC_KEY = "BKfFsEAwiqI4h42Z0OC0sx0In8j8g3CrjmyN_TNjHaj4kLlu26_h1gFwdsj4uDURFcljxo4-3F3NBVLWG3ly3So";
 
 const userPushTokens = {}; // userId -> Array of { token, platform, registeredAt }
-const userNotificationsStore = {}; // userId -> Array of In-App Notification objects
+export const userNotificationsStore = {}; // userId -> Array of In-App Notification objects
 
 export function registerPushToken(userId, token, platform = "android") {
   if (!userId || !token) return;
@@ -31,6 +31,10 @@ export function addInAppNotification(targetUserId, notifObj) {
     time: "Just now",
     timestamp: new Date().toISOString(),
     unread: true,
+    section: "Today",
+    icon: notifObj.icon || "bell",
+    iconBg: notifObj.iconBg || "#F0EDFF",
+    iconColor: notifObj.iconColor || "#5B3CF5",
     ...notifObj
   };
   userNotificationsStore[key].unshift(item);
@@ -57,6 +61,13 @@ export function markInAppNotificationRead(userId, notifId) {
     userNotificationsStore[key] = userNotificationsStore[key].map((n) =>
       n.id === notifId ? { ...n, unread: false } : n
     );
+  }
+}
+
+export function markAllInAppNotificationsRead(userId) {
+  const key = String(userId);
+  if (userNotificationsStore[key]) {
+    userNotificationsStore[key] = userNotificationsStore[key].map((n) => ({ ...n, unread: false }));
   }
 }
 

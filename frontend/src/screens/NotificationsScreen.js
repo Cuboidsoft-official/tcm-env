@@ -5,13 +5,14 @@ import {
   Dimensions,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View
 } from "react-native";
 import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
-import { getNotifications, respondToFriendRequestNotification } from "../api/client";
+import { getNotifications, respondToFriendRequestNotification, markAllNotificationsReadApi } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -27,17 +28,23 @@ export default function NotificationsScreen({
   const [activeTab, setActiveTab] = useState("All");
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadNotificationData();
   }, [session?.token]);
 
-  async function loadNotificationData() {
+  async function loadNotificationData(isPull = false) {
     if (!session?.token) {
       setLoading(false);
+      setRefreshing(false);
       return;
     }
-    setLoading(true);
+    if (isPull) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
       const data = await getNotifications(session.token);
       if (data?.notifications) {
@@ -46,9 +53,19 @@ export default function NotificationsScreen({
         setNotifications([]);
       }
     } catch (e) {
-      setNotifications([]);
+      if (!isPull) setNotifications([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  async function handleMarkAllAsRead() {
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+    if (session?.token) {
+      try {
+        await markAllNotificationsReadApi(session.token);
+      } catch (e) {}
     }
   }
 
@@ -125,12 +142,21 @@ export default function NotificationsScreen({
           <Text style={styles.headerTitle}>Notifications</Text>
         </View>
 
-        <Pressable
-          onPress={() => Alert.alert("Notification Settings", "Push Notifications: Enabled\nEmail Digest: Daily\nSound: On")}
-          style={styles.settingsBtn}
-        >
-          <Feather name="settings" size={18} color="#5B3CF5" />
-        </Pressable>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {notifications.some((n) => n.unread) ? (
+            <Pressable onPress={handleMarkAllAsRead} style={styles.markReadBtn}>
+              <Feather name="check-circle" size={14} color="#5B3CF5" style={{ marginRight: 4 }} />
+              <Text style={styles.markReadText}>Read All</Text>
+            </Pressable>
+          ) : null}
+
+          <Pressable
+            onPress={() => Alert.alert("Notification Settings", "Push Notifications: Enabled\nEmail Digest: Daily\nSound: On")}
+            style={styles.settingsBtn}
+          >
+            <Feather name="settings" size={18} color="#5B3CF5" />
+          </Pressable>
+        </View>
       </View>
 
       {/* 2. Category Filter Tabs Row */}
@@ -149,7 +175,13 @@ export default function NotificationsScreen({
       </View>
 
       {/* 3. Notifications Timeline List */}
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => loadNotificationData(true)} colors={["#5B3CF5"]} />
+        }
+      >
         {loading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="small" color="#5B3CF5" />
@@ -299,6 +331,21 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 20,
     color: "#181725"
+  },
+  markReadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0EDFF",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E0D7FE"
+  },
+  markReadText: {
+    fontFamily: fonts.bold,
+    fontSize: 11.5,
+    color: "#5B3CF5"
   },
   settingsBtn: {
     width: 36,

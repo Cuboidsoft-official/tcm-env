@@ -6,6 +6,7 @@ import {
   Dimensions,
   Easing,
   Image,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
@@ -290,9 +291,14 @@ export default function HomeScreen({ session, onLogout }) {
     if (!u) return;
     if (isSelfUser(u)) {
       setTargetUserProfile(null);
+      setSelectedMentorId(null);
       setActiveDrawerItem("Profile");
       setActiveTab("Profile");
+    } else if (u?.role?.toLowerCase().includes("mentor") || String(u?.id || "").startsWith("m") || u?.isMentor) {
+      setTargetUserProfile(null);
+      setSelectedMentorId(u?.id || u);
     } else {
+      setSelectedMentorId(null);
       setTargetUserProfile(u);
     }
   }
@@ -507,11 +513,13 @@ export default function HomeScreen({ session, onLogout }) {
 
   const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen);
 
+  const isFullWidthChat = Boolean(activeDoubtRoom || activeChatUser);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
       <View style={[styles.appShell, { backgroundColor: theme.bg }]}>
         {isFullScreenView ? (
-          <View style={[styles.page, { width: contentWidth, flex: 1, paddingBottom: 0 }]}>
+          <View style={[styles.page, { width: isFullWidthChat ? "100%" : contentWidth, flex: 1, paddingBottom: 0, paddingHorizontal: isFullWidthChat ? 0 : undefined }]}>
             {activeDoubtRoom ? (
               <DoubtRoomScreen
                 session={session}
@@ -1108,18 +1116,18 @@ function QuickAccess({ categories, activeCategory, setActiveCategory }) {
 function getCategoryIconConfig(categoryName) {
   const clean = categoryName.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|💼|🔥|✨|👥/gu, "").trim();
 
-  if (clean.includes("For You")) return { icon: "sparkles", color: "#8B5CF6", label: "For You" };
-  if (clean.includes("Following")) return { icon: "people", color: "#3B82F6", label: "Following" };
-  if (clean.includes("Trending")) return { icon: "flame", color: "#EF4444", label: "Trending" };
-  if (clean.includes("Jobs") || clean.includes("Hiring")) return { icon: "briefcase", color: "#5B3CF5", label: "Jobs & Hiring" };
-  if (clean.includes("UPSC")) return { icon: "school", color: "#10B981", label: "UPSC" };
-  if (clean.includes("JEE")) return { icon: "calculator", color: "#2563EB", label: "JEE" };
-  if (clean.includes("NEET")) return { icon: "medical", color: "#E11D48", label: "NEET" };
-  if (clean.includes("Coding")) return { icon: "code-slash", color: "#7C3AED", label: "Coding" };
-  if (clean.includes("AI") || clean.includes("ML")) return { icon: "hardware-chip", color: "#F59E0B", label: "AI / ML" };
-  if (clean.includes("Design")) return { icon: "color-palette", color: "#EC4899", label: "Design" };
+  if (clean.includes("For You")) return { icon: "sparkles", color: "#181725", label: "For You" };
+  if (clean.includes("Following")) return { icon: "people", color: "#181725", label: "Following" };
+  if (clean.includes("Trending")) return { icon: "flame", color: "#181725", label: "Trending" };
+  if (clean.includes("Jobs") || clean.includes("Hiring")) return { icon: "briefcase", color: "#181725", label: "Jobs & Hiring" };
+  if (clean.includes("UPSC")) return { icon: "school", color: "#181725", label: "UPSC" };
+  if (clean.includes("JEE")) return { icon: "calculator", color: "#181725", label: "JEE" };
+  if (clean.includes("NEET")) return { icon: "medical", color: "#181725", label: "NEET" };
+  if (clean.includes("Coding")) return { icon: "code-slash", color: "#181725", label: "Coding" };
+  if (clean.includes("AI") || clean.includes("ML")) return { icon: "hardware-chip", color: "#181725", label: "AI / ML" };
+  if (clean.includes("Design")) return { icon: "color-palette", color: "#181725", label: "Design" };
 
-  return { icon: "grid", color: "#64748B", label: clean || categoryName };
+  return { icon: "grid", color: "#181725", label: clean || categoryName };
 }
 
 function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
@@ -1209,17 +1217,31 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
 
         {/* Header Row */}
         <View style={[styles.postHeader, { marginTop: 4 }]}>
-          <Avatar name={job.mentorName || post.authorName} uri={job.mentorAvatarUrl || post.authorAvatarUrl} size={44} />
-          <View style={styles.postAuthor}>
-            <View style={styles.authorLine}>
-              <Text numberOfLines={1} style={styles.authorName}>{job.mentorName || post.authorName}</Text>
-              <View style={[styles.mentorBadgePill, { backgroundColor: "#F0EDFF", borderColor: "#C4B5FD", borderWidth: 1 }]}>
-                <Ionicons name="shield-checkmark" size={10} color="#5B3CF5" style={{ marginRight: 3 }} />
-                <Text style={[styles.mentorBadgeText, { color: "#5B3CF5", fontWeight: "700" }]}>Mentor Drive</Text>
+          <Pressable
+            onPress={() =>
+              onSelectUser &&
+              onSelectUser({
+                id: post.authorId || job.mentorName || "m1",
+                name: job.mentorName || post.authorName,
+                avatarUrl: job.mentorAvatarUrl || post.authorAvatarUrl,
+                role: job.mentorRole || post.authorRole || "Senior Mentor",
+                isMentor: true
+              })
+            }
+            style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
+          >
+            <Avatar name={job.mentorName || post.authorName} uri={job.mentorAvatarUrl || post.authorAvatarUrl} size={44} />
+            <View style={styles.postAuthor}>
+              <View style={styles.authorLine}>
+                <Text numberOfLines={1} style={styles.authorName}>{job.mentorName || post.authorName}</Text>
+                <View style={[styles.mentorBadgePill, { backgroundColor: "#F0EDFF", borderColor: "#C4B5FD", borderWidth: 1 }]}>
+                  <Ionicons name="shield-checkmark" size={10} color="#5B3CF5" style={{ marginRight: 3 }} />
+                  <Text style={[styles.mentorBadgeText, { color: "#5B3CF5", fontWeight: "700" }]}>Mentor Drive</Text>
+                </View>
               </View>
+              <Text numberOfLines={1} style={styles.authorRole}>{job.company || "TCM Hiring Partner"} • {job.mentorRole || "Senior Mentor"}</Text>
             </View>
-            <Text numberOfLines={1} style={styles.authorRole}>{job.company || "TCM Hiring Partner"} • {job.mentorRole || "Senior Mentor"}</Text>
-          </View>
+          </Pressable>
 
           <Pressable
             onPress={() => {
@@ -1243,7 +1265,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
         </View>
 
         {/* Job Title */}
-        <Text style={{ fontSize: 17.5, fontFamily: fonts.bold, color: "#0F172A", marginTop: 12, lineHeight: 23 }}>
+        <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: "#0F172A", marginTop: 8, lineHeight: 20 }}>
           {job.title}
         </Text>
 
@@ -1363,7 +1385,21 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
 
   return (
     <View style={styles.postCard}>
-      <Pressable onPress={() => onSelectUser && onSelectUser()} style={styles.postHeader}>
+      <Pressable
+        onPress={() =>
+          onSelectUser &&
+          onSelectUser(
+            post.author || {
+              id: post.authorId || post.authorName,
+              name: post.authorName,
+              avatarUrl: post.authorAvatarUrl,
+              role: post.authorRole,
+              isMentor: Boolean(post.isMentor || post.authorRole?.toLowerCase().includes("mentor"))
+            }
+          )
+        }
+        style={styles.postHeader}
+      >
         <Avatar name={post.authorName} uri={post.authorAvatarUrl} size={42} />
         <View style={styles.postAuthor}>
           <View style={styles.authorLine}>
@@ -1797,9 +1833,14 @@ function DocumentThumbnail({ title }) {
 function PostActions({ post, session, metrics = {}, onComment }) {
   const [liked, setLiked] = useState(Boolean(post?.isLiked));
   const [likesCount, setLikesCount] = useState(metrics?.likes || 0);
-  const [commentsCount, setCommentsCount] = useState(metrics?.comments || 0);
+  const postCommentCount = post?.metrics?.comments !== undefined ? post.metrics.comments : (post?.commentsList ? post.commentsList.length : (metrics?.comments || 0));
+  const [commentsCount, setCommentsCount] = useState(postCommentCount);
   const [sharesCount, setSharesCount] = useState(metrics?.shares || 0);
   const [saved, setSaved] = useState(Boolean(post?.bookmarked));
+
+  useEffect(() => {
+    setCommentsCount(postCommentCount);
+  }, [postCommentCount]);
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
   // Animated scale for Clapping bounce animation
@@ -2256,9 +2297,10 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
     setReplyingTo(null);
 
     try {
-      if (session?.token && post?.id) {
+      const targetPostId = post?.id || post?._id;
+      if (session?.token && targetPostId) {
         const parentId = currentReplyTarget ? (currentReplyTarget.id || currentReplyTarget._id) : undefined;
-        const res = await addPostComment(session.token, post.id, textToSend, parentId);
+        const res = await addPostComment(session.token, targetPostId, textToSend, parentId);
 
         if (currentReplyTarget) {
           const newReply = res?.comment || {
@@ -2320,117 +2362,124 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
 
   return (
     <Modal animationType="slide" transparent visible={Boolean(post)} onRequestClose={onClose}>
-      <View style={styles.commentSheetShell}>
-        <Pressable style={styles.commentBackdrop} onPress={onClose} />
-        <View style={styles.commentSheet}>
-          <View style={styles.sheetHandle} />
-          <View style={styles.commentHeader}>
-            <Text style={styles.commentTitle}>Comments</Text>
-            <Text style={styles.commentCount}>{comments.length}</Text>
-            <Pressable hitSlop={10} onPress={onClose} style={styles.commentClose}>
-              <Feather name="x" size={21} color={colors.ink} />
-            </Pressable>
-          </View>
-
-          {loadingComments ? (
-            <ActivityIndicator size="medium" color="#5B3CF5" style={{ marginVertical: 30 }} />
-          ) : comments.length === 0 ? (
-            <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: 40, paddingHorizontal: 20 }}>
-              <Feather name="message-circle" size={36} color="#B5B3C8" style={{ marginBottom: 8 }} />
-              <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: "#181725" }}>No comments yet</Text>
-              <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: "#7C7C9A", textAlign: "center", marginTop: 2 }}>
-                Be the first to share your thoughts on this post!
-              </Text>
-            </View>
-          ) : (
-            <ScrollView contentContainerStyle={styles.commentList} showsVerticalScrollIndicator={false}>
-              {comments.map((comment) => {
-                const commentId = comment.id || comment._id;
-                const authorName = comment.name || comment.userName || "Learner";
-                return (
-                  <View key={commentId} style={{ marginBottom: 12 }}>
-                    <View style={styles.commentRow}>
-                      <TouchableOpacity onPress={() => handleCommentUserClick(comment)} activeOpacity={0.8}>
-                        <Avatar name={authorName} uri={comment.avatarUrl} size={36} />
-                      </TouchableOpacity>
-                      <View style={styles.commentBody}>
-                        <View style={styles.commentBubble}>
-                          <TouchableOpacity onPress={() => handleCommentUserClick(comment)} activeOpacity={0.8}>
-                            <Text numberOfLines={1} style={styles.commentName}>{authorName}</Text>
-                          </TouchableOpacity>
-                          {renderFormattedCommentText(comment.text)}
-                        </View>
-                        <View style={styles.commentActions}>
-                          <Text style={styles.commentActionText}>{comment.time || "Just now"}</Text>
-                          <Text style={styles.commentActionText}>{comment.likes || 0} likes</Text>
-                          <TouchableOpacity onPress={() => handleReplyComment(comment)}>
-                            <Text style={[styles.commentActionText, { color: "#3897F0", fontFamily: fonts.semiBold }]}>Reply</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                      <Pressable hitSlop={8} onPress={() => handleToggleCommentLike(commentId)} style={styles.commentLike}>
-                        <Ionicons name={comment.isLiked ? "heart" : "heart-outline"} size={16} color={comment.isLiked ? "#FF304D" : "#68677D"} />
-                      </Pressable>
-                    </View>
-
-                    {/* Instagram-Style Nested Replies */}
-                    {Array.isArray(comment.replies) && comment.replies.length > 0 && (
-                      <View style={{ paddingLeft: 42, borderLeftWidth: 1.5, borderLeftColor: "#E2E8F0", marginLeft: 18, marginTop: 4, gap: 8 }}>
-                        {comment.replies.map((reply) => (
-                          <View key={reply.id} style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
-                            <TouchableOpacity onPress={() => handleCommentUserClick(reply)} activeOpacity={0.8}>
-                              <Avatar name={reply.name} uri={reply.avatarUrl} size={26} />
-                            </TouchableOpacity>
-                            <View style={{ flex: 1 }}>
-                              <View style={styles.commentBubble}>
-                                <TouchableOpacity onPress={() => handleCommentUserClick(reply)} activeOpacity={0.8}>
-                                  <Text numberOfLines={1} style={styles.commentName}>{reply.name}</Text>
-                                </TouchableOpacity>
-                                {renderFormattedCommentText(reply.text)}
-                              </View>
-                              <View style={styles.commentActions}>
-                                <Text style={styles.commentActionText}>{reply.time || "Just now"}</Text>
-                                <TouchableOpacity onPress={() => handleReplyComment(comment)}>
-                                  <Text style={[styles.commentActionText, { color: "#3897F0", fontFamily: fonts.semiBold }]}>Reply</Text>
-                                </TouchableOpacity>
-                              </View>
-                            </View>
-                          </View>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-            </ScrollView>
-          )}
-
-          {replyingTo && (
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#EFF6FF", paddingHorizontal: 12, paddingVertical: 6, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderWidth: 1, borderColor: "#BFDBFE" }}>
-              <Text style={{ fontSize: 11, color: "#3897F0", fontFamily: fonts.semiBold }}>
-                Replying to @{replyingTo.name || replyingTo.userName || "Learner"}
-              </Text>
-              <Pressable onPress={() => { setReplyingTo(null); setCommentText(""); }}>
-                <Feather name="x" size={14} color="#3897F0" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.commentSheetShell}>
+          <Pressable style={styles.commentBackdrop} onPress={onClose} />
+          <View style={styles.commentSheet}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.commentHeader}>
+              <Text style={styles.commentTitle}>Comments</Text>
+              <Text style={styles.commentCount}>{comments.length}</Text>
+              <Pressable hitSlop={10} onPress={onClose} style={styles.commentClose}>
+                <Feather name="x" size={21} color={colors.ink} />
               </Pressable>
             </View>
-          )}
 
-          <View style={styles.commentInputRow}>
-            <Avatar name="You" size={34} />
-            <TextInput
-              placeholder="Add a comment..."
-              placeholderTextColor="#8A879F"
-              style={styles.commentInput}
-              value={commentText}
-              onChangeText={setCommentText}
-            />
-            <Pressable disabled={!commentText.trim() || submittingComment} onPress={submitComment} style={[styles.commentSend, (!commentText.trim() || submittingComment) && styles.commentSendDisabled]}>
-              {submittingComment ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Feather name="send" size={17} color="#FFFFFF" />}
-            </Pressable>
+            <View style={{ flex: 1 }}>
+              {loadingComments ? (
+                <ActivityIndicator size="medium" color="#5B3CF5" style={{ marginVertical: 30 }} />
+              ) : comments.length === 0 ? (
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 40, paddingHorizontal: 20 }}>
+                  <Feather name="message-circle" size={36} color="#B5B3C8" style={{ marginBottom: 8 }} />
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: "#181725" }}>No comments yet</Text>
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: "#7C7C9A", textAlign: "center", marginTop: 2 }}>
+                    Be the first to share your thoughts on this post!
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView contentContainerStyle={styles.commentList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  {comments.map((comment) => {
+                    const commentId = comment.id || comment._id;
+                    const authorName = comment.name || comment.userName || "Learner";
+                    return (
+                      <View key={commentId} style={{ marginBottom: 12 }}>
+                        <View style={styles.commentRow}>
+                          <TouchableOpacity onPress={() => handleCommentUserClick(comment)} activeOpacity={0.8}>
+                            <Avatar name={authorName} uri={comment.avatarUrl} size={36} />
+                          </TouchableOpacity>
+                          <View style={styles.commentBody}>
+                            <View style={styles.commentBubble}>
+                              <TouchableOpacity onPress={() => handleCommentUserClick(comment)} activeOpacity={0.8}>
+                                <Text numberOfLines={1} style={styles.commentName}>{authorName}</Text>
+                              </TouchableOpacity>
+                              {renderFormattedCommentText(comment.text)}
+                            </View>
+                            <View style={styles.commentActions}>
+                              <Text style={styles.commentActionText}>{comment.time || "Just now"}</Text>
+                              <Text style={styles.commentActionText}>{comment.likes || 0} likes</Text>
+                              <TouchableOpacity onPress={() => handleReplyComment(comment)}>
+                                <Text style={[styles.commentActionText, { color: "#3897F0", fontFamily: fonts.semiBold }]}>Reply</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          <Pressable hitSlop={8} onPress={() => handleToggleCommentLike(commentId)} style={styles.commentLike}>
+                            <Ionicons name={comment.isLiked ? "heart" : "heart-outline"} size={16} color={comment.isLiked ? "#FF304D" : "#68677D"} />
+                          </Pressable>
+                        </View>
+
+                        {/* Instagram-Style Nested Replies */}
+                        {Array.isArray(comment.replies) && comment.replies.length > 0 && (
+                          <View style={{ paddingLeft: 42, borderLeftWidth: 1.5, borderLeftColor: "#E2E8F0", marginLeft: 18, marginTop: 4, gap: 8 }}>
+                            {comment.replies.map((reply) => (
+                              <View key={reply.id} style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
+                                <TouchableOpacity onPress={() => handleCommentUserClick(reply)} activeOpacity={0.8}>
+                                  <Avatar name={reply.name} uri={reply.avatarUrl} size={26} />
+                                </TouchableOpacity>
+                                <View style={{ flex: 1 }}>
+                                  <View style={styles.commentBubble}>
+                                    <TouchableOpacity onPress={() => handleCommentUserClick(reply)} activeOpacity={0.8}>
+                                      <Text numberOfLines={1} style={styles.commentName}>{reply.name}</Text>
+                                    </TouchableOpacity>
+                                    {renderFormattedCommentText(reply.text)}
+                                  </View>
+                                  <View style={styles.commentActions}>
+                                    <Text style={styles.commentActionText}>{reply.time || "Just now"}</Text>
+                                    <TouchableOpacity onPress={() => handleReplyComment(comment)}>
+                                      <Text style={[styles.commentActionText, { color: "#3897F0", fontFamily: fonts.semiBold }]}>Reply</Text>
+                                    </TouchableOpacity>
+                                  </View>
+                                </View>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              )}
+            </View>
+
+            {replyingTo && (
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#EFF6FF", paddingHorizontal: 12, paddingVertical: 6, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderWidth: 1, borderColor: "#BFDBFE" }}>
+                <Text style={{ fontSize: 11, color: "#3897F0", fontFamily: fonts.semiBold }}>
+                  Replying to @{replyingTo.name || replyingTo.userName || "Learner"}
+                </Text>
+                <Pressable onPress={() => { setReplyingTo(null); setCommentText(""); }}>
+                  <Feather name="x" size={14} color="#3897F0" />
+                </Pressable>
+              </View>
+            )}
+
+            <View style={styles.commentInputRow}>
+              <Avatar name="You" size={34} />
+              <TextInput
+                placeholder="Add a comment..."
+                placeholderTextColor="#8A879F"
+                style={styles.commentInput}
+                value={commentText}
+                onChangeText={setCommentText}
+              />
+              <Pressable disabled={!commentText.trim() || submittingComment} onPress={submitComment} style={[styles.commentSend, (!commentText.trim() || submittingComment) && styles.commentSendDisabled]}>
+                {submittingComment ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Feather name="send" size={17} color="#FFFFFF" />}
+              </Pressable>
+            </View>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -3289,15 +3338,15 @@ const styles = StyleSheet.create({
   brand: {
     color: colors.primaryDark,
     fontFamily: fonts.extraBold,
-    fontSize: 30,
-    letterSpacing: 0,
-    lineHeight: 33
+    fontSize: 21,
+    letterSpacing: 0.5,
+    lineHeight: 24
   },
   brandSub: {
-    color: "#4C496D",
+    color: "#64748B",
     fontFamily: fonts.medium,
-    fontSize: 11,
-    lineHeight: 14
+    fontSize: 9.5,
+    lineHeight: 12
   },
   headerActions: {
     alignItems: "center",
@@ -3485,20 +3534,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F8F7FC",
     borderRadius: 8,
-    height: 45,
+    height: 36,
     justifyContent: "center",
-    minWidth: 80,
-    paddingHorizontal: 15
+    minWidth: 70,
+    paddingHorizontal: 12
   },
   categoryTabActive: {
     backgroundColor: "#F4F1FF",
     borderBottomColor: colors.primary,
-    borderBottomWidth: 3
+    borderBottomWidth: 2.5
   },
   categoryText: {
     color: "#5F5D76",
     fontFamily: fonts.semiBold,
-    fontSize: 13
+    fontSize: 12
   },
   categoryTextActive: {
     color: colors.primary
@@ -3518,13 +3567,15 @@ const styles = StyleSheet.create({
     paddingBottom: 96
   },
   postCard: {
-    ...shadow,
     backgroundColor: "#FFFFFF",
-    borderColor: "#EEEAF7",
-    borderRadius: 11,
-    borderWidth: 1,
+    borderRadius: 12,
+    borderWidth: 0,
     padding: 14,
-    shadowOpacity: 0.08
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2
   },
   postHeader: {
     alignItems: "center",
@@ -3545,8 +3596,8 @@ const styles = StyleSheet.create({
     color: colors.ink,
     flexShrink: 1,
     fontFamily: fonts.bold,
-    fontSize: 16,
-    lineHeight: 20
+    fontSize: 14,
+    lineHeight: 18
   },
   mentorBadgePill: {
     flexDirection: "row",
@@ -3554,14 +3605,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEF3C7",
     borderWidth: 1,
     borderColor: "#FDE68A",
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5
   },
   mentorBadgeText: {
     color: "#D97706",
     fontFamily: fonts.bold,
-    fontSize: 9.5
+    fontSize: 9
   },
   studentBadgePill: {
     flexDirection: "row",
@@ -3569,21 +3620,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#F1F5F9",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5
   },
   studentBadgeText: {
     color: "#475569",
     fontFamily: fonts.bold,
-    fontSize: 9.5
+    fontSize: 9
   },
   authorRole: {
-    color: "#53506E",
+    color: "#64748B",
     fontFamily: fonts.medium,
-    fontSize: 13,
-    lineHeight: 16,
-    marginTop: 0
+    fontSize: 11.5,
+    lineHeight: 15,
+    marginTop: 1
   },
   postTime: {
     color: "#6D6A85",
@@ -4332,10 +4383,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
-    maxHeight: "78%",
-    minHeight: "58%",
+    height: "75%",
     overflow: "hidden",
-    paddingTop: 8
+    paddingTop: 8,
+    display: "flex",
+    flexDirection: "column"
   },
   sheetHandle: {
     alignSelf: "center",

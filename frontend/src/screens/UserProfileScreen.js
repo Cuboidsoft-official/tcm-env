@@ -145,7 +145,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
     .join("")
     .toUpperCase() || "TM";
 
-  const filteredPosts = posts.filter((post) => {
+  const filteredPosts = (userPosts || []).filter((post) => {
     if (activeTab === "Posts") return true;
     if (activeTab === "Notes" || activeTab === "Documents") {
       return (
@@ -160,10 +160,10 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
   });
 
   const stats = {
-    postsCount: profileData?.stats?.postsCount !== undefined ? profileData.stats.postsCount : posts.length,
+    postsCount: profileData?.stats?.postsCount !== undefined ? profileData.stats.postsCount : (userPosts || []).length,
     followers: profileData?.stats?.followers !== undefined ? profileData.stats.followers : followersList.length,
     following: profileData?.stats?.following !== undefined ? profileData.stats.following : followingList.length,
-    reviews: profileData?.stats?.reviews !== undefined ? profileData.stats.reviews : posts.reduce((sum, p) => sum + (p.commentsCount || p.metrics?.comments || 0), 0).toString()
+    reviews: profileData?.stats?.reviews !== undefined ? profileData.stats.reviews : (userPosts || []).reduce((sum, p) => sum + (p.commentsCount || p.metrics?.comments || 0), 0).toString()
   };
 
   const filteredUserList = (followersModalOpen ? followersList : followingList).filter((u) => {

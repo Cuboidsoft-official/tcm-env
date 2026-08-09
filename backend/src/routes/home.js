@@ -14,6 +14,10 @@ import { ClassReview } from "../models/ClassReview.js";
 import { Job } from "../models/Job.js";
 import {
   registerPushToken,
+  getInAppNotifications,
+  markInAppNotificationRead,
+  markAllInAppNotificationsRead,
+  userNotificationsStore,
   notifyCoursePublished,
   notifyNewCommunityPost,
   notifyPostLiked,
@@ -268,7 +272,7 @@ async function buildLearnPayload(user, mentors, learn = {}, memoryStore = null, 
   };
 }
 
-function mapPost(post) {
+function mapPost(post, globalPostComments = {}) {
   const isMentor = Boolean(
     post.isMentor ||
     post.authorRole?.toLowerCase().includes("mentor") ||
@@ -277,6 +281,12 @@ function mapPost(post) {
     post.authorRole?.toLowerCase().includes("ex-") ||
     post.authorRole?.toLowerCase().includes("expert")
   );
+
+  const postIdStr = String(post._id || post.id);
+  const memCommentsCount = Array.isArray(globalPostComments[postIdStr]) ? globalPostComments[postIdStr].length : 0;
+  const listCommentsCount = Array.isArray(post.commentsList) ? post.commentsList.length : 0;
+  const metricCommentsCount = post.metrics?.comments || 0;
+  const totalComments = Math.max(metricCommentsCount, listCommentsCount, memCommentsCount);
 
   return {
     id: post._id || post.id,
@@ -295,7 +305,11 @@ function mapPost(post) {
     documentSize: post.documentSize || "4.2 MB",
     text: post.text,
     media: post.media,
-    metrics: post.metrics,
+    metrics: {
+      likes: post.metrics?.likes || 0,
+      comments: totalComments,
+      shares: post.metrics?.shares || 0
+    },
     tags: post.tags,
     timeLabel: getTimeLabel(post.publishedAt)
   };
@@ -347,7 +361,8 @@ homeRouter.get("/", requireAuth, async (req, res) => {
       };
     });
 
-    const allHomePosts = [...jobPostCards, ...posts.map(mapPost)];
+    const globalComments = req.app.locals.globalPostComments || {};
+    const allHomePosts = [...jobPostCards, ...posts.map((p) => mapPost(p, globalComments))];
 
     return res.json({
       user: {
@@ -868,7 +883,7 @@ homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
 homeRouter.post("/post/:postId/comment", requireAuth, async (req, res) => {
   const { postId } = req.params;
   const { text, parentCommentId } = req.body;
-  const userId = String(req.user._id);
+  const userId = String(req.user._id || req.user.id || "u1");
   const memoryStore = req.app.locals.memoryStore;
 
   if (!text || !text.trim()) {
@@ -880,19 +895,19 @@ homeRouter.post("/post/:postId/comment", requireAuth, async (req, res) => {
     post = await CommunityPost.findById(postId);
   } catch (e) {}
 
-  if (!post && memoryStore) {
-    post = memoryStore.posts?.find((p) => String(p.id || p._id) === String(postId));
+  if (!post && memoryStore && Array.isArray(memoryStore.posts)) {
+    post = memoryStore.posts.find((p) => String(p.id || p._id) === String(postId));
   }
 
-  if (!post) {
-    return res.status(404).json({ message: "Post not found" });
+  if (!req.app.locals.globalPostComments) {
+    req.app.locals.globalPostComments = {};
   }
-
-  if (!post.commentsList) post.commentsList = [];
-  if (!post.metrics) post.metrics = { likes: 0, comments: 0, shares: 0 };
+  if (!req.app.locals.globalPostComments[postId]) {
+    req.app.locals.globalPostComments[postId] = [];
+  }
 
   const newComment = {
-    id: `comment-${Date.now()}`,
+    id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     userId,
     name: req.user.name || "TCM Learner",
     avatarUrl: req.user.avatarUrl || "",
@@ -903,39 +918,47 @@ homeRouter.post("/post/:postId/comment", requireAuth, async (req, res) => {
     createdAt: new Date()
   };
 
-  if (parentCommentId) {
-    const parentComment = post.commentsList.find((c) => String(c.id || c._id) === String(parentCommentId));
-    if (parentComment) {
-      if (!parentComment.replies) parentComment.replies = [];
-      parentComment.replies.push(newComment);
+  if (post) {
+    if (!post.commentsList) post.commentsList = [];
+    if (!post.metrics) post.metrics = { likes: 0, comments: 0, shares: 0 };
+
+    if (parentCommentId) {
+      const parentComment = post.commentsList.find((c) => String(c.id || c._id) === String(parentCommentId));
+      if (parentComment) {
+        if (!parentComment.replies) parentComment.replies = [];
+        parentComment.replies.push(newComment);
+      } else {
+        post.commentsList.unshift(newComment);
+      }
     } else {
       post.commentsList.unshift(newComment);
     }
-  } else {
-    post.commentsList.unshift(newComment);
+
+    post.metrics.comments = post.commentsList.length;
+
+    if (typeof post.markModified === "function") {
+      post.markModified("commentsList");
+    }
+    if (typeof post.save === "function") {
+      await post.save().catch(() => {});
+    }
+
+    if (post.authorId && String(post.authorId) !== userId) {
+      notifyPostCommented({
+        commenterName: req.user.name || "A learner",
+        postAuthorId: post.authorId,
+        commentText: text.trim(),
+        postId: String(post._id || post.id)
+      }).catch(() => {});
+    }
   }
 
-  post.metrics.comments = post.commentsList.length;
+  req.app.locals.globalPostComments[postId].unshift(newComment);
 
-  if (typeof post.markModified === "function") {
-    post.markModified("commentsList");
-  }
-  if (typeof post.save === "function") {
-    await post.save();
-  }
-
-  if (post.authorId && String(post.authorId) !== userId) {
-    notifyPostCommented({
-      commenterName: req.user.name || "A learner",
-      postAuthorId: post.authorId,
-      commentText: text.trim(),
-      postId: String(post._id || post.id)
-    }).catch(() => {});
-  }
-
-  res.status(201).json({
+  return res.status(201).json({
+    success: true,
     comment: newComment,
-    commentsCount: post.metrics.comments
+    commentsCount: post ? post.metrics.comments : req.app.locals.globalPostComments[postId].length
   });
 });
 
@@ -948,11 +971,22 @@ homeRouter.get("/post/:postId/comments", async (req, res) => {
     post = await CommunityPost.findById(postId);
   } catch (e) {}
 
-  if (!post && memoryStore) {
-    post = memoryStore.posts?.find((p) => String(p.id || p._id) === String(postId));
+  if (!post && memoryStore && Array.isArray(memoryStore.posts)) {
+    post = memoryStore.posts.find((p) => String(p.id || p._id) === String(postId));
   }
 
-  const comments = post?.commentsList || [];
+  const dbComments = post?.commentsList || [];
+  const memComments = (req.app.locals.globalPostComments && req.app.locals.globalPostComments[postId]) || [];
+  
+  const combinedMap = new Map();
+  dbComments.forEach((c) => combinedMap.set(String(c.id || c._id), c));
+  memComments.forEach((c) => {
+    if (!combinedMap.has(String(c.id || c._id))) {
+      combinedMap.set(String(c.id || c._id), c);
+    }
+  });
+
+  const comments = Array.from(combinedMap.values());
   res.json({ comments });
 });
 
@@ -2946,11 +2980,7 @@ homeRouter.post("/user/:targetId/friend-request", requireAuth, async (req, res) 
 
 homeRouter.get("/notifications", requireAuth, (req, res) => {
   const userId = String(req.user?._id || req.user?.id || "seed-user");
-  if (!req.app.locals.userNotifications) {
-    req.app.locals.userNotifications = {};
-  }
-
-  let notifications = req.app.locals.userNotifications[userId] || [];
+  let notifications = getInAppNotifications(userId);
 
   if (notifications.length === 0) {
     notifications = [
@@ -2983,6 +3013,15 @@ homeRouter.get("/notifications", requireAuth, (req, res) => {
 
   const unreadCount = notifications.filter((n) => n.unread).length;
   return res.json({ notifications, unreadCount });
+});
+
+homeRouter.post("/notifications/read-all", requireAuth, (req, res) => {
+  const userId = String(req.user?._id || req.user?.id);
+  markAllInAppNotificationsRead(userId);
+  if (req.app.locals.userNotifications && req.app.locals.userNotifications[userId]) {
+    req.app.locals.userNotifications[userId] = req.app.locals.userNotifications[userId].map((n) => ({ ...n, unread: false }));
+  }
+  res.json({ success: true, message: "All notifications marked as read." });
 });
 
 homeRouter.post("/notifications/:notificationId/action", requireAuth, (req, res) => {

@@ -10,7 +10,9 @@ import {
   TextInput,
   Image,
   ActivityIndicator,
-  Alert
+  Alert,
+  KeyboardAvoidingView,
+  Platform
 } from "react-native";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { submitMentorStudentReview, getMentorClassReviews, getEnrolledStudents } from "../api/client";
@@ -157,8 +159,12 @@ export default function MentorReviewsModal({ visible, session, courses = [], onC
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable onPress={onClose} style={styles.overlay}>
-        <Pressable onPress={(e) => e.stopPropagation()} style={styles.sheetBox}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <Pressable onPress={onClose} style={styles.overlay}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={styles.sheetBox}>
           {/* Handle bar */}
           <View style={styles.handleBar} />
 
@@ -394,8 +400,9 @@ export default function MentorReviewsModal({ visible, session, courses = [], onC
               )}
             </ScrollView>
           )}
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
