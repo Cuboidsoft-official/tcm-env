@@ -3,6 +3,7 @@ import { Alert, Modal, NativeModules, Pressable, ScrollView, StyleSheet, Text, T
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
+import * as AuthSession from "expo-auth-session";
 import Decorations from "../components/Decorations";
 import TcmLogo from "../components/TcmLogo";
 import { login, register, googleLogin, sendForgotPasswordOtp, verifyForgotPasswordOtp, resetPasswordWithOtp } from "../api/client";
@@ -130,9 +131,11 @@ export default function LoginScreen({ onLogin }) {
 
       // 2. Official Google OAuth Web Browser flow with prompt=select_account (no ExpoCryptoAES dependency)
       const webClientId = process.env.EXPO_PUBLIC_WEB_CLIENT_ID || "1018503930810-nuht0vf2crgh0k5e5da65f6hb4g3p7qn.apps.googleusercontent.com";
-      let redirectUri = "http://localhost:8081";
+      let redirectUri;
       if (typeof window !== "undefined" && window.location && window.location.origin) {
         redirectUri = window.location.origin;
+      } else {
+        redirectUri = AuthSession.makeRedirectUri();
       }
 
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +

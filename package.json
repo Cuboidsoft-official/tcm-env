@@ -16,5 +16,8 @@
   },
   "devDependencies": {
     "react": "19.1.0"
+  },
+  "dependencies": {
+    "expo-crypto": "15.0.9"
   }
 }
