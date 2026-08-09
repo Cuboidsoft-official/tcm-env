@@ -166,45 +166,126 @@ export async function register(payload) {
 }
 
 export async function getHome(token) {
+  let homeData = null;
   try {
-    return await request("/home", {
+    homeData = await request("/home", {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
   } catch (err) {
     if (err.status === 401) throw err;
+  }
+
+  // Fetch live jobs endpoint /jobs
+  let apiJobs = [];
+  try {
+    const jobsRes = await request("/jobs?filter=all", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (jobsRes && Array.isArray(jobsRes.jobs)) {
+      apiJobs = jobsRes.jobs;
+    }
+  } catch (e) {}
+
+  // Combine apiJobs and localJobPosts (deduplicated by ID)
+  const combinedJobMap = new Map();
+  (apiJobs || []).forEach((j) => {
+    const jId = String(j.id || j._id);
+    combinedJobMap.set(jId, j);
+  });
+  // Assuming localJobPosts variable exists as per context
+  (typeof localJobPosts !== 'undefined' ? localJobPosts : []).forEach((j) => {
+    const jId = String(j.id || j._id);
+    if (!combinedJobMap.has(jId)) {
+      combinedJobMap.set(jId, j);
+    }
+  });
+
+  const allJobs = Array.from(combinedJobMap.values());
+
+  const jobPostCards = allJobs.map((j) => {
+    const selectedCount = (j.applicants || []).filter((a) => a.status === "selected").length;
+    const reqLimit = Number(j.requiredCandidates || 1);
+    const isFilled = j.status === "filled" || selectedCount >= reqLimit;
+
+    const formattedJob = {
+      ...j,
+      id: String(j.id || j._id),
+      selectedCandidates: selectedCount,
+      status: isFilled ? "filled" : "active"
+    };
+
     return {
-      user: {
-        id: "local-user",
-        name: "TCM Learner",
-        email: "user@tcm.com",
-        role: "student",
-        avatarUrl: "",
-        progress: 0,
-        wallet: { balance: 0, coins: 100, transactions: [] }
-      },
-      notifications: 0,
-      progress: { label: "Today's Progress", value: 0 },
-      tabs: [
-        { key: "Home", icon: "home" },
-        { key: "Learn", icon: "book-open" },
-        { key: "Community", icon: "users" },
-        { key: "Chats", icon: "message-square" },
-        { key: "Profile", icon: "user" }
-      ],
-      categories: ["For You", "Following", "Trending", "UPSC", "JEE", "NEET", "Coding", "AI / ML", "Design"],
-      learn: {
-        heroBanners: [],
-        continueLearning: [],
-        popularCourses: [],
-        topCategories: [],
-        explore: []
-      },
-      stories: [],
-      posts: []
+      id: String(j.id || j._id),
+      authorName: j.mentorName || "TCM Mentor",
+      authorAvatarUrl: j.mentorAvatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+      authorRole: j.mentorRole || "Senior Mentor",
+      publishedAt: j.createdAt || new Date().toISOString(),
+      isMentor: true,
+      postType: "job_news",
+      category: "💼 Jobs & Hiring",
+      text: `HIRING DRIVE: ${j.title} at ${j.company || "TCM Partner"}. Salary: ₹${j.minSalary} - ₹${j.maxSalary} ${j.salaryPeriod || "LPA"}. Deadline: ${j.deadline || "Open"}.\n\n${j.description}`,
+      timeLabel: "Active Hiring",
+      documentUrl: j.documentUrl,
+      documentName: j.documentName,
+      documentSize: j.documentSize,
+      media: j.imageUrl ? { kind: "photo", imageUrl: j.imageUrl } : { kind: "none" },
+      jobData: formattedJob,
+      likedBy: [],
+      likesCount: 12,
+      commentsCount: (j.applicants || []).length,
+      comments: []
+    };
+  });
+
+  if (homeData) {
+    const existingCategories = Array.isArray(homeData.categories) ? [...homeData.categories] : [];
+    if (!existingCategories.some((c) => String(c).includes("Jobs"))) {
+      existingCategories.splice(3, 0, "💼 Jobs & Hiring");
+    }
+
+    const existingPosts = Array.isArray(homeData.posts) ? homeData.posts : [];
+    const nonJobPosts = existingPosts.filter(
+      (p) => p.postType !== "job_news" && !p.jobData && !jobPostCards.some((j) => j.id === p.id || j.id === String(p.id).replace(/^post-/, ""))
+    );
+
+    return {
+      ...homeData,
+      categories: existingCategories,
+      posts: [...jobPostCards, ...nonJobPosts]
     };
   }
+
+  return {
+    user: {
+      id: "local-user",
+      name: "TCM Learner",
+      email: "user@tcm.com",
+      role: "student",
+      avatarUrl: "",
+      progress: 0,
+      wallet: { balance: 0, coins: 100, transactions: [] }
+    },
+    notifications: 0,
+    progress: { label: "Today's Progress", value: 0 },
+    tabs: [
+      { key: "Home", icon: "home" },
+      { key: "Learn", icon: "book-open" },
+      { key: "Community", icon: "users" },
+      { key: "Chats", icon: "message-square" },
+      { key: "Profile", icon: "user" }
+    ],
+    categories: ["For You", "Following", "Trending", "💼 Jobs & Hiring", "UPSC", "JEE", "NEET", "Coding", "AI / ML", "Design"],
+    learn: {
+      heroBanners: [],
+      continueLearning: [],
+      popularCourses: [],
+      topCategories: []
+    },
+    stories: [],
+    posts: jobPostCards
+  };
 }
 
 export function createCommunityPost(token, payload) {
@@ -214,6 +295,15 @@ export function createCommunityPost(token, payload) {
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify(payload)
+  });
+}
+
+export function deleteCommunityPost(token, postId) {
+  return request(`/home/posts/${postId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
   });
 }
 
@@ -748,5 +838,286 @@ export function getEnrolledStudents(token) {
     headers: { Authorization: `Bearer ${token}` }
   });
 }
+
+export function applyReferralCode(token, referralCode) {
+  return request("/profile/apply-referral", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ referralCode })
+  });
+}
+
+// ==========================================
+// MENTOR JOB POSTING & AI CANDIDATE TRACKER
+// ==========================================
+
+let localJobPosts = [];
+
+export async function getJobPosts(token, filter = "all") {
+  try {
+    const res = await request(`/jobs?filter=${filter}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (res && Array.isArray(res.jobs)) {
+      return res.jobs;
+    }
+  } catch (e) {
+    // Fallback to local job store
+  }
+
+  // AI Evaluation: Auto-expire or mark as filled ONLY if selected candidates limit reached
+  const updatedJobs = localJobPosts.map((j) => {
+    const applicants = j.applicants || [];
+    const selectedCount = applicants.filter((a) => a.status === "selected").length;
+    const reqLimit = Number(j.requiredCandidates || 1);
+    const isFilled = selectedCount >= reqLimit;
+    return {
+      ...j,
+      selectedCandidates: selectedCount,
+      status: isFilled ? "filled" : "active"
+    };
+  });
+  localJobPosts = updatedJobs;
+
+  if (filter === "active") {
+    return updatedJobs.filter((j) => j.status === "active");
+  }
+  return updatedJobs;
+}
+
+export async function createJobPost(token, payload) {
+  try {
+    const res = await request("/jobs", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload)
+    });
+    if (res && res.job) {
+      localJobPosts.unshift(res.job);
+      return res.job;
+    }
+  } catch (e) {
+    // Fallback to local store insertion
+  }
+
+  const newJob = {
+    id: `job-${Date.now()}`,
+    title: payload.title || "Software Engineering Role",
+    company: payload.company || "TCM Hiring Partner",
+    mentorName: payload.mentorName || "Mentor",
+    mentorAvatarUrl: payload.mentorAvatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+    mentorRole: payload.mentorRole || "Tech Mentor",
+    description: payload.description || "",
+    minSalary: payload.minSalary || "3,00,000",
+    maxSalary: payload.maxSalary || "6,00,000",
+    salaryPeriod: payload.salaryPeriod || "LPA",
+    requiredCandidates: Number(payload.requiredCandidates) || 5,
+    appliedCandidates: 0,
+    selectedCandidates: 0,
+    applicants: [],
+    startDate: payload.startDate || "Immediate",
+    deadline: payload.deadline || "Open until filled",
+    imageUrl: payload.imageUrl || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600",
+    documentUrl: payload.documentUrl || "",
+    documentName: payload.documentName || (payload.documentUrl ? "Job_Description.pdf" : ""),
+    documentSize: payload.documentSize || "1.5 MB",
+    createdAt: new Date().toISOString(),
+    status: "active"
+  };
+
+  localJobPosts.unshift(newJob);
+  return newJob;
+}
+
+export async function updateJobPost(token, jobId, payload) {
+  const cleanId = String(jobId).replace(/^post-/, "");
+  try {
+    const res = await request(`/jobs/${cleanId}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload)
+    });
+    if (res && res.job) {
+      const idx = localJobPosts.findIndex((j) => j.id === cleanId);
+      if (idx !== -1) localJobPosts[idx] = res.job;
+      return res.job;
+    }
+  } catch (e) {}
+
+  const idx = localJobPosts.findIndex((j) => j.id === cleanId || j.id === jobId);
+  if (idx === -1) throw new Error("Job posting not found.");
+
+  const currentJob = localJobPosts[idx];
+  const reqLimit = Number(payload.requiredCandidates !== undefined ? payload.requiredCandidates : currentJob.requiredCandidates || 1);
+  const selectedCount = (currentJob.applicants || []).filter((a) => a.status === "selected").length;
+  const isFilled = selectedCount >= reqLimit;
+
+  const updatedJob = {
+    ...currentJob,
+    title: payload.title !== undefined ? payload.title : currentJob.title,
+    company: payload.company !== undefined ? payload.company : currentJob.company,
+    description: payload.description !== undefined ? payload.description : currentJob.description,
+    minSalary: payload.minSalary !== undefined ? payload.minSalary : currentJob.minSalary,
+    maxSalary: payload.maxSalary !== undefined ? payload.maxSalary : currentJob.maxSalary,
+    salaryPeriod: payload.salaryPeriod !== undefined ? payload.salaryPeriod : currentJob.salaryPeriod,
+    requiredCandidates: reqLimit,
+    selectedCandidates: selectedCount,
+    startDate: payload.startDate !== undefined ? payload.startDate : currentJob.startDate,
+    deadline: payload.deadline !== undefined ? payload.deadline : currentJob.deadline,
+    imageUrl: payload.imageUrl !== undefined ? payload.imageUrl : currentJob.imageUrl,
+    documentUrl: payload.documentUrl !== undefined ? payload.documentUrl : currentJob.documentUrl,
+    documentName: payload.documentName !== undefined ? payload.documentName : currentJob.documentName,
+    status: isFilled ? "filled" : "active"
+  };
+
+  localJobPosts[idx] = updatedJob;
+  return updatedJob;
+}
+
+export async function applyJobPost(token, jobId, applicationData = {}) {
+  const cleanId = String(jobId).replace(/^post-/, "");
+  try {
+    const res = await request(`/jobs/${cleanId}/apply`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(applicationData)
+    });
+    if (res && res.job) {
+      return res.job;
+    }
+  } catch (e) {
+    // Fallback
+  }
+
+  const jobIndex = localJobPosts.findIndex((j) => j.id === cleanId || j.id === jobId);
+  if (jobIndex === -1) throw new Error("Job posting not found.");
+
+  const job = localJobPosts[jobIndex];
+  const applicants = job.applicants || [];
+  const uId = String(applicationData.userId || applicationData.id || "guest-user");
+
+  if (applicants.some((a) => String(a.userId) === uId)) {
+    throw new Error("You have already applied for this job!");
+  }
+
+  const applicantRecord = {
+    userId: uId,
+    name: applicationData.name || "Student Candidate",
+    email: applicationData.email || "student@tcm.edu",
+    phone: applicationData.phone || "+91 9876543210",
+    portfolioUrl: applicationData.portfolioUrl || "",
+    resumeUrl: applicationData.resumeUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
+    resumeName: applicationData.resumeName || "Resume_Student.pdf",
+    resumeSize: applicationData.resumeSize || "1.2 MB",
+    coverNote: applicationData.coverNote || "",
+    status: "pending",
+    appliedAt: new Date().toISOString().slice(0, 10)
+  };
+
+  const newAppliedCount = (job.appliedCandidates || 0) + 1;
+  const selectedCount = (job.applicants || []).filter((a) => a.status === "selected").length;
+  const reqLimit = Number(job.requiredCandidates || 1);
+  const isFilled = selectedCount >= reqLimit;
+
+  const updatedJob = {
+    ...job,
+    appliedCandidates: newAppliedCount,
+    selectedCandidates: selectedCount,
+    applicants: [applicantRecord, ...applicants],
+    status: isFilled ? "filled" : "active"
+  };
+
+  localJobPosts[jobIndex] = updatedJob;
+  return updatedJob;
+}
+
+export async function updateJobApplicantStatus(token, jobId, applicantUserId, status) {
+  const cleanId = String(jobId).replace(/^post-/, "");
+  try {
+    const res = await request(`/jobs/${cleanId}/applicants/${applicantUserId}/status`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status })
+    });
+    if (res && res.job) {
+      const idx = localJobPosts.findIndex((j) => j.id === cleanId);
+      if (idx !== -1) localJobPosts[idx] = res.job;
+      return res.job;
+    }
+  } catch (e) {}
+
+  const idx = localJobPosts.findIndex((j) => j.id === cleanId || j.id === jobId);
+  if (idx === -1) throw new Error("Job posting not found.");
+
+  const job = localJobPosts[idx];
+  const applicants = (job.applicants || []).map((app) => {
+    if (String(app.userId) === String(applicantUserId)) {
+      return { ...app, status };
+    }
+    return app;
+  });
+
+  const selectedCount = applicants.filter((a) => a.status === "selected").length;
+  const reqLimit = Number(job.requiredCandidates || 1);
+  const isFilled = selectedCount >= reqLimit;
+
+  const updatedJob = {
+    ...job,
+    applicants,
+    selectedCandidates: selectedCount,
+    status: isFilled ? "filled" : "active"
+  };
+
+  localJobPosts[idx] = updatedJob;
+  return updatedJob;
+}
+
+export async function getJobApplicants(token, jobId) {
+  const cleanId = String(jobId).replace(/^post-/, "");
+  try {
+    const res = await request(`/jobs/${cleanId}/applicants`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res && Array.isArray(res.applicants)) {
+      return res.applicants;
+    }
+  } catch (e) {}
+
+  const job = localJobPosts.find((j) => j.id === cleanId || j.id === jobId);
+  return job?.applicants || [];
+}
+
+export async function deleteJobPost(token, jobId) {
+  const cleanId = String(jobId).replace(/^post-/, "");
+  try {
+    await request(`/jobs/${cleanId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch (e) {}
+
+  localJobPosts = localJobPosts.filter((j) => j.id !== cleanId && j.id !== jobId);
+  return { success: true, remainingJobs: localJobPosts };
+}
+
+export async function getMentorJobPosts(token, user = {}) {
+  const allJobs = await getJobPosts(token, "all");
+  if (!user || (!user.name && !user.id)) return allJobs;
+
+  const currentName = String(user.name || "").toLowerCase().trim();
+  const currentId = String(user.id || user._id || "").toLowerCase().trim();
+
+  return allJobs.filter((j) => {
+    const mentorName = String(j.mentorName || "").toLowerCase().trim();
+    const mentorId = String(j.mentorId || "").toLowerCase().trim();
+
+    return (
+      (currentName && (mentorName.includes(currentName) || currentName.includes(mentorName))) ||
+      (currentId && mentorId === currentId) ||
+      j.isCreatedByMe
+    );
+  });
+}
+
 
 

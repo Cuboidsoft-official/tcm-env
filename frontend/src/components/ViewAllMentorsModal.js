@@ -4,6 +4,7 @@ import {
   Alert,
   Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -102,7 +103,15 @@ export default function ViewAllMentorsModal({ visible, session, onClose, onSelec
                   }}
                   style={styles.mentorCard}
                 >
-                  <Image source={{ uri: mentor.avatarUrl }} style={styles.avatarImg} />
+                  {mentor.avatarUrl && !mentor.avatarUrl.includes("photo-1507003211169-0a1dd7228f2d") && !(Platform.OS === "web" && typeof mentor.avatarUrl === "string" && mentor.avatarUrl.startsWith("file://")) ? (
+                    <Image source={{ uri: mentor.avatarUrl }} style={styles.avatarImg} />
+                  ) : (
+                    <View style={[styles.avatarImg, { backgroundColor: "#5B3CF5", alignItems: "center", justifyContent: "center" }]}>
+                      <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#FFFFFF" }}>
+                        {(mentor.name || "M").split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2)}
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.infoCol}>
                     <View style={styles.nameRow}>
                       <Text style={styles.mentorName}>{mentor.name}</Text>

@@ -20,8 +20,13 @@ import {
 import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { fonts } from "../constants/fonts";
+import CreateJobModal from "../components/CreateJobModal";
+import ApplyJobModal from "../components/ApplyJobModal";
+import JobDetailsModal from "../components/JobDetailsModal";
+import JobApplicantsModal from "../components/JobApplicantsModal";
 import {
   createCommunityPost,
+  deleteCommunityPost,
   createCommunityChannel,
   deleteCommunityChannel,
   joinCommunityChannel,
@@ -29,7 +34,13 @@ import {
   getHome,
   togglePostLike,
   addPostComment,
-  sharePost
+  sharePost,
+  getJobPosts,
+  createJobPost,
+  updateJobPost,
+  applyJobPost,
+  updateJobApplicantStatus,
+  deleteJobPost
 } from "../api/client";
 
 export default function CommunityScreen({ navigation, route, session, onChannelStateChange, onOpenChannelChat }) {
@@ -76,14 +87,20 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
     if (onChannelStateChange) onChannelStateChange(false);
   }
 
-  // Top Tabs Pill Selector: "channels", "groups", "my_rooms", "discover"
+  // Top Tabs Pill Selector: "channels", "jobs"
   const [activeTabPill, setActiveTabPill] = useState("channels");
 
   // Data States
   const [communities, setCommunities] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [jobPosts, setJobPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [createJobModalOpen, setCreateJobModalOpen] = useState(false);
+  const [jobToEdit, setJobToEdit] = useState(null);
+  const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
+  const [selectedJobForApply, setSelectedJobForApply] = useState(null);
+  const [selectedJobForApplicants, setSelectedJobForApplicants] = useState(null);
 
   // Modal States
   const [createCommModalOpen, setCreateCommModalOpen] = useState(false);
@@ -138,9 +155,10 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   async function fetchCommunityData() {
     setLoading(true);
     try {
-      const [homeRes, commRes] = await Promise.allSettled([
+      const [homeRes, commRes, jobsRes] = await Promise.allSettled([
         getHome(session?.token),
-        getCommunities(session?.token)
+        getCommunities(session?.token),
+        getJobPosts(session?.token)
       ]);
 
       if (homeRes.status === "fulfilled" && homeRes.value?.posts) {
@@ -149,6 +167,10 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
 
       if (commRes.status === "fulfilled" && commRes.value?.communities) {
         setCommunities(commRes.value.communities);
+      }
+
+      if (jobsRes.status === "fulfilled" && Array.isArray(jobsRes.value)) {
+        setJobPosts(jobsRes.value);
       }
     } catch (err) {
       console.warn("Failed to fetch community data:", err);
@@ -296,6 +318,29 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
     }
   }
 
+  async function handleDeletePost(postId) {
+    Alert.alert(
+      "Delete Post 🗑️",
+      "Are you sure you want to delete this post? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              if (session?.token) {
+                await deleteCommunityPost(session.token, postId);
+              }
+            } catch (e) {}
+            setPosts((prev) => prev.filter((p) => String(p.id || p._id) !== String(postId)));
+            Alert.alert("Post Deleted 🗑️", "Your post has been deleted successfully.");
+          }
+        }
+      ]
+    );
+  }
+
   async function handleToggleLike(postId) {
     try {
       const res = await togglePostLike(session?.token, postId);
@@ -373,25 +418,371 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
     return <Feather name={iconName} size={size} color={color} />;
   }
 
+  async function handleCreateOrUpdateJob(payload, existingJobId) {
+    try {
+      if (existingJobId) {
+        const updated = await updateJobPost(session?.token, existingJobId, payload);
+        setJobPosts((prev) => prev.map((j) => (j.id === existingJobId ? updated : j)));
+      } else {
+        const newJob = await createJobPost(session?.token, payload);
+        setJobPosts((prev) => [newJob, ...prev]);
+      }
+      setJobToEdit(null);
+    } catch (e) {
+      Alert.alert("Error", "Failed to save job post.");
+    }
+  }
+
+  async function handleApplyJobSubmission(applicationPayload) {
+    if (!selectedJobForApply) return;
+    try {
+      const updatedJob = await applyJobPost(session?.token, selectedJobForApply.id, applicationPayload);
+      setJobPosts((prev) => prev.map((j) => (j.id === selectedJobForApply.id ? updatedJob : j)));
+      const isNowFilled = updatedJob.status === "filled";
+      Alert.alert(
+        isNowFilled ? "Application Submitted! 🎉 (Hiring Closed)" : "Application Submitted! 🎉",
+        `Your resume & profile were sent directly to ${updatedJob.mentorName || "the mentor"}. Application recorded for mentor evaluation.`
+      );
+      setSelectedJobForApply(null);
+    } catch (err) {
+      Alert.alert("Notice", err.message || "Failed to submit application.");
+    }
+  }
+
+  async function handleUpdateApplicantStatus(jobId, applicantUserId, newStatus) {
+    try {
+      const updatedJob = await updateJobApplicantStatus(session?.token, jobId, applicantUserId, newStatus);
+      setJobPosts((prev) => prev.map((j) => (j.id === jobId ? updatedJob : j)));
+      if (selectedJobForApplicants?.id === jobId) {
+        setSelectedJobForApplicants(updatedJob);
+      }
+    } catch (e) {
+      Alert.alert("Error", "Failed to update applicant status.");
+    }
+  }
+
+  async function handleDeleteJob(jobId) {
+    Alert.alert("Delete Job Posting", "Are you sure you want to remove this job posting?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await deleteJobPost(session?.token, jobId);
+          setJobPosts((prev) => prev.filter((j) => j.id !== jobId));
+        }
+      }
+    ]);
+  }
+
   function renderMainCommunityScreen() {
     return (
       <ScrollView style={{ flex: 1, backgroundColor: "#F8FAFC" }} showsVerticalScrollIndicator={false}>
-        {/* Section Title Row */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 14, marginBottom: 12 }}>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Feather name="award" size={16} color="#5B3CF5" style={{ marginRight: 6 }} />
-            <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A" }}>Official Channels</Text>
-          </View>
+        {/* Top Tab Selectors */}
+        <View style={{ flexDirection: "row", paddingHorizontal: 16, marginTop: 12, gap: 8 }}>
+          <TouchableOpacity
+            onPress={() => setActiveTabPill("channels")}
+            activeOpacity={0.8}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 20,
+              backgroundColor: activeTabPill === "channels" ? "#5B3CF5" : "#F1F5F9",
+              borderWidth: 1,
+              borderColor: activeTabPill === "channels" ? "#5B3CF5" : "#E2E8F0"
+            }}
+          >
+            <Feather name="users" size={13} color={activeTabPill === "channels" ? "#FFFFFF" : "#5B3CF5"} style={{ marginRight: 5 }} />
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: activeTabPill === "channels" ? "#FFFFFF" : "#475569" }}>
+              Official Channels ({communities.length})
+            </Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => setCreateCommModalOpen(true)}
+            onPress={() => setActiveTabPill("jobs")}
             activeOpacity={0.8}
-            style={styles.createChannelBtnPill}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 20,
+              backgroundColor: activeTabPill === "jobs" ? "#5B3CF5" : "#F1F5F9",
+              borderWidth: 1,
+              borderColor: activeTabPill === "jobs" ? "#5B3CF5" : "#E2E8F0"
+            }}
           >
-            <Feather name="plus" size={14} color="#5B3CF5" style={{ marginRight: 4 }} />
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#5B3CF5" }}>Create Channel</Text>
+            <Ionicons name="briefcase" size={13} color={activeTabPill === "jobs" ? "#FFFFFF" : "#5B3CF5"} style={{ marginRight: 5 }} />
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: activeTabPill === "jobs" ? "#FFFFFF" : "#475569" }}>
+              Job Feed ({jobPosts.length})
+            </Text>
+            <View style={{ backgroundColor: "#EF4444", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 10, marginLeft: 5 }}>
+              <Text style={{ color: "#FFFFFF", fontSize: 9, fontWeight: "700" }}>AI</Text>
+            </View>
           </TouchableOpacity>
         </View>
+
+        {activeTabPill === "jobs" ? (
+          /* JOB FEED & HIRING DRIVES */
+          <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 30 }}>
+            {/* Header Action Banner */}
+            <View style={{ backgroundColor: "#F5F3FF", borderWidth: 1, borderColor: "#DDD6FE", borderRadius: 16, padding: 14, marginBottom: 16 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <View style={{ flex: 1, marginRight: 10 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Ionicons name="briefcase" size={18} color="#5B3CF5" />
+                    <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: "#0F172A" }}>Job Feed & Hiring Drives</Text>
+                  </View>
+                  <Text style={{ fontSize: 11.5, color: "#64748B", marginTop: 3 }}>
+                    Direct job openings posted by Mentors. AI Candidate Tracker auto-expires posts when full.
+                  </Text>
+                </View>
+
+                {isMentor ? (
+                  <TouchableOpacity
+                    onPress={() => setCreateJobModalOpen(true)}
+                    activeOpacity={0.85}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: "#5B3CF5",
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 20
+                    }}
+                  >
+                    <Feather name="plus" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+                    <Text style={{ color: "#FFFFFF", fontSize: 12, fontFamily: fonts.bold }}>Post Job</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </View>
+
+            {jobPosts.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="briefcase-outline" size={36} color="#CBD5E1" />
+                <Text style={styles.emptyTitle}>No Jobs Posted Yet</Text>
+                <Text style={styles.emptySub}>Mentors will post direct job opportunities here.</Text>
+                {isMentor ? (
+                  <TouchableOpacity
+                    onPress={() => setCreateJobModalOpen(true)}
+                    style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: "#5B3CF5" }}
+                  >
+                    <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>+ Post a Job</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : (
+              jobPosts.map((job) => {
+                const isFilled = job.status === "filled" || Number(job.appliedCandidates || 0) >= Number(job.requiredCandidates || 1);
+                const appliedCount = job.appliedCandidates || 0;
+                const reqCount = job.requiredCandidates || 1;
+                const fillPercent = Math.min(100, Math.round((appliedCount / reqCount) * 100));
+                const isValidBanner = job.imageUrl && !(Platform.OS === "web" && typeof job.imageUrl === "string" && job.imageUrl.startsWith("file://"));
+
+                return (
+                  <View
+                    key={job.id}
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: "#E2E8F0",
+                      padding: 14,
+                      marginBottom: 14,
+                      position: "relative"
+                    }}
+                  >
+                    {/* Top Mentor Header */}
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}>
+                        <Image
+                          source={{ uri: job.mentorAvatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" }}
+                          style={{ width: 36, height: 36, borderRadius: 18, marginRight: 10 }}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                            <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: "#0F172A" }}>{job.mentorName || "Mentor"}</Text>
+                            <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                              <Text style={{ fontSize: 9, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                            </View>
+                          </View>
+                          <Text style={{ fontSize: 10.5, color: "#64748B" }}>{job.company || "TCM Partner"}</Text>
+                        </View>
+                      </View>
+
+                      {/* Status Badge */}
+                      <View
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: 8,
+                          backgroundColor: isFilled ? "#FEE2E2" : "#DCFCE7",
+                          borderWidth: 1,
+                          borderColor: isFilled ? "#FCA5A5" : "#86EFAC"
+                        }}
+                      >
+                        <Text style={{ fontSize: 10, fontWeight: "700", color: isFilled ? "#991B1B" : "#166534" }}>
+                          {isFilled ? "🔴 HIRING CLOSED (FILLED)" : `🟢 ACTIVE (${appliedCount}/${reqCount} Filled)`}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Job Title & Salary */}
+                    <View style={{ marginTop: 10 }}>
+                      <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: "#0F172A" }}>{job.title}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F0EDFF", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                          <FontAwesome5 name="money-bill-wave" size={11} color="#5B3CF5" style={{ marginRight: 4 }} />
+                          <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#5B3CF5" }}>
+                            ₹{job.minSalary} – ₹{job.maxSalary} {job.salaryPeriod || "LPA"}
+                          </Text>
+                        </View>
+
+                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F1F5F9", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                          <Feather name="calendar" size={11} color="#475569" style={{ marginRight: 4 }} />
+                          <Text style={{ fontSize: 11, color: "#475569" }}>Start: {job.startDate || "Immediate"}</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* AI Candidate Limit Progress Tracker Bar */}
+                    <View style={{ marginTop: 12, backgroundColor: "#F8FAFC", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "#F1F5F9" }}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                        <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#334155" }}>
+                          AI Candidate Limit Tracker
+                        </Text>
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: isFilled ? "#DC2626" : "#5B3CF5" }}>
+                          {appliedCount} / {reqCount} Candidates Applied ({fillPercent}%)
+                        </Text>
+                      </View>
+
+                      <View style={{ height: 6, width: "100%", backgroundColor: "#E2E8F0", borderRadius: 3, overflow: "hidden" }}>
+                        <View
+                          style={{
+                            height: "100%",
+                            width: `${fillPercent}%`,
+                            backgroundColor: isFilled ? "#EF4444" : "#5B3CF5",
+                            borderRadius: 3
+                          }}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Job Description */}
+                    <Text style={{ fontSize: 12.5, color: "#334155", marginTop: 10, lineHeight: 18 }}>
+                      {job.description}
+                    </Text>
+
+                    {/* Banner Image Attachment */}
+                    {isValidBanner ? (
+                      <Image source={{ uri: job.imageUrl }} style={{ width: "100%", height: 130, borderRadius: 10, marginTop: 10 }} resizeMode="cover" />
+                    ) : null}
+
+                    {/* Document PDF Attachment Card */}
+                    {job.documentUrl ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#F1F5F9", padding: 10, borderRadius: 10, marginTop: 10 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}>
+                          <MaterialCommunityIcons name="file-pdf-box" size={24} color="#EF4444" style={{ marginRight: 8 }} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#0F172A" }} numberOfLines={1}>
+                              {job.documentName || "Job_Description.pdf"}
+                            </Text>
+                            <Text style={{ fontSize: 10, color: "#64748B" }}>{job.documentSize || "2.1 MB"} • PDF Attachment</Text>
+                          </View>
+                        </View>
+                        <Pressable
+                          onPress={() => handleOpenDocReader(job.documentUrl, job.documentName)}
+                          style={{ backgroundColor: "#5B3CF5", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}
+                        >
+                          <Text style={{ color: "#FFFFFF", fontSize: 11, fontFamily: fonts.bold }}>Read JD</Text>
+                        </Pressable>
+                      </View>
+                    ) : null}
+
+                    {/* Action Bar: Apply, View Applicants, Edit & Delete */}
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
+                      <TouchableOpacity onPress={() => setSelectedJobForDetails(job)} activeOpacity={0.8}>
+                        <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#5B3CF5", textDecorationLine: "underline" }}>
+                          View Full Spec & JD →
+                        </Text>
+                      </TouchableOpacity>
+
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        {isMentor ? (
+                          <>
+                            <TouchableOpacity
+                              onPress={() => setSelectedJobForApplicants(job)}
+                              style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#F0EDFF" }}
+                            >
+                              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#5B3CF5" }}>
+                                Applicants ({job.applicants?.length || 0})
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              onPress={() => {
+                                setJobToEdit(job);
+                                setCreateJobModalOpen(true);
+                              }}
+                              style={{ padding: 6, borderRadius: 8, backgroundColor: "#F1F5F9" }}
+                            >
+                              <Feather name="edit-2" size={13} color="#475569" />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              onPress={() => handleDeleteJob(job.id)}
+                              style={{ padding: 6, borderRadius: 8, backgroundColor: "#FEE2E2" }}
+                            >
+                              <Feather name="trash-2" size={13} color="#DC2626" />
+                            </TouchableOpacity>
+                          </>
+                        ) : null}
+
+                        <TouchableOpacity
+                          onPress={() => setSelectedJobForApply(job)}
+                          disabled={isFilled}
+                          activeOpacity={0.8}
+                          style={{
+                            backgroundColor: isFilled ? "#94A3B8" : "#5B3CF5",
+                            paddingHorizontal: 14,
+                            paddingVertical: 7,
+                            borderRadius: 10,
+                            flexDirection: "row",
+                            alignItems: "center"
+                          }}
+                        >
+                          <Text style={{ color: "#FFFFFF", fontSize: 12, fontFamily: fonts.bold }}>
+                            {isFilled ? "Hiring Closed" : "Apply Now →"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        ) : (
+          /* OFFICIAL CHANNELS LIST */
+          <>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 14, marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Feather name="award" size={16} color="#5B3CF5" style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A" }}>Official Channels</Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setCreateCommModalOpen(true)}
+                activeOpacity={0.8}
+                style={styles.createChannelBtnPill}
+              >
+                <Feather name="plus" size={14} color="#5B3CF5" style={{ marginRight: 4 }} />
+                <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#5B3CF5" }}>Create Channel</Text>
+              </TouchableOpacity>
+            </View>
 
         {/* 5. Dynamic Channel List Cards */}
         <View style={{ paddingHorizontal: 16, paddingBottom: 20, gap: 10 }}>
@@ -429,7 +820,9 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                     <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: "#0F172A", marginRight: 4, flexShrink: 1 }} numberOfLines={1}>
                       {ch.name}
                     </Text>
-                    <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" />
+                    {ch.isPremium ? (
+                      <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" />
+                    ) : null}
                   </View>
 
                   <Text style={{ fontSize: 11.5, fontFamily: fonts.regular, color: "#64748B", marginTop: 2 }} numberOfLines={1}>
@@ -478,6 +871,8 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
             ))
           )}
         </View>
+        </>
+        )}
       </ScrollView>
     );
   }
@@ -501,7 +896,9 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
               <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: "#0F172A", flexShrink: 1 }} numberOfLines={1}>
                 {activeChannel?.name || "Community Channel"}
               </Text>
-              <MaterialCommunityIcons name="check-decagram" size={15} color="#5B3CF5" style={{ marginLeft: 4 }} />
+              {activeChannel?.isPremium ? (
+                <MaterialCommunityIcons name="check-decagram" size={15} color="#5B3CF5" style={{ marginLeft: 4 }} />
+              ) : null}
             </View>
           </View>
 
@@ -544,10 +941,19 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                       style={styles.authorAvatar}
                     />
                     <View style={{ flex: 1, marginLeft: 10 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                         <Text style={styles.authorName}>{post.authorName}</Text>
-                        {post.verified ? (
-                          <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 4 }} />
+                        {post.authorRole?.toLowerCase().includes("mentor") || post.isMentor ? (
+                          <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                            <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                          </View>
+                        ) : (
+                          <View style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                            <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#475569" }}>Student</Text>
+                          </View>
+                        )}
+                        {post.isPremium ? (
+                          <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 2 }} />
                         ) : null}
                       </View>
                       <Text style={styles.authorRole}>{post.authorRole || "Mentor"}</Text>
@@ -634,6 +1040,12 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                       <Feather name="share-2" size={16} color="#64748B" />
                       <Text style={styles.metricText}>{post.metrics?.shares || 0}</Text>
                     </Pressable>
+
+                    {(isMentor || post.isSelf || String(post.authorId) === String(session?.user?.id) || String(post.authorId) === String(session?.user?._id) || (session?.user?.name && post.authorName === session.user.name)) && (
+                      <Pressable onPress={() => handleDeletePost(post.id)} style={[styles.metricBtn, { marginLeft: "auto" }]}>
+                        <Feather name="trash-2" size={15} color="#EF4444" />
+                      </Pressable>
+                    )}
                   </View>
                 </View>
               );
@@ -675,6 +1087,49 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
       ) : (
         renderMainCommunityScreen()
       )}
+
+      {/* MODAL: MENTOR JOB POSTING / EDIT */}
+      <CreateJobModal
+        visible={createJobModalOpen}
+        user={user}
+        jobToEdit={jobToEdit}
+        onClose={() => {
+          setCreateJobModalOpen(false);
+          setJobToEdit(null);
+        }}
+        onSubmitJob={handleCreateOrUpdateJob}
+      />
+
+      {/* MODAL: JOB DETAILS VIEW */}
+      <JobDetailsModal
+        visible={Boolean(selectedJobForDetails)}
+        job={selectedJobForDetails}
+        isMentor={isMentor}
+        onClose={() => setSelectedJobForDetails(null)}
+        onApply={(j) => {
+          setSelectedJobForDetails(null);
+          setSelectedJobForApply(j);
+        }}
+        onOpenDocReader={handleOpenDocReader}
+      />
+
+      {/* MODAL: APPLY FOR JOB WITH RESUME UPLOAD */}
+      <ApplyJobModal
+        visible={Boolean(selectedJobForApply)}
+        job={selectedJobForApply}
+        user={user}
+        onClose={() => setSelectedJobForApply(null)}
+        onSubmitApplication={handleApplyJobSubmission}
+      />
+
+      {/* MODAL: MENTOR APPLICANTS & RESUMES VIEW */}
+      <JobApplicantsModal
+        visible={Boolean(selectedJobForApplicants)}
+        job={selectedJobForApplicants}
+        onClose={() => setSelectedJobForApplicants(null)}
+        onOpenDocReader={handleOpenDocReader}
+        onUpdateApplicantStatus={handleUpdateApplicantStatus}
+      />
 
       {/* MODAL: MENTOR POST COMPOSER */}
       <Modal visible={composerOpen} transparent animationType="slide" onRequestClose={() => setComposerOpen(false)}>

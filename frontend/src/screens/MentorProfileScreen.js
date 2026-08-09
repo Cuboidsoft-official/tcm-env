@@ -9,6 +9,7 @@ import {
   Text,
   View
 } from "react-native";
+import { Platform } from "react-native";
 import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getMentorDetails } from "../api/client";
 import { colors, shadow } from "../constants/theme";
@@ -16,7 +17,7 @@ import { fonts } from "../constants/fonts";
 
 const { width } = Dimensions.get("window");
 
-export default function MentorProfileScreen({ session, user = {}, mentorId, onClose, onOpenCourseDetails, onOpenChat, onEditCourse }) {
+export default function MentorProfileScreen({ session, user = {}, targetMentor = null, mentorId, onClose, onOpenCourseDetails, onOpenChat, onEditCourse }) {
   const [mentor, setMentor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState(false);
@@ -55,7 +56,7 @@ export default function MentorProfileScreen({ session, user = {}, mentorId, onCl
       { label: "+2 More", bg: "#F4F3FA", color: "#7C7C9A" }
     ],
     bio: "Helping students master concepts and build real-world skills with 6+ years of teaching & industry experience.",
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+    avatarUrl: "",
     stats: [
       { title: "6+", sub: "Years Exp.", icon: "school-outline", bg: "#F0EDFF" },
       { title: "250+", sub: "Live Sessions", icon: "play-circle-outline", bg: "#F0EDFF" },
@@ -114,7 +115,27 @@ export default function MentorProfileScreen({ session, user = {}, mentorId, onCl
     }
   };
 
-  const data = mentor || fallbackMentor;
+  const activeMentorObj = targetMentor || mentor || {};
+  const data = {
+    ...fallbackMentor,
+    ...activeMentorObj,
+    ...(user && (user.isMentor || user.id === activeMentorObj.id || user.id === mentorId) ? {
+      name: user.name || activeMentorObj.name || fallbackMentor.name,
+      avatarUrl: user.avatarUrl || user.avatar || user.photoUrl || activeMentorObj.avatarUrl || activeMentorObj.avatar,
+      role: user.role || activeMentorObj.role || fallbackMentor.role,
+      bio: user.bio || activeMentorObj.bio || fallbackMentor.bio
+    } : {
+      avatarUrl: activeMentorObj.avatarUrl || activeMentorObj.avatar || activeMentorObj.photoUrl || activeMentorObj.image || ""
+    })
+  };
+
+  const mentorInitials = (data.name || "Mentor")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase() || "M";
   const statsList = data.stats || [];
   const subjectsList = data.subjects || [];
   const expList = data.experiences || [];
@@ -144,7 +165,13 @@ export default function MentorProfileScreen({ session, user = {}, mentorId, onCl
           <View style={styles.heroTopRow}>
             {/* Mentor Image */}
             <View style={styles.mentorImgWrap}>
-              <Image source={{ uri: data.avatarUrl }} style={styles.mentorImg} />
+              {data.avatarUrl && !data.avatarUrl.includes("photo-1507003211169-0a1dd7228f2d") && !(Platform.OS === "web" && typeof data.avatarUrl === "string" && data.avatarUrl.startsWith("file://")) ? (
+                <Image source={{ uri: data.avatarUrl }} style={styles.mentorImg} />
+              ) : (
+                <View style={styles.mentorInitialsWrap}>
+                  <Text style={styles.mentorInitialsText}>{mentorInitials}</Text>
+                </View>
+              )}
               <View style={styles.onlineDot} />
             </View>
 
@@ -154,9 +181,14 @@ export default function MentorProfileScreen({ session, user = {}, mentorId, onCl
                 <Text style={styles.topBadgeText}>{data.badge}</Text>
               </View>
 
-              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
                 <Text style={styles.mentorName}>{data.name}</Text>
-                <MaterialCommunityIcons name="check-decagram" size={16} color="#5B3CF5" style={{ marginLeft: 4 }} />
+                <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                  <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                </View>
+                {data.isPremium ? (
+                  <MaterialCommunityIcons name="check-decagram" size={16} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                ) : null}
               </View>
 
               <Text style={styles.mentorRole}>{data.role}</Text>
@@ -520,9 +552,26 @@ const styles = StyleSheet.create({
     position: "relative"
   },
   mentorImg: {
-    width: 95,
-    height: 95,
-    borderRadius: 20
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: "#FFFFFF"
+  },
+  mentorInitialsWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#5B3CF5",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF"
+  },
+  mentorInitialsText: {
+    fontSize: 22,
+    fontFamily: fonts.bold,
+    color: "#FFFFFF"
   },
   onlineDot: {
     position: "absolute",

@@ -11,6 +11,7 @@ import {
   Pressable,
   ScrollView,
   Share,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -24,11 +25,14 @@ import { BlurView } from "expo-blur";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import * as VideoThumbnails from "expo-video-thumbnails";
+import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
-import { addPostComment, createCommunityPost, getHome, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost } from "../api/client";
+import { addPostComment, createCommunityPost, deleteCommunityPost, getHome, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost, applyJobPost, deleteJobPost } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import ApplyJobModal from "../components/ApplyJobModal";
+import JobDetailsModal from "../components/JobDetailsModal";
 import ProfileScreen from "./ProfileScreen";
 import UserProfileScreen from "./UserProfileScreen";
 import ProfileSettingsScreen from "./ProfileSettingsScreen";
@@ -180,6 +184,7 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
   }
 
   if (mediaUrl) {
+    const imagesList = (draft.carouselImages && draft.carouselImages.length > 0) ? draft.carouselImages : [mediaUrl];
     return {
       kind: "showcase",
       label: "Image Post",
@@ -188,11 +193,7 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
       subtitle: "TCM Community",
       frameKey,
       imageUrl: mediaUrl,
-      carouselImages: [
-        mediaUrl,
-        "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=640&q=80",
-        "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=640&q=80"
-      ]
+      carouselImages: imagesList
     };
   }
 
@@ -212,7 +213,7 @@ export default function HomeScreen({ session, onLogout }) {
   const [composerMode, setComposerMode] = useState("");
   const [previewItem, setPreviewItem] = useState(null);
   const [commentsPost, setCommentsPost] = useState(null);
-  const [draft, setDraft] = useState({ text: "", tags: "", title: "", mentions: "", mediaUrl: "", fileName: "", fileSize: "", fileUri: "", mimeType: "", frameKey: "none" });
+  const [draft, setDraft] = useState({ text: "", tags: "", title: "", mentions: "", mediaUrl: "", fileName: "", fileSize: "", fileUri: "", mimeType: "", frameKey: "none", carouselImages: [] });
   const [uploadType, setUploadType] = useState("photo");
   const [posting, setPosting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -237,6 +238,8 @@ export default function HomeScreen({ session, onLogout }) {
   const [courseToEdit, setCourseToEdit] = useState(null);
   const [activeDoubtRoom, setActiveDoubtRoom] = useState(null);
   const [getVerifiedModalOpen, setGetVerifiedModalOpen] = useState(false);
+  const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
+  const [selectedJobForApply, setSelectedJobForApply] = useState(null);
   const { theme } = useTheme();
 
   const user = home?.user || session?.user || {};
@@ -376,6 +379,40 @@ export default function HomeScreen({ session, onLogout }) {
     setActionMenuOpen(false);
   }
 
+  async function handleDeletePost(postId) {
+    Alert.alert(
+      "Delete Post / Job Drive 🗑️",
+      "Are you sure you want to delete this item? It will be permanently removed.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Permanent",
+          style: "destructive",
+          onPress: async () => {
+            const cleanId = String(postId).replace(/^post-/, "");
+            try {
+              if (session?.token) {
+                await deleteCommunityPost(session.token, postId).catch(() => {});
+                await deleteJobPost(session.token, cleanId).catch(() => {});
+              }
+            } catch (err) {}
+
+            deleteJobPost(session?.token, cleanId).catch(() => {});
+
+            setHome((current) => ({
+              ...current,
+              posts: (current?.posts || []).filter((p) => {
+                const pId = String(p.id || p._id);
+                return pId !== String(postId) && pId !== cleanId && p.jobData?.id !== cleanId;
+              })
+            }));
+            Alert.alert("Deleted 🗑️", "Item removed successfully.");
+          }
+        }
+      ]
+    );
+  }
+
   async function submitPost() {
     const config = postModes[composerMode] || postModes.post;
     const postText = draft.text.trim();
@@ -416,10 +453,33 @@ export default function HomeScreen({ session, onLogout }) {
   const feedPosts = useMemo(() => {
     const query = search.trim().toLowerCase();
     return posts.filter((post) => {
-      const categoryMatch = !activeCategory || activeCategory === "For You" || activeCategory === "Trending" || post.category === activeCategory;
+      const isJobPost =
+        post.postType === "job_news" ||
+        Boolean(post.jobData) ||
+        (post.category || "").toLowerCase().includes("job") ||
+        (post.category || "").toLowerCase().includes("hiring");
+
+      const cleanActiveCat = (activeCategory || "")
+        .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|💼|🔥|✨|👥/gu, "")
+        .trim()
+        .toLowerCase();
+
+      let categoryMatch = false;
+      if (!cleanActiveCat || cleanActiveCat === "for you" || cleanActiveCat === "trending") {
+        categoryMatch = true;
+      } else if (cleanActiveCat.includes("job") || cleanActiveCat.includes("hiring")) {
+        categoryMatch = isJobPost;
+      } else {
+        const cleanPostCat = (post.category || "")
+          .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|💼|🔥|✨|👥/gu, "")
+          .trim()
+          .toLowerCase();
+        categoryMatch = cleanPostCat === cleanActiveCat;
+      }
+
       const queryMatch =
         !query ||
-        [post.authorName, post.authorRole, post.category, post.text, ...(post.tags || [])]
+        [post.authorName, post.authorRole, post.category, post.text, post.jobData?.title, post.jobData?.company, ...(post.tags || [])]
           .filter(Boolean)
           .join(" ")
           .toLowerCase()
@@ -476,7 +536,9 @@ export default function HomeScreen({ session, onLogout }) {
             ) : selectedMentorId ? (
               <MentorProfileScreen
                 session={session}
-                mentorId={selectedMentorId}
+                user={user}
+                targetMentor={typeof selectedMentorId === "object" ? selectedMentorId : null}
+                mentorId={typeof selectedMentorId === "object" ? selectedMentorId?.id : selectedMentorId}
                 onClose={() => setSelectedMentorId(null)}
                 onOpenCourseDetails={(cId) => {
                   setSelectedMentorId(null);
@@ -591,7 +653,10 @@ export default function HomeScreen({ session, onLogout }) {
               <MentorDashboardScreen
                 session={session}
                 user={user}
-                onBack={() => setShowMentorDashboard(false)}
+                onBack={() => {
+                  setShowMentorDashboard(false);
+                  loadHome({ quiet: true });
+                }}
                 onEditCourse={(course) => {
                   setShowMentorDashboard(false);
                   setCourseToEdit(course);
@@ -705,7 +770,10 @@ export default function HomeScreen({ session, onLogout }) {
                             post={post}
                             onComment={setCommentsPost}
                             onPreview={setPreviewItem}
+                            onDeletePost={handleDeletePost}
                             onSelectUser={(u) => handleSelectUser(u || { id: post.authorId || post.authorName, name: post.authorName, avatarUrl: post.authorAvatarUrl, role: post.authorRole })}
+                            onApplyJob={(j) => setSelectedJobForApply(j)}
+                            onJobDetails={(j) => setSelectedJobForDetails(j)}
                           />
                         ))
                       ) : (
@@ -855,6 +923,37 @@ export default function HomeScreen({ session, onLogout }) {
             handleSelectUser(u);
           }}
         />
+
+        {/* MODAL: JOB DETAILS */}
+        <JobDetailsModal
+          visible={Boolean(selectedJobForDetails)}
+          job={selectedJobForDetails}
+          isMentor={false}
+          onClose={() => setSelectedJobForDetails(null)}
+          onApply={(j) => {
+            setSelectedJobForDetails(null);
+            setSelectedJobForApply(j);
+          }}
+        />
+
+        {/* MODAL: APPLY FOR JOB WITH RESUME */}
+        <ApplyJobModal
+          visible={Boolean(selectedJobForApply)}
+          job={selectedJobForApply}
+          user={user}
+          onClose={() => setSelectedJobForApply(null)}
+          onSubmitApplication={async (payload) => {
+            if (!selectedJobForApply) return;
+            try {
+              const updatedJob = await applyJobPost(session?.token, selectedJobForApply.id, payload);
+              Alert.alert("Application Submitted! 🎉", `Your resume was sent to ${updatedJob.mentorName || "the mentor"}. AI Candidate Tracker updated candidate count (${updatedJob.appliedCandidates}/${updatedJob.requiredCandidates}).`);
+              setSelectedJobForApply(null);
+              loadHome({ quiet: true });
+            } catch (err) {
+              Alert.alert("Notice", err.message || "Failed to submit application.");
+            }
+          }}
+        />
       </View>
     </SafeAreaView>
   );
@@ -968,7 +1067,8 @@ function SearchBar({ value, onChangeText, onRefresh, refreshing, onOpenSearch })
 }
 
 function Avatar({ name, uri, size }) {
-  if (uri) {
+  const isInvalidWebUri = Platform.OS === "web" && typeof uri === "string" && uri.startsWith("file://");
+  if (uri && !isInvalidWebUri) {
     return <Image source={{ uri }} style={{ borderRadius: size / 2, height: size, width: size }} />;
   }
 
@@ -1004,6 +1104,23 @@ function QuickAccess({ categories, activeCategory, setActiveCategory }) {
   );
 }
 
+function getCategoryIconConfig(categoryName) {
+  const clean = categoryName.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|💼|🔥|✨|👥/gu, "").trim();
+
+  if (clean.includes("For You")) return { icon: "sparkles", color: "#8B5CF6", label: "For You" };
+  if (clean.includes("Following")) return { icon: "people", color: "#3B82F6", label: "Following" };
+  if (clean.includes("Trending")) return { icon: "flame", color: "#EF4444", label: "Trending" };
+  if (clean.includes("Jobs") || clean.includes("Hiring")) return { icon: "briefcase", color: "#5B3CF5", label: "Jobs & Hiring" };
+  if (clean.includes("UPSC")) return { icon: "school", color: "#10B981", label: "UPSC" };
+  if (clean.includes("JEE")) return { icon: "calculator", color: "#2563EB", label: "JEE" };
+  if (clean.includes("NEET")) return { icon: "medical", color: "#E11D48", label: "NEET" };
+  if (clean.includes("Coding")) return { icon: "code-slash", color: "#7C3AED", label: "Coding" };
+  if (clean.includes("AI") || clean.includes("ML")) return { icon: "hardware-chip", color: "#F59E0B", label: "AI / ML" };
+  if (clean.includes("Design")) return { icon: "color-palette", color: "#EC4899", label: "Design" };
+
+  return { icon: "grid", color: "#64748B", label: clean || categoryName };
+}
+
 function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
   if (!categories.length) return null;
 
@@ -1011,9 +1128,22 @@ function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
     <ScrollView horizontal contentContainerStyle={styles.categoryContent} showsHorizontalScrollIndicator={false}>
       {categories.map((category) => {
         const active = category === activeCategory;
+        const conf = getCategoryIconConfig(category);
+
         return (
-          <Pressable key={category} onPress={() => setActiveCategory(category)} style={[styles.categoryTab, active && styles.categoryTabActive]}>
-            <Text numberOfLines={1} style={[styles.categoryText, active && styles.categoryTextActive]}>{category}</Text>
+          <Pressable
+            key={category}
+            onPress={() => setActiveCategory(category)}
+            style={[
+              styles.categoryTab,
+              active && styles.categoryTabActive,
+              { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8 }
+            ]}
+          >
+            <Ionicons name={conf.icon} size={15} color={active ? "#FFFFFF" : conf.color} />
+            <Text numberOfLines={1} style={[styles.categoryText, active && styles.categoryTextActive]}>
+              {conf.label}
+            </Text>
           </Pressable>
         );
       })}
@@ -1024,9 +1154,211 @@ function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
   );
 }
 
-function PostCard({ session, post, onComment, onPreview, onSelectUser }) {
+function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeletePost, onApplyJob, onJobDetails }) {
   const metrics = post.metrics || {};
   const media = post.media || {};
+
+  const isJob = post.postType === "job_news" || Boolean(post.jobData);
+  const job = post.jobData || {
+    id: post.id,
+    title: post.title || post.text?.split("\n")[0] || "Software Developer Opening",
+    company: post.company || "TCM Hiring Partner",
+    mentorName: post.authorName || "Mentor",
+    mentorAvatarUrl: post.authorAvatarUrl,
+    mentorRole: post.authorRole,
+    description: post.text,
+    minSalary: "3,50,000",
+    maxSalary: "6,50,000",
+    salaryPeriod: "LPA",
+    requiredCandidates: 3,
+    appliedCandidates: 1,
+    deadline: "Open until filled",
+    imageUrl: post.media?.imageUrl,
+    documentUrl: post.documentUrl,
+    documentName: post.documentName,
+    status: "active"
+  };
+
+  const selectedCount = job.selectedCandidates || (job.applicants || []).filter((a) => a.status === "selected").length;
+  const isFilled = job.status === "filled" || selectedCount >= Number(job.requiredCandidates || 1);
+  const reqCount = job.requiredCandidates || 1;
+  const fillPercent = Math.min(100, Math.round((selectedCount / reqCount) * 100));
+
+  if (isJob) {
+    const isValidBanner = job.imageUrl && !(Platform.OS === "web" && typeof job.imageUrl === "string" && job.imageUrl.startsWith("file://"));
+
+    return (
+      <View
+        style={[
+          styles.postCard,
+          {
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: "#E2E8F0",
+            backgroundColor: "#FFFFFF",
+            padding: 16,
+            marginBottom: 16,
+            overflow: "hidden",
+            ...shadow.md
+          }
+        ]}
+      >
+        {/* Top Accent Strip */}
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, backgroundColor: "#5B3CF5" }} />
+
+        {/* Header Row */}
+        <View style={[styles.postHeader, { marginTop: 4 }]}>
+          <Avatar name={job.mentorName || post.authorName} uri={job.mentorAvatarUrl || post.authorAvatarUrl} size={44} />
+          <View style={styles.postAuthor}>
+            <View style={styles.authorLine}>
+              <Text numberOfLines={1} style={styles.authorName}>{job.mentorName || post.authorName}</Text>
+              <View style={[styles.mentorBadgePill, { backgroundColor: "#F0EDFF", borderColor: "#C4B5FD", borderWidth: 1 }]}>
+                <Ionicons name="shield-checkmark" size={10} color="#5B3CF5" style={{ marginRight: 3 }} />
+                <Text style={[styles.mentorBadgeText, { color: "#5B3CF5", fontWeight: "700" }]}>Mentor Drive</Text>
+              </View>
+            </View>
+            <Text numberOfLines={1} style={styles.authorRole}>{job.company || "TCM Hiring Partner"} • {job.mentorRole || "Senior Mentor"}</Text>
+          </View>
+
+          <Pressable
+            onPress={() => {
+              Alert.alert(
+                "Job Drive Options ⚙️",
+                `Options for "${job.title}":`,
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete Job Posting 🗑️",
+                    style: "destructive",
+                    onPress: () => onDeletePost && onDeletePost(job.id)
+                  }
+                ]
+              );
+            }}
+            style={{ padding: 6 }}
+          >
+            <Feather name="more-vertical" size={20} color="#64748B" />
+          </Pressable>
+        </View>
+
+        {/* Job Title */}
+        <Text style={{ fontSize: 17.5, fontFamily: fonts.bold, color: "#0F172A", marginTop: 12, lineHeight: 23 }}>
+          {job.title}
+        </Text>
+
+        {/* Professional Badges Grid */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+          {/* Salary Badge */}
+          <View style={{ backgroundColor: "#F0EDFF", borderWidth: 1, borderColor: "#C4B5FD", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Ionicons name="cash-outline" size={13} color="#5B3CF5" />
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#5B3CF5" }}>
+              ₹{job.minSalary}{job.maxSalary ? ` – ₹${job.maxSalary}` : ""} {job.salaryPeriod || "LPA"}
+            </Text>
+          </View>
+
+          {/* Hiring Status Badge */}
+          <View style={{ backgroundColor: isFilled ? "#FEE2E2" : "#DCFCE7", borderWidth: 1, borderColor: isFilled ? "#FCA5A5" : "#86EFAC", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Ionicons name={isFilled ? "close-circle" : "checkmark-circle"} size={13} color={isFilled ? "#991B1B" : "#166534"} />
+            <Text style={{ fontSize: 11, fontWeight: "700", color: isFilled ? "#991B1B" : "#166534" }}>
+              {isFilled ? "HIRING CLOSED" : `ACTIVE (${selectedCount}/${reqCount} Selected)`}
+            </Text>
+          </View>
+
+          {/* Deadline Badge */}
+          {job.deadline ? (
+            <View style={{ backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Feather name="clock" size={12} color="#64748B" />
+              <Text style={{ fontSize: 11, color: "#475569", fontWeight: "600" }}>{job.deadline}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* AI Selection Tracker Box */}
+        <View style={{ backgroundColor: "#F8FAFC", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "#E2E8F0", marginTop: 12 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+              <Ionicons name="hardware-chip-outline" size={14} color="#5B3CF5" />
+              <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#334155" }}>AI Candidate Limit Tracker</Text>
+            </View>
+            <Text style={{ fontSize: 11, fontWeight: "700", color: isFilled ? "#DC2626" : "#5B3CF5" }}>
+              {selectedCount} / {reqCount} Selected ({fillPercent}%)
+            </Text>
+          </View>
+          <View style={{ height: 6, width: "100%", backgroundColor: "#E2E8F0", borderRadius: 3, marginTop: 6, overflow: "hidden" }}>
+            <View style={{ height: "100%", width: `${fillPercent}%`, backgroundColor: isFilled ? "#EF4444" : "#5B3CF5", borderRadius: 3 }} />
+          </View>
+        </View>
+
+        {/* Formatted Job Description */}
+        <ReadMoreText text={job.description || post.text} />
+
+        {/* Banner Image */}
+        {isValidBanner ? (
+          <Image source={{ uri: job.imageUrl }} style={{ width: "100%", height: 160, borderRadius: 12, marginTop: 12 }} resizeMode="cover" />
+        ) : null}
+
+        {/* JD PDF Attachment Reader Box */}
+        {job.documentUrl ? (
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FCA5A5", padding: 10, borderRadius: 10, marginTop: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}>
+              <MaterialCommunityIcons name="file-pdf-box" size={26} color="#EF4444" style={{ marginRight: 8 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#0F172A" }} numberOfLines={1}>{job.documentName || "Job_Description.pdf"}</Text>
+                <Text style={{ fontSize: 10.5, color: "#64748B" }}>{job.documentSize || "2.1 MB"} • Official JD Document</Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Professional Footer CTA Row */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
+          <TouchableOpacity
+            onPress={() => onJobDetails && onJobDetails(job)}
+            activeOpacity={0.8}
+            style={{
+              backgroundColor: "#F8FAFC",
+              borderWidth: 1,
+              borderColor: "#E2E8F0",
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 10,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4
+            }}
+          >
+            <Ionicons name="information-circle-outline" size={15} color="#475569" />
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#334155" }}>View Details</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => onApplyJob && onApplyJob(job)}
+            disabled={isFilled}
+            activeOpacity={0.85}
+            style={{
+              backgroundColor: isFilled ? "#94A3B8" : "#5B3CF5",
+              paddingHorizontal: 20,
+              paddingVertical: 9,
+              borderRadius: 10,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              shadowColor: isFilled ? "transparent" : "#5B3CF5",
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: 0.3,
+              shadowRadius: 6,
+              elevation: isFilled ? 0 : 3
+            }}
+          >
+            <Ionicons name={isFilled ? "lock-closed" : "send"} size={13} color="#FFFFFF" />
+            <Text style={{ color: "#FFFFFF", fontSize: 12.5, fontFamily: fonts.bold }}>{isFilled ? "Hiring Closed" : "Apply Now →"}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.postCard}>
@@ -1039,18 +1371,62 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser }) {
             </Text>
             {post.isMentor || post.authorRole?.toLowerCase().includes("mentor") || post.authorRole?.toLowerCase().includes("lead") || post.authorRole?.toLowerCase().includes("hod") || post.authorRole?.toLowerCase().includes("expert") ? (
               <View style={styles.mentorBadgePill}>
-                <MaterialCommunityIcons name="school" size={11} color="#FFFFFF" />
                 <Text style={styles.mentorBadgeText}>Mentor</Text>
               </View>
-            ) : post.verified ? (
-              <MaterialCommunityIcons name="check-decagram" size={19} color={colors.primary} />
+            ) : (
+              <View style={styles.studentBadgePill}>
+                <Text style={styles.studentBadgeText}>Student</Text>
+              </View>
+            )}
+            {post.isPremium ? (
+              <MaterialCommunityIcons name="check-decagram" size={15} color={colors.primary} style={{ marginLeft: 4 }} />
             ) : null}
           </View>
           <Text numberOfLines={1} style={styles.authorRole}>
             {post.authorRole}
           </Text>
         </View>
-        <Feather name="more-vertical" size={22} color={colors.ink} />
+        <Pressable
+          onPress={() => {
+            const currentUserIdStr = String(session?.user?.id || session?.user?._id || "").trim();
+            const authorIdStr = String(post.authorId || "").trim();
+            const currentUserName = (session?.user?.name || "").toLowerCase().trim();
+            const authorName = (post.authorName || "").toLowerCase().trim();
+
+            const isSelfPost = Boolean(
+              post.isSelf ||
+              (currentUserIdStr && authorIdStr === currentUserIdStr) ||
+              (currentUserName && authorName === currentUserName)
+            );
+
+            if (isSelfPost) {
+              Alert.alert(
+                "Post Options ⚙️",
+                "Choose an action for your post:",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete Post 🗑️",
+                    style: "destructive",
+                    onPress: () => onDeletePost && onDeletePost(post.id)
+                  }
+                ]
+              );
+            } else {
+              Alert.alert(
+                "Post Options ⚙️",
+                "Choose an action:",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Report Post 🚩", onPress: () => Alert.alert("Reported 🚩", "Thank you. Post reported for review.") }
+                ]
+              );
+            }
+          }}
+          style={{ padding: 6 }}
+        >
+          <Feather name="more-vertical" size={22} color={colors.ink} />
+        </Pressable>
       </Pressable>
 
       <View style={styles.postMetaLine}>
@@ -1085,18 +1461,29 @@ function MediaLabel({ media }) {
   );
 }
 
+function formatCleanText(rawText = "") {
+  if (!rawText) return "";
+  return rawText
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/^[\*\-\+]\s+/gm, "• ")
+    .trim();
+}
+
 function ReadMoreText({ text = "" }) {
   const [expanded, setExpanded] = useState(false);
-  const isLong = text.length > 95 || text.split("\n").length > 2;
+  const cleanText = formatCleanText(text);
+  const isLong = cleanText.length > 110 || cleanText.split("\n").length > 3;
 
   return (
-    <View>
+    <View style={{ marginTop: 8 }}>
       <Text numberOfLines={expanded ? undefined : 3} style={styles.postText}>
-        {text}
+        {cleanText}
       </Text>
       {isLong ? (
         <Pressable hitSlop={8} onPress={() => setExpanded((value) => !value)} style={styles.readMoreButton}>
-          <Text style={styles.readMoreText}>{expanded ? "Show less" : "Read more"}</Text>
+          <Text style={styles.readMoreText}>{expanded ? "Show less ↑" : "Read more ↓"}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -1106,72 +1493,67 @@ function ReadMoreText({ text = "" }) {
 function PostMedia({ post, onPreview }) {
   const media = post.media || {};
 
-  if (media.kind === "notes") {
-    const previewImages = [media.imageUrl, ...(media.carouselImages || [])].filter(Boolean);
+  if (media.kind === "notes" || post.documentUrl || post.documentName) {
+    const resolvedDocUri = media.fileUri || media.documentUrl || post.documentUrl || media.imageUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view";
     const documentItem = {
       type: "document",
-      title: media.fileName || media.subtitle || media.title || "Document",
-      subtitle: media.title || media.label || "TCM document",
-      fileSize: media.fileSize,
-      imageUrl: media.imageUrl,
-      fileUri: media.fileUri,
-      mimeType: media.mimeType,
+      title: media.fileName || post.documentName || media.subtitle || media.title || "Document",
+      subtitle: media.title || media.label || "TCM Document",
+      fileSize: media.fileSize || post.documentSize || "PDF Document",
+      imageUrl: media.imageUrl || post.imageUrl || "",
+      fileUri: resolvedDocUri,
+      mimeType: media.mimeType || "application/pdf",
       authorName: post.authorName
     };
 
     return (
-      <View style={styles.notesMedia}>
-        <Pressable onPress={() => onPreview(documentItem)} style={styles.notesHeroPreview}>
-          {previewImages[0] ? (
-            <Image source={{ uri: previewImages[0] }} style={styles.notesPreviewImage} />
-          ) : (
-            <DocumentThumbnail title={media.title || "Notes"} />
-          )}
-        </Pressable>
-        <View style={styles.notesSide}>
-          <Pressable onPress={() => onPreview(documentItem)} style={({ pressed }) => [styles.pdfCard, pressed && styles.pressed]}>
-            <View style={styles.pdfIconWrap}>
-              <MaterialCommunityIcons name="file-pdf-box" size={30} color="#FF465F" />
-            </View>
-            <View style={styles.pdfCopy}>
-              <Text numberOfLines={2} style={styles.pdfTitle}>{media.fileName || media.subtitle}</Text>
-              <Text style={styles.pdfSize}>{media.fileSize}</Text>
-            </View>
-          </Pressable>
-          <View style={styles.notesThumbRow}>
-            {[0, 1].map((item) => (
-              <Pressable key={item} onPress={() => onPreview(documentItem)} style={styles.notesMiniThumb}>
-                {previewImages[item + 1] || previewImages[0] ? (
-                  <Image source={{ uri: previewImages[item + 1] || previewImages[0] }} style={styles.notesPreviewImage} />
-                ) : (
-                  <DocumentThumbnail title={item === 0 ? "Page 1" : "Page 2"} />
-                )}
-              </Pressable>
-            ))}
-            <Pressable onPress={() => onPreview(documentItem)} style={styles.notesMoreThumb}>
-              {previewImages[2] || previewImages[0] ? (
-                <Image source={{ uri: previewImages[2] || previewImages[0] }} style={styles.notesPreviewImage} />
-              ) : (
-                <DocumentThumbnail title="More" />
-              )}
-              <View style={styles.notesMoreOverlay}>
-                <Text style={styles.notesMoreText}>+3</Text>
-              </View>
-            </Pressable>
-          </View>
+      <Pressable onPress={() => onPreview(documentItem)} style={({ pressed }) => [styles.pdfCardContainer, pressed && styles.pressed]}>
+        <View style={styles.pdfIconWrap}>
+          <MaterialCommunityIcons name="file-pdf-box" size={34} color="#FF465F" />
         </View>
-      </View>
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text numberOfLines={1} style={styles.pdfTitle}>{media.fileName || media.subtitle || "TCM Document.pdf"}</Text>
+          <Text style={styles.pdfSize}>{media.fileSize || "PDF Document"} • Tap to view</Text>
+        </View>
+        <Feather name="external-link" size={18} color="#6366F1" style={{ marginLeft: 8 }} />
+      </Pressable>
     );
   }
 
   if (media.kind === "showcase") {
-    const carouselImages = media.carouselImages?.length
+    const carouselImages = (media.carouselImages && media.carouselImages.length > 0)
       ? media.carouselImages
-      : [
-          media.imageUrl,
-          "https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=640&q=80",
-          "https://images.unsplash.com/photo-1559028012-481c04fa702d?auto=format&fit=crop&w=640&q=80"
-        ].filter(Boolean);
+      : [media.imageUrl].filter(Boolean);
+
+    if (carouselImages.length === 1) {
+      const singleImage = carouselImages[0];
+      const fKey = media.frameKey || "none";
+
+      return (
+        <Pressable
+          onPress={() =>
+            onPreview({
+              type: "image",
+              title: media.title || "Photo Post",
+              subtitle: media.subtitle || "TCM Community",
+              imageUrl: singleImage
+            })
+          }
+          style={({ pressed }) => [
+            styles.videoMedia,
+            { height: (fKey === "square" || fKey === "landscape" || fKey === "portrait") ? undefined : 260 },
+            fKey === "square" && styles.videoMediaSquare,
+            fKey === "landscape" && styles.videoMediaLandscape,
+            fKey === "portrait" && { aspectRatio: 0.8 },
+            fKey === "polaroid" && styles.videoMediaPolaroid,
+            fKey === "rounded" && styles.videoMediaRounded,
+            pressed && styles.pressed
+          ]}
+        >
+          <Image source={{ uri: singleImage }} style={{ width: "100%", height: "100%", borderRadius: fKey === "rounded" ? 24 : 10 }} resizeMode="cover" />
+        </Pressable>
+      );
+    }
 
     return (
       <ScrollView horizontal contentContainerStyle={styles.carouselContent} showsHorizontalScrollIndicator={false} style={styles.carouselMedia}>
@@ -1579,30 +1961,79 @@ function PostActions({ post, session, metrics = {}, onComment }) {
   );
 }
 
+function isPublicHttpUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  if (!url.startsWith("http://") && !url.startsWith("https://")) return false;
+  const lower = url.toLowerCase();
+  if (lower.includes("localhost") || lower.includes("127.0.0.1") || lower.includes("192.168.") || lower.includes("10.0.") || lower.includes("172.16.")) return false;
+  return true;
+}
+
 function MediaPreviewModal({ item, onClose }) {
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
+
+  const safeTopPadding = Platform.OS === "ios" ? 54 : Platform.OS === "android" ? (StatusBar.currentHeight || 28) + 8 : 12;
+  const isDocument = item?.type === "document";
+  const docUri = item?.fileUri || item?.imageUrl || item?.documentUrl || "";
+  const isImageDoc = Boolean(item?.imageUrl || item?.mimeType?.startsWith("image/") || (typeof docUri === "string" && (docUri.endsWith(".png") || docUri.endsWith(".jpg") || docUri.endsWith(".jpeg") || docUri.endsWith(".webp"))));
 
   useEffect(() => {
     setDownloading(false);
     setDownloaded(false);
 
-    if (item?.startDownload) {
-      handleDownload(item);
+    if (item && isDocument && docUri && !isImageDoc) {
+      const timer = setTimeout(() => {
+        handleOpenDocument(item);
+      }, 200);
+      return () => clearTimeout(timer);
     }
-  }, [item]);
+  }, [item, docUri, isImageDoc, isDocument]);
 
-  async function handleDownload(target = item) {
+  async function handleOpenDocument(target = item) {
     if (!target) return;
+    const targetUri = target.fileUri || target.imageUrl || target.documentUrl || "";
+    if (!targetUri) {
+      Alert.alert("File Unavailable", "Document link is missing.");
+      return;
+    }
 
     setDownloading(true);
     try {
-      if (target.imageUrl) {
-        await Image.prefetch(target.imageUrl);
+      if (Platform.OS === "web") {
+        let viewUrl = targetUri;
+        if (targetUri.startsWith("http://") || targetUri.startsWith("https://")) {
+          const lower = targetUri.toLowerCase();
+          if (lower.endsWith(".doc") || lower.endsWith(".docx") || target.mimeType?.includes("word")) {
+            viewUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(targetUri)}`;
+          } else if (lower.endsWith(".pdf") || target.mimeType?.includes("pdf")) {
+            viewUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(targetUri)}`;
+          }
+        }
+        window.open(viewUrl, "_blank");
+      } else if (targetUri.startsWith("http://") || targetUri.startsWith("https://")) {
+        let viewUrl = targetUri;
+        const lower = targetUri.toLowerCase();
+        if (lower.endsWith(".doc") || lower.endsWith(".docx") || target.mimeType?.includes("word") || target.title?.toLowerCase().includes(".doc")) {
+          viewUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(targetUri)}`;
+        } else if (lower.endsWith(".pdf") || target.mimeType?.includes("pdf") || target.title?.toLowerCase().includes(".pdf")) {
+          viewUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(targetUri)}`;
+        }
+        await WebBrowser.openBrowserAsync(viewUrl);
+      } else {
+        if (Platform.OS === "ios") {
+          await Share.share({ url: targetUri, title: target.title || "Document" });
+        } else {
+          try {
+            await Linking.openURL(targetUri);
+          } catch (e) {
+            await Share.share({ message: `Document: ${target.title || "File"} - ${targetUri}` });
+          }
+        }
       }
       setDownloaded(true);
     } catch (error) {
-      Alert.alert("Download failed", "Could not download document preview.");
+      Alert.alert("Document Reader 📄", `${target.title || "Document"} is attached.`);
     } finally {
       setDownloading(false);
     }
@@ -1610,53 +2041,96 @@ function MediaPreviewModal({ item, onClose }) {
 
   if (!item) return null;
 
-  const isDocument = item.type === "document";
-
   return (
-    <Modal animationType="slide" visible={Boolean(item)} onRequestClose={onClose}>
+    <Modal animationType="slide" visible={Boolean(item)} onRequestClose={onClose} statusBarTranslucent={true}>
       {isDocument ? (
         <SafeAreaView style={styles.documentViewer}>
-          <View style={styles.viewerHeader}>
+          <View style={[styles.viewerHeader, { paddingTop: safeTopPadding }]}>
             <View style={styles.viewerFileIcon}>
               <MaterialCommunityIcons name="file-pdf-box" size={27} color="#FF465F" />
             </View>
             <View style={styles.previewTitleWrap}>
               <Text numberOfLines={1} style={styles.previewTitle}>{item.title}</Text>
               <Text numberOfLines={1} style={styles.previewSub}>
-                {item.fileSize || "PDF"}  |  {item.authorName || "TCM"}
+                {item.fileSize || "Document"} | {item.authorName || "TCM"}
               </Text>
             </View>
-            <Pressable hitSlop={10} onPress={onClose} style={styles.previewClose}>
-              <Feather name="x" size={23} color={colors.ink} />
+            <Pressable hitSlop={14} onPress={onClose} style={styles.previewClose}>
+              <Feather name="x" size={24} color={colors.ink} />
             </Pressable>
           </View>
 
           <View style={styles.documentToolbar}>
             <View style={styles.documentPreviewPill}>
               <Feather name="eye" size={16} color={colors.primary} />
-              <Text style={styles.documentPreviewText}>In-app preview</Text>
+              <Text style={styles.documentPreviewText}>In-App Document Viewer</Text>
             </View>
-            <Pressable onPress={() => handleDownload(item)} style={({ pressed }) => [styles.documentButton, pressed && styles.pressed]}>
+            <Pressable onPress={() => handleOpenDocument(item)} style={({ pressed }) => [styles.documentButton, pressed && styles.pressed]}>
               {downloading ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Feather name={downloaded ? "check" : "download"} size={18} color="#FFFFFF" />}
-              <Text style={styles.documentButtonText}>{downloaded ? "Downloaded" : "Download"}</Text>
+              <Text style={styles.documentButtonText}>{downloaded ? "Opened" : "Open / View"}</Text>
             </Pressable>
           </View>
 
           <View style={styles.documentCanvas}>
             <View style={styles.documentPage}>
-              {item.imageUrl ? (
-                <Image resizeMode="contain" source={{ uri: item.imageUrl }} style={styles.previewImage} />
+              {isImageDoc && docUri ? (
+                <Image resizeMode="contain" source={{ uri: docUri }} style={styles.previewImage} />
+              ) : Platform.OS === "web" && docUri ? (
+                <iframe
+                  src={
+                    docUri.includes(".doc") || docUri.includes(".docx") || item.mimeType?.includes("word") || item.title?.toLowerCase().includes(".doc")
+                      ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(docUri)}`
+                      : `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(docUri)}`
+                  }
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                  title="Document Reader"
+                />
               ) : (
                 <View style={styles.previewEmpty}>
                   <View style={styles.previewFileCard}>
                     <View style={styles.previewFileIcon}>
-                      <MaterialCommunityIcons name="file-document-outline" size={44} color={colors.primary} />
+                      <MaterialCommunityIcons name="file-document-outline" size={54} color={colors.primary} />
                     </View>
-                    <Text numberOfLines={2} style={styles.previewFileName}>{item.title}</Text>
+                    <Text numberOfLines={2} style={styles.previewFileName}>{item.title || "Document"}</Text>
                     <Text numberOfLines={1} style={styles.previewEmptyText}>
-                      {item.fileSize || "Document"} {item.mimeType ? `| ${item.mimeType}` : ""}
+                      {item.fileSize || "File Attachment"} {item.mimeType ? `| ${item.mimeType}` : ""}
                     </Text>
-                    <Text style={styles.previewFileHint}>Preview ready inside TCM. Use Download to save this file.</Text>
+
+                    <View style={{ marginTop: 18, width: "100%", gap: 10 }}>
+                      <TouchableOpacity
+                        onPress={() => handleOpenDocument(item)}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: colors.primary,
+                          paddingVertical: 14,
+                          paddingHorizontal: 18,
+                          borderRadius: 14
+                        }}
+                      >
+                        <Feather name="book-open" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "#FFFFFF" }}>Open Document 📄</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={() => Share.share({ url: docUri, message: `Document: ${item.title}` }).catch(() => {})}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: "#F1F5F9",
+                          borderWidth: 1,
+                          borderColor: "#CBD5E1",
+                          paddingVertical: 12,
+                          paddingHorizontal: 18,
+                          borderRadius: 14
+                        }}
+                      >
+                        <Feather name="share-2" size={17} color="#334155" style={{ marginRight: 8 }} />
+                        <Text style={{ fontSize: 14, fontWeight: "600", color: "#334155" }}>Share / Save File 📤</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               )}
@@ -1668,13 +2142,13 @@ function MediaPreviewModal({ item, onClose }) {
           <View style={styles.imagePreviewStage}>
             <Image resizeMode="contain" source={{ uri: item.imageUrl }} style={styles.fullPreviewImage} />
           </View>
-          <View style={styles.imageCaption}>
+          <View style={[styles.imageCaption, { paddingTop: safeTopPadding }]}>
             <View style={styles.imageCaptionCopy}>
               <Text numberOfLines={1} style={styles.imageCaptionTitle}>{item.title}</Text>
               <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle}</Text>
             </View>
-            <Pressable hitSlop={10} onPress={onClose} style={styles.imageCloseButton}>
-              <Feather name="x" size={23} color="#FFFFFF" />
+            <Pressable hitSlop={12} onPress={onClose} style={styles.imageCloseButton}>
+              <Feather name="x" size={24} color="#FFFFFF" />
             </Pressable>
           </View>
         </SafeAreaView>
@@ -2039,10 +2513,13 @@ function LearnDashboard({ learn, user, onSelectUser }) {
 function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadType, setDraft, onClose, onSubmit }) {
   const textLength = draft.text.length;
   const canSubmit = Boolean(draft.text.trim()) && !posting;
-  const previewImage = draft.mediaUrl.trim();
+  const imagesList = (draft.carouselImages && draft.carouselImages.length > 0)
+    ? draft.carouselImages
+    : draft.mediaUrl.trim() ? [draft.mediaUrl.trim()] : [];
+  const previewImage = imagesList[0] || draft.mediaUrl.trim();
   const hasDocumentPreview = uploadType === "document" && (draft.fileName.trim() || draft.fileSize.trim() || draft.fileUri?.trim?.() || previewImage);
-  const hasMediaPreview = uploadType === "video" ? Boolean(draft.fileUri?.trim?.() || previewImage) : uploadType === "photo" && previewImage;
-  const previewCount = Number(Boolean(hasMediaPreview || hasDocumentPreview));
+  const hasMediaPreview = uploadType === "video" ? Boolean(draft.fileUri?.trim?.() || previewImage) : uploadType === "photo" && imagesList.length > 0;
+  const previewCount = uploadType === "photo" ? imagesList.length : Number(Boolean(hasMediaPreview || hasDocumentPreview));
   const selectedFrameKey = uploadType === "video" && draft.frameKey === "none" ? "portrait" : draft.frameKey || "none";
   const mediaOptions = [
     { key: "photo", icon: "image", label: "Photo", color: colors.primary },
@@ -2103,6 +2580,8 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
 
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: false,
+        allowsMultipleSelection: uploadType === "photo",
+        selectionLimit: 10,
         mediaTypes: uploadType === "video" ? ["videos"] : ["images"],
         quality: 0.85,
         videoMaxDuration: 30
@@ -2110,35 +2589,56 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
 
       if (result.canceled) return;
 
-      const asset = result.assets?.[0];
-      if (!asset?.uri) return;
-      let previewUri = asset.uri;
+      const assets = result.assets || [];
+      if (assets.length === 0) return;
+
+      const selectedUris = assets.map((a) => a.uri).filter(Boolean);
+      const firstAsset = assets[0];
+      let previewUri = firstAsset.uri;
 
       if (uploadType === "video") {
         previewUri = "";
         try {
-          const thumbnail = await VideoThumbnails.getThumbnailAsync(asset.uri, { time: 1000 });
+          const thumbnail = await VideoThumbnails.getThumbnailAsync(firstAsset.uri, { time: 1000 });
           previewUri = thumbnail.uri || "";
         } catch (error) {
           previewUri = "";
         }
       }
 
-      setDraft((current) => ({
-        ...current,
-        mediaUrl: previewUri,
-        fileName: asset.fileName || current.fileName,
-        fileSize: formatFileSize(asset.fileSize) || current.fileSize,
-        fileUri: uploadType === "video" ? asset.uri : "",
-        mimeType: asset.mimeType || ""
-      }));
+      setDraft((current) => {
+        const existing = current.carouselImages || [];
+        const combined = uploadType === "photo"
+          ? Array.from(new Set([...existing, ...selectedUris]))
+          : selectedUris;
+        return {
+          ...current,
+          mediaUrl: combined[0] || previewUri,
+          carouselImages: combined,
+          fileName: firstAsset.fileName || current.fileName,
+          fileSize: formatFileSize(firstAsset.fileSize) || current.fileSize,
+          fileUri: uploadType === "video" ? firstAsset.uri : "",
+          mimeType: firstAsset.mimeType || ""
+        };
+      });
     } catch (error) {
       Alert.alert("Upload failed", "Could not select media. Please try again.");
     }
   }
 
+  function removeImageAtIndex(idx) {
+    setDraft((current) => {
+      const remaining = (current.carouselImages || []).filter((_, i) => i !== idx);
+      return {
+        ...current,
+        carouselImages: remaining,
+        mediaUrl: remaining[0] || ""
+      };
+    });
+  }
+
   function removeAttachedMedia() {
-    setDraft((current) => ({ ...current, mediaUrl: "", fileName: "", fileSize: "", fileUri: "", mimeType: "", frameKey: "none" }));
+    setDraft((current) => ({ ...current, mediaUrl: "", carouselImages: [], fileName: "", fileSize: "", fileUri: "", mimeType: "", frameKey: "none" }));
   }
 
   return (
@@ -2205,13 +2705,23 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
               <Text style={styles.panelCounter}>{previewCount}/10</Text>
             </View>
             <ScrollView horizontal contentContainerStyle={styles.previewPickerRow} showsHorizontalScrollIndicator={false}>
-              {hasMediaPreview ? (
+              {uploadType === "photo" && imagesList.length > 0 ? (
+                imagesList.map((imgUri, idx) => (
+                  <CreateMediaPreview
+                    key={`${imgUri}-${idx}`}
+                    imageUrl={imgUri}
+                    label={`Image ${idx + 1}`}
+                    onRemove={() => removeImageAtIndex(idx)}
+                    type="image"
+                  />
+                ))
+              ) : uploadType === "video" && hasMediaPreview ? (
                 <CreateMediaPreview
                   imageUrl={previewImage}
-                  label={uploadType === "video" ? "00:30" : "Image"}
+                  label="00:30"
                   onRemove={removeAttachedMedia}
-                  type={uploadType === "video" ? "video" : "image"}
-                  videoUri={uploadType === "video" ? draft.fileUri.trim() : ""}
+                  type="video"
+                  videoUri={draft.fileUri.trim()}
                 />
               ) : null}
               {hasDocumentPreview ? (
@@ -2225,7 +2735,7 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
               ) : null}
               <Pressable onPress={attachSelectedMedia} style={styles.addMoreCard}>
                 <Feather name="plus" size={26} color={colors.primary} />
-                <Text numberOfLines={2} style={styles.addMoreText}>{previewCount ? "Replace" : uploadLabel}</Text>
+                <Text numberOfLines={2} style={styles.addMoreText}>{previewCount ? "+ Add More" : uploadLabel}</Text>
               </Pressable>
             </ScrollView>
           </View>
@@ -2238,7 +2748,14 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
                   {frameOptions.map((item) => {
                     const active = selectedFrameKey === item.key;
                     return (
-                    <Pressable key={item.key} onPress={() => setFramePreview(item)} style={[styles.frameOption, active && styles.frameOptionActive]}>
+                    <Pressable
+                      key={item.key}
+                      onPress={() => {
+                        setFramePreview(item);
+                        setDraft((current) => ({ ...current, frameKey: item.key }));
+                      }}
+                      style={[styles.frameOption, active && styles.frameOptionActive]}
+                    >
                       <View style={[styles.frameThumb, item.key === "none" && styles.frameThumbNone, active && styles.frameThumbActive]}>
                         {item.icon ? (
                           <Feather name={item.icon} size={25} color={colors.primary} />
@@ -2257,7 +2774,11 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
               ) : (
                 <View style={styles.emptyFrameState}>
                   <Feather name={uploadType === "video" ? "video" : "image"} size={23} color={colors.primary} />
-                  <Text style={styles.emptyFrameText}>{uploadType === "video" ? "Video upload karne ke baad frame options yahan dikhenge." : "Image upload karne ke baad frame options yahan dikhenge."}</Text>
+                  <Text style={styles.emptyFrameText}>
+                    {uploadType === "video"
+                      ? "Frame options for your video will appear here after uploading."
+                      : "Frame options for your image will appear here after uploading."}
+                  </Text>
                 </View>
               )}
             </View>
@@ -3029,16 +3550,32 @@ const styles = StyleSheet.create({
   mentorBadgePill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#5B3CF5",
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 8,
-    gap: 3
+    backgroundColor: "#FEF3C7",
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6
   },
   mentorBadgeText: {
-    color: "#FFFFFF",
+    color: "#D97706",
     fontFamily: fonts.bold,
-    fontSize: 10
+    fontSize: 9.5
+  },
+  studentBadgePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6
+  },
+  studentBadgeText: {
+    color: "#475569",
+    fontFamily: fonts.bold,
+    fontSize: 9.5
   },
   authorRole: {
     color: "#53506E",
@@ -3067,6 +3604,16 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     height: 4,
     width: 4
+  },
+  pdfCardContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0"
   },
   mediaLabel: {
     alignItems: "center",
@@ -3579,8 +4126,11 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: "row",
-    minHeight: 64,
-    paddingHorizontal: 14
+    minHeight: Platform.OS === "ios" ? 95 : 70,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 52 : (StatusBar.currentHeight || 28) + 8,
+    paddingBottom: 12,
+    zIndex: 100
   },
   viewerFileIcon: {
     alignItems: "center",

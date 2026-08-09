@@ -4,6 +4,7 @@ import {
   Alert,
   Dimensions,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -143,7 +144,15 @@ export default function AllMentorsScreen({ session, onBack, onSelectMentor }) {
                   {/* Top Avatar & Badge Row */}
                   <View style={styles.cardHeader}>
                     <View style={styles.avatarWrap}>
-                      <Image source={{ uri: mentor.avatarUrl }} style={styles.avatarImg} />
+                      {mentor.avatarUrl && !mentor.avatarUrl.includes("photo-1507003211169-0a1dd7228f2d") && !(Platform.OS === "web" && typeof mentor.avatarUrl === "string" && mentor.avatarUrl.startsWith("file://")) ? (
+                        <Image source={{ uri: mentor.avatarUrl }} style={styles.avatarImg} />
+                      ) : (
+                        <View style={[styles.avatarImg, { backgroundColor: "#5B3CF5", alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#FFFFFF" }}>
+                            {(mentor.name || "M").split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2)}
+                          </Text>
+                        </View>
+                      )}
                       <View style={styles.onlineBadge} />
                     </View>
 
@@ -162,9 +171,14 @@ export default function AllMentorsScreen({ session, onBack, onSelectMentor }) {
 
                   {/* Body info */}
                   <View style={styles.cardBody}>
-                    <View style={styles.nameRow}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                       <Text style={styles.mentorName} numberOfLines={1}>{mentor.name}</Text>
-                      <MaterialCommunityIcons name="check-decagram" size={16} color="#5B3CF5" style={{ marginLeft: 4 }} />
+                      <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                        <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                      </View>
+                      {mentor.isPremium ? (
+                        <MaterialCommunityIcons name="check-decagram" size={15} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                      ) : null}
                     </View>
 
                     <Text style={styles.mentorRole} numberOfLines={1}>{mentor.role}</Text>

@@ -103,6 +103,13 @@ const userSchema = new mongoose.Schema(
     friendRequests: {
       type: Array,
       default: []
+    },
+    referredBy: {
+      type: String,
+      default: ""
+    },
+    referralAppliedAt: {
+      type: Date
     }
   },
   { timestamps: true }

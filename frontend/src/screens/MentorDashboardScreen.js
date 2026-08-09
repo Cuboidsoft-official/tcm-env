@@ -13,8 +13,11 @@ import {
   View
 } from "react-native";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { getMentorCourses, scheduleLiveClassLink } from "../api/client";
+import { getMentorCourses, scheduleLiveClassLink, createJobPost, getJobPosts, getMentorJobPosts, updateJobPost, updateJobApplicantStatus, deleteJobPost } from "../api/client";
 import MentorReviewsModal from "../components/MentorReviewsModal";
+import CreateJobModal from "../components/CreateJobModal";
+import JobApplicantsModal from "../components/JobApplicantsModal";
+import JobDetailsModal from "../components/JobDetailsModal";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -27,6 +30,11 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   const [classTitle, setClassTitle] = useState("Day 1: Frontend Foundations & React Setup");
   const [classTime, setClassTime] = useState("Today • 10:00 AM – 11:30 AM");
   const [meetingUrl, setMeetingUrl] = useState("https://meet.jit.si/tcm-live-fullstack");
+  const [createJobModalOpen, setCreateJobModalOpen] = useState(false);
+  const [jobPosts, setJobPosts] = useState([]);
+  const [jobToEdit, setJobToEdit] = useState(null);
+  const [selectedJobForApplicants, setSelectedJobForApplicants] = useState(null);
+  const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
 
   // Weekly Engagement Activity Chart Data (Mon - Sun)
   const weeklyData = [
@@ -72,7 +80,63 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
   useEffect(() => {
     loadMentorCourses();
+    loadJobs();
   }, [session?.token]);
+
+  async function loadJobs() {
+    try {
+      const data = await getMentorJobPosts(session?.token, user);
+      setJobPosts(data || []);
+    } catch (e) {}
+  }
+
+  async function handleUpdateApplicantStatus(jobId, applicantUserId, newStatus) {
+    try {
+      const updatedJob = await updateJobApplicantStatus(session?.token, jobId, applicantUserId, newStatus);
+      setJobPosts((prev) => prev.map((j) => (j.id === jobId ? updatedJob : j)));
+      if (selectedJobForApplicants?.id === jobId) {
+        setSelectedJobForApplicants(updatedJob);
+      }
+    } catch (e) {
+      Alert.alert("Error", "Failed to update candidate status.");
+    }
+  }
+
+  async function handleCreateOrUpdateJob(payload, existingId) {
+    try {
+      if (existingId) {
+        const updated = await updateJobPost(session?.token, existingId, payload);
+        setJobPosts((prev) => prev.map((j) => (j.id === existingId ? updated : j)));
+      } else {
+        const newJob = await createJobPost(session?.token, payload);
+        setJobPosts((prev) => [newJob, ...prev]);
+      }
+      setJobToEdit(null);
+      await loadJobs();
+    } catch (e) {
+      Alert.alert("Error", "Failed to save job.");
+    }
+  }
+
+  async function handleDeleteJob(jobId) {
+    Alert.alert("Delete Job Post 🗑️", "Are you sure you want to remove this job posting? It will be permanently removed.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete Permanent",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteJobPost(session?.token, jobId);
+            setJobPosts((prev) => prev.filter((j) => j.id !== jobId && j.id !== String(jobId).replace(/^post-/, "")));
+            await loadJobs();
+            Alert.alert("Job Deleted 🗑️", "The job posting has been deleted.");
+          } catch (e) {
+            Alert.alert("Error", "Failed to delete job.");
+          }
+        }
+      }
+    ]);
+  }
 
   async function loadMentorCourses() {
     try {
@@ -355,6 +419,28 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
             <View style={[styles.arrowCircle, { backgroundColor: "#EAF5FF" }]}>
               <Feather name="arrow-right" size={16} color="#2F79B9" />
+            </View>
+          </Pressable>
+
+          {/* Activity 3: Post a Job / Hiring Drive */}
+          <Pressable
+            onPress={() => {
+              setJobToEdit(null);
+              setCreateJobModalOpen(true);
+            }}
+            style={({ pressed }) => [styles.activityTouchCard, pressed && styles.pressed, { borderColor: "#C4B5FD", backgroundColor: "#F5F3FF" }]}
+          >
+            <View style={[styles.activityIconBox, { backgroundColor: "#F0EDFF" }]}>
+              <Ionicons name="briefcase" size={22} color="#5B3CF5" />
+            </View>
+
+            <View style={styles.activityCopy}>
+              <Text style={[styles.activityTitle, { color: "#5B3CF5" }]}>Post a Job / Hiring Drive</Text>
+              <Text style={styles.activitySub}>Post Openings & AI Auto-Tracks Candidate Limits</Text>
+            </View>
+
+            <View style={[styles.arrowCircle, { backgroundColor: "#5B3CF5" }]}>
+              <Feather name="plus" size={16} color="#FFFFFF" />
             </View>
           </Pressable>
 
@@ -674,6 +760,123 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
         />
 
         {/* ============================================================ */}
+        {/* MY POSTED JOBS & APPLICANT RESUMES SECTION */}
+        {/* ============================================================ */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 24, marginBottom: 12 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Ionicons name="briefcase" size={18} color="#5B3CF5" />
+            <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A" }}>My Posted Jobs & Hiring Drives</Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => {
+              setJobToEdit(null);
+              setCreateJobModalOpen(true);
+            }}
+            activeOpacity={0.8}
+            style={{ backgroundColor: "#5B3CF5", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
+          >
+            <Text style={{ color: "#FFFFFF", fontSize: 11.5, fontFamily: fonts.bold }}>+ Post Job</Text>
+          </TouchableOpacity>
+        </View>
+
+        {jobPosts.length === 0 ? (
+          <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#E2E8F0", padding: 20, alignItems: "center", marginBottom: 20 }}>
+            <Ionicons name="briefcase-outline" size={32} color="#CBD5E1" />
+            <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: "#334155", marginTop: 8 }}>No Jobs Posted Yet</Text>
+            <Text style={{ fontSize: 11.5, color: "#64748B", textAlign: "center", marginTop: 2 }}>
+              Post job openings to receive candidate applications & resumes directly on your dashboard.
+            </Text>
+            <TouchableOpacity
+              onPress={() => setCreateJobModalOpen(true)}
+              style={{ backgroundColor: "#5B3CF5", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, marginTop: 12 }}
+            >
+              <Text style={{ color: "#FFFFFF", fontSize: 12, fontFamily: fonts.bold }}>+ Create First Job Posting</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          jobPosts.map((job) => {
+            const isFilled = job.status === "filled" || Number(job.selectedCandidates || 0) >= Number(job.requiredCandidates || 1);
+            const selectedCount = job.selectedCandidates || (job.applicants || []).filter((a) => a.status === "selected").length;
+            const reqCount = job.requiredCandidates || 1;
+            const fillPercent = Math.min(100, Math.round((selectedCount / reqCount) * 100));
+
+            return (
+              <View
+                key={job.id}
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: "#E2E8F0",
+                  padding: 14,
+                  marginBottom: 12
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={{ fontSize: 14.5, fontFamily: fonts.bold, color: "#0F172A" }}>{job.title}</Text>
+                    <Text style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                      ₹{job.minSalary} – ₹{job.maxSalary} {job.salaryPeriod} • Deadline: {job.deadline}
+                    </Text>
+                  </View>
+
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: isFilled ? "#FEE2E2" : "#DCFCE7" }}>
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: isFilled ? "#991B1B" : "#166534" }}>
+                      {isFilled ? "FILLED" : "ACTIVE"}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* AI Candidate Progress Tracker */}
+                <View style={{ marginTop: 10, backgroundColor: "#F8FAFC", padding: 8, borderRadius: 8, borderWidth: 1, borderColor: "#F1F5F9" }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <Text style={{ fontSize: 10.5, fontFamily: fonts.bold, color: "#475569" }}>AI Candidate Limit Tracker</Text>
+                    <Text style={{ fontSize: 10.5, fontWeight: "700", color: "#5B3CF5" }}>{selectedCount} / {reqCount} Candidates Selected</Text>
+                  </View>
+                  <View style={{ height: 5, width: "100%", backgroundColor: "#E2E8F0", borderRadius: 3, marginTop: 4, overflow: "hidden" }}>
+                    <View style={{ height: "100%", width: `${fillPercent}%`, backgroundColor: isFilled ? "#EF4444" : "#5B3CF5", borderRadius: 3 }} />
+                  </View>
+                </View>
+
+                {/* Action Buttons: View Resumes, Edit, Delete */}
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
+                  <TouchableOpacity
+                    onPress={() => setSelectedJobForApplicants(job)}
+                    activeOpacity={0.8}
+                    style={{ backgroundColor: "#F0EDFF", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: "row", alignItems: "center" }}
+                  >
+                    <Ionicons name="people" size={13} color="#5B3CF5" style={{ marginRight: 4 }} />
+                    <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#5B3CF5" }}>
+                      View Applicants & Resumes ({job.applicants?.length || 0})
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setJobToEdit(job);
+                        setCreateJobModalOpen(true);
+                      }}
+                      style={{ padding: 6, borderRadius: 6, backgroundColor: "#F1F5F9" }}
+                    >
+                      <Feather name="edit-2" size={13} color="#475569" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => handleDeleteJob(job.id)}
+                      style={{ padding: 6, borderRadius: 6, backgroundColor: "#FEE2E2" }}
+                    >
+                      <Feather name="trash-2" size={13} color="#DC2626" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            );
+          })
+        )}
+
+        {/* ============================================================ */}
         {/* 6. RECENT STUDENT TIMELINE */}
         {/* ============================================================ */}
         <Text style={styles.sectionHeaderTitle}>Recent Activity Feed</Text>
@@ -696,6 +899,33 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           ))}
         </View>
       </ScrollView>
+      {/* MODAL: MENTOR JOB POSTING / EDIT */}
+      <CreateJobModal
+        visible={createJobModalOpen}
+        user={user}
+        jobToEdit={jobToEdit}
+        onClose={() => {
+          setCreateJobModalOpen(false);
+          setJobToEdit(null);
+        }}
+        onSubmitJob={handleCreateOrUpdateJob}
+      />
+
+      {/* MODAL: MENTOR APPLICANTS & RESUMES VIEW */}
+      <JobApplicantsModal
+        visible={Boolean(selectedJobForApplicants)}
+        job={selectedJobForApplicants}
+        onClose={() => setSelectedJobForApplicants(null)}
+        onUpdateApplicantStatus={handleUpdateApplicantStatus}
+      />
+
+      {/* MODAL: JOB DETAILS VIEW */}
+      <JobDetailsModal
+        visible={Boolean(selectedJobForDetails)}
+        job={selectedJobForDetails}
+        isMentor={true}
+        onClose={() => setSelectedJobForDetails(null)}
+      />
     </View>
   );
 }

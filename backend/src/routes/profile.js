@@ -817,4 +817,75 @@ profileRouter.get("/enrolled-students", requireAuth, async (req, res) => {
   }
 });
 
+// 5. Apply Referral Code within 24 hours of registration
+profileRouter.post("/apply-referral", requireAuth, async (req, res) => {
+  try {
+    const memoryStore = req.app.locals.memoryStore;
+    const { referralCode } = req.body;
+
+    if (!referralCode || !referralCode.trim()) {
+      return res.status(400).json({ message: "Referral code is required." });
+    }
+
+    const cleanCode = referralCode.trim().toUpperCase();
+    const userId = req.user._id?.toString() || req.user.id;
+
+    if (memoryStore) {
+      const userInMem = memoryStore.users?.find((u) => String(u._id) === String(userId)) || memoryStore.user;
+      if (!userInMem) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      if (userInMem.referredBy) {
+        return res.status(400).json({ message: "Referral code has already been applied for this account." });
+      }
+
+      const createdTime = userInMem.createdAt ? new Date(userInMem.createdAt).getTime() : (userInMem.createdAtIso ? new Date(userInMem.createdAtIso).getTime() : Date.now());
+      const hoursPassed = (Date.now() - createdTime) / (1000 * 60 * 60);
+
+      if (hoursPassed > 24) {
+        return res.status(400).json({ message: "Referral code can only be applied within 24 hours of account registration." });
+      }
+
+      userInMem.referredBy = cleanCode;
+      userInMem.referralAppliedAt = new Date().toISOString();
+
+      return res.json({
+        success: true,
+        message: `Referral code ${cleanCode} applied successfully! You earned 10 TCM Coins.`,
+        user: publicUser(userInMem)
+      });
+    }
+
+    const dbUser = await User.findById(userId);
+    if (!dbUser) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    if (dbUser.referredBy) {
+      return res.status(400).json({ message: "Referral code has already been applied for this account." });
+    }
+
+    const createdTime = dbUser.createdAt ? new Date(dbUser.createdAt).getTime() : Date.now();
+    const hoursPassed = (Date.now() - createdTime) / (1000 * 60 * 60);
+
+    if (hoursPassed > 24) {
+      return res.status(400).json({ message: "Referral code can only be applied within 24 hours of account registration." });
+    }
+
+    dbUser.referredBy = cleanCode;
+    dbUser.referralAppliedAt = new Date();
+    await dbUser.save();
+
+    return res.json({
+      success: true,
+      message: `Referral code ${cleanCode} applied successfully! You earned 10 TCM Coins.`,
+      user: publicUser(dbUser)
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Could not apply referral code." });
+  }
+});
+
+
 

@@ -242,9 +242,20 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
                       >
                         <Image source={{ uri: u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" }} style={styles.mentorAvatar} />
                         <View style={styles.mentorContentCol}>
-                          <View style={{ flexDirection: "row", alignItems: "center" }}>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                             <Text style={styles.mentorName}>{u.name}</Text>
-                            {u.verified && <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />}
+                            {u.role?.toLowerCase().includes("mentor") || u.isMentor ? (
+                              <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                                <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                              </View>
+                            ) : (
+                              <View style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                                <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#475569" }}>Student</Text>
+                              </View>
+                            )}
+                            {u.isPremium ? (
+                              <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                            ) : null}
                           </View>
                           <Text style={styles.mentorTitle}>@{u.handle || u.name?.toLowerCase().replace(/\s+/g, "")} • {u.role || "student"}</Text>
                         </View>
@@ -303,9 +314,14 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
                       >
                         <Image source={{ uri: mentor.avatarUrl }} style={styles.mentorAvatar} />
                         <View style={styles.mentorContentCol}>
-                          <View style={{ flexDirection: "row", alignItems: "center" }}>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                             <Text style={styles.mentorName}>{mentor.name}</Text>
-                            <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                            <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                              <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                            </View>
+                            {mentor.isPremium ? (
+                              <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                            ) : null}
                           </View>
                           <Text style={styles.mentorTitle}>{mentor.title}</Text>
                         </View>

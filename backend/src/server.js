@@ -8,6 +8,7 @@ import { authRouter } from "./routes/auth.js";
 import { homeRouter } from "./routes/home.js";
 import { profileRouter } from "./routes/profile.js";
 import { chatRouter } from "./routes/chat.js";
+import { jobsRouter } from "./routes/jobs.js";
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/home", homeRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/jobs", jobsRouter);
 
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });

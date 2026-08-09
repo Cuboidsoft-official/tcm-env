@@ -288,10 +288,21 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
                 {/* Info Column */}
                 <View style={styles.chatInfoCol}>
                   <View style={styles.chatTitleRow}>
-                    <Text style={styles.chatName} numberOfLines={1}>{item.name}</Text>
-                    {item.verified ? (
-                      <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 4 }} />
-                    ) : null}
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1 }}>
+                      <Text style={styles.chatName} numberOfLines={1}>{item.name}</Text>
+                      {item.role?.toLowerCase().includes("mentor") || item.isMentor ? (
+                        <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                          <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                        </View>
+                      ) : (
+                        <View style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                          <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#475569" }}>Student</Text>
+                        </View>
+                      )}
+                      {item.isPremium ? (
+                        <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                      ) : null}
+                    </View>
                     <Text style={styles.chatTime}>{item.time}</Text>
                   </View>
 

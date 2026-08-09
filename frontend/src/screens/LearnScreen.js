@@ -3,6 +3,7 @@ import {
   Alert,
   Dimensions,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +13,7 @@ import {
 } from "react-native";
 import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import ViewAllMentorsModal from "../components/ViewAllMentorsModal";
+import AiRoadmapPlannerModal from "../components/AiRoadmapPlannerModal";
 import { getContinueLearningDetails } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
@@ -137,6 +139,7 @@ const defaultExpertMentors = [
 function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80") {
   if (!url || typeof url !== "string") return fallback;
   if (url.startsWith("blob:") || url.includes("blob:http")) return fallback;
+  if (Platform.OS === "web" && url.startsWith("file://")) return fallback;
   return url;
 }
 
@@ -144,6 +147,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
   const [searchQuery, setSearchQuery] = useState("");
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [allMentorsModalOpen, setAllMentorsModalOpen] = useState(false);
+  const [roadmapModalOpen, setRoadmapModalOpen] = useState(false);
 
   const safeLearn = learn || {};
   const heroBanners = safeLearn.heroBanners?.length ? safeLearn.heroBanners : defaultHeroBanners;
@@ -262,6 +266,25 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           <MaterialCommunityIcons name="tune-variant" size={18} color="#181725" />
         </Pressable>
       </View>
+
+      {/* 2.5 Quick AI Roadmap Bar */}
+      <Pressable
+        onPress={() => setRoadmapModalOpen(true)}
+        style={({ pressed }) => [styles.quickAiRoadmapBar, pressed && styles.pressed]}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+          <View style={styles.quickAiBadgeIcon}>
+            <MaterialCommunityIcons name="map-marker-path" size={20} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: fonts.bold, color: "#0F172A" }}>Plan My Learning Roadmap 🗺️</Text>
+            <Text numberOfLines={1} style={{ fontSize: 11, fontFamily: fonts.medium, color: "#5B3CF5" }}>Interactive AI Career & Budget Guide</Text>
+          </View>
+        </View>
+        <View style={styles.quickAiBtn}>
+          <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#5B3CF5" }}>Start →</Text>
+        </View>
+      </Pressable>
 
       {/* 3. Hero Carousel Banner */}
       {heroBanners.length > 0 ? (
@@ -492,18 +515,34 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContent}>
-            {expertMentors.map((mentor) => (
-              <View key={mentor.id} style={[styles.mentorCard, { backgroundColor: mentor.cardBg || "#F6F4FF" }]}>
-                <View style={styles.mentorTopRow}>
-                  <View style={styles.mentorAvatarWrap}>
-                    <Image source={{ uri: safeImageUri(mentor.avatarUrl) }} style={styles.mentorAvatarImg} />
-                    <View style={styles.onlineDot} />
-                  </View>
-                  <View style={styles.mentorInfoCol}>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      <Text style={styles.mentorCardName} numberOfLines={1}>{mentor.name}</Text>
-                      <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />
+            {expertMentors.map((mentor) => {
+              const mAvatar = (user?.role === "mentor" || user?.isMentor) ? (user.avatarUrl || mentor.avatarUrl) : mentor.avatarUrl;
+              const hasRealAvatar = mAvatar && !mAvatar.includes("photo-1507003211169-0a1dd7228f2d") && !(Platform.OS === "web" && typeof mAvatar === "string" && mAvatar.startsWith("file://"));
+              const initials = (mentor.name || "Mentor").split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "M";
+
+              return (
+                <View key={mentor.id} style={[styles.mentorCard, { backgroundColor: mentor.cardBg || "#F6F4FF" }]}>
+                  <View style={styles.mentorTopRow}>
+                    <View style={styles.mentorAvatarWrap}>
+                      {hasRealAvatar ? (
+                        <Image source={{ uri: mAvatar }} style={styles.mentorAvatarImg} />
+                      ) : (
+                        <View style={[styles.mentorAvatarImg, { backgroundColor: "#5B3CF5", alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#FFFFFF" }}>{initials}</Text>
+                        </View>
+                      )}
+                      <View style={styles.onlineDot} />
                     </View>
+                    <View style={styles.mentorInfoCol}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Text style={styles.mentorCardName} numberOfLines={1}>{mentor.name}</Text>
+                        <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                          <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                        </View>
+                        {mentor.isPremium ? (
+                          <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                        ) : null}
+                      </View>
                     <Text style={styles.mentorCardRole} numberOfLines={1}>{mentor.role}</Text>
                     <View style={[styles.mentorBadgePill, { backgroundColor: mentor.badgeBg || "#F0EDFF" }]}>
                       <Text style={[styles.mentorBadgeText, { color: mentor.badgeColor || "#5B3CF5" }]}>{mentor.badge}</Text>
@@ -527,8 +566,9 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
                   <Text style={styles.viewProfileBtnText}>View Profile</Text>
                 </Pressable>
               </View>
-            ))}
-          </ScrollView>
+            );
+          })}
+        </ScrollView>
         </>
       ) : null}
 
@@ -540,6 +580,13 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         onSelectMentor={(mId) => {
           if (onSelectUser) onSelectUser({ id: mId, role: "mentor" });
         }}
+      />
+      
+      {/* Groq AI Interactive Roadmap Planner Modal */}
+      <AiRoadmapPlannerModal
+        visible={roadmapModalOpen}
+        user={user}
+        onClose={() => setRoadmapModalOpen(false)}
       />
 
       {/* 7. Top Categories Section */}
@@ -742,7 +789,105 @@ const styles = StyleSheet.create({
   bannerGraphic: {
     width: "100%",
     height: "100%",
-    borderRadius: 14
+    borderRadius: 12
+  },
+  quickAiRoadmapBar: {
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 10,
+    backgroundColor: "#F0EDFF",
+    borderWidth: 1.5,
+    borderColor: "#C4B5FD",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  quickAiBadgeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#5B3CF5",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  quickAiBtn: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#DDD6FE"
+  },
+  roadmapCardBanner: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    marginBottom: 8,
+    backgroundColor: "#5B3CF5",
+    borderRadius: 20,
+    padding: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    elevation: 4
+  },
+  roadmapCardLeft: {
+    flex: 1,
+    paddingRight: 10
+  },
+  aiBadgePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.22)",
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginBottom: 8
+  },
+  aiBadgePillText: {
+    fontSize: 10,
+    fontFamily: fonts.bold,
+    color: "#FFFFFF"
+  },
+  roadmapCardTitle: {
+    fontSize: 18,
+    fontFamily: fonts.bold,
+    color: "#FFFFFF",
+    marginBottom: 4
+  },
+  roadmapCardSub: {
+    fontSize: 12,
+    fontFamily: fonts.regular,
+    color: "#E0E7FF",
+    lineHeight: 17,
+    marginBottom: 12
+  },
+  roadmapCardBtn: {
+    backgroundColor: "#FFFFFF",
+    alignSelf: "flex-start",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12
+  },
+  roadmapCardBtnText: {
+    fontSize: 12.5,
+    fontFamily: fonts.bold,
+    color: "#5B3CF5"
+  },
+  roadmapCardRight: {
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  roadmapIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center"
   },
   techBadgeReact: {
     position: "absolute",

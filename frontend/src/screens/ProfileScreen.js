@@ -13,9 +13,10 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { Share } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { getProfile, getSavedPosts, toggleFollowUser, updateProfile } from "../api/client";
+import { deleteCommunityPost, getProfile, getSavedPosts, toggleFollowUser, updateProfile } from "../api/client";
 import EditMentorProfileModal from "../components/EditMentorProfileModal";
 import GetVerifiedModal from "../components/GetVerifiedModal";
 import MyReviewsModal from "../components/MyReviewsModal";
@@ -62,6 +63,23 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
   const [myReviewsModalOpen, setMyReviewsModalOpen] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [updating, setUpdating] = useState(false);
+  const [selectedPostForSheet, setSelectedPostForSheet] = useState(null);
+  const [postSheetOpen, setPostSheetOpen] = useState(false);
+
+  async function handleDeletePostFromSheet() {
+    if (!selectedPostForSheet) return;
+    const postId = selectedPostForSheet.id || selectedPostForSheet._id;
+    try {
+      if (session?.token) {
+        await deleteCommunityPost(session.token, postId);
+      }
+    } catch (e) {}
+    setPosts((prev) => prev.filter((p) => String(p.id || p._id) !== String(postId)));
+    setSavedPostsList((prev) => prev.filter((p) => String(p.id || p._id) !== String(postId)));
+    setPostSheetOpen(false);
+    setSelectedPostForSheet(null);
+    Alert.alert("Post Deleted 🗑️", "Your post has been deleted successfully.");
+  }
 
   // Edit form state
   const [form, setForm] = useState({
@@ -76,6 +94,14 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
   useEffect(() => {
     fetchProfileData();
   }, [session?.token]);
+
+  useEffect(() => {
+    const liveUser = session?.user || initialUser;
+    if (liveUser && (liveUser.avatarUrl || liveUser.avatar)) {
+      const realAvatar = liveUser.avatarUrl || liveUser.avatar;
+      setProfileUser((prev) => ({ ...prev, ...liveUser, avatarUrl: realAvatar }));
+    }
+  }, [session?.user?.avatarUrl, initialUser?.avatarUrl]);
 
   useEffect(() => {
     if (activeTab === "Saved" && session?.token) {
@@ -266,6 +292,15 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
 
   const filteredPosts = posts.filter((post) => {
     if (activeTab === "Posts") return true;
+    if (activeTab === "Notes" || activeTab === "Documents") {
+      return (
+        post.media?.kind === "notes" ||
+        Boolean(post.documentUrl) ||
+        Boolean(post.documentName) ||
+        post.category?.toLowerCase() === "notes" ||
+        post.category?.toLowerCase() === "documents"
+      );
+    }
     return post.category?.toLowerCase() === activeTab.toLowerCase();
   });
 
@@ -298,6 +333,15 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
         <View style={styles.userMainInfo}>
           <View style={styles.nameRow}>
             <Text style={styles.userName}>{profileUser.name || "TCM Member"}</Text>
+            {profileUser.isMentor || profileUser.role?.toLowerCase().includes("mentor") ? (
+              <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 4 }}>
+                <Text style={{ fontSize: 10, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+              </View>
+            ) : (
+              <View style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 4 }}>
+                <Text style={{ fontSize: 10, fontWeight: "700", color: "#475569" }}>Student</Text>
+              </View>
+            )}
             {profileUser.verified ? (
               <TouchableOpacity
                 onPress={() => setGetVerifiedModalOpen(true)}
@@ -342,10 +386,10 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               </View>
             ) : null}
             {profileUser.website ? (
-              <View style={styles.metaItem}>
+              <TouchableOpacity onPress={() => Share.share({ url: profileUser.website })} style={styles.metaItem}>
                 <Feather name="link" size={12} color="#5B3CF5" />
                 <Text style={[styles.metaText, styles.metaLink]}>{profileUser.website}</Text>
-              </View>
+              </TouchableOpacity>
             ) : null}
           </View>
 
@@ -386,10 +430,10 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
         </View>
       </View>
 
-      {/* Instagram-Style Interactive Stats Bar */}
+      {/* Stats Counter Row */}
       <View style={styles.statsCard}>
         <Pressable onPress={() => setActiveTab("Posts")} style={styles.statCol}>
-          <Text style={styles.statVal}>{stats.postsCount || posts.length || 0}</Text>
+          <Text style={styles.statVal}>{stats.postsCount}</Text>
           <Text style={styles.statLbl}>Posts</Text>
         </Pressable>
         <View style={styles.statDivider} />
@@ -485,45 +529,73 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
         </View>
       ) : (
         <View style={styles.gridFeed}>
-          {filteredPosts.map((post) => (
-            <TouchableOpacity key={post.id || post._id} onPress={() => onSelectPost && onSelectPost(post)} activeOpacity={0.85} style={styles.gridCard}>
-              {post.type === "code" ? (
-                <View style={styles.codePostCard}>
-                  <View style={styles.codeHeader}>
-                    <Text style={styles.codeLangText}>
-                      {post.title?.toLowerCase().includes("python") ? "def two_sum(nums, target):" : "const sum = (a, b) => {"}
-                    </Text>
-                    <Feather name="code" size={14} color="#FFFFFF" />
+          {filteredPosts.map((post) => {
+            const isDoc = post.media?.kind === "notes" || Boolean(post.documentUrl) || Boolean(post.documentName);
+            const docTitle = post.documentName || post.media?.fileName || post.title || post.text || "Document.pdf";
+            const docSize = post.documentSize || post.media?.fileSize || "PDF Document";
+
+            return (
+              <TouchableOpacity
+                key={post.id || post._id}
+                onPress={() => onSelectPost && onSelectPost(post)}
+                onLongPress={() => {
+                  setSelectedPostForSheet(post);
+                  setPostSheetOpen(true);
+                }}
+                activeOpacity={0.85}
+                style={styles.gridCard}
+              >
+                {isDoc ? (
+                  <View style={{ width: "100%", height: 120, backgroundColor: "#F8FAFC", borderRadius: 12, padding: 12, justifyContent: "space-between", borderWidth: 1, borderColor: "#E2E8F0" }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <View style={{ backgroundColor: "#FF465F18", padding: 8, borderRadius: 10 }}>
+                        <MaterialCommunityIcons name="file-pdf-box" size={28} color="#FF465F" />
+                      </View>
+                      <TouchableOpacity hitSlop={10} onPress={() => { setSelectedPostForSheet(post); setPostSheetOpen(true); }}>
+                        <Feather name="more-vertical" size={18} color="#64748B" />
+                      </TouchableOpacity>
+                    </View>
+                    <View>
+                      <Text numberOfLines={2} style={{ fontSize: 13, fontWeight: "700", color: "#0F172A", marginBottom: 2 }}>{docTitle}</Text>
+                      <Text numberOfLines={1} style={{ fontSize: 11, color: "#64748B" }}>{docSize}</Text>
+                    </View>
                   </View>
-                  <Text numberOfLines={5} style={styles.codeSnippetText}>
-                    {post.codeSnippet || "code snippet..."}
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.imagePostCard}>
-                  <Image source={{ uri: post.imageUrl || post.media?.imageUrl }} style={styles.cardImg} />
-                  {post.type === "video" && (
-                    <View style={styles.mediaOverlayBadge}>
-                      <Ionicons name="play" size={14} color="#FFFFFF" />
+                ) : post.type === "code" ? (
+                  <View style={styles.codePostCard}>
+                    <View style={styles.codeHeader}>
+                      <Text style={styles.codeLangText}>
+                        {post.title?.toLowerCase().includes("python") ? "def two_sum(nums, target):" : "const sum = (a, b) => {"}
+                      </Text>
+                      <Feather name="code" size={14} color="#FFFFFF" />
                     </View>
-                  )}
-                  {post.type === "certificate" && (
-                    <View style={styles.mediaOverlayBadge}>
-                      <Feather name="award" size={14} color="#FFFFFF" />
-                    </View>
-                  )}
-                  {post.type === "image" && (
-                    <View style={styles.mediaOverlayBadge}>
-                      <Ionicons name="images-outline" size={14} color="#FFFFFF" />
-                    </View>
-                  )}
-                </View>
-              )}
+                    <Text numberOfLines={5} style={styles.codeSnippetText}>
+                      {post.codeSnippet || "code snippet..."}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.imagePostCard}>
+                    <Image source={{ uri: post.imageUrl || post.media?.imageUrl }} style={styles.cardImg} />
+                    {post.type === "video" && (
+                      <View style={styles.mediaOverlayBadge}>
+                        <Ionicons name="play" size={14} color="#FFFFFF" />
+                      </View>
+                    )}
+                    {post.type === "certificate" && (
+                      <View style={styles.mediaOverlayBadge}>
+                        <Feather name="award" size={14} color="#FFFFFF" />
+                      </View>
+                    )}
+                    {post.type === "image" && (
+                      <View style={styles.mediaOverlayBadge}>
+                        <Ionicons name="images-outline" size={14} color="#FFFFFF" />
+                      </View>
+                    )}
+                  </View>
+                )}
 
               <View style={styles.cardBody}>
                 <Text numberOfLines={1} style={styles.cardTitle}>{post.title || post.content || post.text}</Text>
                 <Text numberOfLines={1} style={styles.cardTags}>{post.tags?.join(" ")}</Text>
-
                 <View style={styles.cardFooter}>
                   <View style={styles.metricRow}>
                     <View style={styles.metricItem}>
@@ -542,9 +614,10 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                 </View>
               </View>
             </TouchableOpacity>
-          ))}
-        </View>
-      )}
+          );
+        })}
+      </View>
+    )}
 
       <MyReviewsModal
         visible={myReviewsModalOpen || activeTab === "Reviews"}
@@ -556,6 +629,68 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
           if (activeTab === "Reviews") setActiveTab("Posts");
         }}
       />
+
+      {/* Post Action Bottom Sheet (Delete / Options on Hold) */}
+      <Modal visible={postSheetOpen} animationType="slide" transparent onRequestClose={() => setPostSheetOpen(false)}>
+        <Pressable onPress={() => setPostSheetOpen(false)} style={styles.modalBg}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 30 }]}>
+            <View style={styles.sheetHandleBar} />
+            <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E293B", textAlign: "center", marginTop: 8 }}>
+              Post Options ⚙️
+            </Text>
+            <Text numberOfLines={1} style={{ fontSize: 13, color: "#64748B", textAlign: "center", marginBottom: 20 }}>
+              {selectedPostForSheet?.title || selectedPostForSheet?.content || selectedPostForSheet?.text || "Selected Post"}
+            </Text>
+
+            <TouchableOpacity
+              onPress={handleDeletePostFromSheet}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#FEF2F2",
+                borderWidth: 1,
+                borderColor: "#FCA5A5",
+                paddingVertical: 14,
+                borderRadius: 14,
+                marginBottom: 10
+              }}
+            >
+              <Feather name="trash-2" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+              <Text style={{ fontSize: 15, fontWeight: "700", color: "#EF4444" }}>Delete Post 🗑️</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setPostSheetOpen(false);
+                Share.share({ message: `Check out this post on TCM: ${selectedPostForSheet?.title || "TCM Post"}` }).catch(() => {});
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#F1F5F9",
+                paddingVertical: 14,
+                borderRadius: 14,
+                marginBottom: 10
+              }}
+            >
+              <Feather name="share-2" size={18} color="#475569" style={{ marginRight: 8 }} />
+              <Text style={{ fontSize: 15, fontWeight: "600", color: "#475569" }}>Share Post Link 🔗</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setPostSheetOpen(false)}
+              style={{
+                alignItems: "center",
+                paddingVertical: 12
+              }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: "600", color: "#64748B" }}>Cancel</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Edit Profile Bottom Sheet */}
       {profileUser.role === "mentor" || profileUser.isMentor ? (
