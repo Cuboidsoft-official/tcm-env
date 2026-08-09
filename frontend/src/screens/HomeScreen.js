@@ -4,6 +4,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Easing,
   Image,
   Linking,
   Modal,
