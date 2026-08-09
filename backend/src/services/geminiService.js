@@ -1,5 +1,5 @@
-const GROQ_API_KEY = process.env.GROQ_API_KEY || "GROQ_API_KEY_FROM_ENV";
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "GEMINI_API_KEY_FROM_ENV";
+const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
 const GROQ_MODELS = [
   "llama-3.3-70b-versatile",
