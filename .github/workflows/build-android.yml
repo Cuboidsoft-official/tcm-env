@@ -91,11 +91,11 @@ jobs:
           set -euo pipefail
           SHA1="$(keytool -list -v -keystore android/app/tcm-release.keystore -storepass "$ANDROID_KEYSTORE_PASS" -alias "$ANDROID_KEY_ALIAS" 2>/dev/null | grep -i 'SHA1:' | awk '{print $NF}' | tr -d ':')"
           HASH="$(python3 -c "
-import json
-d = json.load(open('google-services.json'))
-hashes = [c['android_info']['certificate_hash'] for c in d['client'][0]['oauth_client'] if c.get('android_info', {}).get('certificate_hash')]
-print(hashes[0] if hashes else '')
-")"
+            import json
+            d = json.load(open('google-services.json'))
+            hashes = [c['android_info']['certificate_hash'] for c in d['client'][0]['oauth_client'] if c.get('android_info', {}).get('certificate_hash')]
+            print(hashes[0] if hashes else '')
+          ")"
           test -n "$SHA1" || { echo "::error::Could not read SHA-1 from signing keystore"; exit 1; }
           test -n "$HASH" || { echo "::error::No Android certificate_hash found in google-services.json"; exit 1; }
           echo "Signing keystore SHA-1: $SHA1"
