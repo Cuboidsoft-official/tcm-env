@@ -110,6 +110,25 @@ jobs:
           echo "AAB size: $(stat -c%s dist/app-release.aab) bytes"
           ls -lh dist
 
+      - name: Firebase App Distribution (testers)
+        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+        env:
+          FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || '1:1018503930810:android:5d51d97b49df10940af383' }}
+          FIREBASE_TESTER_GROUP: ${{ vars.FIREBASE_TESTER_GROUP || 'testers' }}
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 -d > /tmp/firebase-sa.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-sa.json
+          OUTPUT="$(npx --yes firebase-tools@latest appdistribution:distribute \
+            frontend/dist/app-preview.apk \
+            --app "$FIREBASE_APP_ID" \
+            --groups "$FIREBASE_TESTER_GROUP" \
+            --release-notes "TCM preview ${TCM_APP_VERSION} — built $(date -u +%Y-%m-%dT%H:%MZ)" \
+            --non-interactive)"
+          echo "$OUTPUT"
+          FIREBASE_URL="$(printf '%s' "$OUTPUT" | grep -oE 'https://[^ ]*' | grep -m1 firebase || true)"
+          echo "FIREBASE_URL=$FIREBASE_URL" >> "$GITHUB_ENV"
+
       - name: Set up SSH agent for OCI VM
         uses: webfactory/ssh-agent@v0.9.0
         with:
