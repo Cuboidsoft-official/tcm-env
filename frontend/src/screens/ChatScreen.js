@@ -498,9 +498,20 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           </View>
 
           <View style={styles.headerTextWrap}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
               <Text numberOfLines={1} style={styles.headerName}>{currentTarget.name}</Text>
-              <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 4 }} />
+              {currentTarget?.role?.toLowerCase().includes("mentor") || currentTarget?.isMentor ? (
+                <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                  <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                </View>
+              ) : (
+                <View style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                  <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#475569" }}>Student</Text>
+                </View>
+              )}
+              {currentTarget?.isPremium ? (
+                <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 2 }} />
+              ) : null}
             </View>
 
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 1 }}>
@@ -558,9 +569,11 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                 <View style={styles.channelPostHeader}>
                   <Image source={{ uri: msg.senderAvatar || currentTarget.avatarUrl }} style={styles.channelPostAvatar} />
                   <View style={{ flex: 1, marginLeft: 10 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                       <Text style={styles.channelPostName}>{msg.senderName || currentTarget.name}</Text>
-                      <MaterialCommunityIcons name="check-decagram" size={15} color="#5B3CF5" style={{ marginLeft: 4 }} />
+                      {msg.isPremium ? (
+                        <MaterialCommunityIcons name="check-decagram" size={15} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                      ) : null}
                     </View>
                     <Text style={styles.channelPostTime}>{msg.time || "Just now"}</Text>
                   </View>

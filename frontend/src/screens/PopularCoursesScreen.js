@@ -176,9 +176,14 @@ export default function PopularCoursesScreen({ session, onBack, onNotifications,
                 <View style={styles.instructorRow}>
                   <Image source={{ uri: course.instructorAvatar }} style={styles.instructorAvatar} />
                   <View style={styles.instructorTextWrap}>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                       <Text style={styles.instructorName}>{course.instructor}</Text>
-                      <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                      <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                        <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                      </View>
+                      {course.isPremium ? (
+                        <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                      ) : null}
                     </View>
                     <Text style={styles.instructorRole}>{course.instructorRole}</Text>
                   </View>

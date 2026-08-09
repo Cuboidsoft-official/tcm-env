@@ -22,7 +22,9 @@ export default function SidebarDrawer({
   const name = user.name || "Ayushman";
   const handle = user.handle ? `@${user.handle}` : "@ayushman.dev";
   const memberBadge = user.memberBadge || "Premium Member";
-  const avatarUri = user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80";
+  const rawAvatar = user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80";
+  const isInvalidWebUri = Platform.OS === "web" && typeof rawAvatar === "string" && rawAvatar.startsWith("file://");
+  const avatarUri = isInvalidWebUri ? null : rawAvatar;
 
   const initials = name
     .split(" ")

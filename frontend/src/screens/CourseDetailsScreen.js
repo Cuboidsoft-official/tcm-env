@@ -69,22 +69,9 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
     }
   }
 
-  function handleEnrollNow() {
-    Alert.alert("Enrollment Confirmation", `Confirm enrollment for "${courseData.title}" at ${courseData.price}?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Proceed to Payment",
-        onPress: () => Alert.alert("Success", `Payment successful! You now have lifetime access to ${courseData.title}.`)
-      }
-    ]);
-  }
-
-  function handleShare() {
-    Alert.alert("Share Course", `Course Link: https://thecodemunk.in/course/${courseId}`);
-  }
-
-  const isNeet = courseData.title?.toLowerCase().includes("neet");
-  const isJee = courseData.title?.toLowerCase().includes("jee");
+  const targetCourseTitle = course?.title || "";
+  const isNeet = targetCourseTitle ? targetCourseTitle.toLowerCase().includes("neet") : String(courseId || "").toLowerCase().includes("neet");
+  const isJee = targetCourseTitle ? targetCourseTitle.toLowerCase().includes("jee") : String(courseId || "").toLowerCase().includes("jee");
 
   const heroBadge = {
     tag: isNeet ? "NEET 2026 LIVE" : isJee ? "JEE MAIN & ADV" : "POPULAR BATCH"
@@ -192,6 +179,21 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
   };
 
   const courseData = course || fallbackCourseData;
+
+  function handleEnrollNow() {
+    Alert.alert("Enrollment Confirmation", `Confirm enrollment for "${courseData.title || "Course"}" at ${courseData.price || "₹1,499"}?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Proceed to Payment",
+        onPress: () => Alert.alert("Success", `Payment successful! You now have lifetime access to ${courseData.title || "the course"}.`)
+      }
+    ]);
+  }
+
+  function handleShare() {
+    Alert.alert("Share Course", `Course Link: https://thecodemunk.in/course/${courseId}`);
+  }
+
   const curriculumModules = courseData.curriculum?.modules || courseData.modules || [];
   const totalModCount = courseData.curriculum?.totalModules || `${curriculumModules.length} Modules`;
   const totalLesCount = courseData.curriculum?.totalLessons || `${curriculumModules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)} Lessons`;

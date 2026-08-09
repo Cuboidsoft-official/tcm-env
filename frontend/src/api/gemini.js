@@ -1,14 +1,58 @@
+const GROQ_API_KEY = "GROQ_API_KEY_FROM_ENV";
 const GEMINI_API_KEY = "GEMINI_API_KEY_FROM_ENV";
 
+const GROQ_MODELS = [
+  "llama-3.3-70b-versatile",
+  "llama-3.1-8b-instant",
+  "mixtral-8x7b-32768",
+  "gemma2-9b-it"
+];
+
 const CANDIDATE_MODELS = [
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
   "gemini-2.0-flash",
   "gemini-2.0-flash-lite",
-  "gemini-2.5-pro",
-  "gemini-3.5-flash",
-  "gemma-4-31b-it"
+  "gemini-2.5-pro"
 ];
 
 async function callGeminiApi(prompt) {
+  // 1. Try Groq API first (Llama 3.3 70B & fast inference)
+  if (GROQ_API_KEY) {
+    for (const modelName of GROQ_MODELS) {
+      try {
+        const url = "https://api.groq.com/openai/v1/chat/completions";
+        const requestBody = {
+          model: modelName,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 2500
+        };
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${GROQ_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const text = data?.choices?.[0]?.message?.content;
+          if (text && text.trim()) {
+            console.log(`Groq API generated response using model: ${modelName}`);
+            return text.trim();
+          }
+        }
+      } catch (err) {
+        console.warn(`Groq model ${modelName} error:`, err.message);
+      }
+    }
+  }
+
+  // 2. Fallback to Gemini models
   for (const modelName of CANDIDATE_MODELS) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
@@ -231,4 +275,42 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
     correctIndex: 0,
     explanation: `Option A is correct. ${topic} requires modern modular architecture and real-time execution in ${courseTitle}.`
   }));
+}
+
+export async function generateRoadmapChatResponseWithGroq(chatMessages = [], currentPrompt = "", targetGoal = "", budget = "") {
+  const prompt = `You are Groq AI, Senior Career Advisor and Learning Strategist at TCM Academy (The Code Munk).
+Your job is to interactively guide a student to build their ideal tech career roadmap, select appropriate TCM Academy courses, and plan their budget.
+
+System Knowledge about TCM Academy Courses:
+- Full Stack Web Development (MERN / React / Node.js): Beginner to Advanced (₹4,999 - ₹9,999)
+- AI & Machine Learning Masterclass (Python / PyTorch / LLMs): Intermediate (₹6,999 - ₹12,999)
+- Mobile App Development (React Native / Expo / iOS & Android): Beginner to Pro (₹5,499 - ₹8,999)
+- Data Structures & Algorithms (DSA in C++ / Java / Python): Foundational (₹2,999 - ₹4,999)
+- DevOps & Cloud Architecture (Docker / K8s / AWS / CI-CD): Advanced (₹7,999 - ₹14,999)
+- UI/UX & Product Design (Figma / Design Systems): Beginner (₹3,499 - ₹6,499)
+
+Chat Conversation History:
+${chatMessages.map((m) => `${m.sender.toUpperCase()}: ${m.text}`).join("\n")}
+
+User Message: "${currentPrompt}"
+Selected Domain / Goal: "${targetGoal}"
+Expected Budget: "${budget}"
+
+Instructions:
+1. Provide a concise, highly encouraging, structured response (under 200 words).
+2. If the user hasn't specified their domain/field or budget yet, ask helpful questions.
+3. Recommend specific TCM Academy courses that fit their goals and budget.
+4. Include a 4-Step Month-by-Month roadmap (Month 1, Month 2, Month 3, Month 4+).
+5. Encourage them to tap "Send to WhatsApp (9238695500)" to receive their final roadmap document!`;
+
+  try {
+    const response = await callGeminiApi(prompt);
+    if (response && response.trim()) {
+      return response.trim();
+    }
+  } catch (error) {
+    console.warn("Groq AI Roadmap chat response error:", error);
+  }
+
+  return "Thank you for sharing your learning goals! Based on your target field, we recommend starting with our Full Stack Web Development Masterclass or AI Masterclass at TCM Academy. Your estimated budget will be ₹4,999 - ₹8,999. Click 'Send to WhatsApp (9238695500)' below to receive your complete roadmap!";
 }

@@ -11,6 +11,7 @@ import { Webinar } from "../models/Webinar.js";
 import { DoubtRoom } from "../models/DoubtRoom.js";
 import { KnowledgeBaseItem } from "../models/KnowledgeBaseItem.js";
 import { ClassReview } from "../models/ClassReview.js";
+import { Job } from "../models/Job.js";
 import {
   registerPushToken,
   notifyCoursePublished,
@@ -18,6 +19,7 @@ import {
   notifyPostLiked,
   notifyPostCommented
 } from "../services/pushNotificationService.js";
+import { askGeminiAi, generateSmartAcademicFallback } from "../services/geminiService.js";
 
 export const homeRouter = express.Router();
 
@@ -29,7 +31,7 @@ homeRouter.post("/notifications/register-token", requireAuth, (req, res) => {
   res.json({ success: true, registered: true });
 });
 
-const categories = ["For You", "Following", "Trending", "UPSC", "JEE", "NEET", "Coding", "AI / ML", "Design"];
+const categories = ["For You", "Following", "Trending", "💼 Jobs & Hiring", "UPSC", "JEE", "NEET", "Coding", "AI / ML", "Design"];
 const tabs = [
   { key: "Home", icon: "home" },
   { key: "Learn", icon: "book-open" },
@@ -315,8 +317,37 @@ homeRouter.get("/", requireAuth, async (req, res) => {
   const memoryStore = req.app.locals.memoryStore;
 
   if (memoryStore) {
-    const stories = memoryStore.stories.sort((a, b) => a.order - b.order);
-    const posts = memoryStore.posts.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+    const stories = (memoryStore.stories || []).sort((a, b) => a.order - b.order);
+    const posts = (memoryStore.posts || []).sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+    const jobs = memoryStore.jobs || [];
+
+    const jobPostCards = jobs.map((j) => {
+      const selectedCount = (j.applicants || []).filter((a) => a.status === "selected").length;
+      const reqLimit = Number(j.requiredCandidates || 1);
+      const isFilled = selectedCount >= reqLimit;
+
+      return {
+        id: String(j.id),
+        authorName: j.mentorName || "Mentor",
+        authorAvatarUrl: j.mentorAvatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+        authorRole: j.mentorRole || "Senior Mentor",
+        publishedAt: j.createdAt || new Date().toISOString(),
+        category: "💼 Jobs & Hiring",
+        postType: "job_news",
+        text: j.description || `${j.title} at ${j.company}`,
+        isMentor: true,
+        jobData: {
+          ...j,
+          id: String(j.id),
+          selectedCandidates: selectedCount,
+          status: isFilled ? "filled" : j.status || "active"
+        },
+        metrics: { likes: 12, comments: (j.applicants || []).length, reposts: 3 },
+        userAction: { liked: false, saved: false }
+      };
+    });
+
+    const allHomePosts = [...jobPostCards, ...posts.map(mapPost)];
 
     return res.json({
       user: {
@@ -355,16 +386,43 @@ homeRouter.get("/", requireAuth, async (req, res) => {
           badge: story.badge
         }))
       ],
-      posts: posts.map(mapPost)
+      posts: allHomePosts
     });
   }
 
-  const [stories, posts, legacyMentors, registeredMentorUsers] = await Promise.all([
+  const [stories, posts, dbJobs, legacyMentors, registeredMentorUsers] = await Promise.all([
     Story.find().sort({ order: 1, createdAt: 1 }).lean(),
     CommunityPost.find().sort({ publishedAt: -1 }).limit(20).lean(),
+    Job.find().sort({ createdAt: -1 }).lean(),
     Mentor.find().sort({ rating: -1 }).limit(6).lean(),
     User.find({ role: "mentor" }).lean()
   ]);
+
+  const dbJobCards = (dbJobs || []).map((j) => {
+    const selectedCount = (j.applicants || []).filter((a) => a.status === "selected").length;
+    const reqLimit = Number(j.requiredCandidates || 1);
+    const isFilled = selectedCount >= reqLimit;
+
+    return {
+      id: String(j._id),
+      authorName: j.mentorName || "Mentor",
+      authorAvatarUrl: j.mentorAvatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+      authorRole: j.mentorRole || "Senior Mentor",
+      publishedAt: j.createdAt || new Date().toISOString(),
+      category: "💼 Jobs & Hiring",
+      postType: "job_news",
+      text: j.description || `${j.title} at ${j.company}`,
+      isMentor: true,
+      jobData: {
+        ...j,
+        id: String(j._id),
+        selectedCandidates: selectedCount,
+        status: isFilled ? "filled" : j.status || "active"
+      },
+      metrics: { likes: 12, comments: (j.applicants || []).length, reposts: 3 },
+      userAction: { liked: false, saved: false }
+    };
+  });
 
   const mentors = [...registeredMentorUsers, ...legacyMentors];
 
@@ -405,7 +463,7 @@ homeRouter.get("/", requireAuth, async (req, res) => {
         badge: story.badge
       }))
     ],
-    posts: posts.map(mapPost)
+    posts: [...dbJobCards, ...posts.map(mapPost)]
   });
 });
 
@@ -718,6 +776,38 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
   } catch (e) {}
 
   res.status(201).json({ post: mapPost(post) });
+});
+
+homeRouter.delete("/posts/:postId", requireAuth, async (req, res) => {
+  const { postId } = req.params;
+  const userId = String(req.user._id);
+
+  try {
+    const post = await CommunityPost.findById(postId);
+    if (post) {
+      if (String(post.authorId) !== userId && req.user.role !== "mentor") {
+        return res.status(403).json({ message: "You can only delete your own posts." });
+      }
+      await CommunityPost.findByIdAndDelete(postId);
+      try {
+        await User.findByIdAndUpdate(req.user._id, { $inc: { "stats.postsCount": -1 } });
+      } catch (e) {}
+      return res.json({ success: true, message: "Post deleted successfully.", deletedId: postId });
+    }
+
+    const memoryStore = req.app.locals.memoryStore;
+    if (memoryStore && memoryStore.posts) {
+      const idx = memoryStore.posts.findIndex((p) => String(p.id || p._id) === String(postId));
+      if (idx > -1) {
+        memoryStore.posts.splice(idx, 1);
+        return res.json({ success: true, message: "Post deleted successfully.", deletedId: postId });
+      }
+    }
+
+    return res.json({ success: true, message: "Post deleted successfully.", deletedId: postId });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to delete post." });
+  }
 });
 
 homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
@@ -3138,18 +3228,65 @@ homeRouter.post("/doubts", requireAuth, (req, res) => {
   res.json({ success: true, doubt: newDoubt, doubts: req.app.locals.doubtThreads });
 });
 
-// 1. GET /home/doubt-rooms - List all active Doubt Rooms & Knowledge Base highlights from MongoDB
+// Helper to get or create in-memory doubt room
+function getInMemoryDoubtRoom(req, roomId) {
+  if (!req.app.locals.inMemoryDoubtRooms) {
+    req.app.locals.inMemoryDoubtRooms = {};
+  }
+  if (!req.app.locals.inMemoryDoubtRooms[roomId]) {
+    req.app.locals.inMemoryDoubtRooms[roomId] = {
+      roomId,
+      title: "TCM Doubt Clearance Group",
+      category: "NEET",
+      description: "Live 24x7 doubt clearance room with mentors and peers.",
+      isPrivate: false,
+      creatorId: "user-system",
+      admins: ["user-system"],
+      members: [],
+      membersCount: 5,
+      onlineCount: 3,
+      messages: [
+        {
+          id: `msg_welcome_${Date.now()}`,
+          authorName: "TCM Bot 🤖",
+          authorRole: "Admin",
+          authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
+          time: "Just now",
+          text: "Welcome to TCM Doubt Room! Ask questions or tap 'Ask with AI' for instant explanations.",
+          type: "text"
+        }
+      ]
+    };
+  }
+  return req.app.locals.inMemoryDoubtRooms[roomId];
+}
+
+// 1. GET /home/doubt-rooms - List all active Doubt Rooms & Knowledge Base highlights
 homeRouter.get("/doubt-rooms", requireAuth, async (req, res) => {
   try {
-    const rooms = await DoubtRoom.find({}).sort({ updatedAt: -1 });
-    const kbItems = await KnowledgeBaseItem.find({}).sort({ createdAt: -1 });
+    let rooms = [];
+    let kbItems = [];
+    try {
+      rooms = await DoubtRoom.find({}).sort({ updatedAt: -1 });
+      kbItems = await KnowledgeBaseItem.find({}).sort({ createdAt: -1 });
+    } catch (e) {}
+
+    if (!rooms || rooms.length === 0) {
+      if (!req.app.locals.inMemoryDoubtRooms) {
+        getInMemoryDoubtRoom(req, "NEET-DOUBT-101");
+        getInMemoryDoubtRoom(req, "JEE-DOUBT-102");
+        getInMemoryDoubtRoom(req, "DEV-DOUBT-103");
+      }
+      rooms = Object.values(req.app.locals.inMemoryDoubtRooms || {});
+    }
+
     return res.json({ success: true, rooms, knowledgeBase: kbItems });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
 });
 
-// 2. POST /home/doubt-rooms - Create a new Doubt Room in MongoDB
+// 2. POST /home/doubt-rooms - Create a new Doubt Room
 homeRouter.post("/doubt-rooms", requireAuth, async (req, res) => {
   try {
     const { title, category = "NEET", isPrivate = false, description = "" } = req.body;
@@ -3198,19 +3335,26 @@ homeRouter.post("/doubt-rooms", requireAuth, async (req, res) => {
       ]
     };
 
-    const room = await DoubtRoom.create(newRoomData);
-    return res.json({ success: true, room });
+    try {
+      const room = await DoubtRoom.create(newRoomData);
+      return res.json({ success: true, room });
+    } catch (dbErr) {
+      if (!req.app.locals.inMemoryDoubtRooms) req.app.locals.inMemoryDoubtRooms = {};
+      req.app.locals.inMemoryDoubtRooms[newRoomId] = newRoomData;
+      return res.json({ success: true, room: newRoomData });
+    }
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
 });
 
-// POST /home/doubt-rooms/:roomId/join - Join or Request to Join a Doubt Room in MongoDB
+// POST /home/doubt-rooms/:roomId/join - Join or Request to Join a Doubt Room
 homeRouter.post("/doubt-rooms/:roomId/join", requireAuth, async (req, res) => {
   try {
     const { roomId } = req.params;
-    const room = await DoubtRoom.findOne({ roomId });
-    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+    let room = null;
+    try { room = await DoubtRoom.findOne({ roomId }); } catch (e) {}
+    if (!room) room = getInMemoryDoubtRoom(req, roomId);
 
     const userId = String(req.user._id || req.user.id);
     if (!room.members) room.members = [];
@@ -3229,27 +3373,28 @@ homeRouter.post("/doubt-rooms/:roomId/join", requireAuth, async (req, res) => {
           userAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
           requestedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         });
-        await room.save();
+        if (typeof room.save === "function") try { await room.save(); } catch (e) {}
       }
       return res.json({ success: true, room, status: "requested", message: "Join request sent to Room Admin for approval." });
     }
 
     room.members.push(userId);
     room.membersCount = (room.membersCount || 0) + 1;
-    await room.save();
+    if (typeof room.save === "function") try { await room.save(); } catch (e) {}
     return res.json({ success: true, room, status: "joined" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
 });
 
-// POST /home/doubt-rooms/:roomId/manage - Admin management in MongoDB
+// POST /home/doubt-rooms/:roomId/manage - Admin management
 homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, async (req, res) => {
   try {
     const { roomId } = req.params;
     const { action, targetUserId, description, roomAvatar, isPrivate, title } = req.body;
-    const room = await DoubtRoom.findOne({ roomId });
-    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+    let room = null;
+    try { room = await DoubtRoom.findOne({ roomId }); } catch (e) {}
+    if (!room) room = getInMemoryDoubtRoom(req, roomId);
 
     const currentUserId = String(req.user._id || req.user.id);
     const isAdmin = (room.admins || []).includes(currentUserId) || room.creatorId === currentUserId;
@@ -3258,7 +3403,8 @@ homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, async (req, res) => 
       if (!isAdmin) {
         return res.status(403).json({ message: "Only room admins can delete this group." });
       }
-      await DoubtRoom.deleteOne({ roomId });
+      try { await DoubtRoom.deleteOne({ roomId }); } catch (e) {}
+      if (req.app.locals.inMemoryDoubtRooms) delete req.app.locals.inMemoryDoubtRooms[roomId];
       return res.json({ success: true, deleted: true, message: "Group room deleted successfully." });
     }
 
@@ -3266,7 +3412,7 @@ homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, async (req, res) => 
       if (!room.members) room.members = [];
       room.members = room.members.filter((m) => String(m) !== currentUserId);
       room.membersCount = Math.max(0, (room.membersCount || 1) - 1);
-      await room.save();
+      if (typeof room.save === "function") try { await room.save(); } catch (e) {}
       return res.json({ success: true, room, left: true, message: "Left group room successfully." });
     }
 
@@ -3300,32 +3446,36 @@ homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, async (req, res) => 
       if (isPrivate !== undefined) room.isPrivate = Boolean(isPrivate);
     }
 
-    await room.save();
+    if (typeof room.save === "function") try { await room.save(); } catch (e) {}
     return res.json({ success: true, room });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
 });
 
-// 3. GET /home/doubt-rooms/:roomId - Fetch Doubt Room details from MongoDB
+// 3. GET /home/doubt-rooms/:roomId - Fetch Doubt Room details
 homeRouter.get("/doubt-rooms/:roomId", requireAuth, async (req, res) => {
   try {
     const { roomId } = req.params;
-    const room = await DoubtRoom.findOne({ roomId });
-    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+    let room = null;
+    try { room = await DoubtRoom.findOne({ roomId }); } catch (e) {}
+    if (!room) room = getInMemoryDoubtRoom(req, roomId);
     return res.json({ success: true, room });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
 });
 
-// 4. POST /home/doubt-rooms/:roomId/messages - Send room message in MongoDB
+// 4. POST /home/doubt-rooms/:roomId/messages - Send room message
 homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, async (req, res) => {
   try {
     const { roomId } = req.params;
     const { text, codeSnippet, attachmentUrl, attachmentType, replyToId, reactionEmoji } = req.body;
-    const room = await DoubtRoom.findOne({ roomId });
-    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+    let room = null;
+    try { room = await DoubtRoom.findOne({ roomId }); } catch (e) {}
+    if (!room) room = getInMemoryDoubtRoom(req, roomId);
+
+    if (!room.messages) room.messages = [];
 
     if (reactionEmoji && replyToId) {
       const targetMsg = room.messages.find((m) => m.id === replyToId);
@@ -3338,7 +3488,7 @@ homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, async (req, res) =
         } else {
           targetMsg.reactions.push({ emoji: reactionEmoji, count: 1, label: "1" });
         }
-        await room.save();
+        if (typeof room.save === "function") try { await room.save(); } catch (e) {}
         return res.json({ success: true, room });
       }
     }
@@ -3379,27 +3529,39 @@ homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, async (req, res) =
     };
 
     room.messages.push(newMsg);
-    await room.save();
+    if (typeof room.save === "function") try { await room.save(); } catch (e) {}
     return res.json({ success: true, message: newMsg, room });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
 });
 
-// 5. POST /home/doubt-rooms/:roomId/ask-ai - AI Tutor answer in MongoDB
+// 5. POST /home/doubt-rooms/:roomId/ask-ai - Ask AI Tutor in Doubt Room
 homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => {
   try {
     const { roomId } = req.params;
-    const { messageId, doubtText } = req.body;
-    const room = await DoubtRoom.findOne({ roomId });
-    if (!room) return res.status(404).json({ message: "Doubt Room not found." });
+    const { messageId, doubtText, text, codeSnippet } = req.body;
+    const questionToAsk = (doubtText || text || codeSnippet || "Explain this concept in detail.").trim();
 
-    const systemInstruction = `You are TCM AI Tutor, an expert academic and technical AI tutor for ${room.title || "TCM Academy"}. Explain clearly, step-by-step, with bullet points. Keep response concise under 250 words.`;
-    const geminiResponse = await askGeminiAi(doubtText || "Explain this concept in detail.", systemInstruction);
+    let room = null;
+    try { room = await DoubtRoom.findOne({ roomId }); } catch (e) {}
+    if (!room) room = getInMemoryDoubtRoom(req, roomId);
 
-    const aiAnswerText = geminiResponse
-      ? `🤖 **TCM AI Explanation**:\n\n${geminiResponse}`
-      : `🤖 **TCM AI Explanation**:\n\nRegarding "${doubtText || "your question"}":\n\n1. **Core Concept**: In ${room.category || "this topic"}, key concepts rely on fundamental principles.\n2. **Key Factor**: Understand the core equations and step-by-step logic.\n\n*Need further clarification? You can tap "Need Mentor Help" below!*`;
+    const roomTitle = room?.title || "TCM Academy";
+    const roomCategory = room?.category || "TCM Learning";
+
+    const systemInstruction = `You are TCM AI Tutor, a distinguished senior academic and technical mentor at TCM Academy for ${roomTitle}. Provide a direct, comprehensive, highly mature, in-depth answer for "${questionToAsk}". Structure your response clearly with headings and code/examples where applicable. Do not use generic filler templates.`;
+    
+    let geminiResponse = null;
+    try {
+      geminiResponse = await askGeminiAi(questionToAsk, systemInstruction);
+    } catch (e) {
+      console.warn("askGeminiAi error in route handler:", e?.message);
+    }
+
+    const aiAnswerText = (geminiResponse && geminiResponse.trim())
+      ? geminiResponse.trim()
+      : generateSmartAcademicFallback(questionToAsk);
 
     const aiMsg = {
       id: `msg_ai_${Date.now()}`,
@@ -3413,13 +3575,31 @@ homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => 
       canRequestMentorHelp: true
     };
 
-    room.messages.push(aiMsg);
-    await room.save();
+    if (room) {
+      if (!Array.isArray(room.messages)) room.messages = [];
+      room.messages.push(aiMsg);
+      if (typeof room.save === "function") try { await room.save(); } catch (e) {}
+    }
+
     return res.json({ success: true, aiMessage: aiMsg, room });
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    const questionToAsk = req.body?.doubtText || req.body?.text || "your doubt";
+    const smartFallbackText = generateSmartAcademicFallback(questionToAsk);
+    const fallbackAiMsg = {
+      id: `msg_ai_${Date.now()}`,
+      authorName: "TCM AI Tutor 🤖",
+      authorRole: "AI Assistant",
+      authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      text: smartFallbackText,
+      isAi: true,
+      type: "ai_response",
+      canRequestMentorHelp: true
+    };
+    return res.json({ success: true, aiMessage: fallbackAiMsg, room: null });
   }
 });
+
 
 // 6. POST /home/doubt-rooms/:roomId/polls - Create poll in MongoDB
 homeRouter.post("/doubt-rooms/:roomId/polls", requireAuth, async (req, res) => {

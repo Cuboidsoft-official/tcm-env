@@ -17,7 +17,7 @@ import {
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getProfile, updateProfile } from "../api/client";
+import { applyReferralCode, getProfile, updateProfile } from "../api/client";
 import MyReviewsModal from "../components/MyReviewsModal";
 import { useTheme } from "../context/ThemeContext";
 import { colors, shadow } from "../constants/theme";
@@ -138,6 +138,64 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
   });
 
   const selectedThemeObj = activeAppTheme || themesList[1];
+
+  // Referral Code 24h Window State
+  const [referralInput, setReferralInput] = useState("");
+  const [applyingReferral, setApplyingReferral] = useState(false);
+  const [timeRemainingStr, setTimeRemainingStr] = useState("");
+  const [isReferralWindowValid, setIsReferralWindowValid] = useState(true);
+
+  useEffect(() => {
+    if (user.referredBy) return;
+
+    function updateCountdown() {
+      const createdTime = user.createdAt ? new Date(user.createdAt).getTime() : Date.now();
+      const elapsedMs = Date.now() - createdTime;
+      const windowMs = 24 * 60 * 60 * 1000;
+      const remainingMs = windowMs - elapsedMs;
+
+      if (remainingMs <= 0) {
+        setIsReferralWindowValid(false);
+        setTimeRemainingStr("00h 00m 00s");
+      } else {
+        setIsReferralWindowValid(true);
+        const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+        const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+        setTimeRemainingStr(
+          `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`
+        );
+      }
+    }
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [user.createdAt, user.referredBy]);
+
+  async function handleApplyReferral() {
+    if (!referralInput.trim()) {
+      Alert.alert("Missing Referral Code", "Please enter a referral code.");
+      return;
+    }
+
+    setApplyingReferral(true);
+    try {
+      const res = await applyReferralCode(session?.token, referralInput.trim());
+      if (res && res.user) {
+        setUser(res.user);
+        if (onUserUpdate) onUserUpdate(res.user);
+        Alert.alert("Referral Applied! 🎉", res.message || "Referral code applied successfully!");
+        setReferralInput("");
+      } else {
+        Alert.alert("Error", res.message || "Failed to apply referral code.");
+      }
+    } catch (err) {
+      Alert.alert("Application Failed", err.message || "Could not apply referral code.");
+    } finally {
+      setApplyingReferral(false);
+    }
+  }
 
   function openEditModal() {
     const subjectsArray = Array.isArray(user.subjects) ? user.subjects : [];
@@ -555,6 +613,91 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
           </View>
           <Text style={styles.cacheSizeText}>24.5 MB</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* 6.5. Referral Code Program (24-Hour Window) */}
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionHeader}>REFERRAL PROGRAM 🎁</Text>
+        {user.referredBy ? (
+          <View style={styles.settingRowNoBorder}>
+            <View style={styles.rowLeft}>
+              <View style={[styles.iconWrap, { backgroundColor: "#ECFDF5" }]}>
+                <Feather name="check-circle" size={18} color="#10B981" />
+              </View>
+              <View>
+                <Text style={styles.rowTitle}>Applied Referral Code</Text>
+                <Text style={styles.rowSub}>Code: {user.referredBy} • Reward active</Text>
+              </View>
+            </View>
+            <View style={styles.appliedRefBadge}>
+              <Text style={styles.appliedRefText}>Applied</Text>
+            </View>
+          </View>
+        ) : isReferralWindowValid ? (
+          <View style={{ paddingVertical: 4 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+              <Feather name="clock" size={15} color="#5B3CF5" style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: "#5B3CF5" }}>
+                24-Hour Registration Window: {timeRemainingStr}
+              </Text>
+            </View>
+            <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: "#7C7C9A", marginBottom: 12 }}>
+              Didn't add a referral code during sign up? Enter a friend's referral code within 24 hours of account creation to claim 10 TCM Coins!
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <TextInput
+                style={{
+                  flex: 1,
+                  backgroundColor: "#F4F3FA",
+                  borderRadius: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  fontSize: 14,
+                  fontFamily: fonts.semiBold,
+                  color: "#181725",
+                  marginRight: 8,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB"
+                }}
+                placeholder="Referral Code (e.g. ANK25X)"
+                placeholderTextColor="#9CA3AF"
+                value={referralInput}
+                onChangeText={(txt) => setReferralInput(txt.toUpperCase())}
+                autoCapitalize="characters"
+              />
+              <TouchableOpacity
+                onPress={handleApplyReferral}
+                disabled={applyingReferral}
+                style={{
+                  backgroundColor: "#5B3CF5",
+                  paddingHorizontal: 18,
+                  paddingVertical: 11,
+                  borderRadius: 10,
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                {applyingReferral ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={{ color: "#FFF", fontFamily: fonts.bold, fontSize: 13 }}>Apply</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={{ paddingVertical: 4 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+              <Feather name="alert-circle" size={15} color="#EF4444" style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: "#EF4444" }}>
+                Referral Code Window Expired
+              </Text>
+            </View>
+            <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: "#7C7C9A" }}>
+              Referral codes can only be claimed within the first 24 hours of account registration.
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* 7. Support & Legal */}
@@ -1042,6 +1185,19 @@ const styles = StyleSheet.create({
     borderColor: "#A7F3D0"
   },
   activePlanText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: "#10B981"
+  },
+  appliedRefBadge: {
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#A7F3D0"
+  },
+  appliedRefText: {
     fontFamily: fonts.bold,
     fontSize: 11,
     color: "#10B981"

@@ -226,7 +226,9 @@ export default function ChatDetailsScreen({
                 ) : (
                   <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
                     <Text style={styles.channelName}>{targetUser?.name || titleInput}</Text>
-                    <MaterialCommunityIcons name="check-decagram" size={18} color="#5B3CF5" style={{ marginLeft: 6 }} />
+                    {targetUser?.isPremium ? (
+                      <MaterialCommunityIcons name="check-decagram" size={18} color="#5B3CF5" style={{ marginLeft: 6 }} />
+                    ) : null}
                     {isUserMentor ? (
                       <Pressable onPress={() => setIsEditingTitle(true)} style={{ marginLeft: 8 }}>
                         <Feather name="edit-2" size={14} color="#64748B" />
@@ -296,9 +298,20 @@ export default function ChatDetailsScreen({
               source={{ uri: targetUser?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200" }}
               style={styles.userAvatarLarge}
             />
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12 }}>
               <Text style={styles.userNameLarge}>{targetUser?.name || "TCM Member"}</Text>
-              <MaterialCommunityIcons name="check-decagram" size={18} color="#5B3CF5" style={{ marginLeft: 6 }} />
+              {targetUser?.role?.toLowerCase().includes("mentor") || targetUser?.isMentor ? (
+                <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                  <Text style={{ fontSize: 10, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                </View>
+              ) : (
+                <View style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                  <Text style={{ fontSize: 10, fontWeight: "700", color: "#475569" }}>Student</Text>
+                </View>
+              )}
+              {targetUser?.isPremium ? (
+                <MaterialCommunityIcons name="check-decagram" size={18} color="#5B3CF5" />
+              ) : null}
             </View>
             <Text style={styles.userRoleText}>{targetUser?.role || "Active Member"}</Text>
 
@@ -380,9 +393,14 @@ export default function ChatDetailsScreen({
             >
               <Image source={{ uri: creatorAvatar }} style={styles.mentorAvatar} />
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                   <Text style={styles.mentorName}>{creatorName}</Text>
-                  <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 4 }} />
+                  <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                    <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                  </View>
+                  {targetUser?.isPremium ? (
+                    <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                  ) : null}
                 </View>
                 <Text style={styles.mentorRole}>{creatorRole}</Text>
               </View>

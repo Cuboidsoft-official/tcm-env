@@ -52,7 +52,10 @@ export function publicUser(user) {
       draftsCount: 0,
       deletedCount: 0
     },
-    progress: user.progress || 0
+    progress: user.progress || 0,
+    referredBy: user.referredBy || "",
+    referralAppliedAt: user.referralAppliedAt || null,
+    createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : user.createdAtIso || new Date().toISOString()
   };
 }
 
@@ -71,13 +74,15 @@ function getMemoryUsers(memoryStore) {
 authRouter.post("/register", async (req, res) => {
   try {
     const memoryStore = req.app.locals.memoryStore;
-    const { name, email, password, role = "student", mentorCategory = "TCM Information Tech" } = req.body;
+    const { name, email, password, role = "student", mentorCategory = "TCM Information Tech", referralCode } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Name, email, and password are required" });
     }
 
     const normalizedEmail = normalizeEmail(email);
+    const cleanRefCode = referralCode ? String(referralCode).trim().toUpperCase() : "";
+    const nowIso = new Date().toISOString();
 
     if (memoryStore) {
       const users = getMemoryUsers(memoryStore);
@@ -95,7 +100,11 @@ authRouter.post("/register", async (req, res) => {
         role,
         mentorCategory,
         avatarUrl: "",
-        progress: 0
+        progress: 0,
+        referredBy: cleanRefCode,
+        referralAppliedAt: cleanRefCode ? new Date() : null,
+        createdAt: nowIso,
+        createdAtIso: nowIso
       };
 
       users.push(user);
@@ -132,7 +141,15 @@ authRouter.post("/register", async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await User.create({ name, email: normalizedEmail, passwordHash, role, mentorCategory });
+    const user = await User.create({
+      name,
+      email: normalizedEmail,
+      passwordHash,
+      role,
+      mentorCategory,
+      referredBy: cleanRefCode,
+      referralAppliedAt: cleanRefCode ? new Date() : null
+    });
 
     if (role === "mentor") {
       try {
@@ -216,7 +233,7 @@ authRouter.post("/login", async (req, res) => {
 authRouter.post("/google", async (req, res) => {
   try {
     const memoryStore = req.app.locals.memoryStore;
-    const { email, name, avatarUrl, idToken, role = "student" } = req.body;
+    const { email, name, avatarUrl, idToken, role = "student", referralCode } = req.body;
 
     if (!email) {
       return res.status(400).json({ message: "Google user email is required" });
@@ -225,6 +242,8 @@ authRouter.post("/google", async (req, res) => {
     const normalizedEmail = normalizeEmail(email);
     const googleName = name || normalizedEmail.split("@")[0];
     const googleAvatar = avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80";
+    const cleanRefCode = referralCode ? String(referralCode).trim().toUpperCase() : "";
+    const nowIso = new Date().toISOString();
 
     if (memoryStore) {
       const users = getMemoryUsers(memoryStore);
@@ -239,12 +258,20 @@ authRouter.post("/google", async (req, res) => {
           role,
           avatarUrl: googleAvatar,
           verified: true,
-          progress: 0
+          progress: 0,
+          referredBy: cleanRefCode,
+          referralAppliedAt: cleanRefCode ? new Date() : null,
+          createdAt: nowIso,
+          createdAtIso: nowIso
         };
         users.push(user);
       } else {
         user.avatarUrl = googleAvatar;
         user.verified = true;
+        if (!user.referredBy && cleanRefCode) {
+          user.referredBy = cleanRefCode;
+          user.referralAppliedAt = new Date();
+        }
       }
 
       return res.json({
@@ -263,11 +290,17 @@ authRouter.post("/google", async (req, res) => {
         passwordHash,
         role,
         avatarUrl: googleAvatar,
-        verified: true
+        verified: true,
+        referredBy: cleanRefCode,
+        referralAppliedAt: cleanRefCode ? new Date() : null
       });
     } else {
       user.avatarUrl = googleAvatar;
       user.verified = true;
+      if (!user.referredBy && cleanRefCode) {
+        user.referredBy = cleanRefCode;
+        user.referralAppliedAt = new Date();
+      }
       await user.save();
     }
 
