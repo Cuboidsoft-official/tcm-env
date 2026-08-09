@@ -82,6 +82,31 @@ jobs:
               echo "::warning::Keystore validation failed (checking without password)"
             }
 
+      - name: Verify keystore SHA-1 matches google-services.json
+        working-directory: frontend
+        env:
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          SHA1="$(keytool -list -v -keystore android/app/tcm-release.keystore -storepass "$ANDROID_KEYSTORE_PASS" -alias "$ANDROID_KEY_ALIAS" 2>/dev/null | grep -i 'SHA1:' | awk '{print $NF}' | tr -d ':')"
+          HASH="$(python3 -c "
+            import json
+            d = json.load(open('google-services.json'))
+            hashes = [c['android_info']['certificate_hash'] for c in d['client'][0]['oauth_client'] if c.get('android_info', {}).get('certificate_hash')]
+            print(hashes[0] if hashes else '')
+          ")"
+          test -n "$SHA1" || { echo "::error::Could not read SHA-1 from signing keystore"; exit 1; }
+          test -n "$HASH" || { echo "::error::No Android certificate_hash found in google-services.json"; exit 1; }
+          echo "Signing keystore SHA-1: $SHA1"
+          echo "google-services.json certificate_hash: $HASH"
+          if [ "$SHA1" != "$HASH" ]; then
+            echo "::error::Signing keystore SHA-1 ($SHA1) does NOT match google-services.json certificate_hash ($HASH)."
+            echo "::error::Fix by updating the OAuth SHA-1 fingerprint in the Firebase console to $SHA1, then regenerate google-services.json."
+            exit 1
+          fi
+          echo "certificate_hash matches signing keystore"
+
       - name: Patch build.gradle with release signing config
         working-directory: frontend
         env:
