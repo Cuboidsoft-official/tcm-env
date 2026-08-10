@@ -25,6 +25,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { getChatMessages, sendChatMessage, sendFriendRequest } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const quickPrompts = [
   "Can we review my project architecture?",
@@ -481,16 +482,18 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
     }
   }
 
+  const { theme } = useTheme();
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 20}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.bg }]}
     >
-      {/* 1. Redesigned Premium Header Bar */}
-      <View style={[styles.topHeader, { paddingTop: Platform.OS === "ios" ? Math.max(insets.top, 20) : Math.max(insets.top, 10) + 6 }]}>
-        <Pressable onPress={onClose || (() => navigation?.goBack())} style={styles.backBtn}>
-          <Feather name="chevron-left" size={24} color="#5B3CF5" />
+      {/* 1. Redesigned Responsive Header Bar */}
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+        <Pressable onPress={onClose || (() => navigation?.goBack())} style={[styles.backBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}>
+          <Feather name="chevron-left" size={24} color={theme.primary} />
         </Pressable>
 
         <Pressable onPress={() => setShowDetailsModal(true)} style={styles.headerUserCol}>
@@ -501,31 +504,31 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
           <View style={styles.headerTextWrap}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <Text numberOfLines={1} style={styles.headerName}>{currentTarget.name}</Text>
+              <Text numberOfLines={1} style={[styles.headerName, { color: theme.text }]}>{currentTarget.name}</Text>
               {currentTarget?.role?.toLowerCase().includes("mentor") || currentTarget?.isMentor ? (
-                <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                  <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                  <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
                 </View>
               ) : (
-                <View style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                  <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#475569" }}>Student</Text>
+                <View style={{ backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                  <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.subtext }}>Student</Text>
                 </View>
               )}
               {currentTarget?.isPremium ? (
-                <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                <MaterialCommunityIcons name="check-decagram" size={14} color={theme.primary} style={{ marginLeft: 2 }} />
               ) : null}
             </View>
 
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 1 }}>
               <View style={styles.greenPulseDot} />
-              <Text numberOfLines={1} style={styles.headerStatus}>Online  •  {currentTarget.role || "TCM Member"}</Text>
+              <Text numberOfLines={1} style={[styles.headerStatus, { color: theme.subtext }]}>Online  •  {currentTarget.role || "TCM Member"}</Text>
             </View>
           </View>
         </Pressable>
 
         <View style={styles.headerActions}>
-          <Pressable onPress={() => setShowDetailsModal(true)} style={styles.iconBtn}>
-            <Feather name="more-vertical" size={18} color="#686780" />
+          <Pressable onPress={() => setShowDetailsModal(true)} style={[styles.iconBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F0EDFF" }]}>
+            <Feather name="more-vertical" size={18} color={theme.subtext} />
           </Pressable>
         </View>
       </View>
@@ -654,12 +657,12 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           return (
             <View key={String(msg.id || `msg_${index}`)} style={[styles.msgRow, isMe ? styles.msgRowMe : styles.msgRowOther]}>
               {!isMe ? (
-                <Image source={{ uri: msg.senderAvatar || currentTarget.avatarUrl }} style={styles.msgAvatar} />
+                <Image source={{ uri: msg.senderAvatar || currentTarget.avatarUrl }} style={[styles.msgAvatar, { borderColor: theme.border }]} />
               ) : null}
 
-              <View style={[styles.msgBubble, isMe ? styles.msgBubbleMe : styles.msgBubbleOther]}>
+              <View style={[styles.msgBubble, isMe ? styles.msgBubbleMe : [styles.msgBubbleOther, { backgroundColor: theme.cardBg, borderColor: theme.border }]]}>
                 {!isMe ? (
-                  <Text style={styles.senderLabelName}>{msg.senderName || currentTarget.name}</Text>
+                  <Text style={[styles.senderLabelName, { color: theme.isDark ? "#A78BFA" : "#5B3CF5" }]}>{msg.senderName || currentTarget.name}</Text>
                 ) : null}
 
                 {/* 📷 Rich Image Card Preview */}
@@ -679,7 +682,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                       </View>
                     </Pressable>
 
-                    <Text style={[styles.imageCaptionFilename, isMe ? styles.imageCaptionFilenameMe : styles.imageCaptionFilenameOther]}>
+                    <Text style={[styles.imageCaptionFilename, isMe ? styles.imageCaptionFilenameMe : [styles.imageCaptionFilenameOther, { color: theme.subtext }]]}>
                       📷 {msg.fileName || msg.text}
                     </Text>
                   </View>
@@ -694,25 +697,25 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                         Alert.alert("Google Drive Link", `Document URL:\n${link}`);
                       });
                     }}
-                    style={[styles.richDriveCard, isMe ? styles.richDriveCardMe : styles.richDriveCardOther]}
+                    style={[styles.richDriveCard, isMe ? styles.richDriveCardMe : [styles.richDriveCardOther, { backgroundColor: theme.isDark ? "#131927" : "#F8FAFC", borderColor: theme.border }]]}
                   >
                     <View style={styles.richDriveHeader}>
                       <View style={styles.richDriveIconCircle}>
                         <MaterialCommunityIcons name="google-drive" size={24} color="#0F9D58" />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.richDriveTitle, isMe ? styles.richDriveTitleMe : styles.richDriveTitleOther]} numberOfLines={1}>
+                        <Text style={[styles.richDriveTitle, isMe ? styles.richDriveTitleMe : [styles.richDriveTitleOther, { color: theme.text }]]} numberOfLines={1}>
                           {msg.fileName || msg.text.replace("📁 Google Drive Doc: ", "")}
                         </Text>
-                        <Text style={[styles.richDriveSub, isMe ? styles.richDriveSubMe : styles.richDriveSubOther]}>
+                        <Text style={[styles.richDriveSub, isMe ? styles.richDriveSubMe : [styles.richDriveSubOther, { color: theme.subtext }]]}>
                           Google Drive PDF Document
                         </Text>
                       </View>
                     </View>
 
-                    <View style={[styles.richDriveActionBtn, isMe ? styles.richDriveActionBtnMe : styles.richDriveActionBtnOther]}>
+                    <View style={[styles.richDriveActionBtn, isMe ? styles.richDriveActionBtnMe : [styles.richDriveActionBtnOther, { backgroundColor: theme.badgeBg }]]}>
                       <MaterialCommunityIcons name="file-download-outline" size={15} color={isMe ? "#5B3CF5" : "#0F9D58"} style={{ marginRight: 6 }} />
-                      <Text style={[styles.richDriveActionText, isMe ? styles.richDriveActionTextMe : styles.richDriveActionTextOther]}>
+                      <Text style={[styles.richDriveActionText, isMe ? styles.richDriveActionTextMe : [styles.richDriveActionTextOther, { color: theme.isDark ? "#C7D2FE" : "#0F9D58" }]]}>
                         Open Google Drive Doc 🔗
                       </Text>
                     </View>
@@ -721,10 +724,10 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
                 {/* Standard Text (only if not image or doc) */}
                 {!isImageMsg && !isDocMsg ? (
-                  <Text style={[styles.msgText, isMe ? styles.msgTextMe : styles.msgTextOther]}>{msg.text}</Text>
+                  <Text style={[styles.msgText, isMe ? styles.msgTextMe : [styles.msgTextOther, { color: theme.text }]]}>{msg.text}</Text>
                 ) : null}
                 <View style={styles.msgTimeRow}>
-                  <Text style={[styles.msgTimeText, isMe ? styles.msgTimeMe : styles.msgTimeOther]}>{msg.time}</Text>
+                  <Text style={[styles.msgTimeText, isMe ? styles.msgTimeMe : [styles.msgTimeOther, { color: theme.subtext }]]}>{msg.time}</Text>
                   {isMe ? <Feather name="check" size={11} color="rgba(255,255,255,0.7)" style={{ marginLeft: 3 }} /> : null}
                 </View>
               </View>
@@ -741,11 +744,11 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
       </ScrollView>
 
       {/* Quick Prompts Carousel */}
-      <View style={styles.quickPromptsBar}>
+      <View style={[styles.quickPromptsBar, { backgroundColor: theme.cardBg, borderTopColor: theme.border }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickScroll}>
           {quickPrompts.map((p, i) => (
-            <Pressable key={i} onPress={() => handleSend(p)} style={styles.promptPill}>
-              <Text style={styles.promptPillText}>{p}</Text>
+            <Pressable key={i} onPress={() => handleSend(p)} style={[styles.promptPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+              <Text style={[styles.promptPillText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>{p}</Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -754,32 +757,32 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
       {/* 3. Input Footer Bar */}
       {isChannelChat ? (
         isUserMentor ? (
-          <View style={[styles.inputFooter, { paddingBottom: Platform.OS === "ios" ? Math.max(insets.bottom, 14) : Math.max(insets.bottom, 10) }]}>
-            <Pressable onPress={() => setShowAttachModal(true)} style={styles.attachBtn}>
-              <Feather name="paperclip" size={18} color="#5B3CF5" />
+          <View style={[styles.inputFooter, { backgroundColor: theme.cardBg, borderTopColor: theme.border }]}>
+            <Pressable onPress={() => setShowAttachModal(true)} style={[styles.attachBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F4F3FA" }]}>
+              <Feather name="paperclip" size={20} color={theme.primary} />
             </Pressable>
 
-            <View style={styles.inputWrap}>
+            <View style={[styles.inputWrap, { backgroundColor: theme.inputBg || theme.bg, borderColor: theme.border }]}>
               <TextInput
                 value={inputText}
                 onChangeText={setInputText}
                 placeholder="Broadcast an announcement..."
-                placeholderTextColor="#8A879F"
-                style={styles.textInput}
-                multiline={false}
+                placeholderTextColor={theme.subtext}
+                style={[styles.textInput, { color: theme.text }]}
+                multiline
+                maxHeight={100}
                 returnKeyType="send"
-                onSubmitEditing={() => handleSend()}
               />
             </View>
 
-            <Pressable onPress={() => handleSend()} style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}>
-              <Feather name="send" size={16} color="#FFFFFF" />
+            <Pressable onPress={() => handleSend()} style={[styles.sendBtn, { backgroundColor: theme.primary }, !inputText.trim() && styles.sendBtnDisabled]}>
+              <Feather name="send" size={18} color="#FFFFFF" />
             </Pressable>
           </View>
         ) : (
           <View style={{
-            backgroundColor: "#F0EDFF",
-            borderColor: "#C7D2FE",
+            backgroundColor: theme.badgeBg,
+            borderColor: theme.border,
             borderWidth: 1,
             borderRadius: 14,
             margin: 12,
@@ -788,16 +791,16 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
             flexDirection: "row",
             alignItems: "center"
           }}>
-            <Feather name="shield" size={16} color="#5B3CF5" style={{ marginRight: 8 }} />
-            <Text style={{ fontSize: 12.5, color: "#4338CA", fontFamily: fonts.medium, flex: 1 }}>
+            <Feather name="shield" size={16} color={theme.primary} style={{ marginRight: 8 }} />
+            <Text style={{ fontSize: 12.5, color: theme.isDark ? "#C7D2FE" : "#4338CA", fontFamily: fonts.medium, flex: 1 }}>
               Broadcast Channel • Only Verified Mentors can post announcements here.
             </Text>
           </View>
         )
       ) : !isMutual && currentTarget.id !== "m1" ? (
         <View style={{
-          backgroundColor: "#FFFBEB",
-          borderColor: "#FDE68A",
+          backgroundColor: theme.isDark ? "#451A03" : "#FFFBEB",
+          borderColor: theme.isDark ? "#78350F" : "#FDE68A",
           borderWidth: 1,
           borderRadius: 16,
           margin: 12,
@@ -807,17 +810,17 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
         }}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Feather name="lock" size={16} color="#D97706" style={{ marginRight: 8 }} />
-            <Text style={{ fontSize: 13, color: "#92400E", flex: 1, fontFamily: fonts.bold }}>
+            <Text style={{ fontSize: 13, color: theme.isDark ? "#FDE68A" : "#92400E", flex: 1, fontFamily: fonts.bold }}>
               Mutual Friends Only
             </Text>
           </View>
-          <Text style={{ fontSize: 12, color: "#78350F", fontFamily: fonts.regular }}>
+          <Text style={{ fontSize: 12, color: theme.isDark ? "#FEF3C7" : "#78350F", fontFamily: fonts.regular }}>
             You must be mutual friends with <Text style={{ fontFamily: fonts.bold }}>{currentTarget.name}</Text> to send direct messages.
           </Text>
           <Pressable
             onPress={handleSendFriendRequestInChat}
             style={{
-              backgroundColor: "#5B3CF5",
+              backgroundColor: theme.primary,
               borderRadius: 12,
               paddingVertical: 10,
               alignItems: "center",
@@ -830,26 +833,26 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           </Pressable>
         </View>
       ) : (
-        <View style={[styles.inputFooter, { paddingBottom: Platform.OS === "ios" ? Math.max(insets.bottom, 14) : Math.max(insets.bottom, 10) }]}>
-          <Pressable onPress={() => setShowAttachModal(true)} style={styles.attachBtn}>
-            <Feather name="paperclip" size={18} color="#5B3CF5" />
+        <View style={[styles.inputFooter, { backgroundColor: theme.cardBg, borderTopColor: theme.border }]}>
+          <Pressable onPress={() => setShowAttachModal(true)} style={[styles.attachBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F4F3FA" }]}>
+            <Feather name="paperclip" size={20} color={theme.primary} />
           </Pressable>
 
-          <View style={styles.inputWrap}>
+          <View style={[styles.inputWrap, { backgroundColor: theme.inputBg || theme.bg, borderColor: theme.border }]}>
             <TextInput
               value={inputText}
               onChangeText={setInputText}
               placeholder="Type a message..."
-              placeholderTextColor="#8A879F"
-              style={styles.textInput}
-              multiline={false}
+              placeholderTextColor={theme.subtext}
+              style={[styles.textInput, { color: theme.text }]}
+              multiline
+              maxHeight={100}
               returnKeyType="send"
-              onSubmitEditing={() => handleSend()}
             />
           </View>
 
-          <Pressable onPress={() => handleSend()} style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}>
-            <Feather name="send" size={16} color="#FFFFFF" />
+          <Pressable onPress={() => handleSend()} style={[styles.sendBtn, { backgroundColor: theme.primary }, !inputText.trim() && styles.sendBtnDisabled]}>
+            <Feather name="send" size={18} color="#FFFFFF" />
           </Pressable>
         </View>
       )}
@@ -1128,17 +1131,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: "100%",
-    backgroundColor: "#F8FAFC"
+    backgroundColor: "transparent"
   },
-
-  // 1. Top Header Bar (Flat Crisp Header)
   topHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 6 : 4,
-    paddingBottom: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: "#FFFFFF",
     borderRadius: 0,
     marginBottom: 0,
@@ -1164,9 +1164,9 @@ const styles = StyleSheet.create({
     marginRight: 10
   },
   avatarImg: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     borderWidth: 1.5,
     borderColor: "#F0EDFF"
   },
@@ -1174,9 +1174,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
     right: 0,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 11,
+    height: 11,
+    borderRadius: 5.5,
     backgroundColor: "#00C853",
     borderWidth: 2,
     borderColor: "#FFFFFF"
@@ -1193,12 +1193,12 @@ const styles = StyleSheet.create({
   },
   headerName: {
     fontFamily: fonts.bold,
-    fontSize: 15,
+    fontSize: 14.5,
     color: "#181725"
   },
   headerStatus: {
     fontFamily: fonts.medium,
-    fontSize: 10.5,
+    fontSize: 10,
     color: "#7C7C9A"
   },
   headerActions: {
@@ -1217,16 +1217,16 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 20
+    paddingTop: 8,
+    paddingBottom: 8
   },
   dateDivider: {
     alignSelf: "center",
     backgroundColor: "#EAE7FF",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginBottom: 16
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginBottom: 10
   },
   dateDividerText: {
     fontFamily: fonts.bold,
@@ -1237,8 +1237,8 @@ const styles = StyleSheet.create({
   loadingBox: {
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
-    gap: 8
+    padding: 14,
+    gap: 6
   },
   loadingText: {
     fontFamily: fonts.regular,
@@ -1250,7 +1250,7 @@ const styles = StyleSheet.create({
   msgRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    marginBottom: 12,
+    marginBottom: 8,
     gap: 8
   },
   msgRowMe: {
@@ -1260,17 +1260,17 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start"
   },
   msgAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 1.5,
     borderColor: "#F0EDFF",
     marginBottom: 2
   },
   msgAvatarMe: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 1.5,
     borderColor: "#5B3CF5",
     marginBottom: 2
@@ -1282,10 +1282,10 @@ const styles = StyleSheet.create({
     marginBottom: 3
   },
   msgBubble: {
-    maxWidth: "75%",
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    maxWidth: "78%",
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     ...shadow.soft
   },
   msgBubbleMe: {
@@ -1314,7 +1314,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-end",
-    marginTop: 4
+    marginTop: 3
   },
   msgTimeText: {
     fontFamily: fonts.regular,
@@ -1330,64 +1330,65 @@ const styles = StyleSheet.create({
   // Quick Prompts
   quickPromptsBar: {
     backgroundColor: "#FFFFFF",
-    paddingVertical: 8,
+    paddingVertical: 4,
     borderTopWidth: 1,
     borderTopColor: "#F4F3FA"
   },
   quickScroll: {
-    paddingHorizontal: 12,
-    gap: 8
+    paddingHorizontal: 10,
+    gap: 6
   },
   promptPill: {
     backgroundColor: "#F0EDFF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E1FF"
   },
   promptPillText: {
     fontFamily: fonts.medium,
-    fontSize: 11,
+    fontSize: 10.5,
     color: "#5B3CF5"
   },
 
   // Input Footer
   inputFooter: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: "#F0EFFF",
-    gap: 10
+    gap: 8
   },
   attachBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#F4F3FA",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    marginBottom: 2
   },
   inputWrap: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F8FAFC",
     borderRadius: 22,
     paddingHorizontal: 14,
-    minHeight: 44,
+    paddingVertical: Platform.OS === "ios" ? 6 : 2,
+    minHeight: 42,
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "#5B3CF5",
-    ...shadow.soft
+    borderWidth: 1,
+    borderColor: "#E2E8F0"
   },
   textInput: {
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: 14.5,
     color: "#181725",
-    minHeight: 38,
-    paddingVertical: 4
+    paddingVertical: Platform.OS === "ios" ? 4 : 2,
+    maxHeight: 100
   },
   sendBtn: {
     width: 40,
@@ -1396,6 +1397,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#5B3CF5",
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 2,
     ...shadow.soft
   },
   sendBtnDisabled: {

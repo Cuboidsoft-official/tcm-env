@@ -20,6 +20,7 @@ import {
 import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 import CreateJobModal from "../components/CreateJobModal";
 import ApplyJobModal from "../components/ApplyJobModal";
 import JobDetailsModal from "../components/JobDetailsModal";
@@ -44,6 +45,7 @@ import {
 } from "../api/client";
 
 export default function CommunityScreen({ navigation, route, session, onChannelStateChange, onOpenChannelChat }) {
+  const { theme } = useTheme();
   const user = session?.user || {};
   const currentUserIdStr = String(session?.user?.id || session?.user?._id || user?.id || user?._id || "");
   const userRoleStr = String(session?.user?.role || user?.role || session?.user?.userType || "").toLowerCase();
@@ -346,7 +348,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
       const res = await togglePostLike(session?.token, postId);
       setPosts((prev) =>
         prev.map((p) => {
-          if (p.id === postId) {
+          if (String(p.id || p._id) === String(postId)) {
             return {
               ...p,
               metrics: { ...p.metrics, likes: res.likes },
@@ -368,7 +370,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
       const res = await addPostComment(session?.token, activeCommentPostId, commentText.trim());
       setPosts((prev) =>
         prev.map((p) => {
-          if (p.id === activeCommentPostId) {
+          if (String(p.id || p._id) === String(activeCommentPostId)) {
             return {
               ...p,
               metrics: { ...p.metrics, comments: res.commentsCount }
@@ -389,8 +391,11 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   }
 
   async function handleShare(post) {
+    const targetPostId = post.id || post._id;
     try {
-      await sharePost(session?.token, post.id);
+      if (targetPostId) {
+        await sharePost(session?.token, targetPostId);
+      }
       Share.share({
         title: `TCM Post by ${post.authorName}`,
         message: `${post.authorName}: ${post.text}`
@@ -477,7 +482,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
 
   function renderMainCommunityScreen() {
     return (
-      <ScrollView style={{ flex: 1, backgroundColor: "#F8FAFC" }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} showsVerticalScrollIndicator={false}>
         {/* Top Tab Selectors */}
         <View style={{ flexDirection: "row", paddingHorizontal: 16, marginTop: 12, gap: 8 }}>
           <TouchableOpacity
@@ -489,13 +494,13 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
               paddingHorizontal: 14,
               paddingVertical: 8,
               borderRadius: 20,
-              backgroundColor: activeTabPill === "channels" ? "#5B3CF5" : "#F1F5F9",
+              backgroundColor: activeTabPill === "channels" ? theme.primary : (theme.isDark ? "#1E263B" : "#F1F5F9"),
               borderWidth: 1,
-              borderColor: activeTabPill === "channels" ? "#5B3CF5" : "#E2E8F0"
+              borderColor: activeTabPill === "channels" ? theme.primary : theme.border
             }}
           >
-            <Feather name="users" size={13} color={activeTabPill === "channels" ? "#FFFFFF" : "#5B3CF5"} style={{ marginRight: 5 }} />
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: activeTabPill === "channels" ? "#FFFFFF" : "#475569" }}>
+            <Feather name="users" size={13} color={activeTabPill === "channels" ? "#FFFFFF" : theme.primary} style={{ marginRight: 5 }} />
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: activeTabPill === "channels" ? "#FFFFFF" : theme.subtext }}>
               Official Channels ({communities.length})
             </Text>
           </TouchableOpacity>
@@ -1456,7 +1461,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC"
+    backgroundColor: "transparent"
   },
   header: {
     flexDirection: "row",
@@ -1464,7 +1469,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0"
   },
@@ -1473,7 +1477,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0"
   },
@@ -1736,7 +1739,7 @@ const styles = StyleSheet.create({
     justify: "flex-end"
   },
   modalContent: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#111625",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "85%",
@@ -1745,15 +1748,15 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justify: "space-between",
+    justifyContent: "space-between",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0"
+    borderBottomColor: "#1E263B"
   },
   modalHeaderTitle: {
     fontSize: 16,
     fontFamily: fonts.bold,
-    color: "#0F172A"
+    color: "#F8FAFC"
   },
   closeBtn: {
     padding: 4
@@ -1761,49 +1764,49 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontFamily: fonts.bold,
-    color: "#475569",
+    color: "#CBD5E1",
     marginBottom: 6,
     marginTop: 10
   },
   textInput: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#1E263B",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: "#334155",
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 13,
     fontFamily: fonts.regular,
-    color: "#0F172A"
+    color: "#F8FAFC"
   },
   textInputArea: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#1E263B",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: "#334155",
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 13,
     fontFamily: fonts.regular,
-    color: "#0F172A",
+    color: "#F8FAFC",
     textAlignVertical: "top"
   },
   miniTab: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#1E263B",
     borderWidth: 1,
-    borderColor: "#E2E8F0"
+    borderColor: "#334155"
   },
   miniTabActive: {
-    backgroundColor: "#5B3CF5",
-    borderColor: "#5B3CF5"
+    backgroundColor: "#6366F1",
+    borderColor: "#6366F1"
   },
   miniTabText: {
     fontSize: 11,
     fontFamily: fonts.medium,
-    color: "#475569"
+    color: "#94A3B8"
   },
   miniTabTextActive: {
     color: "#FFFFFF",

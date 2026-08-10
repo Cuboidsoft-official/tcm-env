@@ -2,6 +2,38 @@ import React, { createContext, useContext, useState } from "react";
 
 export const themesList = [
   {
+    id: "Night",
+    name: "Night",
+    subtitle: "Deep Midnight Dark Mode (Default)",
+    icon: "moon",
+    primary: "#6366F1",
+    primaryDark: "#A78BFA",
+    bg: "#0B0F19",
+    cardBg: "#111625",
+    text: "#F8FAFC",
+    subtext: "#94A3B8",
+    border: "#1E263B",
+    badgeBg: "#1E1B4B",
+    inputBg: "#131927",
+    isDark: true
+  },
+  {
+    id: "Day",
+    name: "Day",
+    subtitle: "Classic Light Daylight",
+    icon: "sun",
+    primary: "#5B3CF5",
+    primaryDark: "#261B94",
+    bg: "#F8FAFC",
+    cardBg: "#FFFFFF",
+    text: "#0F172A",
+    subtext: "#64748B",
+    border: "#F0EFFF",
+    badgeBg: "#F0EDFF",
+    inputBg: "#FFFFFF",
+    isDark: false
+  },
+  {
     id: "Lime",
     name: "Lime",
     subtitle: "Lime Green Accent Theme",
@@ -14,37 +46,8 @@ export const themesList = [
     subtext: "#4D7C0F",
     border: "#D9F99D",
     badgeBg: "#ECFDF5",
+    inputBg: "#FFFFFF",
     isDark: false
-  },
-  {
-    id: "Day",
-    name: "Day",
-    subtitle: "Classic Light & Crisp Daylight (Default)",
-    icon: "sun",
-    primary: "#5B3CF5",
-    primaryDark: "#261B94",
-    bg: "#F8FAFC",
-    cardBg: "#FFFFFF",
-    text: "#0F172A",
-    subtext: "#64748B",
-    border: "#F0EFFF",
-    badgeBg: "#F0EDFF",
-    isDark: false
-  },
-  {
-    id: "Night",
-    name: "Night",
-    subtitle: "Deep Midnight Dark Mode",
-    icon: "moon",
-    primary: "#6366F1",
-    primaryDark: "#4338CA",
-    bg: "#0F172A",
-    cardBg: "#1E293B",
-    text: "#F8FAFC",
-    subtext: "#94A3B8",
-    border: "#334155",
-    badgeBg: "#1E1B4B",
-    isDark: true
   },
   {
     id: "Evening",
@@ -59,21 +62,22 @@ export const themesList = [
     subtext: "#9A3412",
     border: "#FFEDD5",
     badgeBg: "#FFEDD5",
+    inputBg: "#FFFFFF",
     isDark: false
   }
 ];
 
 const ThemeContext = createContext({
-  currentTheme: "Day",
-  theme: themesList[1],
+  currentTheme: "Night",
+  theme: themesList[0],
   changeTheme: () => {},
   themesList
 });
 
 export function ThemeProvider({ children }) {
-  const [currentTheme, setCurrentTheme] = useState("Day");
+  const [currentTheme, setCurrentTheme] = useState("Night");
 
-  const activeTheme = themesList.find((t) => t.id === currentTheme) || themesList[1];
+  const activeTheme = themesList.find((t) => t.id === currentTheme) || themesList[0];
 
   function changeTheme(themeId) {
     if (themesList.some((t) => t.id === themeId)) {

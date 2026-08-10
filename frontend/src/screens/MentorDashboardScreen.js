@@ -20,10 +20,12 @@ import JobApplicantsModal from "../components/JobApplicantsModal";
 import JobDetailsModal from "../components/JobDetailsModal";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
 export default function MentorDashboardScreen({ session, user = {}, onBack, onNavigateActivity, onEditCourse }) {
+  const { theme } = useTheme();
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
   const [sessionName, setSessionName] = useState("Full Stack Web Dev - Session 1");
@@ -232,18 +234,18 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Sleek Modern Header */}
       <View style={styles.topHeader}>
-        <Pressable onPress={onBack} style={styles.backBtn}>
-          <Feather name="chevron-left" size={24} color="#181725" />
+        <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <Feather name="chevron-left" size={24} color={theme.text} />
         </Pressable>
 
-        <Text style={styles.headerTitle}>Dashboard</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Dashboard</Text>
 
-        <View style={styles.statusPill}>
+        <View style={[styles.statusPill, { backgroundColor: theme.isDark ? "#064E3B" : "#ECF9E9", borderColor: theme.border }]}>
           <View style={styles.greenDot} />
-          <Text style={styles.statusPillText}>Active Mentor</Text>
+          <Text style={[styles.statusPillText, { color: theme.isDark ? "#34D399" : "#2E7D32" }]}>Active Mentor</Text>
         </View>
       </View>
 
@@ -290,77 +292,77 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
         {/* ============================================================ */}
         {/* 3. KEY PERFORMANCE INDICATORS GRID (4 STAT CARDS) */}
         {/* ============================================================ */}
-        <Text style={styles.sectionHeaderTitle}>Key Performance Statistics</Text>
+        <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Key Performance Statistics</Text>
 
         <View style={styles.kpiGrid}>
           {/* Stat Card 1: Active Courses */}
-          <View style={styles.kpiCard}>
+          <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.kpiTopRow}>
-              <View style={[styles.kpiIconWrap, { backgroundColor: "#F0EDFF" }]}>
-                <MaterialCommunityIcons name="school-outline" size={20} color="#5B3CF5" />
+              <View style={[styles.kpiIconWrap, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }]}>
+                <MaterialCommunityIcons name="school-outline" size={20} color={theme.primary} />
               </View>
-              <View style={styles.growthTag}>
-                <Text style={styles.growthTagText}>+12%</Text>
+              <View style={[styles.growthTag, { backgroundColor: theme.badgeBg }]}>
+                <Text style={[styles.growthTagText, { color: theme.primary }]}>+12%</Text>
               </View>
             </View>
-            <Text style={styles.kpiValue}>6</Text>
-            <Text style={styles.kpiLabel}>Active Courses</Text>
+            <Text style={[styles.kpiValue, { color: theme.text }]}>6</Text>
+            <Text style={[styles.kpiLabel, { color: theme.subtext }]}>Active Courses</Text>
           </View>
 
           {/* Stat Card 2: 1-on-1 Sessions */}
-          <View style={styles.kpiCard}>
+          <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.kpiTopRow}>
-              <View style={[styles.kpiIconWrap, { backgroundColor: "#EAF5FF" }]}>
-                <Feather name="video" size={18} color="#2F79B9" />
+              <View style={[styles.kpiIconWrap, { backgroundColor: theme.isDark ? "#1E3A8A" : "#EAF5FF" }]}>
+                <Feather name="video" size={18} color={theme.isDark ? "#60A5FA" : "#2F79B9"} />
               </View>
-              <View style={[styles.growthTag, { backgroundColor: "#EAF5FF" }]}>
-                <Text style={[styles.growthTagText, { color: "#2F79B9" }]}>98%</Text>
+              <View style={[styles.growthTag, { backgroundColor: theme.isDark ? "#1E3A8A" : "#EAF5FF" }]}>
+                <Text style={[styles.growthTagText, { color: theme.isDark ? "#60A5FA" : "#2F79B9" }]}>98%</Text>
               </View>
             </View>
-            <Text style={styles.kpiValue}>48</Text>
-            <Text style={styles.kpiLabel}>1-on-1 Calls Done</Text>
+            <Text style={[styles.kpiValue, { color: theme.text }]}>48</Text>
+            <Text style={[styles.kpiLabel, { color: theme.subtext }]}>1-on-1 Calls Done</Text>
           </View>
 
           {/* Stat Card 3: Total Students */}
-          <View style={styles.kpiCard}>
+          <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.kpiTopRow}>
-              <View style={[styles.kpiIconWrap, { backgroundColor: "#ECF9E9" }]}>
-                <Feather name="users" size={18} color="#2E7D32" />
+              <View style={[styles.kpiIconWrap, { backgroundColor: theme.isDark ? "#064E3B" : "#ECF9E9" }]}>
+                <Feather name="users" size={18} color={theme.isDark ? "#34D399" : "#2E7D32"} />
               </View>
-              <View style={[styles.growthTag, { backgroundColor: "#ECF9E9" }]}>
-                <Text style={[styles.growthTagText, { color: "#2E7D32" }]}>+45</Text>
+              <View style={[styles.growthTag, { backgroundColor: theme.isDark ? "#064E3B" : "#ECF9E9" }]}>
+                <Text style={[styles.growthTagText, { color: theme.isDark ? "#34D399" : "#2E7D32" }]}>+45</Text>
               </View>
             </View>
-            <Text style={styles.kpiValue}>1,420</Text>
-            <Text style={styles.kpiLabel}>Enrolled Students</Text>
+            <Text style={[styles.kpiValue, { color: theme.text }]}>1,420</Text>
+            <Text style={[styles.kpiLabel, { color: theme.subtext }]}>Enrolled Students</Text>
           </View>
 
           {/* Stat Card 4: Mentor Rating */}
-          <View style={styles.kpiCard}>
+          <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.kpiTopRow}>
-              <View style={[styles.kpiIconWrap, { backgroundColor: "#FFF8EC" }]}>
+              <View style={[styles.kpiIconWrap, { backgroundColor: theme.isDark ? "#78350F" : "#FFF8EC" }]}>
                 <FontAwesome name="star" size={17} color="#E7A900" />
               </View>
-              <View style={[styles.growthTag, { backgroundColor: "#FFF8EC" }]}>
+              <View style={[styles.growthTag, { backgroundColor: theme.isDark ? "#78350F" : "#FFF8EC" }]}>
                 <Text style={[styles.growthTagText, { color: "#E7A900" }]}>128 Rev.</Text>
               </View>
             </View>
-            <Text style={styles.kpiValue}>4.9 ★</Text>
-            <Text style={styles.kpiLabel}>Overall Rating</Text>
+            <Text style={[styles.kpiValue, { color: theme.text }]}>4.9 ★</Text>
+            <Text style={[styles.kpiLabel, { color: theme.subtext }]}>Overall Rating</Text>
           </View>
         </View>
 
         {/* ============================================================ */}
         {/* 4. WEEKLY ENGAGEMENT CHART VISUALIZER */}
         {/* ============================================================ */}
-        <View style={styles.chartCard}>
+        <View style={[styles.chartCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.chartHeaderRow}>
             <View>
-              <Text style={styles.chartTitle}>Weekly Class Engagement</Text>
-              <Text style={styles.chartSub}>Total 41.3 Hours Teaching This Week</Text>
+              <Text style={[styles.chartTitle, { color: theme.text }]}>Weekly Class Engagement</Text>
+              <Text style={[styles.chartSub, { color: theme.subtext }]}>Total 41.3 Hours Teaching This Week</Text>
             </View>
-            <View style={styles.chartPill}>
-              <Text style={styles.chartPillText}>This Week</Text>
+            <View style={[styles.chartPill, { backgroundColor: theme.badgeBg }]}>
+              <Text style={[styles.chartPillText, { color: theme.primary }]}>This Week</Text>
             </View>
           </View>
 
@@ -368,11 +370,11 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           <View style={styles.barChartContainer}>
             {(weeklyData || []).map((item) => (
               <View key={item.day} style={styles.barCol}>
-                <Text style={styles.barValueText}>{item.hours}</Text>
-                <View style={styles.barTrack}>
-                  <View style={[styles.barFill, { height: `${item.percent}%` }]} />
+                <Text style={[styles.barValueText, { color: theme.subtext }]}>{item.hours}</Text>
+                <View style={[styles.barTrack, { backgroundColor: theme.isDark ? "#1E263B" : "#F4F1FF" }]}>
+                  <View style={[styles.barFill, { height: `${item.percent}%`, backgroundColor: theme.primary }]} />
                 </View>
-                <Text style={styles.barDayLabel}>{item.day}</Text>
+                <Text style={[styles.barDayLabel, { color: theme.subtext }]}>{item.day}</Text>
               </View>
             ))}
           </View>
@@ -381,44 +383,44 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
         {/* ============================================================ */}
         {/* 5. QUICK NAVIGATION TOUCH CARDS FOR ACTIVITIES */}
         {/* ============================================================ */}
-        <Text style={styles.sectionHeaderTitle}>Activity Center</Text>
+        <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Activity Center</Text>
 
         <View style={styles.activityCardsGrid}>
           {/* Activity 1: Add / Manage Courses */}
           <Pressable
             onPress={() => handleCardPress("Add Courses", "Open separate course management page.")}
-            style={({ pressed }) => [styles.activityTouchCard, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.activityTouchCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
-            <View style={[styles.activityIconBox, { backgroundColor: "#F0EDFF" }]}>
-              <MaterialCommunityIcons name="book-open-page-variant" size={22} color="#5B3CF5" />
+            <View style={[styles.activityIconBox, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }]}>
+              <MaterialCommunityIcons name="book-open-page-variant" size={22} color={theme.primary} />
             </View>
 
             <View style={styles.activityCopy}>
-              <Text style={styles.activityTitle}>Add & Manage Courses</Text>
-              <Text style={styles.activitySub}>6 Active Courses • 1,420 Enrolled</Text>
+              <Text style={[styles.activityTitle, { color: theme.text }]}>Add & Manage Courses</Text>
+              <Text style={[styles.activitySub, { color: theme.subtext }]}>6 Active Courses • 1,420 Enrolled</Text>
             </View>
 
-            <View style={styles.arrowCircle}>
-              <Feather name="arrow-right" size={16} color="#5B3CF5" />
+            <View style={[styles.arrowCircle, { backgroundColor: theme.badgeBg }]}>
+              <Feather name="arrow-right" size={16} color={theme.primary} />
             </View>
           </Pressable>
 
           {/* Activity 2: Create Webinar and Events */}
           <Pressable
             onPress={() => handleCardPress("Create Webinar & Events", "Host live webinars, workshops & community events.")}
-            style={({ pressed }) => [styles.activityTouchCard, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.activityTouchCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
-            <View style={[styles.activityIconBox, { backgroundColor: "#EAF5FF" }]}>
-              <Feather name="video" size={20} color="#2F79B9" />
+            <View style={[styles.activityIconBox, { backgroundColor: theme.isDark ? "#1E3A8A" : "#EAF5FF" }]}>
+              <Feather name="video" size={20} color={theme.isDark ? "#60A5FA" : "#2F79B9"} />
             </View>
 
             <View style={styles.activityCopy}>
-              <Text style={styles.activityTitle}>Create Webinar and Events</Text>
-              <Text style={styles.activitySub}>Host Live Webinars, Workshops & Events</Text>
+              <Text style={[styles.activityTitle, { color: theme.text }]}>Create Webinar and Events</Text>
+              <Text style={[styles.activitySub, { color: theme.subtext }]}>Host Live Webinars, Workshops & Events</Text>
             </View>
 
-            <View style={[styles.arrowCircle, { backgroundColor: "#EAF5FF" }]}>
-              <Feather name="arrow-right" size={16} color="#2F79B9" />
+            <View style={[styles.arrowCircle, { backgroundColor: theme.isDark ? "#1E3A8A" : "#EAF5FF" }]}>
+              <Feather name="arrow-right" size={16} color={theme.isDark ? "#60A5FA" : "#2F79B9"} />
             </View>
           </Pressable>
 
@@ -428,18 +430,18 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
               setJobToEdit(null);
               setCreateJobModalOpen(true);
             }}
-            style={({ pressed }) => [styles.activityTouchCard, pressed && styles.pressed, { borderColor: "#C4B5FD", backgroundColor: "#F5F3FF" }]}
+            style={({ pressed }) => [styles.activityTouchCard, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F5F3FF", borderColor: theme.border }, pressed && styles.pressed]}
           >
-            <View style={[styles.activityIconBox, { backgroundColor: "#F0EDFF" }]}>
-              <Ionicons name="briefcase" size={22} color="#5B3CF5" />
+            <View style={[styles.activityIconBox, { backgroundColor: theme.isDark ? "#312E81" : "#F0EDFF" }]}>
+              <Ionicons name="briefcase" size={22} color={theme.primary} />
             </View>
 
             <View style={styles.activityCopy}>
-              <Text style={[styles.activityTitle, { color: "#5B3CF5" }]}>Post a Job / Hiring Drive</Text>
-              <Text style={styles.activitySub}>Post Openings & AI Auto-Tracks Candidate Limits</Text>
+              <Text style={[styles.activityTitle, { color: theme.primary }]}>Post a Job / Hiring Drive</Text>
+              <Text style={[styles.activitySub, { color: theme.subtext }]}>Post Openings & AI Auto-Tracks Candidate Limits</Text>
             </View>
 
-            <View style={[styles.arrowCircle, { backgroundColor: "#5B3CF5" }]}>
+            <View style={[styles.arrowCircle, { backgroundColor: theme.primary }]}>
               <Feather name="plus" size={16} color="#FFFFFF" />
             </View>
           </Pressable>
@@ -447,15 +449,15 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           {/* Activity 3: Student Reviews & Feedbacks */}
           <Pressable
             onPress={() => setReviewsModalOpen(true)}
-            style={({ pressed }) => [styles.activityTouchCard, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.activityTouchCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
-            <View style={[styles.activityIconBox, { backgroundColor: "#FFF8EC" }]}>
+            <View style={[styles.activityIconBox, { backgroundColor: theme.isDark ? "#78350F" : "#FFF8EC" }]}>
               <FontAwesome name="star" size={20} color="#E7A900" />
             </View>
 
             <View style={styles.activityCopy}>
-              <Text style={styles.activityTitle}>Student Reviews & Feedbacks</Text>
-              <Text style={styles.activitySub}>View & Write Class Student Reviews</Text>
+              <Text style={[styles.activityTitle, { color: theme.text }]}>Student Reviews & Feedbacks</Text>
+              <Text style={[styles.activitySub, { color: theme.subtext }]}>View & Write Class Student Reviews</Text>
             </View>
 
             <View style={[styles.arrowCircle, { backgroundColor: "#FFF8EC" }]}>

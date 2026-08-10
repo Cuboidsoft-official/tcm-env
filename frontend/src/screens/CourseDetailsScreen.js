@@ -15,6 +15,7 @@ import { getCourseDetails } from "../api/client";
 import { generateCourseOverviewInsightsWithAI } from "../api/gemini";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80") {
   if (!url || typeof url !== "string") return fallback;
@@ -23,6 +24,7 @@ function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694
 }
 
 export default function CourseDetailsScreen({ session, user = {}, courseId = "p1", onBack, onEditCourse }) {
+  const { theme } = useTheme();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState(false);
@@ -198,6 +200,9 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
   const totalModCount = courseData.curriculum?.totalModules || `${curriculumModules.length} Modules`;
   const totalLesCount = courseData.curriculum?.totalLessons || `${curriculumModules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)} Lessons`;
   const isMentorUser = Boolean(user?.role === "mentor" || user?.isMentor);
+  const themedSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
+  const themedSoftSurface = { backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#FBFBFE", borderColor: theme.border };
+  const themedBadgeSurface = { backgroundColor: theme.badgeBg, borderColor: theme.border };
 
   function stripEmojis(str) {
     if (!str) return "";
@@ -250,7 +255,7 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
     const parts = clean.split(regex).map((p) => p.trim()).filter(Boolean);
 
     if (parts.length <= 1 && !clean.includes("*")) {
-      return <Text style={styles.compactParagraphText}>{clean}</Text>;
+      return <Text style={[styles.compactParagraphText, { color: theme.subtext }]}>{clean}</Text>;
     }
 
     return (
@@ -276,27 +281,27 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
           const firstPara = hasAsterisks && !bodyStr.trim().startsWith("*") ? bodyStr.split("*")[0].trim() : (hasAsterisks ? "" : bodyStr);
 
           return (
-            <View key={pIdx} style={matchedHeading ? styles.autoSubSectionBox : null}>
+            <View key={pIdx} style={matchedHeading ? [styles.autoSubSectionBox, themedSoftSurface] : null}>
               {matchedHeading ? (
                 <View style={styles.autoSubHeaderRow}>
                   <View style={styles.autoSubHeaderDot} />
-                  <Text style={styles.autoSubHeaderTitle}>{matchedHeading}</Text>
+                  <Text style={[styles.autoSubHeaderTitle, { color: theme.text }]}>{matchedHeading}</Text>
                 </View>
               ) : null}
 
-              {firstPara ? <Text style={styles.compactParagraphText}>{firstPara}</Text> : null}
+              {firstPara ? <Text style={[styles.compactParagraphText, { color: theme.subtext }]}>{firstPara}</Text> : null}
 
               {bulletItems.length > 0 ? (
                 <View style={styles.autoBulletGrid}>
                   {bulletItems.map((item, bIdx) => (
-                    <View key={bIdx} style={styles.autoBulletChip}>
-                      <Feather name="check" size={10} color="#5B3CF5" style={{ marginRight: 4 }} />
-                      <Text style={styles.autoBulletChipText}>{item}</Text>
+                    <View key={bIdx} style={[styles.autoBulletChip, themedSurface]}>
+                      <Feather name="check" size={10} color={theme.primary} style={{ marginRight: 4 }} />
+                      <Text style={[styles.autoBulletChipText, { color: theme.text }]}>{item}</Text>
                     </View>
                   ))}
                 </View>
               ) : !firstPara && bodyStr ? (
-                <Text style={styles.compactParagraphText}>{bodyStr}</Text>
+                <Text style={[styles.compactParagraphText, { color: theme.subtext }]}>{bodyStr}</Text>
               ) : null}
             </View>
           );
@@ -355,7 +360,7 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
                   <View style={[styles.compactIconBadge, { backgroundColor: iconInfo.bg }]}>
                     <MaterialCommunityIcons name={iconInfo.icon} size={12} color={iconInfo.color} />
                   </View>
-                  <Text style={styles.compactHeaderTitle}>{header}</Text>
+                  <Text style={[styles.compactHeaderTitle, { color: theme.text }]}>{header}</Text>
                 </View>
               ) : null}
 
@@ -368,23 +373,23 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
 
         {/* B. Why Should You Learn This? (Sleek Compact AI Insight) */}
         {whyList.length > 0 ? (
-          <View style={styles.compactWhyCard}>
+          <View style={[styles.compactWhyCard, { backgroundColor: theme.isDark ? "#2A1F14" : "#FFFBFA", borderColor: theme.isDark ? "#713F12" : "#FEE8C6" }]}>
             <View style={styles.compactHeaderRow}>
               <View style={[styles.compactIconBadge, { backgroundColor: "#FFF8EC" }]}>
                 <MaterialCommunityIcons name="bullseye-arrow" size={12} color="#E7A900" />
               </View>
-              <Text style={styles.compactHeaderTitle}>Why Learn This Course?</Text>
-              <View style={styles.miniAiPill}>
-                <MaterialCommunityIcons name="sparkles" size={9} color="#5B3CF5" />
-                <Text style={styles.miniAiPillText}>AI</Text>
+              <Text style={[styles.compactHeaderTitle, { color: theme.text }]}>Why Learn This Course?</Text>
+              <View style={[styles.miniAiPill, { backgroundColor: theme.badgeBg }]}>
+                <MaterialCommunityIcons name="sparkles" size={9} color={theme.primary} />
+                <Text style={[styles.miniAiPillText, { color: theme.primary }]}>AI</Text>
               </View>
             </View>
 
             <View style={{ gap: 6, marginTop: 4 }}>
               {whyList.map((item, idx) => (
                 <View key={idx} style={styles.miniBulletRow}>
-                  <View style={styles.miniBulletDot} />
-                  <Text style={styles.miniBulletText}>{item}</Text>
+                  <View style={[styles.miniBulletDot, { backgroundColor: theme.primary }]} />
+                  <Text style={[styles.miniBulletText, { color: theme.subtext }]}>{item}</Text>
                 </View>
               ))}
             </View>
@@ -399,31 +404,31 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
     if (!salary) return null;
 
     return (
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Salary & Career Prospects</Text>
-        <View style={styles.sleekSalaryCard}>
+      <View style={[styles.sectionContainer, themedSurface]}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Salary & Career Prospects</Text>
+        <View style={[styles.sleekSalaryCard, themedSurface]}>
           <View style={styles.sleekSalaryTop}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <View style={styles.sleekSalaryIcon}>
-                <MaterialCommunityIcons name="currency-inr" size={14} color="#5B3CF5" />
+              <View style={[styles.sleekSalaryIcon, { backgroundColor: theme.badgeBg }]}>
+                <MaterialCommunityIcons name="currency-inr" size={14} color={theme.primary} />
               </View>
-              <Text style={styles.sleekSalaryTitle}>Salary & Hiring Insights</Text>
+              <Text style={[styles.sleekSalaryTitle, { color: theme.text }]}>Salary & Hiring Insights</Text>
             </View>
-            <View style={styles.miniAiPill}>
-              <MaterialCommunityIcons name="sparkles" size={9} color="#5B3CF5" />
-              <Text style={styles.miniAiPillText}>AI</Text>
+            <View style={[styles.miniAiPill, { backgroundColor: theme.badgeBg }]}>
+              <MaterialCommunityIcons name="sparkles" size={9} color={theme.primary} />
+              <Text style={[styles.miniAiPillText, { color: theme.primary }]}>AI</Text>
             </View>
           </View>
 
           {/* Metrics Row */}
-          <View style={styles.sleekMetricsRow}>
+          <View style={[styles.sleekMetricsRow, themedSoftSurface]}>
             <View style={styles.sleekMetricCol}>
-              <Text style={styles.sleekMetricLabel}>Avg Starting CTC</Text>
-              <Text style={styles.sleekMetricVal}>{stripEmojis(salary.avgSalary || "₹6.5L – ₹18.0L /yr")}</Text>
+              <Text style={[styles.sleekMetricLabel, { color: theme.subtext }]}>Avg Starting CTC</Text>
+              <Text style={[styles.sleekMetricVal, { color: theme.primary }]}>{stripEmojis(salary.avgSalary || "₹6.5L – ₹18.0L /yr")}</Text>
             </View>
-            <View style={styles.sleekMetricDivider} />
+            <View style={[styles.sleekMetricDivider, { backgroundColor: theme.border }]} />
             <View style={styles.sleekMetricCol}>
-              <Text style={styles.sleekMetricLabel}>Market Demand</Text>
+              <Text style={[styles.sleekMetricLabel, { color: theme.subtext }]}>Market Demand</Text>
               <Text style={[styles.sleekMetricVal, { color: "#2E7D32" }]}>{stripEmojis(salary.growthRate || "+28% YoY")}</Text>
             </View>
           </View>
@@ -467,58 +472,58 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={onBack} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#181725" />
+      <View style={[styles.container, { backgroundColor: theme.bg }]}>
+        <View style={[styles.headerRow, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+          <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.badgeBg }]}>
+            <Feather name="arrow-left" size={20} color={theme.text} />
           </Pressable>
           <View style={styles.headerTitleWrap}>
-            <Text style={styles.headerTitle}>Course Details</Text>
-            <Text style={styles.headerSub}>Fetching live data...</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>Course Details</Text>
+            <Text style={[styles.headerSub, { color: theme.subtext }]}>Fetching live data...</Text>
           </View>
         </View>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 60 }}>
-          <ActivityIndicator size="large" color="#5B3CF5" />
-          <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: "#7C7C9A", marginTop: 12 }}>Loading Course Details...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: theme.subtext, marginTop: 12 }}>Loading Course Details...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Header Bar matching reference UI */}
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
         <View style={styles.headerLeft}>
-          <Pressable onPress={onBack} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#181725" />
+          <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.badgeBg }]}>
+            <Feather name="arrow-left" size={20} color={theme.text} />
           </Pressable>
           <View style={styles.headerTitleWrap}>
-            <Text style={styles.headerTitle}>Course Details</Text>
-            <Text style={styles.headerSub}>Learn. Practice. Grow.</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>Course Details</Text>
+            <Text style={[styles.headerSub, { color: theme.subtext }]}>Learn. Practice. Grow.</Text>
           </View>
         </View>
 
         <View style={styles.headerRight}>
           {isMentorUser ? (
-            <Pressable onPress={() => onEditCourse && onEditCourse(courseData)} style={styles.editHeaderBtn}>
+            <Pressable onPress={() => onEditCourse && onEditCourse(courseData)} style={[styles.editHeaderBtn, { backgroundColor: theme.primary }]}>
               <Feather name="edit-3" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
               <Text style={styles.editHeaderBtnText}>Edit</Text>
             </Pressable>
           ) : null}
 
-          <Pressable onPress={() => setBookmarked((p) => !p)} style={styles.headerIconBtn}>
-            <Feather name="bookmark" size={18} color={bookmarked ? "#5B3CF5" : "#181725"} fill={bookmarked ? "#5B3CF5" : "none"} />
+          <Pressable onPress={() => setBookmarked((p) => !p)} style={[styles.headerIconBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+            <Feather name="bookmark" size={18} color={bookmarked ? theme.primary : theme.text} fill={bookmarked ? theme.primary : "none"} />
           </Pressable>
-          <Pressable onPress={handleShare} style={styles.headerIconBtn}>
-            <Feather name="share-2" size={18} color="#181725" />
+          <Pressable onPress={handleShare} style={[styles.headerIconBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+            <Feather name="share-2" size={18} color={theme.text} />
           </Pressable>
         </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* 2. Dark Hero Header Card */}
-        <LinearGradient colors={["#0D0B26", "#19154C"]} style={styles.heroCard}>
+        <LinearGradient colors={theme.isDark ? ["#0B0F19", "#111625"] : ["#0D0B26", "#19154C"]} style={[styles.heroCard, { borderColor: theme.border, borderWidth: 1 }]}>
           <View style={styles.heroTopRow}>
             <View style={styles.heroLeftCol}>
               <View style={styles.tagBadge}>
@@ -580,35 +585,35 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
         </LinearGradient>
 
         {/* 3. Feature Highlights Grid */}
-        <View style={styles.featuresRow}>
+        <View style={[styles.featuresRow, themedSurface]}>
           {(courseData.features || [
-            { id: "f1", icon: "youtube-subscription", label: "Lifetime Access", color: "#5B3CF5", bg: "#F0EDFF" },
-            { id: "f2", icon: "certificate", label: "Certificate Included", color: "#2E7D32", bg: "#ECF9E9" },
-            { id: "f3", icon: "account-group", label: "Community Access", color: "#E7A900", bg: "#FFF6DA" },
-            { id: "f4", icon: "download", label: "Downloadable Resources", color: "#2F79B9", bg: "#EAF5FF" }
+            { id: "f1", icon: "youtube-subscription", label: "Lifetime Access", color: theme.primary, bg: theme.badgeBg },
+            { id: "f2", icon: "certificate", label: "Certificate Included", color: "#2E7D32", bg: theme.isDark ? "#064E3B" : "#ECF9E9" },
+            { id: "f3", icon: "account-group", label: "Community Access", color: "#E7A900", bg: theme.isDark ? "#78350F" : "#FFF6DA" },
+            { id: "f4", icon: "download", label: "Downloadable Resources", color: "#2F79B9", bg: theme.isDark ? "#1E3A8A" : "#EAF5FF" }
           ]).map((feat) => (
-            <View key={feat.id} style={styles.featureCard}>
+            <View key={feat.id} style={[styles.featureCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <View style={[styles.featureIconWrap, { backgroundColor: feat.bg }]}>
                 <MaterialCommunityIcons name={feat.icon} size={20} color={feat.color} />
               </View>
-              <Text style={styles.featureLabel}>{feat.label}</Text>
+              <Text style={[styles.featureLabel, { color: theme.text }]}>{feat.label}</Text>
             </View>
           ))}
         </View>
 
         {/* 4. About this course Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>About this course</Text>
+        <View style={[styles.sectionContainer, themedSurface]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>About this course</Text>
           {renderFormattedAbout(courseData.about, expandedAbout)}
           <Pressable onPress={() => setExpandedAbout((p) => !p)} style={styles.readMoreRow}>
-            <Text style={styles.readMoreText}>{expandedAbout ? "Read Less" : "Show Full Overview"}</Text>
-            <Feather name={expandedAbout ? "chevron-up" : "chevron-down"} size={14} color="#5B3CF5" />
+            <Text style={[styles.readMoreText, { color: theme.primary }]}>{expandedAbout ? "Read Less" : "Show Full Overview"}</Text>
+            <Feather name={expandedAbout ? "chevron-up" : "chevron-down"} size={14} color={theme.primary} />
           </Pressable>
         </View>
 
         {/* 5. What you'll learn Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>What you'll learn</Text>
+        <View style={[styles.sectionContainer, themedSurface]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>What you'll learn</Text>
           <View style={styles.learnGrid}>
             {(courseData.whatYouWillLearn || [
               "Master core architecture and practical concepts",
@@ -616,27 +621,27 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
               "Hands-on labs and live doubt clearance",
               "Certificate of completion & placement support"
             ]).map((item, idx) => (
-              <View key={idx} style={styles.learnItemRow}>
-                <View style={styles.checkCircle}>
-                  <Feather name="check" size={11} color="#5B3CF5" />
+              <View key={idx} style={[styles.learnItemRow, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                <View style={[styles.checkCircle, { backgroundColor: theme.badgeBg }]}>
+                  <Feather name="check" size={11} color={theme.primary} />
                 </View>
-                <Text style={styles.learnItemText}>{item}</Text>
+                <Text style={[styles.learnItemText, { color: theme.text }]}>{item}</Text>
               </View>
             ))}
           </View>
         </View>
 
         {/* 6. Course Curriculum Section */}
-        <View style={styles.sectionContainer}>
+        <View style={[styles.sectionContainer, themedSurface]}>
           <View style={styles.curriculumHeaderRow}>
             <View>
-              <Text style={styles.sectionTitle}>Course Curriculum</Text>
-              <Text style={styles.curriculumSub}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Course Curriculum</Text>
+              <Text style={[styles.curriculumSub, { color: theme.subtext }]}>
                 {totalLesCount} • {totalModCount}
               </Text>
             </View>
             <Pressable onPress={toggleExpandAll}>
-              <Text style={styles.expandAllText}>Expand All</Text>
+              <Text style={[styles.expandAllText, { color: theme.primary }]}>Expand All</Text>
             </Pressable>
           </View>
 
@@ -645,17 +650,17 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
             const mId = mod.id || `m${idx + 1}`;
             const isExpanded = expandedModules[mId] !== false;
             return (
-              <View key={mId} style={styles.moduleCard}>
-                <Pressable onPress={() => toggleModule(mId)} style={styles.moduleHeader}>
+              <View key={mId} style={[styles.moduleCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                <Pressable onPress={() => toggleModule(mId)} style={[styles.moduleHeader, { borderBottomColor: isExpanded ? theme.border : "transparent" }]}>
                   <View style={styles.moduleHeaderLeft}>
-                    <View style={styles.moduleNumCircle}>
-                      <Text style={styles.moduleNumText}>{idx + 1}</Text>
+                    <View style={[styles.moduleNumCircle, { backgroundColor: theme.badgeBg }]}>
+                      <Text style={[styles.moduleNumText, { color: theme.primary }]}>{idx + 1}</Text>
                     </View>
-                    <Text style={styles.moduleTitleText}>{mod.title}</Text>
+                    <Text style={[styles.moduleTitleText, { color: theme.text }]}>{mod.title}</Text>
                   </View>
                   <View style={styles.moduleHeaderRight}>
-                    <Text style={styles.lessonsCountText}>{mod.lessonsCount || (mod.lessons ? `${mod.lessons.length} Lessons` : "3 Lessons")}</Text>
-                    <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color="#7C7C9A" />
+                    <Text style={[styles.lessonsCountText, { color: theme.subtext }]}>{mod.lessonsCount || (mod.lessons ? `${mod.lessons.length} Lessons` : "3 Lessons")}</Text>
+                    <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color={theme.subtext} />
                   </View>
                 </Pressable>
 
@@ -667,20 +672,20 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
                         <Pressable
                           key={lesObj.id || `les-${lIdx}`}
                           onPress={() => Alert.alert("Play Lesson", `Starting ${lesObj.title}...`)}
-                          style={styles.lessonItemRow}
+                          style={[styles.lessonItemRow, { borderBottomColor: theme.border }]}
                         >
                           <View style={styles.lessonLeft}>
-                            <View style={styles.timelineDot} />
-                            <View style={styles.playIconCircle}>
+                            <View style={[styles.timelineDot, { backgroundColor: theme.primary }]} />
+                            <View style={[styles.playIconCircle, { backgroundColor: theme.badgeBg }]}>
                               {lesObj.type === "quiz" ? (
-                                <MaterialCommunityIcons name="target" size={12} color="#5B3CF5" />
+                                <MaterialCommunityIcons name="target" size={12} color={theme.primary} />
                               ) : (
-                                <Feather name="play" size={10} color="#5B3CF5" style={{ marginLeft: 1 }} />
+                                <Feather name="play" size={10} color={theme.primary} style={{ marginLeft: 1 }} />
                               )}
                             </View>
-                            <Text style={styles.lessonTitleText}>{lesObj.title}</Text>
+                            <Text style={[styles.lessonTitleText, { color: theme.text }]}>{lesObj.title}</Text>
                           </View>
-                          <Text style={styles.lessonDurationText}>{lesObj.duration || "25 mins"}</Text>
+                          <Text style={[styles.lessonDurationText, { color: theme.subtext }]}>{lesObj.duration || "25 mins"}</Text>
                         </Pressable>
                       );
                     })}
@@ -696,19 +701,19 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
       </ScrollView>
 
       {/* 7. Sticky Bottom Purchase Bar */}
-      <View style={styles.stickyPurchaseBar}>
+      <View style={[styles.stickyPurchaseBar, { backgroundColor: theme.cardBg, borderTopColor: theme.border }]}>
         <View style={styles.priceCol}>
           <View style={styles.priceRow}>
-            <Text style={styles.currentPriceText}>{courseData.price}</Text>
-            <Text style={styles.originalPriceText}>{courseData.originalPrice}</Text>
-            <View style={styles.discountPill}>
-              <Text style={styles.discountPillText}>{courseData.discountPill}</Text>
+            <Text style={[styles.currentPriceText, { color: theme.text }]}>{courseData.price}</Text>
+            <Text style={[styles.originalPriceText, { color: theme.subtext }]}>{courseData.originalPrice}</Text>
+            <View style={[styles.discountPill, { backgroundColor: theme.badgeBg }]}>
+              <Text style={[styles.discountPillText, { color: theme.primary }]}>{courseData.discountPill}</Text>
             </View>
           </View>
-          <Text style={styles.priceTaxesText}>Inclusive of all taxes</Text>
+          <Text style={[styles.priceTaxesText, { color: theme.subtext }]}>Inclusive of all taxes</Text>
         </View>
 
-        <Pressable onPress={handleEnrollNow} style={styles.stickyEnrollBtn}>
+        <Pressable onPress={handleEnrollNow} style={[styles.stickyEnrollBtn, { backgroundColor: theme.primary }]}>
           <Text style={styles.stickyEnrollBtnText}>Enroll Now →</Text>
         </Pressable>
       </View>

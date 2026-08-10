@@ -16,6 +16,7 @@ import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons
 import { getAllMentors } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
@@ -28,6 +29,7 @@ const mentorCategories = [
 ];
 
 export default function AllMentorsScreen({ session, onBack, onSelectMentor }) {
+  const { theme } = useTheme();
   const [mentors, setMentors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,37 +74,37 @@ export default function AllMentorsScreen({ session, onBack, onSelectMentor }) {
   });
 
   return (
-    <View style={styles.container}>
-      {/* 1. Top Navigation Bar */}
-      <View style={styles.topHeader}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      {/* 1. Header Bar */}
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <View style={styles.headerLeft}>
-          <Pressable onPress={onBack} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#181725" />
+          <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.badgeBg }]}>
+            <Feather name="arrow-left" size={20} color={theme.text} />
           </Pressable>
           <View style={styles.titleWrap}>
-            <Text style={styles.screenTitle}>All Expert Mentors</Text>
-            <Text style={styles.screenSub}>Browse verified educators & career advisors</Text>
+            <Text style={[styles.screenTitle, { color: theme.text }]}>All Expert Mentors</Text>
+            <Text style={[styles.screenSub, { color: theme.subtext }]}>Browse verified educators & career advisors</Text>
           </View>
         </View>
 
-        <View style={styles.mentorCountBadge}>
-          <Text style={styles.mentorCountText}>{filteredMentors.length} Verified</Text>
+        <View style={[styles.mentorCountBadge, { backgroundColor: theme.badgeBg }]}>
+          <Text style={[styles.mentorCountText, { color: theme.primary }]}>{filteredMentors.length} Verified</Text>
         </View>
       </View>
 
       {/* 2. Search Input */}
-      <View style={styles.searchBarWrap}>
-        <Feather name="search" size={18} color="#8A879F" style={{ marginRight: 8 }} />
+      <View style={[styles.searchBarWrap, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        <Feather name="search" size={18} color={theme.subtext} style={{ marginRight: 8 }} />
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Search mentors by name, tech stack, or subjects..."
-          placeholderTextColor="#8A879F"
-          style={styles.searchInput}
+          placeholderTextColor={theme.subtext}
+          style={[styles.searchInput, { color: theme.text }]}
         />
         {searchQuery ? (
           <Pressable onPress={() => setSearchQuery("")}>
-            <Feather name="x" size={16} color="#8A879F" />
+            <Feather name="x" size={16} color={theme.subtext} />
           </Pressable>
         ) : null}
       </View>
@@ -115,15 +117,15 @@ export default function AllMentorsScreen({ session, onBack, onSelectMentor }) {
             <Pressable
               key={cat.id}
               onPress={() => setActiveCategory(cat.id)}
-              style={[styles.categoryChip, isActive && styles.activeCategoryChip]}
+              style={[styles.categoryChip, { backgroundColor: theme.isDark ? "#1E263B" : "#F4F3FA", borderColor: theme.border }, isActive && { backgroundColor: theme.primary, borderColor: theme.primary }]}
             >
               <MaterialCommunityIcons
                 name={cat.icon}
                 size={16}
-                color={isActive ? "#FFFFFF" : "#52506E"}
+                color={isActive ? "#FFFFFF" : theme.subtext}
                 style={{ marginRight: 6 }}
               />
-              <Text style={[styles.categoryChipText, isActive && styles.activeCategoryChipText]}>{cat.name}</Text>
+              <Text style={[styles.categoryChipText, { color: theme.subtext }, isActive && { color: "#FFFFFF", fontFamily: fonts.bold }]}>{cat.name}</Text>
             </Pressable>
           );
         })}
@@ -132,39 +134,39 @@ export default function AllMentorsScreen({ session, onBack, onSelectMentor }) {
       {/* 4. Mentors Grid / List */}
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#5B3CF5" />
-          <Text style={styles.loadingText}>Fetching registered mentors...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.subtext }]}>Fetching registered mentors...</Text>
         </View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {filteredMentors.length > 0 ? (
             <View style={styles.mentorsGrid}>
               {filteredMentors.map((mentor) => (
-                <View key={mentor.id} style={styles.mentorCard}>
+                <View key={mentor.id} style={[styles.mentorCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                   {/* Top Avatar & Badge Row */}
                   <View style={styles.cardHeader}>
                     <View style={styles.avatarWrap}>
                       {mentor.avatarUrl && !mentor.avatarUrl.includes("photo-1507003211169-0a1dd7228f2d") && !(Platform.OS === "web" && typeof mentor.avatarUrl === "string" && mentor.avatarUrl.startsWith("file://")) ? (
-                        <Image source={{ uri: mentor.avatarUrl }} style={styles.avatarImg} />
+                        <Image source={{ uri: mentor.avatarUrl }} style={[styles.avatarImg, { borderColor: theme.border }]} />
                       ) : (
-                        <View style={[styles.avatarImg, { backgroundColor: "#5B3CF5", alignItems: "center", justifyContent: "center" }]}>
+                        <View style={[styles.avatarImg, { backgroundColor: theme.primary, alignItems: "center", justifyContent: "center", borderColor: theme.border }]}>
                           <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#FFFFFF" }}>
                             {(mentor.name || "M").split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2)}
                           </Text>
                         </View>
                       )}
-                      <View style={styles.onlineBadge} />
+                      <View style={[styles.onlineBadge, { borderColor: theme.cardBg }]} />
                     </View>
 
                     <View style={styles.badgeCol}>
-                      <View style={styles.specializationPill}>
-                        <Text style={styles.specializationText}>{mentor.category || "TCM Mentor"}</Text>
+                      <View style={[styles.specializationPill, { backgroundColor: theme.badgeBg }]}>
+                        <Text style={[styles.specializationText, { color: theme.primary }]}>{mentor.category || "TCM Mentor"}</Text>
                       </View>
 
-                      <View style={styles.ratingBox}>
+                      <View style={[styles.ratingBox, { backgroundColor: theme.isDark ? "#1E263B" : "#FFF8EC" }]}>
                         <FontAwesome name="star" size={11} color="#FFB800" />
-                        <Text style={styles.ratingVal}>{mentor.rating}</Text>
-                        <Text style={styles.reviewsVal}>({mentor.reviews})</Text>
+                        <Text style={[styles.ratingVal, { color: theme.text }]}>{mentor.rating}</Text>
+                        <Text style={[styles.reviewsVal, { color: theme.subtext }]}>({mentor.reviews})</Text>
                       </View>
                     </View>
                   </View>
@@ -172,9 +174,9 @@ export default function AllMentorsScreen({ session, onBack, onSelectMentor }) {
                   {/* Body info */}
                   <View style={styles.cardBody}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                      <Text style={styles.mentorName} numberOfLines={1}>{mentor.name}</Text>
-                      <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                        <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                      <Text style={[styles.mentorName, { color: theme.text }]} numberOfLines={1}>{mentor.name}</Text>
+                      <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                        <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
                       </View>
                       {mentor.isPremium ? (
                         <MaterialCommunityIcons name="check-decagram" size={15} color="#5B3CF5" style={{ marginLeft: 2 }} />

@@ -7,8 +7,9 @@ import {
   MaterialCommunityIcons,
   MaterialIcons
 } from "@expo/vector-icons";
-import { colors, shadow } from "../constants/theme";
+import { shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 export default function SidebarDrawer({
   visible,
@@ -19,6 +20,7 @@ export default function SidebarDrawer({
   onLogout,
   onOpenGetVerified
 }) {
+  const { theme } = useTheme();
   const name = user.name || "Ayushman";
   const handle = user.handle ? `@${user.handle}` : "@ayushman.dev";
   const memberBadge = user.memberBadge || "Premium Member";
@@ -33,6 +35,7 @@ export default function SidebarDrawer({
     .map((part) => part[0])
     .join("")
     .toUpperCase() || "AY";
+  const softSurface = theme.isDark ? theme.inputBg || "#131927" : "#F0EEF8";
 
   function handleNavigate(itemKey) {
     onClose();
@@ -43,36 +46,36 @@ export default function SidebarDrawer({
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
-      <View style={styles.overlayBg}>
+      <View style={[styles.overlayBg, { backgroundColor: theme.isDark ? "rgba(2, 6, 23, 0.72)" : "rgba(12, 10, 32, 0.45)" }]}>
         {/* Backdrop touch to close */}
         <Pressable style={styles.backdropTouch} onPress={onClose} />
 
         {/* Sliding Sidebar Panel */}
-        <View style={styles.drawerPanel}>
+        <View style={[styles.drawerPanel, { backgroundColor: theme.bg }]}>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             {/* 1. Header Section */}
             <View style={styles.headerSection}>
               <View style={styles.headerTopRow}>
                 <View style={styles.avatarWrap}>
                   {avatarUri ? (
-                    <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+                    <Image source={{ uri: avatarUri }} style={[styles.avatarImage, { borderColor: theme.cardBg }]} />
                   ) : (
-                    <View style={styles.avatarCircle}>
+                    <View style={[styles.avatarCircle, { borderColor: theme.cardBg }]}>
                       <Text style={styles.avatarInitials}>{initials}</Text>
                     </View>
                   )}
-                  <Pressable onPress={() => handleNavigate("Profile")} style={styles.editBadge}>
+                  <Pressable onPress={() => handleNavigate("Profile")} style={[styles.editBadge, { borderColor: theme.cardBg }]}>
                     <Feather name="edit-2" size={9} color="#FFFFFF" />
                   </Pressable>
                 </View>
 
-                <Pressable onPress={onClose} style={styles.closeBtn}>
-                  <Feather name="x" size={20} color="#52506E" />
+                <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: softSurface }]}>
+                  <Feather name="x" size={20} color={theme.subtext} />
                 </Pressable>
               </View>
 
               <View style={styles.userInfoRow}>
-                <Text style={styles.userName}>{name}</Text>
+                <Text style={[styles.userName, { color: theme.text }]}>{name}</Text>
                 <TouchableOpacity
                   onPress={() => {
                     onClose();
@@ -85,38 +88,38 @@ export default function SidebarDrawer({
                   <Text style={styles.drawerGetVerifiedBtnText}>Get Verified</Text>
                 </TouchableOpacity>
               </View>
-              <Text style={styles.userHandle}>{handle}</Text>
+              <Text style={[styles.userHandle, { color: theme.subtext }]}>{handle}</Text>
 
-              <View style={styles.premiumPill}>
-                <FontAwesome5 name="crown" size={11} color="#5B3CF5" />
-                <Text style={styles.premiumPillText}>{memberBadge}</Text>
+              <View style={[styles.premiumPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+                <FontAwesome5 name="crown" size={11} color={theme.primary} />
+                <Text style={[styles.premiumPillText, { color: theme.isDark ? "#C7D2FE" : theme.primary }]}>{memberBadge}</Text>
               </View>
             </View>
 
             {/* 2. Quick Metrics Row */}
             <View style={styles.metricsRow}>
-              <View style={styles.metricCard}>
-                <MaterialCommunityIcons name="book-open-page-variant" size={18} color="#5B3CF5" />
-                <Text style={styles.metricVal}>12</Text>
-                <Text style={styles.metricLbl}>Enrolled Courses</Text>
+              <View style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                <MaterialCommunityIcons name="book-open-page-variant" size={18} color={theme.primary} />
+                <Text style={[styles.metricVal, { color: theme.text }]}>12</Text>
+                <Text style={[styles.metricLbl, { color: theme.subtext }]}>Enrolled Courses</Text>
               </View>
 
-              <View style={styles.metricCard}>
+              <View style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                 <FontAwesome5 name="star" size={16} color="#FFB800" solid />
-                <Text style={styles.metricVal}>1,250</Text>
-                <Text style={styles.metricLbl}>Points Earned</Text>
+                <Text style={[styles.metricVal, { color: theme.text }]}>1,250</Text>
+                <Text style={[styles.metricLbl, { color: theme.subtext }]}>Points Earned</Text>
               </View>
 
-              <View style={styles.metricCard}>
+              <View style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                 <MaterialCommunityIcons name="shield-check" size={18} color="#2E7D32" />
-                <Text style={styles.metricVal}>5</Text>
-                <Text style={styles.metricLbl}>Certificates</Text>
+                <Text style={[styles.metricVal, { color: theme.text }]}>5</Text>
+                <Text style={[styles.metricLbl, { color: theme.subtext }]}>Certificates</Text>
               </View>
             </View>
 
             {/* 3. MAIN MENU Section */}
             <View style={styles.sectionWrap}>
-              <Text style={styles.sectionTitle}>MAIN MENU</Text>
+              <Text style={[styles.sectionTitle, { color: theme.subtext }]}>MAIN MENU</Text>
 
               <MenuItem
                 icon={<Feather name="home" size={18} />}
@@ -147,7 +150,7 @@ export default function SidebarDrawer({
 
             {/* 4. ACCOUNT Section */}
             <View style={styles.sectionWrap}>
-              <Text style={styles.sectionTitle}>ACCOUNT</Text>
+              <Text style={[styles.sectionTitle, { color: theme.subtext }]}>ACCOUNT</Text>
 
               <MenuItem
                 icon={<Feather name="user" size={18} />}
@@ -182,7 +185,7 @@ export default function SidebarDrawer({
               }}
               style={({ pressed }) => [
                 styles.premiumCard,
-                activeItem === "Go Premium" && styles.premiumCardActive,
+                { backgroundColor: theme.badgeBg, borderColor: activeItem === "Go Premium" ? theme.primary : theme.border },
                 pressed && styles.pressed
               ]}
             >
@@ -190,10 +193,10 @@ export default function SidebarDrawer({
                 <FontAwesome5 name="crown" size={14} color="#FFFFFF" />
               </View>
               <View style={styles.premiumTextWrap}>
-                <Text style={styles.premiumTitle}>Get TCM Verified Pro</Text>
-                <Text style={styles.premiumSub}>Verified Badge, Real Projects & ATS Resume from ₹29/mo</Text>
+                <Text style={[styles.premiumTitle, { color: theme.isDark ? "#C7D2FE" : theme.primary }]}>Get TCM Verified Pro</Text>
+                <Text style={[styles.premiumSub, { color: theme.subtext }]}>Verified Badge, Real Projects & ATS Resume from ₹29/mo</Text>
               </View>
-              <Feather name="chevron-right" size={18} color="#5B3CF5" />
+              <Feather name="chevron-right" size={18} color={theme.primary} />
             </Pressable>
 
             {/* 7. Logout Button */}
@@ -215,9 +218,10 @@ export default function SidebarDrawer({
 }
 
 function MenuItem({ icon, label, badgeCount, active, onPress }) {
+  const { theme } = useTheme();
   const iconElement = React.isValidElement(icon)
     ? React.cloneElement(icon, {
-        color: active ? "#5B3CF5" : (icon.props.color || "#4A4A6A"),
+        color: active ? theme.primary : (icon.props.color || (theme.isDark ? "#94A3B8" : "#4A4A6A")),
         size: icon.props.size || 18
       })
     : icon;
@@ -227,13 +231,13 @@ function MenuItem({ icon, label, badgeCount, active, onPress }) {
       onPress={onPress}
       style={({ pressed }) => [
         styles.menuItem,
-        active && styles.menuItemActive,
+        active && [styles.menuItemActive, { backgroundColor: theme.badgeBg }],
         pressed && styles.pressed
       ]}
     >
       <View style={styles.menuLeft}>
         <View style={styles.iconWrap}>{iconElement}</View>
-        <Text style={[styles.menuLabel, active && styles.menuLabelActive]}>{label}</Text>
+        <Text style={[styles.menuLabel, { color: theme.subtext }, active && styles.menuLabelActive, active && { color: theme.isDark ? "#C7D2FE" : theme.primary }]}>{label}</Text>
       </View>
 
       <View style={styles.menuRight}>
@@ -242,7 +246,7 @@ function MenuItem({ icon, label, badgeCount, active, onPress }) {
             <Text style={styles.badgeText}>{badgeCount}</Text>
           </View>
         ) : null}
-        <Feather name="chevron-right" size={16} color={active ? "#5B3CF5" : "#A2A0B8"} />
+        <Feather name="chevron-right" size={16} color={active ? theme.primary : theme.subtext} />
       </View>
     </Pressable>
   );
@@ -368,6 +372,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     backgroundColor: "#F0EDFF",
+    borderWidth: 1,
     alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 4,

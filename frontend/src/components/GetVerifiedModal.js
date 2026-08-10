@@ -12,10 +12,12 @@ import {
   Platform
 } from "react-native";
 import { Feather, MaterialCommunityIcons, FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../context/ThemeContext";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, currentPlan = "monthly" }) {
+  const { theme } = useTheme();
   const [selectedPlan, setSelectedPlan] = useState("monthly"); // "monthly" | "yearly"
   const [loading, setLoading] = useState(false);
 
@@ -70,6 +72,14 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
     }, 1200);
   }
 
+  const sheetSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
+  const softSurface = { backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#F8FAFC", borderColor: theme.border };
+  const activePlanSurface = {
+    backgroundColor: theme.isDark ? "#1E1B4B" : "#FAF5FF",
+    borderColor: theme.primary
+  };
+  const activeTextColor = theme.isDark ? "#C7D2FE" : theme.primary;
+
   return (
     <Modal
       visible={visible}
@@ -77,17 +87,17 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.backdropOverlay}>
+      <View style={[styles.backdropOverlay, { backgroundColor: theme.isDark ? "rgba(2, 6, 23, 0.78)" : "rgba(15, 23, 42, 0.65)" }]}>
         <Pressable style={styles.backdropPressable} onPress={onClose} />
-        <View style={styles.sheetContainer}>
+        <View style={[styles.sheetContainer, sheetSurface]}>
           {/* Top Handle bar */}
           <View style={styles.handleContainer}>
-            <View style={styles.sheetHandle} />
+            <View style={[styles.sheetHandle, { backgroundColor: theme.border }]} />
           </View>
 
           {/* Close Button */}
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
-            <Feather name="x" size={18} color="#64748B" />
+          <TouchableOpacity onPress={onClose} style={[styles.closeBtn, softSurface]} activeOpacity={0.7}>
+            <Feather name="x" size={18} color={theme.subtext} />
           </TouchableOpacity>
 
           <ScrollView
@@ -96,17 +106,17 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
           >
             {/* Hero Header */}
             <View style={styles.heroSection}>
-              <View style={styles.crownBadgeIcon}>
-                <MaterialCommunityIcons name="shield-check" size={34} color="#5B3CF5" />
+              <View style={[styles.crownBadgeIcon, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+                <MaterialCommunityIcons name="shield-check" size={34} color={theme.primary} />
               </View>
-              <Text style={styles.heroTitle}>Get TCM Verified</Text>
-              <Text style={styles.heroSub}>
+              <Text style={[styles.heroTitle, { color: theme.text }]}>Get TCM Verified</Text>
+              <Text style={[styles.heroSub, { color: theme.subtext }]}>
                 Unlock elite developer tools, top recruiter visibility & industry domain projects.
               </Text>
             </View>
 
             {/* Plans Selection Cards */}
-            <Text style={styles.sectionHeaderTitle}>SELECT YOUR PLAN</Text>
+            <Text style={[styles.sectionHeaderTitle, { color: theme.subtext }]}>SELECT YOUR PLAN</Text>
             <View style={styles.plansRow}>
               {/* Monthly Plan Card */}
               <TouchableOpacity
@@ -114,28 +124,30 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
                 onPress={() => setSelectedPlan("monthly")}
                 style={[
                   styles.planCard,
-                  selectedPlan === "monthly" && styles.planCardActive
+                  softSurface,
+                  selectedPlan === "monthly" && [styles.planCardActive, activePlanSurface]
                 ]}
               >
                 <View style={styles.planCardHeader}>
-                  <Text style={[styles.planTitle, selectedPlan === "monthly" && styles.planTitleActive]}>
+                  <Text style={[styles.planTitle, { color: theme.subtext }, selectedPlan === "monthly" && styles.planTitleActive, selectedPlan === "monthly" && { color: activeTextColor }]}>
                     Monthly
                   </Text>
                   <View
                     style={[
                       styles.radioCircle,
+                      { borderColor: selectedPlan === "monthly" ? theme.primary : theme.border },
                       selectedPlan === "monthly" && styles.radioCircleActive
                     ]}
                   >
-                    {selectedPlan === "monthly" && <View style={styles.radioInnerCircle} />}
+                    {selectedPlan === "monthly" && <View style={[styles.radioInnerCircle, { backgroundColor: theme.primary }]} />}
                   </View>
                 </View>
                 <View style={styles.priceRow}>
-                  <Text style={styles.currencySymbol}>₹</Text>
-                  <Text style={styles.priceNumber}>29</Text>
-                  <Text style={styles.pricePeriod}> / month</Text>
+                  <Text style={[styles.currencySymbol, { color: theme.text }]}>₹</Text>
+                  <Text style={[styles.priceNumber, { color: theme.text }]}>29</Text>
+                  <Text style={[styles.pricePeriod, { color: theme.subtext }]}> / month</Text>
                 </View>
-                <Text style={styles.planSubtext}>Flexible monthly billing. Cancel anytime.</Text>
+                <Text style={[styles.planSubtext, { color: theme.subtext }]}>Flexible monthly billing. Cancel anytime.</Text>
               </TouchableOpacity>
 
               {/* Yearly Plan Card */}
@@ -144,45 +156,47 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
                 onPress={() => setSelectedPlan("yearly")}
                 style={[
                   styles.planCard,
-                  selectedPlan === "yearly" && styles.planCardActive
+                  softSurface,
+                  selectedPlan === "yearly" && [styles.planCardActive, activePlanSurface]
                 ]}
               >
                 <View style={styles.saveTagBadge}>
                   <Text style={styles.saveTagText}>SAVE 30% • BEST VALUE</Text>
                 </View>
                 <View style={styles.planCardHeader}>
-                  <Text style={[styles.planTitle, selectedPlan === "yearly" && styles.planTitleActive]}>
+                  <Text style={[styles.planTitle, { color: theme.subtext }, selectedPlan === "yearly" && styles.planTitleActive, selectedPlan === "yearly" && { color: activeTextColor }]}>
                     Yearly
                   </Text>
                   <View
                     style={[
                       styles.radioCircle,
+                      { borderColor: selectedPlan === "yearly" ? theme.primary : theme.border },
                       selectedPlan === "yearly" && styles.radioCircleActive
                     ]}
                   >
-                    {selectedPlan === "yearly" && <View style={styles.radioInnerCircle} />}
+                    {selectedPlan === "yearly" && <View style={[styles.radioInnerCircle, { backgroundColor: theme.primary }]} />}
                   </View>
                 </View>
                 <View style={styles.priceRow}>
-                  <Text style={styles.currencySymbol}>₹</Text>
-                  <Text style={styles.priceNumber}>249</Text>
-                  <Text style={styles.pricePeriod}> / year</Text>
+                  <Text style={[styles.currencySymbol, { color: theme.text }]}>₹</Text>
+                  <Text style={[styles.priceNumber, { color: theme.text }]}>249</Text>
+                  <Text style={[styles.pricePeriod, { color: theme.subtext }]}> / year</Text>
                 </View>
-                <Text style={styles.planSubtext}>Only ~₹20/mo! Billed annually.</Text>
+                <Text style={[styles.planSubtext, { color: theme.subtext }]}>Only ~₹20/mo! Billed annually.</Text>
               </TouchableOpacity>
             </View>
 
             {/* Advantages & Features Section */}
-            <Text style={styles.sectionHeaderTitle}>VERIFIED ADVANTAGES & BENEFITS</Text>
-            <View style={styles.advantagesContainer}>
+            <Text style={[styles.sectionHeaderTitle, { color: theme.subtext }]}>VERIFIED ADVANTAGES & BENEFITS</Text>
+            <View style={[styles.advantagesContainer, softSurface]}>
               {advantages.map((item) => (
                 <View key={item.id} style={styles.advantageRow}>
-                  <View style={styles.advantageIconBox}>
-                    <Feather name={item.iconName} size={18} color="#5B3CF5" />
+                  <View style={[styles.advantageIconBox, { backgroundColor: theme.badgeBg }]}>
+                    <Feather name={item.iconName} size={18} color={theme.primary} />
                   </View>
                   <View style={styles.advantageTextContent}>
-                    <Text style={styles.advantageTitle}>{item.title}</Text>
-                    <Text style={styles.advantageDesc}>{item.desc}</Text>
+                    <Text style={[styles.advantageTitle, { color: theme.text }]}>{item.title}</Text>
+                    <Text style={[styles.advantageDesc, { color: theme.subtext }]}>{item.desc}</Text>
                   </View>
                 </View>
               ))}
@@ -190,8 +204,8 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
 
             {/* Guarantee / Security Notice */}
             <View style={styles.securityBox}>
-              <Feather name="lock" size={13} color="#64748B" style={{ marginRight: 6 }} />
-              <Text style={styles.securityText}>100% Secure Payment • Instant Verification Activation</Text>
+              <Feather name="lock" size={13} color={theme.subtext} style={{ marginRight: 6 }} />
+              <Text style={[styles.securityText, { color: theme.subtext }]}>100% Secure Payment • Instant Verification Activation</Text>
             </View>
           </ScrollView>
 

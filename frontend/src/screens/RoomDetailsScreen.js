@@ -19,6 +19,7 @@ import {
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { manageDoubtRoom } from "../api/client";
+import { useTheme } from "../context/ThemeContext";
 
 const PRESET_AVATARS = [
   { label: "Code Dev", url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=300&q=80" },
@@ -170,6 +171,7 @@ function extractPinnedResources(room) {
 }
 
 export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin = false, onClose, onRoomUpdated }) {
+  const { theme } = useTheme();
   const [room, setRoom] = useState(initialRoom);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(room?.title || "");
@@ -452,16 +454,20 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
     }
   }
 
+  const themedSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
+  const themedSoftSurface = { backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#F8FAFC", borderColor: theme.border };
+  const themedBadgeSurface = { backgroundColor: theme.badgeBg, borderColor: theme.border };
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. TOP HEADER */}
-      <View style={styles.topHeader}>
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
         <Pressable onPress={onClose} style={styles.backBtn}>
-          <Feather name="arrow-left" size={22} color="#0F172A" />
+          <Feather name="arrow-left" size={22} color={theme.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Group Room Details</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Group Room Details</Text>
         <Pressable onPress={() => setShowQrModal(true)} style={styles.moreBtn}>
-          <Feather name="qr-code" size={20} color="#6366F1" />
+          <Feather name="qr-code" size={20} color={theme.primary} />
         </Pressable>
       </View>
 
@@ -495,7 +501,8 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
               <TextInput
                 value={titleInput}
                 onChangeText={setTitleInput}
-                style={styles.inlineInput}
+                style={[styles.inlineInput, { backgroundColor: theme.inputBg || theme.bg, borderColor: theme.primary, color: theme.text }]}
+                placeholderTextColor={theme.subtext}
                 autoFocus
               />
               <Pressable onPress={handleSaveTitle} style={styles.saveCheckBtn}>
@@ -504,7 +511,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
             </View>
           ) : (
             <View style={styles.titleRow}>
-              <Text style={styles.roomTitle}>{room?.title || "TCM Doubt Room"}</Text>
+              <Text style={[styles.roomTitle, { color: theme.text }]}>{room?.title || "TCM Doubt Room"}</Text>
               {isAdmin ? (
                 <Pressable onPress={() => setIsEditingTitle(true)} style={styles.pencilBtn}>
                   <Feather name="edit-2" size={14} color="#6366F1" />
@@ -514,22 +521,23 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
           )}
 
           {/* GROUP ID */}
-          <Pressable onPress={handleCopyGroupId} style={styles.groupIdPill}>
-            <Text style={styles.groupIdText}>Group ID: {room?.roomId || "FSD-1024"}</Text>
-            <Feather name="copy" size={12} color="#6366F1" style={{ marginLeft: 4 }} />
+          <Pressable onPress={handleCopyGroupId} style={[styles.groupIdPill, { backgroundColor: theme.badgeBg }]}>
+            <Text style={[styles.groupIdText, { color: theme.primary }]}>Group ID: {room?.roomId || "FSD-1024"}</Text>
+            <Feather name="copy" size={12} color={theme.primary} style={{ marginLeft: 4 }} />
           </Pressable>
         </View>
 
         {/* 3. DESCRIPTION BOX */}
-        <View style={styles.descBox}>
+        <View style={[styles.descBox, themedSoftSurface]}>
           {isEditingDesc && isAdmin ? (
             <View style={{ gap: 8 }}>
               <TextInput
                 value={descInput}
                 onChangeText={setDescInput}
                 multiline
-                style={styles.descInputArea}
+                style={[styles.descInputArea, { backgroundColor: theme.inputBg || theme.bg, borderColor: theme.primary, color: theme.text }]}
                 placeholder="Enter room description..."
+                placeholderTextColor={theme.subtext}
               />
               <Pressable onPress={handleSaveDesc} style={styles.saveDescBtn}>
                 <Text style={styles.saveDescText}>Save Description</Text>
@@ -537,7 +545,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
             </View>
           ) : (
             <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-              <Text style={styles.descText}>
+              <Text style={[styles.descText, { color: theme.subtext }]}>
                 {room?.description || "A place for learners to ask doubts, share resources and grow together with TCM Academy Mentors!"}
               </Text>
               {isAdmin ? (
@@ -550,47 +558,47 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
         </View>
 
         {/* 4. STATS BAR */}
-        <View style={styles.statsCard}>
+        <View style={[styles.statsCard, themedSurface]}>
           <View style={styles.statCol}>
             <Feather name="users" size={18} color="#6366F1" />
-            <Text style={styles.statNumber}>{detailedMembers.length}</Text>
-            <Text style={styles.statLabel}>Members</Text>
+            <Text style={[styles.statNumber, { color: theme.text }]}>{detailedMembers.length}</Text>
+            <Text style={[styles.statLabel, { color: theme.subtext }]}>Members</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
 
           <View style={styles.statCol}>
             <Feather name="user" size={18} color="#6366F1" />
-            <Text style={styles.statNumber}>{Math.max(1, detailedMembers.filter((m) => !m.isMentor).length)}</Text>
-            <Text style={styles.statLabel}>Students</Text>
+            <Text style={[styles.statNumber, { color: theme.text }]}>{Math.max(1, detailedMembers.filter((m) => !m.isMentor).length)}</Text>
+            <Text style={[styles.statLabel, { color: theme.subtext }]}>Students</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
 
           <View style={styles.statCol}>
             <Feather name="folder" size={18} color="#6366F1" />
-            <Text style={styles.statNumber}>{sharedMedia.totalCount}</Text>
-            <Text style={styles.statLabel}>Shared Files</Text>
+            <Text style={[styles.statNumber, { color: theme.text }]}>{sharedMedia.totalCount}</Text>
+            <Text style={[styles.statLabel, { color: theme.subtext }]}>Shared Files</Text>
           </View>
         </View>
 
         {/* 5. PENDING JOIN REQUESTS (ADMIN ONLY) */}
         {isAdmin && joinRequests.length > 0 ? (
-          <View style={styles.requestsSection}>
+          <View style={[styles.requestsSection, themedSurface]}>
             <View style={styles.requestsHeaderRow}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Feather name="clock" size={16} color="#6366F1" style={{ marginRight: 6 }} />
-                <Text style={styles.requestsTitle}>Pending Join Requests</Text>
-                <View style={styles.reqBadge}>
-                  <Text style={styles.reqBadgeText}>{joinRequests.length}</Text>
+                <Text style={[styles.requestsTitle, { color: theme.text }]}>Pending Join Requests</Text>
+                <View style={[styles.reqBadge, { backgroundColor: theme.badgeBg }]}>
+                  <Text style={[styles.reqBadgeText, { color: theme.primary }]}>{joinRequests.length}</Text>
                 </View>
               </View>
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingVertical: 8 }}>
               {joinRequests.map((reqItem, idx) => (
-                <View key={idx} style={styles.reqCard}>
+                <View key={idx} style={[styles.reqCard, themedSoftSurface]}>
                   <Image source={{ uri: reqItem.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80" }} style={styles.reqAvatar} />
-                  <Text style={styles.reqName} numberOfLines={1}>{reqItem.userName || "Student"}</Text>
-                  <Text style={styles.reqTime}>{reqItem.requestedAt || "Recently"}</Text>
+                  <Text style={[styles.reqName, { color: theme.text }]} numberOfLines={1}>{reqItem.userName || "Student"}</Text>
+                  <Text style={[styles.reqTime, { color: theme.subtext }]}>{reqItem.requestedAt || "Recently"}</Text>
 
                   <View style={styles.reqActionRow}>
                     <Pressable onPress={() => handleApproveRequest(reqItem.userId)} style={styles.approveBtn}>
@@ -607,12 +615,12 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
         ) : null}
 
         {/* 6. ACTION ROWS */}
-        <View style={styles.actionsCard}>
+        <View style={[styles.actionsCard, themedSurface]}>
           {/* MEMBERS ROW */}
-          <Pressable onPress={() => setShowMembersModal(true)} style={styles.actionRow}>
+          <Pressable onPress={() => setShowMembersModal(true)} style={[styles.actionRow, { borderBottomColor: theme.border }]}>
             <View style={styles.actionLeft}>
               <Feather name="users" size={18} color="#6366F1" style={{ marginRight: 12 }} />
-              <Text style={styles.actionLabel}>Members ({detailedMembers.length})</Text>
+              <Text style={[styles.actionLabel, { color: theme.text }]}>Members ({detailedMembers.length})</Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Feather name="chevron-right" size={18} color="#94A3B8" />
@@ -620,38 +628,38 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
           </Pressable>
 
           {/* PINNED RESOURCES */}
-          <Pressable onPress={() => setShowPinnedModal(true)} style={styles.actionRow}>
+          <Pressable onPress={() => setShowPinnedModal(true)} style={[styles.actionRow, { borderBottomColor: theme.border }]}>
             <View style={styles.actionLeft}>
               <Feather name="pin" size={18} color="#6366F1" style={{ marginRight: 12 }} />
-              <Text style={styles.actionLabel}>Pinned Resources</Text>
+              <Text style={[styles.actionLabel, { color: theme.text }]}>Pinned Resources</Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View style={styles.numBadge}>
-                <Text style={styles.numBadgeText}>{pinnedList.length}</Text>
+              <View style={[styles.numBadge, { backgroundColor: theme.badgeBg }]}>
+                <Text style={[styles.numBadgeText, { color: theme.primary }]}>{pinnedList.length}</Text>
               </View>
               <Feather name="chevron-right" size={18} color="#94A3B8" />
             </View>
           </Pressable>
 
           {/* MEDIA, LINKS & FILES */}
-          <Pressable onPress={() => setShowMediaModal(true)} style={styles.actionRow}>
+          <Pressable onPress={() => setShowMediaModal(true)} style={[styles.actionRow, { borderBottomColor: theme.border }]}>
             <View style={styles.actionLeft}>
               <Feather name="folder" size={18} color="#10B981" style={{ marginRight: 12 }} />
-              <Text style={styles.actionLabel}>Media, Links & Files</Text>
+              <Text style={[styles.actionLabel, { color: theme.text }]}>Media, Links & Files</Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View style={styles.numBadge}>
-                <Text style={styles.numBadgeText}>{sharedMedia.totalCount}</Text>
+              <View style={[styles.numBadge, { backgroundColor: theme.badgeBg }]}>
+                <Text style={[styles.numBadgeText, { color: theme.primary }]}>{sharedMedia.totalCount}</Text>
               </View>
               <Feather name="chevron-right" size={18} color="#94A3B8" />
             </View>
           </Pressable>
 
           {/* MUTE NOTIFICATIONS */}
-          <View style={styles.actionRow}>
+          <View style={[styles.actionRow, { borderBottomColor: theme.border }]}>
             <View style={styles.actionLeft}>
               <Feather name={muted ? "bell-off" : "bell"} size={18} color={muted ? "#94A3B8" : "#6366F1"} style={{ marginRight: 12 }} />
-              <Text style={styles.actionLabel}>Mute Notifications</Text>
+              <Text style={[styles.actionLabel, { color: theme.text }]}>Mute Notifications</Text>
             </View>
             <Switch
               value={muted}
@@ -662,19 +670,19 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
           </View>
 
           {/* SEARCH MESSAGES */}
-          <Pressable onPress={() => setShowSearchModal(true)} style={styles.actionRow}>
+          <Pressable onPress={() => setShowSearchModal(true)} style={[styles.actionRow, { borderBottomColor: theme.border }]}>
             <View style={styles.actionLeft}>
               <Feather name="search" size={18} color="#38BDF8" style={{ marginRight: 12 }} />
-              <Text style={styles.actionLabel}>Search Messages</Text>
+              <Text style={[styles.actionLabel, { color: theme.text }]}>Search Messages</Text>
             </View>
             <Feather name="chevron-right" size={18} color="#94A3B8" />
           </Pressable>
 
           {/* INVITE VIA LINK */}
-          <Pressable onPress={handleInviteViaLink} style={styles.actionRow}>
+          <Pressable onPress={handleInviteViaLink} style={[styles.actionRow, { borderBottomColor: theme.border }]}>
             <View style={styles.actionLeft}>
               <Feather name="link" size={18} color="#6366F1" style={{ marginRight: 12 }} />
-              <Text style={styles.actionLabel}>Invite via Link</Text>
+              <Text style={[styles.actionLabel, { color: theme.text }]}>Invite via Link</Text>
             </View>
             <Feather name="chevron-right" size={18} color="#94A3B8" />
           </Pressable>
@@ -683,14 +691,14 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
           <Pressable onPress={() => setShowQrModal(true)} style={[styles.actionRow, { borderBottomWidth: 0 }]}>
             <View style={styles.actionLeft}>
               <Feather name="grid" size={18} color="#10B981" style={{ marginRight: 12 }} />
-              <Text style={styles.actionLabel}>Share QR Code</Text>
+              <Text style={[styles.actionLabel, { color: theme.text }]}>Share QR Code</Text>
             </View>
             <Feather name="chevron-right" size={18} color="#94A3B8" />
           </Pressable>
         </View>
 
         {/* DANGER ZONE */}
-        <View style={[styles.actionsCard, { marginTop: 16 }]}>
+        <View style={[styles.actionsCard, themedSurface, { marginTop: 16 }]}>
           {isAdmin ? (
             <Pressable onPress={handleDeleteGroup} style={styles.actionRow}>
               <View style={styles.actionLeft}>

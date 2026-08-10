@@ -22,6 +22,7 @@ import GetVerifiedModal from "../components/GetVerifiedModal";
 import MyReviewsModal from "../components/MyReviewsModal";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 function ProfileAvatar({ name = "", uri, size = 90 }) {
   const initials = name
@@ -46,6 +47,7 @@ function ProfileAvatar({ name = "", uri, size = 90 }) {
 }
 
 export default function ProfileScreen({ session, user: initialUser, onOpenSettings, onOpenWallet, onNotifications, onOpenMentorDashboard, onSelectPost }) {
+  const { theme } = useTheme();
   // Fixed JSX structure & Saved tab responsiveness
   const [profileUser, setProfileUser] = useState(initialUser || {});
   const [posts, setPosts] = useState([]);
@@ -320,7 +322,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
   return (
     <View style={styles.container}>
       {/* Main Profile Card */}
-      <View style={styles.profileCard}>
+      <View style={[styles.profileCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <View style={styles.avatarWrapper}>
           <Pressable onPress={() => setAvatarEnlargedOpen(true)} style={({ pressed }) => pressed && { opacity: 0.85 }}>
             <ProfileAvatar name={profileUser.name} uri={profileUser.avatarUrl} size={90} />
@@ -332,30 +334,30 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
 
         <View style={styles.userMainInfo}>
           <View style={styles.nameRow}>
-            <Text style={styles.userName}>{profileUser.name || "TCM Member"}</Text>
+            <Text style={[styles.userName, { color: theme.text }]}>{profileUser.name || "TCM Member"}</Text>
             {profileUser.isMentor || profileUser.role?.toLowerCase().includes("mentor") ? (
-              <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 4 }}>
-                <Text style={{ fontSize: 10, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+              <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 4 }}>
+                <Text style={{ fontSize: 10, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
               </View>
             ) : (
-              <View style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 4 }}>
-                <Text style={{ fontSize: 10, fontWeight: "700", color: "#475569" }}>Student</Text>
+              <View style={{ backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 4 }}>
+                <Text style={{ fontSize: 10, fontWeight: "700", color: theme.subtext }}>Student</Text>
               </View>
             )}
             {profileUser.verified ? (
               <TouchableOpacity
                 onPress={() => setGetVerifiedModalOpen(true)}
                 activeOpacity={0.85}
-                style={styles.verifiedPill}
+                style={[styles.verifiedPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}
               >
-                <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" />
-                <Text style={styles.verifiedPillText}>Verified</Text>
+                <MaterialCommunityIcons name="check-decagram" size={13} color={theme.primary} />
+                <Text style={[styles.verifiedPillText, { color: theme.primary }]}>Verified</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 onPress={() => setGetVerifiedModalOpen(true)}
                 activeOpacity={0.85}
-                style={styles.getVerifiedPill}
+                style={[styles.getVerifiedPill, { backgroundColor: theme.primary }]}
               >
                 <Ionicons name="sparkles" size={11} color="#FFFFFF" />
                 <Text style={styles.getVerifiedPillText}>Get Verified</Text>
@@ -364,45 +366,45 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
           </View>
 
           <View style={styles.handleRow}>
-            {profileUser.handle ? <Text style={styles.handleText}>@{profileUser.handle}</Text> : null}
-            <View style={styles.memberBadgePill}>
-              <Text style={styles.memberBadgeText}>{profileUser.memberBadge || "TCM Member"}</Text>
+            {profileUser.handle ? <Text style={[styles.handleText, { color: theme.subtext }]}>@{profileUser.handle}</Text> : null}
+            <View style={[styles.memberBadgePill, { backgroundColor: theme.badgeBg }]}>
+              <Text style={[styles.memberBadgeText, { color: theme.primary }]}>{profileUser.memberBadge || "TCM Member"}</Text>
             </View>
           </View>
 
-          {profileUser.bio ? <Text style={styles.bioText}>{profileUser.bio}</Text> : null}
+          {profileUser.bio ? <Text style={[styles.bioText, { color: theme.subtext }]}>{profileUser.bio}</Text> : null}
 
           <View style={styles.metaRow}>
             {profileUser.location ? (
               <View style={styles.metaItem}>
-                <Feather name="map-pin" size={12} color="#7C7C9A" />
-                <Text style={styles.metaText}>{profileUser.location}</Text>
+                <Feather name="map-pin" size={12} color={theme.subtext} />
+                <Text style={[styles.metaText, { color: theme.subtext }]}>{profileUser.location}</Text>
               </View>
             ) : null}
             {profileUser.joinedDate ? (
               <View style={styles.metaItem}>
-                <Feather name="calendar" size={12} color="#7C7C9A" />
-                <Text style={styles.metaText}>{profileUser.joinedDate}</Text>
+                <Feather name="calendar" size={12} color={theme.subtext} />
+                <Text style={[styles.metaText, { color: theme.subtext }]}>{profileUser.joinedDate}</Text>
               </View>
             ) : null}
             {profileUser.website ? (
               <TouchableOpacity onPress={() => Share.share({ url: profileUser.website })} style={styles.metaItem}>
-                <Feather name="link" size={12} color="#5B3CF5" />
-                <Text style={[styles.metaText, styles.metaLink]}>{profileUser.website}</Text>
+                <Feather name="link" size={12} color={theme.primary} />
+                <Text style={[styles.metaText, styles.metaLink, { color: theme.primary }]}>{profileUser.website}</Text>
               </TouchableOpacity>
             ) : null}
           </View>
 
           {/* Action Buttons */}
           <View style={styles.actionBtnRow}>
-            <Pressable onPress={() => setEditModalOpen(true)} style={styles.editBtn}>
+            <Pressable onPress={() => setEditModalOpen(true)} style={[styles.editBtn, { backgroundColor: theme.primary }]}>
               <Feather name="edit-3" size={14} color="#FFFFFF" />
               <Text style={styles.editBtnText}>Edit</Text>
             </Pressable>
 
             {onOpenSettings ? (
-              <Pressable onPress={onOpenSettings} style={styles.settingsGearBtn}>
-                <Feather name="settings" size={16} color="#5B3CF5" />
+              <Pressable onPress={onOpenSettings} style={[styles.settingsGearBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+                <Feather name="settings" size={16} color={theme.primary} />
               </Pressable>
             ) : null}
 
@@ -410,10 +412,10 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               onPress={() =>
                 Alert.alert("Share Profile", `Profile link: https://${profileUser.website || "thecodemunk.in"}/@${profileUser.handle || "ayushman"}`)
               }
-              style={styles.shareBtn}
+              style={[styles.shareBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             >
-              <Feather name="share-2" size={14} color="#33334F" />
-              <Text style={styles.shareBtnText}>Share</Text>
+              <Feather name="share-2" size={14} color={theme.text} />
+              <Text style={[styles.shareBtnText, { color: theme.text }]}>Share</Text>
             </Pressable>
           </View>
 
@@ -431,20 +433,20 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
       </View>
 
       {/* Stats Counter Row */}
-      <View style={styles.statsCard}>
+      <View style={[styles.statsCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <Pressable onPress={() => setActiveTab("Posts")} style={styles.statCol}>
-          <Text style={styles.statVal}>{stats.postsCount}</Text>
-          <Text style={styles.statLbl}>Posts</Text>
+          <Text style={[styles.statVal, { color: theme.text }]}>{stats.postsCount}</Text>
+          <Text style={[styles.statLbl, { color: theme.subtext }]}>Posts</Text>
         </Pressable>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
         <Pressable onPress={() => { setUserSearchQuery(""); setFollowersModalOpen(true); }} style={styles.statCol}>
-          <Text style={styles.statVal}>{stats.followers || followersList.length || "0"}</Text>
-          <Text style={styles.statLbl}>Followers</Text>
+          <Text style={[styles.statVal, { color: theme.text }]}>{stats.followers || followersList.length || "0"}</Text>
+          <Text style={[styles.statLbl, { color: theme.subtext }]}>Followers</Text>
         </Pressable>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
         <Pressable onPress={() => { setUserSearchQuery(""); setFollowingModalOpen(true); }} style={styles.statCol}>
-          <Text style={styles.statVal}>{stats.following !== undefined ? stats.following : followingList.length}</Text>
-          <Text style={styles.statLbl}>Following</Text>
+          <Text style={[styles.statVal, { color: theme.text }]}>{stats.following !== undefined ? stats.following : followingList.length}</Text>
+          <Text style={[styles.statLbl, { color: theme.subtext }]}>Following</Text>
         </Pressable>
         <View style={styles.statDivider} />
         <Pressable

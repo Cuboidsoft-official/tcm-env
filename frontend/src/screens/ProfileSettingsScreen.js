@@ -138,6 +138,19 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
   });
 
   const selectedThemeObj = activeAppTheme || themesList[1];
+  const sectionCardStyle = { backgroundColor: activeAppTheme.cardBg, borderColor: activeAppTheme.border };
+  const settingRowStyle = { borderBottomColor: activeAppTheme.border };
+  const rowTitleStyle = { color: activeAppTheme.text };
+  const rowSubStyle = { color: activeAppTheme.subtext };
+  const sectionHeaderStyle = { color: activeAppTheme.subtext };
+  const iconWrapStyle = { backgroundColor: activeAppTheme.badgeBg };
+  const modalCardStyle = { backgroundColor: activeAppTheme.cardBg };
+  const inputStyle = {
+    backgroundColor: activeAppTheme.inputBg || activeAppTheme.bg,
+    borderColor: activeAppTheme.border,
+    color: activeAppTheme.text
+  };
+  const subtleButtonStyle = { backgroundColor: activeAppTheme.isDark ? "#1E263B" : "#F1F5F9" };
 
   // Referral Code 24h Window State
   const [referralInput, setReferralInput] = useState("");
@@ -319,79 +332,79 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: activeAppTheme.bg }]} showsVerticalScrollIndicator={false}>
       {/* Top Inline Header Row */}
       <View style={styles.topBackHeader}>
-        <TouchableOpacity onPress={onBack} activeOpacity={0.8} style={styles.inlineBackRow}>
-          <Feather name="arrow-left" size={16} color="#5B3CF5" />
-          <Text style={styles.inlineBackText}>Back to Profile</Text>
+        <TouchableOpacity onPress={onBack} activeOpacity={0.8} style={[styles.inlineBackRow, { backgroundColor: activeAppTheme.badgeBg, borderColor: activeAppTheme.border }]}>
+          <Feather name="arrow-left" size={16} color={activeAppTheme.primary} />
+          <Text style={[styles.inlineBackText, { color: activeAppTheme.primary }]}>Back to Profile</Text>
         </TouchableOpacity>
-        <Text style={styles.topHeaderTitle}>Account Settings</Text>
+        <Text style={[styles.topHeaderTitle, { color: activeAppTheme.text }]}>Account Settings</Text>
       </View>
 
       {/* 1. User Overview Card */}
-      <View style={styles.userSummaryCard}>
+      <View style={[styles.userSummaryCard, { backgroundColor: activeAppTheme.cardBg, borderColor: activeAppTheme.border }]}>
         <View style={styles.userSummaryLeft}>
           <View style={styles.avatarWrapper}>
             <ProfileAvatar name={user.name} uri={user.avatarUrl} size={70} />
-            <TouchableOpacity onPress={openEditModal} activeOpacity={0.8} style={styles.avatarEditBadge}>
+            <TouchableOpacity onPress={openEditModal} activeOpacity={0.8} style={[styles.avatarEditBadge, { backgroundColor: activeAppTheme.primary, borderColor: activeAppTheme.cardBg }]}>
               <Feather name="camera" size={12} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
           <View style={styles.userInfoCol}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text style={styles.userNameText}>{user.name || "TCM Member"}</Text>
+              <Text style={[styles.userNameText, { color: activeAppTheme.text }]}>{user.name || "TCM Member"}</Text>
               {isMentorUser && (
-                <View style={styles.mentorRoleBadge}>
-                  <Text style={styles.mentorRoleBadgeText}>Mentor</Text>
+                <View style={[styles.mentorRoleBadge, { backgroundColor: activeAppTheme.badgeBg }]}>
+                  <Text style={[styles.mentorRoleBadgeText, { color: activeAppTheme.primary }]}>Mentor</Text>
                 </View>
               )}
             </View>
-            <Text style={styles.userHandleText}>@{user.handle || "tcm_member"}</Text>
-            <Text style={styles.userEmailText}>{user.email || "user@thecodemunk.in"}</Text>
+            <Text style={[styles.userHandleText, { color: activeAppTheme.subtext }]}>@{user.handle || "tcm_member"}</Text>
+            <Text style={[styles.userEmailText, { color: activeAppTheme.subtext }]}>{user.email || "user@thecodemunk.in"}</Text>
           </View>
         </View>
 
-        <TouchableOpacity onPress={openEditModal} activeOpacity={0.8} style={styles.editProfileBtn}>
-          <Feather name="edit-3" size={14} color="#5B3CF5" />
-          <Text style={styles.editProfileBtnText}>Edit</Text>
+        <TouchableOpacity onPress={openEditModal} activeOpacity={0.8} style={[styles.editProfileBtn, { backgroundColor: activeAppTheme.badgeBg, borderColor: activeAppTheme.border }]}>
+          <Feather name="edit-3" size={14} color={activeAppTheme.primary} />
+          <Text style={[styles.editProfileBtnText, { color: activeAppTheme.primary }]}>Edit</Text>
         </TouchableOpacity>
       </View>
 
       {/* 2. Mentor Dedicated Section (Visible if Mentor User) */}
       {isMentorUser && (
-        <View style={styles.sectionCard}>
+        <View style={[styles.sectionCard, sectionCardStyle]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <Text style={styles.sectionHeader}>MENTOR CREDENTIALS & SPECIALIZATION</Text>
+            <Text style={[styles.sectionHeader, sectionHeaderStyle]}>MENTOR CREDENTIALS & SPECIALIZATION</Text>
             <TouchableOpacity onPress={openEditModal} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
               <Feather name="edit-2" size={12} color="#5B3CF5" />
               <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#5B3CF5" }}>Edit Specs</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.settingRow}>
+          <View style={[styles.settingRow, settingRowStyle]}>
             <View style={styles.rowLeft}>
-              <View style={[styles.iconWrap, { backgroundColor: "#F0EDFF" }]}>
-                <Feather name="award" size={18} color="#5B3CF5" />
+              <View style={[styles.iconWrap, iconWrapStyle]}>
+                <Feather name="award" size={18} color={activeAppTheme.primary} />
               </View>
               <View>
-                <Text style={styles.rowTitle}>Mentor Category</Text>
-                <Text style={styles.rowSub}>{user.mentorCategory || "TCM Information Tech"}</Text>
+                <Text style={[styles.rowTitle, rowTitleStyle]}>Mentor Category</Text>
+                <Text style={[styles.rowSub, rowSubStyle]}>{user.mentorCategory || "TCM Information Tech"}</Text>
               </View>
             </View>
-            <View style={styles.infoPillBadge}>
-              <Text style={styles.infoPillText}>{user.yearsExperience || "5+ Yrs Exp"}</Text>
+            <View style={[styles.infoPillBadge, { backgroundColor: activeAppTheme.badgeBg }]}>
+              <Text style={[styles.infoPillText, { color: activeAppTheme.primary }]}>{user.yearsExperience || "5+ Yrs Exp"}</Text>
             </View>
           </View>
 
           <View style={styles.settingRowNoBorder}>
             <View style={styles.rowLeft}>
-              <View style={[styles.iconWrap, { backgroundColor: "#EAF5FF" }]}>
+              <View style={[styles.iconWrap, iconWrapStyle]}>
                 <Feather name="book-open" size={18} color="#2F79B9" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowTitle}>Specialization Subjects</Text>
-                <Text style={styles.rowSub}>
+                <Text style={[styles.rowTitle, rowTitleStyle]}>Specialization Subjects</Text>
+                <Text style={[styles.rowSub, rowSubStyle]}>
                   {Array.isArray(user.subjects) && user.subjects.length > 0
                     ? user.subjects.join(", ")
                     : "Full Stack Development, Node.js & React Native, System Architecture"}
@@ -403,43 +416,43 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       )}
 
       {/* 3. Account & Personal Info Section */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionHeader}>ACCOUNT & SECURITY</Text>
+      <View style={[styles.sectionCard, sectionCardStyle]}>
+        <Text style={[styles.sectionHeader, sectionHeaderStyle]}>ACCOUNT & SECURITY</Text>
 
-        <TouchableOpacity onPress={openEditModal} activeOpacity={0.7} style={styles.settingRow}>
+        <TouchableOpacity onPress={openEditModal} activeOpacity={0.7} style={[styles.settingRow, settingRowStyle]}>
           <View style={styles.rowLeft}>
-            <View style={[styles.iconWrap, { backgroundColor: "#F0EDFF" }]}>
-              <Feather name="user" size={18} color="#5B3CF5" />
+            <View style={[styles.iconWrap, iconWrapStyle]}>
+              <Feather name="user" size={18} color={activeAppTheme.primary} />
             </View>
             <View>
-              <Text style={styles.rowTitle}>Edit Profile Info</Text>
-              <Text style={styles.rowSub}>Name, Bio, Handle, Location & Links</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>Edit Profile Info</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>Name, Bio, Handle, Location & Links</Text>
             </View>
           </View>
           <Feather name="chevron-right" size={18} color="#8A879F" />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => setChangePasswordModalOpen(true)} activeOpacity={0.7} style={styles.settingRow}>
+        <TouchableOpacity onPress={() => setChangePasswordModalOpen(true)} activeOpacity={0.7} style={[styles.settingRow, settingRowStyle]}>
           <View style={styles.rowLeft}>
             <View style={[styles.iconWrap, { backgroundColor: "#EAF5FF" }]}>
               <Feather name="lock" size={18} color="#2F79B9" />
             </View>
             <View>
-              <Text style={styles.rowTitle}>Password & Security</Text>
-              <Text style={styles.rowSub}>Change password & security credentials</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>Password & Security</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>Change password & security credentials</Text>
             </View>
           </View>
           <Feather name="chevron-right" size={18} color="#8A879F" />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => setMyReviewsModalOpen(true)} activeOpacity={0.7} style={styles.settingRow}>
+        <TouchableOpacity onPress={() => setMyReviewsModalOpen(true)} activeOpacity={0.7} style={[styles.settingRow, settingRowStyle]}>
           <View style={styles.rowLeft}>
             <View style={[styles.iconWrap, { backgroundColor: "#FFF8EC" }]}>
               <FontAwesome name="star" size={18} color="#D97706" />
             </View>
             <View>
-              <Text style={styles.rowTitle}>My Class Reviews & Performance</Text>
-              <Text style={styles.rowSub}>View class reflections & mentor feedback received</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>My Class Reviews & Performance</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>View class reflections & mentor feedback received</Text>
             </View>
           </View>
           <Feather name="chevron-right" size={18} color="#8A879F" />
@@ -451,8 +464,8 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
               <Feather name="shield" size={18} color="#2E7D32" />
             </View>
             <View>
-              <Text style={styles.rowTitle}>Public Profile Visibility</Text>
-              <Text style={styles.rowSub}>Allow non-connections to see your posts</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>Public Profile Visibility</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>Allow non-connections to see your posts</Text>
             </View>
           </View>
           <Switch
@@ -466,17 +479,17 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       </View>
 
       {/* 4. Appearance & Themes (NEW FEATURES) */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionHeader}>APPEARANCE & THEMES</Text>
+      <View style={[styles.sectionCard, sectionCardStyle]}>
+        <Text style={[styles.sectionHeader, sectionHeaderStyle]}>APPEARANCE & THEMES</Text>
 
         {/* Theme Selector Row */}
-        <TouchableOpacity onPress={() => setThemeModalOpen(true)} activeOpacity={0.7} style={styles.settingRow}>
+        <TouchableOpacity onPress={() => setThemeModalOpen(true)} activeOpacity={0.7} style={[styles.settingRow, settingRowStyle]}>
           <View style={styles.rowLeft}>
             <View style={[styles.iconWrap, { backgroundColor: activeAppTheme.badgeBg }]}>
               <Feather name={activeAppTheme.icon} size={18} color={activeAppTheme.primary} />
             </View>
             <View>
-              <Text style={styles.rowTitle}>App Theme</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>App Theme</Text>
               <Text style={styles.rowSub}>{activeAppTheme.name} Mode • {activeAppTheme.subtitle}</Text>
             </View>
           </View>
@@ -495,29 +508,29 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
               <Feather name="globe" size={18} color="#2F79B9" />
             </View>
             <View>
-              <Text style={styles.rowTitle}>App Language</Text>
-              <Text style={styles.rowSub}>{selectedLanguage}</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>App Language</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>{selectedLanguage}</Text>
             </View>
           </View>
-          <View style={styles.badgePill}>
-            <Text style={styles.badgePillText}>{selectedLanguage}</Text>
-            <Feather name="chevron-right" size={14} color="#5B3CF5" />
+          <View style={[styles.badgePill, { backgroundColor: activeAppTheme.badgeBg }]}>
+            <Text style={[styles.badgePillText, { color: activeAppTheme.primary }]}>{selectedLanguage}</Text>
+            <Feather name="chevron-right" size={14} color={activeAppTheme.primary} />
           </View>
         </TouchableOpacity>
       </View>
 
       {/* 5. Notifications & Downloads */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionHeader}>PREFERENCES & NOTIFICATIONS</Text>
+      <View style={[styles.sectionCard, sectionCardStyle]}>
+        <Text style={[styles.sectionHeader, sectionHeaderStyle]}>PREFERENCES & NOTIFICATIONS</Text>
 
-        <View style={styles.settingRow}>
+        <View style={[styles.settingRow, settingRowStyle]}>
           <View style={styles.rowLeft}>
             <View style={[styles.iconWrap, { backgroundColor: "#FFF6DA" }]}>
               <Feather name="bell" size={18} color="#E7A900" />
             </View>
             <View>
-              <Text style={styles.rowTitle}>Push Notifications</Text>
-              <Text style={styles.rowSub}>Class alerts, mentions & community posts</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>Push Notifications</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>Class alerts, mentions & community posts</Text>
             </View>
           </View>
           <Switch
@@ -529,14 +542,14 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
           />
         </View>
 
-        <View style={styles.settingRow}>
+        <View style={[styles.settingRow, settingRowStyle]}>
           <View style={styles.rowLeft}>
             <View style={[styles.iconWrap, { backgroundColor: "#F0EDFF" }]}>
               <Feather name="mail" size={18} color="#5B3CF5" />
             </View>
             <View>
-              <Text style={styles.rowTitle}>Email Digests & Updates</Text>
-              <Text style={styles.rowSub}>Weekly progress report & newsletter</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>Email Digests & Updates</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>Weekly progress report & newsletter</Text>
             </View>
           </View>
           <Switch
@@ -554,8 +567,8 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
               <Feather name="wifi" size={18} color="#FF465F" />
             </View>
             <View>
-              <Text style={styles.rowTitle}>Wi-Fi Only Downloads</Text>
-              <Text style={styles.rowSub}>Download course material only over Wi-Fi</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>Wi-Fi Only Downloads</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>Download course material only over Wi-Fi</Text>
             </View>
           </View>
           <Switch
@@ -569,16 +582,16 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       </View>
 
       {/* 6. Membership & Storage */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionHeader}>MEMBERSHIP & BILLING</Text>
+      <View style={[styles.sectionCard, sectionCardStyle]}>
+        <Text style={[styles.sectionHeader, sectionHeaderStyle]}>MEMBERSHIP & BILLING</Text>
 
-        <View style={styles.settingRow}>
+        <View style={[styles.settingRow, settingRowStyle]}>
           <View style={styles.rowLeft}>
             <View style={[styles.iconWrap, { backgroundColor: "#FFF6DA" }]}>
               <FontAwesome5 name="crown" size={16} color="#FFD700" />
             </View>
             <View>
-              <Text style={styles.rowTitle}>Active Plan: TCM Pro Member</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>Active Plan: TCM Pro Member</Text>
               <Text style={styles.rowSub}>Unlimited access • Verified Badge Active</Text>
             </View>
           </View>
@@ -588,14 +601,14 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
         </View>
 
         {/* Transactions & Wallet History Row */}
-        <TouchableOpacity onPress={() => setWalletModalOpen(true)} activeOpacity={0.7} style={styles.settingRow}>
+        <TouchableOpacity onPress={() => setWalletModalOpen(true)} activeOpacity={0.7} style={[styles.settingRow, settingRowStyle]}>
           <View style={styles.rowLeft}>
             <View style={[styles.iconWrap, { backgroundColor: "#ECFDF5" }]}>
               <Feather name="credit-card" size={18} color="#10B981" />
             </View>
             <View>
-              <Text style={styles.rowTitle}>Transactions & Wallet History</Text>
-              <Text style={styles.rowSub}>Fees, referrals, coin conversion & withdrawals</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>Transactions & Wallet History</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>Fees, referrals, coin conversion & withdrawals</Text>
             </View>
           </View>
           <Feather name="chevron-right" size={18} color="#8A879F" />
@@ -607,17 +620,17 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
               <Feather name="trash-2" size={18} color="#68677D" />
             </View>
             <View>
-              <Text style={styles.rowTitle}>Clear App Cache</Text>
-              <Text style={styles.rowSub}>Free up local temporary media storage</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>Clear App Cache</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>Free up local temporary media storage</Text>
             </View>
           </View>
-          <Text style={styles.cacheSizeText}>24.5 MB</Text>
+          <Text style={[styles.cacheSizeText, { color: activeAppTheme.subtext }]}>24.5 MB</Text>
         </TouchableOpacity>
       </View>
 
       {/* 6.5. Referral Code Program (24-Hour Window) */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionHeader}>REFERRAL PROGRAM 🎁</Text>
+      <View style={[styles.sectionCard, sectionCardStyle]}>
+        <Text style={[styles.sectionHeader, sectionHeaderStyle]}>REFERRAL PROGRAM 🎁</Text>
         {user.referredBy ? (
           <View style={styles.settingRowNoBorder}>
             <View style={styles.rowLeft}>
@@ -625,8 +638,8 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                 <Feather name="check-circle" size={18} color="#10B981" />
               </View>
               <View>
-                <Text style={styles.rowTitle}>Applied Referral Code</Text>
-                <Text style={styles.rowSub}>Code: {user.referredBy} • Reward active</Text>
+                <Text style={[styles.rowTitle, rowTitleStyle]}>Applied Referral Code</Text>
+                <Text style={[styles.rowSub, rowSubStyle]}>Code: {user.referredBy} • Reward active</Text>
               </View>
             </View>
             <View style={styles.appliedRefBadge}>
@@ -641,23 +654,23 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                 24-Hour Registration Window: {timeRemainingStr}
               </Text>
             </View>
-            <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: "#7C7C9A", marginBottom: 12 }}>
+            <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: activeAppTheme.subtext, marginBottom: 12 }}>
               Didn't add a referral code during sign up? Enter a friend's referral code within 24 hours of account creation to claim 10 TCM Coins!
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <TextInput
                 style={{
                   flex: 1,
-                  backgroundColor: "#F4F3FA",
+                  backgroundColor: activeAppTheme.inputBg || activeAppTheme.bg,
                   borderRadius: 10,
                   paddingHorizontal: 12,
                   paddingVertical: 10,
                   fontSize: 14,
                   fontFamily: fonts.semiBold,
-                  color: "#181725",
+                  color: activeAppTheme.text,
                   marginRight: 8,
                   borderWidth: 1,
-                  borderColor: "#E5E7EB"
+                  borderColor: activeAppTheme.border
                 }}
                 placeholder="Referral Code (e.g. ANK25X)"
                 placeholderTextColor="#9CA3AF"
@@ -693,7 +706,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                 Referral Code Window Expired
               </Text>
             </View>
-            <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: "#7C7C9A" }}>
+            <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: activeAppTheme.subtext }}>
               Referral codes can only be claimed within the first 24 hours of account registration.
             </Text>
           </View>
@@ -701,15 +714,15 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       </View>
 
       {/* 7. Support & Legal */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionHeader}>SUPPORT & LEGAL</Text>
+      <View style={[styles.sectionCard, sectionCardStyle]}>
+        <Text style={[styles.sectionHeader, sectionHeaderStyle]}>SUPPORT & LEGAL</Text>
 
-        <TouchableOpacity onPress={() => Alert.alert("Help Center", "Opening TCM Help Center & FAQ...")} style={styles.settingRow}>
+        <TouchableOpacity onPress={() => Alert.alert("Help Center", "Opening TCM Help Center & FAQ...")} style={[styles.settingRow, settingRowStyle]}>
           <View style={styles.rowLeft}>
             <View style={[styles.iconWrap, { backgroundColor: "#F0EDFF" }]}>
               <Feather name="help-circle" size={18} color="#5B3CF5" />
             </View>
-            <Text style={styles.rowTitle}>Help Center & Support</Text>
+            <Text style={[styles.rowTitle, rowTitleStyle]}>Help Center & Support</Text>
           </View>
           <Feather name="chevron-right" size={18} color="#8A879F" />
         </TouchableOpacity>
@@ -719,102 +732,105 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             <View style={[styles.iconWrap, { backgroundColor: "#EAF5FF" }]}>
               <Feather name="file-text" size={18} color="#2F79B9" />
             </View>
-            <Text style={styles.rowTitle}>Privacy Policy & Terms</Text>
+            <Text style={[styles.rowTitle, rowTitleStyle]}>Privacy Policy & Terms</Text>
           </View>
           <Feather name="chevron-right" size={18} color="#8A879F" />
         </TouchableOpacity>
       </View>
 
       {/* 8. Logout Button */}
-      <TouchableOpacity onPress={handleLogoutPress} activeOpacity={0.8} style={styles.logoutBtn}>
+      <TouchableOpacity onPress={handleLogoutPress} activeOpacity={0.8} style={[styles.logoutBtn, { backgroundColor: activeAppTheme.isDark ? "#3F1D27" : "#FFF0F2", borderColor: activeAppTheme.isDark ? "#5A2734" : "#FFE0E4" }]}>
         <Feather name="log-out" size={18} color="#FF465F" />
         <Text style={styles.logoutBtnText}>Logout Account</Text>
       </TouchableOpacity>
 
-      <Text style={styles.appVersionText}>TCM Mobile App v2.4.0 • Built for Curious Minds</Text>
+      <Text style={[styles.appVersionText, { color: activeAppTheme.subtext }]}>TCM Mobile App v2.4.0 • Built for Curious Minds</Text>
 
       {/* --- MODALS --- */}
 
       {/* 1. Edit Profile Modal (Supports User & Mentor Fields) */}
       <Modal visible={editProfileModalOpen} animationType="slide" transparent onRequestClose={() => setEditProfileModalOpen(false)}>
         <Pressable onPress={() => setEditProfileModalOpen(false)} style={styles.modalBg}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={styles.modalCard}>
-            <View style={styles.sheetHandleBar} />
-            <Text style={styles.modalTitle}>{isMentorUser ? "Edit Mentor & Account Profile" : "Edit Account Profile"}</Text>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, modalCardStyle]}>
+            <View style={[styles.sheetHandleBar, { backgroundColor: activeAppTheme.border }]} />
+            <Text style={[styles.modalTitle, { color: activeAppTheme.text }]}>{isMentorUser ? "Edit Mentor & Account Profile" : "Edit Account Profile"}</Text>
 
             <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false}>
               <View style={styles.avatarEditRow}>
                 <ProfileAvatar name={form.name} uri={form.avatarUrl} size={76} />
-                <TouchableOpacity onPress={pickImage} style={styles.changeAvatarBtn}>
-                  <Feather name="camera" size={14} color="#5B3CF5" />
-                  <Text style={styles.changeAvatarText}>Change Photo</Text>
+                <TouchableOpacity onPress={pickImage} style={[styles.changeAvatarBtn, { backgroundColor: activeAppTheme.badgeBg }]}>
+                  <Feather name="camera" size={14} color={activeAppTheme.primary} />
+                  <Text style={[styles.changeAvatarText, { color: activeAppTheme.primary }]}>Change Photo</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Full Name</Text>
-                <TextInput value={form.name} onChangeText={(t) => setForm((p) => ({ ...p, name: t }))} style={styles.textInput} />
+                <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Full Name</Text>
+                <TextInput value={form.name} onChangeText={(t) => setForm((p) => ({ ...p, name: t }))} style={[styles.textInput, inputStyle]} placeholderTextColor={activeAppTheme.subtext} />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Username Handle</Text>
-                <TextInput value={form.handle} onChangeText={(t) => setForm((p) => ({ ...p, handle: t }))} style={styles.textInput} />
+                <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Username Handle</Text>
+                <TextInput value={form.handle} onChangeText={(t) => setForm((p) => ({ ...p, handle: t }))} style={[styles.textInput, inputStyle]} placeholderTextColor={activeAppTheme.subtext} />
               </View>
 
               {/* Dedicated Mentor Fields */}
               {isMentorUser && (
                 <>
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Mentor Category</Text>
+                    <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Mentor Category</Text>
                     <TextInput
                       value={form.mentorCategory}
                       onChangeText={(t) => setForm((p) => ({ ...p, mentorCategory: t }))}
                       placeholder="e.g. TCM Information Tech"
-                      style={styles.textInput}
+                      placeholderTextColor={activeAppTheme.subtext}
+                      style={[styles.textInput, inputStyle]}
                     />
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Years of Experience</Text>
+                    <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Years of Experience</Text>
                     <TextInput
                       value={form.yearsExperience}
                       onChangeText={(t) => setForm((p) => ({ ...p, yearsExperience: t }))}
                       placeholder="e.g. 5+ Yrs Exp"
-                      style={styles.textInput}
+                      placeholderTextColor={activeAppTheme.subtext}
+                      style={[styles.textInput, inputStyle]}
                     />
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Specialization Subjects (comma separated)</Text>
+                    <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Specialization Subjects (comma separated)</Text>
                     <TextInput
                       value={form.subjectsStr}
                       onChangeText={(t) => setForm((p) => ({ ...p, subjectsStr: t }))}
                       placeholder="Full Stack, React Native, Node.js"
-                      style={styles.textInput}
+                      placeholderTextColor={activeAppTheme.subtext}
+                      style={[styles.textInput, inputStyle]}
                     />
                   </View>
                 </>
               )}
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Bio / Tagline</Text>
-                <TextInput value={form.bio} onChangeText={(t) => setForm((p) => ({ ...p, bio: t }))} multiline numberOfLines={3} style={[styles.textInput, { height: 75, textAlignVertical: "top" }]} />
+                <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Bio / Tagline</Text>
+                <TextInput value={form.bio} onChangeText={(t) => setForm((p) => ({ ...p, bio: t }))} multiline numberOfLines={3} style={[styles.textInput, inputStyle, { height: 75, textAlignVertical: "top" }]} placeholderTextColor={activeAppTheme.subtext} />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Location</Text>
-                <TextInput value={form.location} onChangeText={(t) => setForm((p) => ({ ...p, location: t }))} style={styles.textInput} />
+                <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Location</Text>
+                <TextInput value={form.location} onChangeText={(t) => setForm((p) => ({ ...p, location: t }))} style={[styles.textInput, inputStyle]} placeholderTextColor={activeAppTheme.subtext} />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Website / Portfolio</Text>
-                <TextInput value={form.website} onChangeText={(t) => setForm((p) => ({ ...p, website: t }))} style={styles.textInput} />
+                <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Website / Portfolio</Text>
+                <TextInput value={form.website} onChangeText={(t) => setForm((p) => ({ ...p, website: t }))} style={[styles.textInput, inputStyle]} placeholderTextColor={activeAppTheme.subtext} />
               </View>
             </ScrollView>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity onPress={() => setEditProfileModalOpen(false)} style={styles.cancelModalBtn}>
-                <Text style={styles.cancelModalBtnText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setEditProfileModalOpen(false)} style={[styles.cancelModalBtn, subtleButtonStyle]}>
+                <Text style={[styles.cancelModalBtnText, { color: activeAppTheme.subtext }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSaveProfile} style={styles.saveModalBtn}>
                 {updating ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Text style={styles.saveModalBtnText}>Save Changes</Text>}
@@ -827,28 +843,28 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       {/* 2. Change Password Modal */}
       <Modal visible={changePasswordModalOpen} animationType="slide" transparent onRequestClose={() => setChangePasswordModalOpen(false)}>
         <Pressable onPress={() => setChangePasswordModalOpen(false)} style={styles.modalBg}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={styles.modalCard}>
-            <View style={styles.sheetHandleBar} />
-            <Text style={styles.modalTitle}>Change Password</Text>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, modalCardStyle]}>
+            <View style={[styles.sheetHandleBar, { backgroundColor: activeAppTheme.border }]} />
+            <Text style={[styles.modalTitle, { color: activeAppTheme.text }]}>Change Password</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Current Password</Text>
-              <TextInput secureTextEntry value={passwordForm.currentPassword} onChangeText={(t) => setPasswordForm((p) => ({ ...p, currentPassword: t }))} style={styles.textInput} />
+              <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Current Password</Text>
+              <TextInput secureTextEntry value={passwordForm.currentPassword} onChangeText={(t) => setPasswordForm((p) => ({ ...p, currentPassword: t }))} style={[styles.textInput, inputStyle]} placeholderTextColor={activeAppTheme.subtext} />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>New Password</Text>
-              <TextInput secureTextEntry value={passwordForm.newPassword} onChangeText={(t) => setPasswordForm((p) => ({ ...p, newPassword: t }))} style={styles.textInput} />
+              <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>New Password</Text>
+              <TextInput secureTextEntry value={passwordForm.newPassword} onChangeText={(t) => setPasswordForm((p) => ({ ...p, newPassword: t }))} style={[styles.textInput, inputStyle]} placeholderTextColor={activeAppTheme.subtext} />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Confirm New Password</Text>
-              <TextInput secureTextEntry value={passwordForm.confirmPassword} onChangeText={(t) => setPasswordForm((p) => ({ ...p, confirmPassword: t }))} style={styles.textInput} />
+              <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Confirm New Password</Text>
+              <TextInput secureTextEntry value={passwordForm.confirmPassword} onChangeText={(t) => setPasswordForm((p) => ({ ...p, confirmPassword: t }))} style={[styles.textInput, inputStyle]} placeholderTextColor={activeAppTheme.subtext} />
             </View>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity onPress={() => setChangePasswordModalOpen(false)} style={styles.cancelModalBtn}>
-                <Text style={styles.cancelModalBtnText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setChangePasswordModalOpen(false)} style={[styles.cancelModalBtn, subtleButtonStyle]}>
+                <Text style={[styles.cancelModalBtnText, { color: activeAppTheme.subtext }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleChangePassword} style={styles.saveModalBtn}>
                 <Text style={styles.saveModalBtnText}>Update Password</Text>
@@ -861,10 +877,10 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       {/* 3. Theme Customization Modal (Lime, Day, Night, Evening) */}
       <Modal visible={themeModalOpen} animationType="slide" transparent onRequestClose={() => setThemeModalOpen(false)}>
         <Pressable onPress={() => setThemeModalOpen(false)} style={styles.modalBg}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={styles.modalCard}>
-            <View style={styles.sheetHandleBar} />
-            <Text style={styles.modalTitle}>Choose App Theme</Text>
-            <Text style={styles.modalSubText}>Select your visual theme preference for TCM Mobile</Text>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, modalCardStyle]}>
+            <View style={[styles.sheetHandleBar, { backgroundColor: activeAppTheme.border }]} />
+            <Text style={[styles.modalTitle, { color: activeAppTheme.text }]}>Choose App Theme</Text>
+            <Text style={[styles.modalSubText, { color: activeAppTheme.subtext }]}>Select your visual theme preference for TCM Mobile</Text>
 
             <View style={{ gap: 10, marginVertical: 14 }}>
               {appThemesList.map((item) => {
@@ -880,7 +896,8 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                     }}
                     style={[
                       styles.themeOptionCard,
-                      isActive && { borderColor: item.primary, backgroundColor: item.badgeBg }
+                      { backgroundColor: activeAppTheme.inputBg || activeAppTheme.bg, borderColor: activeAppTheme.border },
+                      isActive && { borderColor: item.primary, backgroundColor: activeAppTheme.isDark ? activeAppTheme.badgeBg : item.badgeBg }
                     ]}
                   >
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
@@ -888,10 +905,10 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                         <Feather name={item.icon} size={18} color="#FFFFFF" />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.themeOptionTitle, isActive && { color: item.primary, fontFamily: fonts.bold }]}>
+                        <Text style={[styles.themeOptionTitle, { color: activeAppTheme.text }, isActive && { color: item.primary, fontFamily: fonts.bold }]}>
                           {item.name} Mode
                         </Text>
-                        <Text style={styles.themeOptionSub}>{item.subtitle}</Text>
+                        <Text style={[styles.themeOptionSub, { color: activeAppTheme.subtext }]}>{item.subtitle}</Text>
                       </View>
                     </View>
                     {isActive && <Feather name="check-circle" size={20} color={item.primary} />}
@@ -900,8 +917,8 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
               })}
             </View>
 
-            <TouchableOpacity onPress={() => setThemeModalOpen(false)} style={styles.cancelModalBtn}>
-              <Text style={styles.cancelModalBtnText}>Done</Text>
+            <TouchableOpacity onPress={() => setThemeModalOpen(false)} style={[styles.cancelModalBtn, subtleButtonStyle]}>
+              <Text style={[styles.cancelModalBtnText, { color: activeAppTheme.subtext }]}>Done</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -910,9 +927,9 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       {/* 4. Language Selector Modal */}
       <Modal visible={languageModalOpen} animationType="slide" transparent onRequestClose={() => setLanguageModalOpen(false)}>
         <Pressable onPress={() => setLanguageModalOpen(false)} style={styles.modalBg}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={styles.modalCard}>
-            <View style={styles.sheetHandleBar} />
-            <Text style={styles.modalTitle}>Select App Language</Text>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, modalCardStyle]}>
+            <View style={[styles.sheetHandleBar, { backgroundColor: activeAppTheme.border }]} />
+            <Text style={[styles.modalTitle, { color: activeAppTheme.text }]}>Select App Language</Text>
 
             {["English", "Hindi (हिंदी)", "Hinglish"].map((lang) => (
               <TouchableOpacity
@@ -921,10 +938,10 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                   setSelectedLanguage(lang.split(" ")[0]);
                   setLanguageModalOpen(false);
                 }}
-                style={styles.langOptionRow}
+                style={[styles.langOptionRow, { borderBottomColor: activeAppTheme.border }]}
               >
-                <Text style={styles.langOptionText}>{lang}</Text>
-                {selectedLanguage === lang.split(" ")[0] && <Feather name="check" size={18} color="#5B3CF5" />}
+                <Text style={[styles.langOptionText, { color: activeAppTheme.text }]}>{lang}</Text>
+                {selectedLanguage === lang.split(" ")[0] && <Feather name="check" size={18} color={activeAppTheme.primary} />}
               </TouchableOpacity>
             ))}
           </Pressable>

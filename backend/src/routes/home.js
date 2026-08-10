@@ -962,6 +962,44 @@ homeRouter.post("/post/:postId/comment", requireAuth, async (req, res) => {
   });
 });
 
+homeRouter.delete("/post/:postId/comment/:commentId", requireAuth, async (req, res) => {
+  const { postId, commentId } = req.params;
+
+  let post = null;
+  try {
+    post = await CommunityPost.findById(postId);
+  } catch (e) {}
+
+  if (!post && req.app.locals.memoryStore?.posts) {
+    post = req.app.locals.memoryStore.posts.find((p) => String(p.id || p._id) === String(postId));
+  }
+
+  if (post && post.commentsList) {
+    post.commentsList = post.commentsList.filter((c) => String(c.id || c._id) !== String(commentId));
+    post.commentsList.forEach((c) => {
+      if (Array.isArray(c.replies)) {
+        c.replies = c.replies.filter((r) => String(r.id || r._id) !== String(commentId));
+      }
+    });
+
+    if (!post.metrics) post.metrics = { likes: 0, comments: 0, shares: 0 };
+    post.metrics.comments = Math.max(0, post.commentsList.length);
+
+    if (typeof post.markModified === "function") post.markModified("commentsList");
+    if (typeof post.save === "function") await post.save().catch(() => {});
+  }
+
+  if (req.app.locals.globalPostComments?.[postId]) {
+    req.app.locals.globalPostComments[postId] = req.app.locals.globalPostComments[postId].filter(
+      (c) => String(c.id || c._id) !== String(commentId)
+    );
+  }
+
+  const newCount = post?.metrics?.comments ?? (req.app.locals.globalPostComments?.[postId]?.length || 0);
+
+  return res.json({ success: true, commentId, commentsCount: newCount });
+});
+
 homeRouter.get("/post/:postId/comments", async (req, res) => {
   const { postId } = req.params;
   const memoryStore = req.app.locals.memoryStore;

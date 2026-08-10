@@ -16,11 +16,12 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { deleteCommunityPost, getTargetUserProfile, sendFriendRequestAction, toggleFollowUser } from "../api/client";
-import GetVerifiedModal from "../components/GetVerifiedModal";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 export default function UserProfileScreen({ session, targetUser, onClose, onOpenChat, onSelectPost }) {
+  const { theme } = useTheme();
   const [profileData, setProfileData] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
   const [followersList, setFollowersList] = useState([]);
@@ -290,14 +291,14 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
   }
 
   return (
-    <View style={styles.scrollBody}>
+    <View style={[styles.scrollBody, { backgroundColor: theme.bg }]}>
       {/* Profile Card */}
-      <View style={styles.profileCard}>
+      <View style={[styles.profileCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <Pressable onPress={() => setAvatarEnlargedOpen(true)} style={styles.avatarWrapper}>
           {avatarUrl && !(Platform.OS === "web" && typeof avatarUrl === "string" && avatarUrl.startsWith("file://")) ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
+            <Image source={{ uri: avatarUrl }} style={[styles.avatarImg, { borderColor: theme.border }]} />
           ) : (
-            <View style={styles.avatarInitialsContainer}>
+            <View style={[styles.avatarInitialsContainer, { backgroundColor: theme.primary, borderColor: theme.border }]}>
               <Text style={styles.avatarInitialsText}>{initials}</Text>
             </View>
           )}
@@ -305,48 +306,48 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
 
         <View style={styles.userMainInfo}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <Text style={styles.userName}>{name}</Text>
+            <Text style={[styles.userName, { color: theme.text }]}>{name}</Text>
             {userRole?.toLowerCase().includes("mentor") || isMentor ? (
-              <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                <Text style={{ fontSize: 10, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+              <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ fontSize: 10, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
               </View>
             ) : (
-              <View style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                <Text style={{ fontSize: 10, fontWeight: "700", color: "#475569" }}>Student</Text>
+              <View style={{ backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ fontSize: 10, fontWeight: "700", color: theme.subtext }}>Student</Text>
               </View>
             )}
             {verified ? (
               <TouchableOpacity
                 onPress={() => setGetVerifiedModalOpen(true)}
                 activeOpacity={0.85}
-                style={styles.verifiedPill}
+                style={[styles.verifiedPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}
               >
-                <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" />
-                <Text style={styles.verifiedPillText}>Verified</Text>
+                <MaterialCommunityIcons name="check-decagram" size={13} color={theme.primary} />
+                <Text style={[styles.verifiedPillText, { color: theme.primary }]}>Verified</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 onPress={() => setGetVerifiedModalOpen(true)}
                 activeOpacity={0.85}
-                style={styles.getVerifiedPill}
+                style={[styles.getVerifiedPill, { backgroundColor: theme.primary }]}
               >
                 <Ionicons name="sparkles" size={11} color="#FFFFFF" />
                 <Text style={styles.getVerifiedPillText}>Get Verified</Text>
               </TouchableOpacity>
             )}
           </View>
-          <Text style={styles.userHandle}>@{handle}</Text>
+          <Text style={[styles.userHandle, { color: theme.subtext }]}>@{handle}</Text>
 
-          <Text style={styles.bioText}>{bio}</Text>
+          <Text style={[styles.bioText, { color: theme.subtext }]}>{bio}</Text>
 
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
-              <Feather name="map-pin" size={12} color="#7C7C9A" />
-              <Text style={styles.metaText}>{location}</Text>
+              <Feather name="map-pin" size={12} color={theme.subtext} />
+              <Text style={[styles.metaText, { color: theme.subtext }]}>{location}</Text>
             </View>
             <View style={styles.metaItem}>
-              <Feather name="calendar" size={12} color="#7C7C9A" />
-              <Text style={styles.metaText}>{joinedDate}</Text>
+              <Feather name="calendar" size={12} color={theme.subtext} />
+              <Text style={[styles.metaText, { color: theme.subtext }]}>{joinedDate}</Text>
             </View>
             <View style={styles.metaItem}>
               <Feather name="link" size={12} color="#5B3CF5" />

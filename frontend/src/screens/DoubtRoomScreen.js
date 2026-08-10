@@ -28,6 +28,7 @@ import {
   manageDoubtRoom
 } from "../api/client";
 import RoomDetailsScreen from "./RoomDetailsScreen";
+import { useTheme } from "../context/ThemeContext";
 
 function generateClientSmartFallback(query, category = "Academic") {
   const text = (query || "").toLowerCase().trim();
@@ -540,16 +541,18 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
     );
   }
 
+  const { theme } = useTheme();
+
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.bg }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 20}
     >
       {/* 1. TOP HEADER MATCHING CHATSCREEN */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity style={styles.backBtn} onPress={onClose}>
-          <MaterialCommunityIcons name="chevron-left" size={26} color="#5B3CF5" />
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+        <TouchableOpacity style={[styles.backBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]} onPress={onClose}>
+          <MaterialCommunityIcons name="chevron-left" size={26} color={theme.primary} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.headerUserCol} onPress={() => setShowRoomDetails(true)}>
@@ -557,7 +560,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
             {room?.roomAvatar ? (
               <Image source={{ uri: room.roomAvatar }} style={styles.avatarImg} />
             ) : (
-              <View style={[styles.avatarImg, { backgroundColor: "#7C3AED", justifyContent: "center", alignItems: "center" }]}>
+              <View style={[styles.avatarImg, { backgroundColor: theme.primary, justifyContent: "center", alignItems: "center" }]}>
                 <MaterialCommunityIcons name="code-tags" size={20} color="#FFFFFF" />
               </View>
             )}
@@ -566,17 +569,17 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
           <View style={styles.headerTextWrap}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Text style={styles.headerName} numberOfLines={1}>{room?.title || "Doubt Room"}</Text>
+              <Text style={[styles.headerName, { color: theme.text }]} numberOfLines={1}>{room?.title || "Doubt Room"}</Text>
               {room?.isPremium ? (
-                <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 4 }} />
+                <MaterialCommunityIcons name="check-decagram" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
               ) : null}
             </View>
 
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
-              <View style={styles.idBadge}>
-                <Text style={styles.idBadgeText}>{room?.roomId || "DOUBT-ROOM"}</Text>
+              <View style={[styles.idBadge, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+                <Text style={[styles.idBadgeText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>{room?.roomId || "DOUBT-ROOM"}</Text>
               </View>
-              <Text style={styles.headerStatus} numberOfLines={1}>
+              <Text style={[styles.headerStatus, { color: theme.subtext }]} numberOfLines={1}>
                 {room?.membersCount || "1"} Member • <Text style={{ color: "#10B981" }}>🟢 Online</Text>
               </Text>
             </View>
@@ -584,11 +587,11 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         </TouchableOpacity>
 
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => setShowRoomDetails(true)}>
-            <MaterialCommunityIcons name="magnify" size={18} color="#5B3CF5" />
+          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F0EDFF" }]} onPress={() => setShowRoomDetails(true)}>
+            <MaterialCommunityIcons name="magnify" size={18} color={theme.primary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => setMenuVisible(true)}>
-            <MaterialCommunityIcons name="dots-vertical" size={18} color="#686780" />
+          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F0EDFF" }]} onPress={() => setMenuVisible(true)}>
+            <MaterialCommunityIcons name="dots-vertical" size={18} color={theme.subtext} />
           </TouchableOpacity>
         </View>
       </View>
@@ -821,7 +824,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
       {/* 5. INPUT BAR OR JOIN ROOM BAR */}
       {!isMember ? (
-        <View style={[styles.joinRoomContainer, { paddingBottom: Platform.OS === "ios" ? Math.max(insets.bottom, 14) : Math.max(insets.bottom, 10) }]}>
+        <View style={styles.joinRoomContainer}>
           {hasRequestedJoin ? (
             <View style={[styles.joinRoomButton, { backgroundColor: "#64748B" }]}>
               <MaterialCommunityIcons name="clock-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
@@ -843,24 +846,26 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
           )}
         </View>
       ) : (
-        <View style={[styles.inputContainer, { paddingBottom: Platform.OS === "ios" ? Math.max(insets.bottom, 14) : Math.max(insets.bottom, 10) }]}>
-          <TouchableOpacity style={styles.plusBtn} onPress={() => setPollModalVisible(true)}>
+        <View style={[styles.inputContainer, { backgroundColor: theme.cardBg, borderTopColor: theme.border }]}>
+          <TouchableOpacity style={[styles.plusBtn, { backgroundColor: theme.primary }]} onPress={() => setPollModalVisible(true)}>
             <MaterialCommunityIcons name="plus" size={24} color="#FFFFFF" />
           </TouchableOpacity>
 
           <TextInput
-            style={styles.inputField}
+            style={[styles.inputField, { backgroundColor: theme.inputBg || theme.bg, color: theme.text }]}
             placeholder="Type a message..."
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={theme.subtext}
             value={inputText}
             onChangeText={setInputText}
+            multiline
+            maxHeight={100}
           />
 
           <TouchableOpacity style={styles.inputActionBtn} onPress={() => setCodeModalVisible(true)}>
-            <MaterialCommunityIcons name="code-tags" size={22} color="#64748B" />
+            <MaterialCommunityIcons name="code-tags" size={22} color={theme.subtext} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.sendBtn} onPress={handleSendMessage} disabled={sending}>
+          <TouchableOpacity style={[styles.sendBtn, { backgroundColor: theme.primary }]} onPress={handleSendMessage} disabled={sending}>
             {sending ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
@@ -1054,8 +1059,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 12,
-    paddingTop: Platform.OS === "ios" ? 10 : 8,
-    paddingBottom: 10,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0"
   },
@@ -1078,9 +1082,9 @@ const styles = StyleSheet.create({
     marginRight: 10
   },
   avatarImg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20
+    width: 38,
+    height: 38,
+    borderRadius: 19
   },
   onlineDotHeader: {
     position: "absolute",
@@ -1099,13 +1103,13 @@ const styles = StyleSheet.create({
     overflow: "hidden"
   },
   headerName: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: "700",
     color: "#181725",
     flexShrink: 1
   },
   headerStatus: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: "#8A879F",
     flexShrink: 1
   },
@@ -1138,12 +1142,12 @@ const styles = StyleSheet.create({
     flex: 1
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     width: "100%",
     maxWidth: 1200,
     alignSelf: "center",
-    paddingTop: 12,
-    paddingBottom: 30
+    paddingTop: 8,
+    paddingBottom: 8
   },
   assignedMentorCard: {
     flexDirection: "row",
@@ -1624,10 +1628,10 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: "#F1F5F9"
   },
@@ -1638,21 +1642,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#5B3CF5",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 8
+    marginRight: 8,
+    marginBottom: 2
   },
   inputField: {
     flex: 1,
     backgroundColor: "#F1F5F9",
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: Platform.OS === "ios" ? 8 : 4,
     fontSize: 14,
     color: "#0F172A",
     maxHeight: 100
   },
   inputActionBtn: {
     padding: 6,
-    marginLeft: 4
+    marginLeft: 4,
+    marginBottom: 2
   },
   sendBtn: {
     width: 38,
@@ -1661,7 +1667,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#5B3CF5",
     justifyContent: "center",
     alignItems: "center",
-    marginLeft: 6
+    marginLeft: 6,
+    marginBottom: 2
   },
   modalOverlay: {
     flex: 1,

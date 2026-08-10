@@ -17,6 +17,7 @@ import AiRoadmapPlannerModal from "../components/AiRoadmapPlannerModal";
 import { getContinueLearningDetails } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
@@ -222,44 +223,46 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
     return c.title?.toLowerCase().includes(q) || c.tags?.toLowerCase().includes(q);
   });
 
+  const { theme } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Top Header Bar matching reference UI */}
       <View style={styles.topHeader}>
         <View style={styles.headerLeft}>
-          <Pressable onPress={onOpenSidebar} style={styles.menuBtn}>
-            <Feather name="menu" size={22} color="#181725" />
+          <Pressable onPress={onOpenSidebar} style={[styles.menuBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <Feather name="menu" size={22} color={theme.text} />
           </Pressable>
           <View style={styles.titleWrap}>
-            <Text style={styles.screenTitle}>Learn</Text>
-            <Text style={styles.screenSub}>Explore courses and grow your skills</Text>
+            <Text style={[styles.screenTitle, { color: theme.text }]}>Learn</Text>
+            <Text style={[styles.screenSub, { color: theme.subtext }]}>Explore courses and grow your skills</Text>
           </View>
         </View>
 
         <View style={styles.headerRight}>
-          <Pressable onPress={() => Alert.alert("Search", "Type in the search bar below to search courses.")} style={styles.headerIconBtn}>
-            <Feather name="search" size={18} color="#181725" />
+          <Pressable onPress={() => Alert.alert("Search", "Type in the search bar below to search courses.")} style={[styles.headerIconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <Feather name="search" size={18} color={theme.text} />
           </Pressable>
-          <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", "You have learning updates."))} style={styles.headerIconBtn}>
-            <Feather name="bell" size={18} color="#181725" />
-            <View style={styles.notifDot} />
+          <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", "You have learning updates."))} style={[styles.headerIconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <Feather name="bell" size={18} color={theme.text} />
+            <View style={[styles.notifDot, { backgroundColor: theme.primary }]} />
           </Pressable>
         </View>
       </View>
 
       {/* 2. Floating Search Bar with Filter */}
-      <View style={styles.searchBoxCard}>
-        <Feather name="search" size={18} color="#8A879F" style={{ marginRight: 10 }} />
+      <View style={[styles.searchBoxCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        <Feather name="search" size={18} color={theme.subtext} style={{ marginRight: 10 }} />
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Search for courses, topics or skills..."
-          placeholderTextColor="#8A879F"
-          style={styles.searchInput}
+          placeholderTextColor={theme.subtext}
+          style={[styles.searchInput, { color: theme.text }]}
         />
         {searchQuery ? (
           <Pressable onPress={() => setSearchQuery("")} style={{ marginRight: 6 }}>
-            <Feather name="x" size={16} color="#8A879F" />
+            <Feather name="x" size={16} color={theme.subtext} />
           </Pressable>
         ) : null}
         <Pressable onPress={() => Alert.alert("Filter Courses", "Filter by Category, Difficulty & Rating")} style={styles.filterBtn}>
@@ -270,19 +273,19 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
       {/* 2.5 Quick AI Roadmap Bar */}
       <Pressable
         onPress={() => setRoadmapModalOpen(true)}
-        style={({ pressed }) => [styles.quickAiRoadmapBar, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.quickAiRoadmapBar, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF", borderColor: theme.border }, pressed && styles.pressed]}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
           <View style={styles.quickAiBadgeIcon}>
             <MaterialCommunityIcons name="map-marker-path" size={20} color="#FFFFFF" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: fonts.bold, color: "#0F172A" }}>Plan My Learning Roadmap 🗺️</Text>
-            <Text numberOfLines={1} style={{ fontSize: 11, fontFamily: fonts.medium, color: "#5B3CF5" }}>Interactive AI Career & Budget Guide</Text>
+            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text }}>Plan My Learning Roadmap 🗺️</Text>
+            <Text numberOfLines={1} style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }}>Interactive AI Career & Budget Guide</Text>
           </View>
         </View>
-        <View style={styles.quickAiBtn}>
-          <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#5B3CF5" }}>Start →</Text>
+        <View style={[styles.quickAiBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.primary }}>Start →</Text>
         </View>
       </Pressable>
 
@@ -297,18 +300,18 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             scrollEventThrottle={16}
           >
             {heroBanners.map((banner) => (
-              <View key={banner.id} style={styles.bannerCard}>
+              <View key={banner.id} style={[styles.bannerCard, { backgroundColor: theme.isDark ? "#111625" : "#F0EDFF", borderColor: theme.border }]}>
                 <View style={styles.bannerLeft}>
-                  <View style={styles.newBatchPill}>
-                    <Text style={styles.newBatchText}>{banner.tag}</Text>
+                  <View style={[styles.newBatchPill, { backgroundColor: theme.isDark ? "#1E1B4B" : "#E4DCFF" }]}>
+                    <Text style={[styles.newBatchText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>{banner.tag}</Text>
                   </View>
 
-                  <Text style={styles.bannerTitle}>{banner.title}</Text>
-                  <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>
+                  <Text style={[styles.bannerTitle, { color: theme.text }]}>{banner.title}</Text>
+                  <Text style={[styles.bannerSubtitle, { color: theme.subtext }]}>{banner.subtitle}</Text>
 
                   <Pressable
                     onPress={() => (onSelectCourse ? onSelectCourse(banner.id) : Alert.alert(banner.title.replace("\n", " "), "Opening course details..."))}
-                    style={styles.exploreBtn}
+                    style={[styles.exploreBtn, { backgroundColor: theme.primary }]}
                   >
                     <Text style={styles.exploreBtnText}>{banner.buttonText}</Text>
                   </Pressable>
@@ -333,7 +336,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           {/* Carousel Pagination Dots */}
           <View style={styles.dotsRow}>
             {heroBanners.map((_, i) => (
-              <View key={i} style={[styles.dot, i === activeBannerIndex && styles.activeDot]} />
+              <View key={i} style={[styles.dot, { backgroundColor: theme.border }, i === activeBannerIndex && [styles.activeDot, { backgroundColor: theme.primary }]]} />
             ))}
           </View>
         </View>
@@ -341,75 +344,75 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 
       {/* 3.5. Explore TCM Section (Matching Reference Screenshot) */}
       <View style={styles.exploreTcmSection}>
-        <Text style={styles.exploreTcmHeaderTitle}>Explore TCM</Text>
+        <Text style={[styles.exploreTcmHeaderTitle, { color: theme.text }]}>Explore TCM</Text>
         <View style={styles.exploreTcmGrid}>
           {/* 1. TCM Inform Tech */}
           <Pressable
             onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("inform") : Alert.alert("TCM Inform Tech", "Opening Live Classes, Notes & Assignments..."))}
-            style={({ pressed }) => [styles.exploreTcmCard, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
-              <View style={[styles.exploreIconBox, { backgroundColor: "#EEECFE" }]}>
-                <MaterialCommunityIcons name="play" size={20} color="#5B3CF5" />
+              <View style={[styles.exploreIconBox, { backgroundColor: theme.isDark ? "#1E1B4B" : "#EEECFE" }]}>
+                <MaterialCommunityIcons name="play" size={20} color={theme.isDark ? "#A78BFA" : "#5B3CF5"} />
               </View>
-              <Feather name="chevron-right" size={16} color="#9E9EB2" />
+              <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
-            <Text style={styles.exploreTcmTitle}>TCM Inform Tech</Text>
-            <Text style={styles.exploreTcmSub}>Live Classes, Notes, Assignments & More</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM Inform Tech</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Live Classes, Notes, Assignments & More</Text>
           </Pressable>
 
           {/* 2. TCM Academy */}
           <Pressable
             onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("academy") : Alert.alert("TCM Academy", "Opening Premium Courses & Specialized Programs..."))}
-            style={({ pressed }) => [styles.exploreTcmCard, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
-              <View style={[styles.exploreIconBox, { backgroundColor: "#EAF7EC" }]}>
-                <MaterialCommunityIcons name="school" size={20} color="#2E7D32" />
+              <View style={[styles.exploreIconBox, { backgroundColor: theme.isDark ? "#064E3B" : "#EAF7EC" }]}>
+                <MaterialCommunityIcons name="school" size={20} color={theme.isDark ? "#34D399" : "#2E7D32"} />
               </View>
-              <Feather name="chevron-right" size={16} color="#9E9EB2" />
+              <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
-            <Text style={styles.exploreTcmTitle}>TCM Academy</Text>
-            <Text style={styles.exploreTcmSub}>Premium Courses, Specialized Programs</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM Academy</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Premium Courses, Specialized Programs</Text>
           </Pressable>
 
           {/* 3. TCM Government */}
           <Pressable
             onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("govt") : Alert.alert("TCM Government", "Opening UPSC, SSC, Banking & Govt Exams..."))}
-            style={({ pressed }) => [styles.exploreTcmCard, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
-              <View style={[styles.exploreIconBox, { backgroundColor: "#FFF8EC" }]}>
-                <MaterialCommunityIcons name="bank" size={20} color="#E7A900" />
+              <View style={[styles.exploreIconBox, { backgroundColor: theme.isDark ? "#78350F" : "#FFF8EC" }]}>
+                <MaterialCommunityIcons name="bank" size={20} color={theme.isDark ? "#FBBF24" : "#E7A900"} />
               </View>
-              <Feather name="chevron-right" size={16} color="#9E9EB2" />
+              <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
-            <Text style={styles.exploreTcmTitle}>TCM Government</Text>
-            <Text style={styles.exploreTcmSub}>UPSC, SSC CGL, Banking & Govt Exams</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM Government</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>UPSC, SSC CGL, Banking & Govt Exams</Text>
           </Pressable>
 
           {/* 4. TCM Career */}
           <Pressable
             onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("career") : Alert.alert("TCM Career", "Opening Internships, Jobs & Placements..."))}
-            style={({ pressed }) => [styles.exploreTcmCard, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
-              <View style={[styles.exploreIconBox, { backgroundColor: "#EBF5FF" }]}>
-                <MaterialCommunityIcons name="briefcase" size={20} color="#2F79B9" />
+              <View style={[styles.exploreIconBox, { backgroundColor: theme.isDark ? "#1E3A8A" : "#EBF5FF" }]}>
+                <MaterialCommunityIcons name="briefcase" size={20} color={theme.isDark ? "#60A5FA" : "#2F79B9"} />
               </View>
-              <Feather name="chevron-right" size={16} color="#9E9EB2" />
+              <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
-            <Text style={styles.exploreTcmTitle}>TCM Career</Text>
-            <Text style={styles.exploreTcmSub}>Internships, Jobs, Placements</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM Career</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Internships, Jobs, Placements</Text>
           </Pressable>
         </View>
       </View>
 
       {/* 4. Continue Learning Section */}
       <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitleText}>Continue Learning</Text>
+        <Text style={[styles.sectionTitleText, { color: theme.text }]}>Continue Learning</Text>
         <Pressable onPress={() => (onOpenContinueLearning ? onOpenContinueLearning() : Alert.alert("Continue Learning", "Showing all active enrolled courses."))}>
-          <Text style={styles.viewAllText}>View All</Text>
+          <Text style={[styles.viewAllText, { color: theme.primary }]}>View All</Text>
         </Pressable>
       </View>
 
@@ -419,87 +422,87 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             <Pressable
               key={item.id}
               onPress={() => (onOpenContinueLearning ? onOpenContinueLearning() : onSelectCourse ? onSelectCourse(item.id) : null)}
-              style={styles.continueCard}
+              style={[styles.continueCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             >
               <View style={styles.continueTopRow}>
-                <View style={[styles.continueIconWrap, { backgroundColor: item.bgColor || "#F0EDFF" }]}>
-                  <MaterialCommunityIcons name={item.icon || "book-open"} size={22} color={item.iconColor || "#5B3CF5"} />
+                <View style={[styles.continueIconWrap, { backgroundColor: item.bgColor || (theme.isDark ? "#1E1B4B" : "#F0EDFF") }]}>
+                  <MaterialCommunityIcons name={item.icon || "book-open"} size={22} color={item.iconColor || theme.primary} />
                 </View>
-                <View style={styles.playCircleBtn}>
-                  <Feather name="play" size={11} color="#5B3CF5" style={{ marginLeft: 1 }} />
+                <View style={[styles.playCircleBtn, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }]}>
+                  <Feather name="play" size={11} color={theme.primary} style={{ marginLeft: 1 }} />
                 </View>
               </View>
 
-              <Text style={styles.continueTitle} numberOfLines={2}>{item.title}</Text>
+              <Text style={[styles.continueTitle, { color: theme.text }]} numberOfLines={2}>{item.title}</Text>
 
               <View style={styles.progressContainer}>
-                <View style={styles.progressTrackBg}>
-                  <View style={[styles.progressFillBar, { width: `${item.progress}%` }]} />
+                <View style={[styles.progressTrackBg, { backgroundColor: theme.isDark ? "#1E263B" : "#EFEFFF" }]}>
+                  <View style={[styles.progressFillBar, { width: `${item.progress}%`, backgroundColor: theme.primary }]} />
                 </View>
-                <Text style={styles.progressPercentText}>{item.progress}% Completed</Text>
+                <Text style={[styles.progressPercentText, { color: theme.subtext }]}>{item.progress}% Completed</Text>
               </View>
             </Pressable>
           ))}
         </ScrollView>
       ) : (
-        <View style={styles.emptyContinueCard}>
-          <View style={styles.emptyIconCircle}>
-            <MaterialCommunityIcons name="book-open-outline" size={24} color="#5B3CF5" />
+        <View style={[styles.emptyContinueCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <View style={[styles.emptyIconCircle, { backgroundColor: theme.badgeBg }]}>
+            <MaterialCommunityIcons name="book-open-outline" size={24} color={theme.primary} />
           </View>
           <View style={styles.emptyTextCol}>
-            <Text style={styles.emptyContinueTitle}>No Learning Started Yet</Text>
-            <Text style={styles.emptyContinueSub}>You haven't enrolled in any active course yet. Explore courses below to start!</Text>
+            <Text style={[styles.emptyContinueTitle, { color: theme.text }]}>No Learning Started Yet</Text>
+            <Text style={[styles.emptyContinueSub, { color: theme.subtext }]}>You haven't enrolled in any active course yet. Explore courses below to start!</Text>
           </View>
         </View>
       )}
 
       {/* 5. Popular Courses Section */}
       <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitleText}>Popular Courses</Text>
+        <Text style={[styles.sectionTitleText, { color: theme.text }]}>Popular Courses</Text>
         <Pressable onPress={() => (onOpenPopularCourses ? onOpenPopularCourses() : Alert.alert("Popular Courses", "Showing all popular featured courses."))}>
-          <Text style={styles.viewAllText}>View All</Text>
+          <Text style={[styles.viewAllText, { color: theme.primary }]}>View All</Text>
         </Pressable>
       </View>
 
       {filteredCourses && filteredCourses.length > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContent}>
           {filteredCourses.map((course) => (
-            <Pressable key={course.id} onPress={() => (onSelectCourse ? onSelectCourse(course.id) : handleEnroll(course))} style={styles.popularCard}>
+            <Pressable key={course.id} onPress={() => (onSelectCourse ? onSelectCourse(course.id) : handleEnroll(course))} style={[styles.popularCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <View style={styles.popularImageWrap}>
                 <Image source={{ uri: safeImageUri(course.image) }} style={styles.popularImage} />
-                <Pressable onPress={() => toggleBookmark(course.id)} style={styles.bookmarkBadge}>
-                  <Feather name="bookmark" size={14} color={course.bookmarked ? "#5B3CF5" : "#181725"} fill={course.bookmarked ? "#5B3CF5" : "none"} />
+                <Pressable onPress={() => toggleBookmark(course.id)} style={[styles.bookmarkBadge, { backgroundColor: theme.isDark ? "rgba(17,22,37,0.9)" : "rgba(255, 255, 255, 0.9)" }]}>
+                  <Feather name="bookmark" size={14} color={course.bookmarked ? theme.primary : theme.text} fill={course.bookmarked ? theme.primary : "none"} />
                 </Pressable>
               </View>
 
               <View style={styles.popularBody}>
-                <Text style={styles.popularTitle} numberOfLines={2}>{course.title}</Text>
-                <Text style={styles.popularTags} numberOfLines={1}>{course.tags}</Text>
+                <Text style={[styles.popularTitle, { color: theme.text }]} numberOfLines={2}>{course.title}</Text>
+                <Text style={[styles.popularTags, { color: theme.subtext }]} numberOfLines={1}>{course.tags}</Text>
 
                 <View style={styles.popularMetaRow}>
                   <View style={styles.metaRating}>
                     <FontAwesome name="star" size={12} color="#FFB800" />
-                    <Text style={styles.ratingValText}>{course.rating}</Text>
-                    <Text style={styles.reviewsText}>({course.reviews})</Text>
+                    <Text style={[styles.ratingValText, { color: theme.text }]}>{course.rating}</Text>
+                    <Text style={[styles.reviewsText, { color: theme.subtext }]}>({course.reviews})</Text>
                   </View>
-                  <Text style={styles.metaDot}>•</Text>
-                  <Text style={styles.lessonsText}>{course.lessons}</Text>
+                  <Text style={[styles.metaDot, { color: theme.subtext }]}>•</Text>
+                  <Text style={[styles.lessonsText, { color: theme.subtext }]}>{course.lessons}</Text>
                 </View>
 
-                <Pressable onPress={() => (onSelectCourse ? onSelectCourse(course.id) : handleEnroll(course))} style={styles.enrollBtn}>
-                  <Text style={styles.enrollBtnText}>Enroll Now</Text>
+                <Pressable onPress={() => (onSelectCourse ? onSelectCourse(course.id) : handleEnroll(course))} style={[styles.enrollBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+                  <Text style={[styles.enrollBtnText, { color: theme.primary }]}>Enroll Now</Text>
                 </Pressable>
               </View>
             </Pressable>
           ))}
         </ScrollView>
       ) : (
-        <View style={styles.emptyPopularCard}>
-          <MaterialCommunityIcons name="magnify-remove-outline" size={32} color="#7C7C9A" />
-          <Text style={styles.emptyPopularTitle}>No Courses Found</Text>
-          <Text style={styles.emptyPopularSub}>No courses match "{searchQuery}". Try searching for 'Python', 'Web Dev', or 'AI'.</Text>
-          <Pressable onPress={() => setSearchQuery("")} style={styles.clearSearchBtn}>
-            <Text style={styles.clearSearchText}>Clear Search</Text>
+        <View style={[styles.emptyPopularCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <MaterialCommunityIcons name="magnify-remove-outline" size={32} color={theme.subtext} />
+          <Text style={[styles.emptyPopularTitle, { color: theme.text }]}>No Courses Found</Text>
+          <Text style={[styles.emptyPopularSub, { color: theme.subtext }]}>No courses match "{searchQuery}". Try searching for 'Python', 'Web Dev', or 'AI'.</Text>
+          <Pressable onPress={() => setSearchQuery("")} style={[styles.clearSearchBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+            <Text style={[styles.clearSearchText, { color: theme.primary }]}>Clear Search</Text>
           </Pressable>
         </View>
       )}
@@ -508,9 +511,9 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
       {expertMentors.length > 0 ? (
         <>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitleText}>Our Expert Mentors</Text>
+            <Text style={[styles.sectionTitleText, { color: theme.text }]}>Our Expert Mentors</Text>
             <Pressable onPress={() => (onOpenAllMentors ? onOpenAllMentors() : setAllMentorsModalOpen(true))}>
-              <Text style={styles.viewAllText}>View All Mentors ›</Text>
+              <Text style={[styles.viewAllText, { color: theme.primary }]}>View All Mentors ›</Text>
             </Pressable>
           </View>
 
@@ -521,13 +524,13 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               const initials = (mentor.name || "Mentor").split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "M";
 
               return (
-                <View key={mentor.id} style={[styles.mentorCard, { backgroundColor: mentor.cardBg || "#F6F4FF" }]}>
+                <View key={mentor.id} style={[styles.mentorCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                   <View style={styles.mentorTopRow}>
                     <View style={styles.mentorAvatarWrap}>
                       {hasRealAvatar ? (
                         <Image source={{ uri: mAvatar }} style={styles.mentorAvatarImg} />
                       ) : (
-                        <View style={[styles.mentorAvatarImg, { backgroundColor: "#5B3CF5", alignItems: "center", justifyContent: "center" }]}>
+                        <View style={[styles.mentorAvatarImg, { backgroundColor: theme.primary, alignItems: "center", justifyContent: "center" }]}>
                           <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#FFFFFF" }}>{initials}</Text>
                         </View>
                       )}
@@ -535,17 +538,17 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
                     </View>
                     <View style={styles.mentorInfoCol}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Text style={styles.mentorCardName} numberOfLines={1}>{mentor.name}</Text>
-                        <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                          <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                        <Text style={[styles.mentorCardName, { color: theme.text }]} numberOfLines={1}>{mentor.name}</Text>
+                        <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                          <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
                         </View>
                         {mentor.isPremium ? (
-                          <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                          <MaterialCommunityIcons name="check-decagram" size={13} color={theme.primary} style={{ marginLeft: 2 }} />
                         ) : null}
                       </View>
-                    <Text style={styles.mentorCardRole} numberOfLines={1}>{mentor.role}</Text>
-                    <View style={[styles.mentorBadgePill, { backgroundColor: mentor.badgeBg || "#F0EDFF" }]}>
-                      <Text style={[styles.mentorBadgeText, { color: mentor.badgeColor || "#5B3CF5" }]}>{mentor.badge}</Text>
+                    <Text style={[styles.mentorCardRole, { color: theme.subtext }]} numberOfLines={1}>{mentor.role}</Text>
+                    <View style={[styles.mentorBadgePill, { backgroundColor: theme.badgeBg }]}>
+                      <Text style={[styles.mentorBadgeText, { color: theme.primary }]}>{mentor.badge}</Text>
                     </View>
                   </View>
                 </View>
@@ -553,17 +556,17 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
                 <View style={styles.mentorMetaRow}>
                   <View style={styles.mentorRatingRow}>
                     <FontAwesome name="star" size={11} color="#FFB800" />
-                    <Text style={styles.mentorRatingVal}>{mentor.rating}</Text>
-                    <Text style={styles.mentorReviewsVal}>({mentor.reviews})</Text>
+                    <Text style={[styles.mentorRatingVal, { color: theme.text }]}>{mentor.rating}</Text>
+                    <Text style={[styles.mentorReviewsVal, { color: theme.subtext }]}>({mentor.reviews})</Text>
                   </View>
-                  <Text style={styles.mentorExpText}>{mentor.experience}</Text>
+                  <Text style={[styles.mentorExpText, { color: theme.subtext }]}>{mentor.experience}</Text>
                 </View>
 
                 <Pressable
                   onPress={() => (onSelectUser ? onSelectUser({ id: mentor.id, name: mentor.name, avatarUrl: mentor.avatarUrl, role: "mentor" }) : Alert.alert(mentor.name, mentor.role))}
-                  style={styles.viewProfileBtn}
+                  style={[styles.viewProfileBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border, borderWidth: 1 }]}
                 >
-                  <Text style={styles.viewProfileBtnText}>View Profile</Text>
+                  <Text style={[styles.viewProfileBtnText, { color: theme.primary }]}>View Profile</Text>
                 </Pressable>
               </View>
             );
@@ -593,9 +596,9 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
       {topCategories.length > 0 ? (
         <>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitleText}>Top Categories</Text>
+            <Text style={[styles.sectionTitleText, { color: theme.text }]}>Top Categories</Text>
             <Pressable onPress={() => Alert.alert("Top Categories", "Browse all 18 learning categories.")}>
-              <Text style={styles.viewAllText}>View All</Text>
+              <Text style={[styles.viewAllText, { color: theme.primary }]}>View All</Text>
             </Pressable>
           </View>
 
@@ -604,13 +607,13 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               <Pressable
                 key={cat.id}
                 onPress={() => Alert.alert("Category Selected", `Browsing ${cat.name} courses...`)}
-                style={styles.categoryCard}
+                style={[styles.categoryCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
               >
-                <View style={[styles.categoryIconWrap, { backgroundColor: cat.bgColor || "#F0EDFF" }]}>
-                  <MaterialCommunityIcons name={cat.icon || "code-tags"} size={22} color={cat.color || "#5B3CF5"} />
+                <View style={[styles.categoryIconWrap, { backgroundColor: cat.bgColor || (theme.isDark ? "#1E1B4B" : "#F0EDFF") }]}>
+                  <MaterialCommunityIcons name={cat.icon || "code-tags"} size={22} color={cat.color || theme.primary} />
                 </View>
-                <Text style={styles.categoryName}>{cat.name}</Text>
-                <Text style={styles.categoryCount}>{cat.coursesCount}</Text>
+                <Text style={[styles.categoryName, { color: theme.text }]} numberOfLines={1}>{cat.name}</Text>
+                <Text style={[styles.categoryCount, { color: theme.subtext }]}>{cat.coursesCount || "12+"} Courses</Text>
               </Pressable>
             ))}
           </ScrollView>

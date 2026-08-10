@@ -14,10 +14,12 @@ import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons
 import { getMentorDetails } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
 export default function MentorProfileScreen({ session, user = {}, targetMentor = null, mentorId, onClose, onOpenCourseDetails, onOpenChat, onEditCourse }) {
+  const { theme } = useTheme();
   const [mentor, setMentor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState(false);
@@ -140,91 +142,98 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
   const subjectsList = data.subjects || [];
   const expList = data.experiences || [];
   const ratings = data.ratingsOverview || fallbackMentor.ratingsOverview;
+  const themedSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
+  const themedSoftSurface = {
+    backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#F8F7FF",
+    borderColor: theme.border
+  };
+  const themedBadgeSurface = { backgroundColor: theme.badgeBg, borderColor: theme.border };
+  const accentColor = theme.primary;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Top Header Bar */}
-      <View style={styles.topHeader}>
-        <Pressable onPress={onClose} style={styles.headerIconBtn}>
-          <Feather name="arrow-left" size={20} color="#181725" />
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        <Pressable onPress={onClose} style={[styles.headerIconBtn, { backgroundColor: theme.badgeBg }]}>
+          <Feather name="arrow-left" size={20} color={theme.text} />
         </Pressable>
 
         <View style={styles.headerRightActions}>
-          <Pressable onPress={() => setBookmarked((p) => !p)} style={styles.headerIconBtn}>
-            <Feather name="bookmark" size={18} color={bookmarked ? "#5B3CF5" : "#181725"} fill={bookmarked ? "#5B3CF5" : "none"} />
+          <Pressable onPress={() => setBookmarked((p) => !p)} style={[styles.headerIconBtn, { backgroundColor: theme.badgeBg }]}>
+            <Feather name="bookmark" size={18} color={bookmarked ? theme.primary : theme.text} fill={bookmarked ? theme.primary : "none"} />
           </Pressable>
-          <Pressable onPress={() => Alert.alert("Options", "Share Mentor Profile, Report, or Copy Link")} style={styles.headerIconBtn}>
-            <Feather name="more-horizontal" size={20} color="#181725" />
+          <Pressable onPress={() => Alert.alert("Options", "Share Mentor Profile, Report, or Copy Link")} style={[styles.headerIconBtn, { backgroundColor: theme.badgeBg }]}>
+            <Feather name="more-horizontal" size={20} color={theme.text} />
           </Pressable>
         </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* 2. Top Mentor Header Card */}
-        <View style={styles.mentorHeroCard}>
+        <View style={[styles.mentorHeroCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.heroTopRow}>
             {/* Mentor Image */}
             <View style={styles.mentorImgWrap}>
               {data.avatarUrl && !data.avatarUrl.includes("photo-1507003211169-0a1dd7228f2d") && !(Platform.OS === "web" && typeof data.avatarUrl === "string" && data.avatarUrl.startsWith("file://")) ? (
-                <Image source={{ uri: data.avatarUrl }} style={styles.mentorImg} />
+                <Image source={{ uri: data.avatarUrl }} style={[styles.mentorImg, { borderColor: theme.border }]} />
               ) : (
-                <View style={styles.mentorInitialsWrap}>
+                <View style={[styles.mentorInitialsWrap, { backgroundColor: theme.primary, borderColor: theme.border }]}>
                   <Text style={styles.mentorInitialsText}>{mentorInitials}</Text>
                 </View>
               )}
-              <View style={styles.onlineDot} />
+              <View style={[styles.onlineDot, { borderColor: theme.cardBg }]} />
             </View>
 
             {/* Mentor Copy Right */}
             <View style={styles.heroRightCol}>
-              <View style={styles.topBadgePill}>
-                <Text style={styles.topBadgeText}>{data.badge}</Text>
+              <View style={[styles.topBadgePill, { backgroundColor: theme.badgeBg }]}>
+                <Text style={[styles.topBadgeText, { color: theme.primary }]}>{data.badge}</Text>
               </View>
 
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
-                <Text style={styles.mentorName}>{data.name}</Text>
-                <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                  <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                <Text style={[styles.mentorName, { color: theme.text }]}>{data.name}</Text>
+                <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                  <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
                 </View>
                 {data.isPremium ? (
-                  <MaterialCommunityIcons name="check-decagram" size={16} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                  <MaterialCommunityIcons name="check-decagram" size={16} color={theme.primary} style={{ marginLeft: 2 }} />
                 ) : null}
               </View>
 
-              <Text style={styles.mentorRole}>{data.role}</Text>
+              <Text style={[styles.mentorRole, { color: theme.subtext }]}>{data.role}</Text>
 
               {/* Rating & Students Meta */}
               <View style={styles.metaRow}>
                 <FontAwesome name="star" size={12} color="#FFB800" />
-                <Text style={styles.metaScore}>{data.rating}</Text>
-                <Text style={styles.metaReviews}>({data.reviewsCount} reviews)</Text>
-                <Text style={styles.metaDot}>•</Text>
-                <Feather name="users" size={11} color="#7C7C9A" />
-                <Text style={styles.metaStudents}>{data.studentsCount} Students</Text>
+                <Text style={[styles.metaScore, { color: theme.text }]}>{data.rating}</Text>
+                <Text style={[styles.metaReviews, { color: theme.subtext }]}>({data.reviewsCount} reviews)</Text>
+                <Text style={[styles.metaDot, { color: theme.subtext }]}>•</Text>
+                <Feather name="users" size={11} color={theme.subtext} />
+                <Text style={[styles.metaStudents, { color: theme.subtext }]}>{data.studentsCount} Students</Text>
               </View>
 
               {/* Tag Pills */}
               <View style={styles.tagPillsRow}>
                 {data.tags.map((t, i) => (
-                  <View key={i} style={[styles.tagPill, { backgroundColor: t.bg }]}>
-                    <Text style={[styles.tagPillText, { color: t.color }]}>{t.label}</Text>
+                  <View key={i} style={[styles.tagPill, { backgroundColor: theme.isDark ? "#1E263B" : t.bg }]}>
+                    <Text style={[styles.tagPillText, { color: theme.isDark ? "#C7D2FE" : t.color }]}>{t.label}</Text>
                   </View>
                 ))}
               </View>
             </View>
           </View>
 
-          <Text style={styles.bioText}>{data.bio}</Text>
+          <Text style={[styles.bioText, { color: theme.subtext }]}>{data.bio}</Text>
         </View>
 
         {/* 3. Action Buttons Row */}
         <View style={styles.actionsRow}>
           <Pressable
             onPress={() => (onOpenChat ? onOpenChat(data) : Alert.alert("Message Mentor", `Opening chat with ${data.name}...`))}
-            style={styles.msgBtn}
+            style={[styles.msgBtn, { backgroundColor: theme.cardBg, borderColor: theme.primary }]}
           >
-            <Feather name="message-circle" size={18} color="#5B3CF5" style={{ marginRight: 6 }} />
-            <Text style={styles.msgBtnText}>Message</Text>
+            <Feather name="message-circle" size={18} color={theme.primary} style={{ marginRight: 6 }} />
+            <Text style={[styles.msgBtnText, { color: theme.primary }]}>Message</Text>
           </Pressable>
 
           <Pressable
@@ -237,32 +246,32 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
         </View>
 
         {/* 4. Stats Grid Row */}
-        <View style={styles.statsGrid}>
+        <View style={[styles.statsGrid, themedSurface]}>
           {statsList.map((st, i) => (
             <View key={i} style={styles.statCard}>
-              <View style={styles.statIconCircle}>
-                <MaterialCommunityIcons name={st.icon} size={20} color="#5B3CF5" />
+              <View style={[styles.statIconCircle, { backgroundColor: theme.badgeBg }]}>
+                <MaterialCommunityIcons name={st.icon} size={20} color={accentColor} />
               </View>
-              <Text style={styles.statVal}>{st.title}</Text>
-              <Text style={styles.statSub}>{st.sub}</Text>
+              <Text style={[styles.statVal, { color: theme.text }]}>{st.title}</Text>
+              <Text style={[styles.statSub, { color: theme.subtext }]}>{st.sub}</Text>
             </View>
           ))}
         </View>
 
         {/* 5. About Me Section */}
-        <Text style={styles.sectionTitle}>About Me</Text>
-        <View style={styles.aboutCard}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>About Me</Text>
+        <View style={[styles.aboutCard, themedSurface]}>
           <View style={styles.aboutTextCol}>
-            <Text style={styles.aboutDescText}>{data.about}</Text>
+            <Text style={[styles.aboutDescText, { color: theme.subtext }]}>{data.about}</Text>
           </View>
           <View style={styles.aboutGraphicCol}>
-            <MaterialCommunityIcons name="laptop" size={54} color="#5B3CF5" />
+            <MaterialCommunityIcons name="laptop" size={54} color={accentColor} />
           </View>
         </View>
 
         {/* 6. Subjects I Mentor */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Subjects I Mentor</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Subjects I Mentor</Text>
           <Pressable onPress={() => Alert.alert("Subjects", "Showing all mentored topics.")}>
             <Text style={styles.viewAllText}>View All ›</Text>
           </Pressable>
@@ -270,20 +279,20 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContent}>
           {subjectsList.map((sub) => (
-            <View key={sub.id} style={styles.subjectCard}>
-              <View style={[styles.subjectIconWrap, { backgroundColor: sub.bg }]}>
-                <MaterialCommunityIcons name={sub.icon} size={22} color="#5B3CF5" />
+            <View key={sub.id} style={[styles.subjectCard, themedSurface]}>
+              <View style={[styles.subjectIconWrap, { backgroundColor: theme.isDark ? theme.badgeBg : sub.bg }]}>
+                <MaterialCommunityIcons name={sub.icon} size={22} color={accentColor} />
               </View>
-              <Text style={styles.subjectTitle}>{sub.title}</Text>
-              <Text style={styles.subjectDesc}>{sub.desc}</Text>
+              <Text style={[styles.subjectTitle, { color: theme.text }]}>{sub.title}</Text>
+              <Text style={[styles.subjectDesc, { color: theme.subtext }]}>{sub.desc}</Text>
             </View>
           ))}
         </ScrollView>
 
         {/* 6.5. Courses Uploaded by Mentor */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Courses by {data.name?.split(" ")[0] || "Mentor"}</Text>
-          <Text style={styles.viewAllText}>{data.courses?.length || 0} Published</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Courses by {data.name?.split(" ")[0] || "Mentor"}</Text>
+          <Text style={[styles.viewAllText, { color: theme.primary }]}>{data.courses?.length || 0} Published</Text>
         </View>
 
         {data.courses && data.courses.length > 0 ? (
@@ -292,7 +301,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
               <Pressable
                 key={course.id}
                 onPress={() => onOpenCourseDetails && onOpenCourseDetails(course.id)}
-                style={styles.mentorCourseCard}
+                style={[styles.mentorCourseCard, themedSurface]}
               >
                 <Image source={{ uri: course.imageUrl || course.image }} style={styles.mentorCourseImg} />
                 
@@ -322,58 +331,58 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
                 ) : null}
 
                 <View style={styles.mentorCourseContent}>
-                  <View style={styles.badgePillSmall}>
-                    <Text style={styles.badgePillSmallText}>{course.category || "TCM Course"}</Text>
+                  <View style={[styles.badgePillSmall, { backgroundColor: theme.badgeBg }]}>
+                    <Text style={[styles.badgePillSmallText, { color: theme.primary }]}>{course.category || "TCM Course"}</Text>
                   </View>
-                  <Text numberOfLines={2} style={styles.mentorCourseTitle}>
+                  <Text numberOfLines={2} style={[styles.mentorCourseTitle, { color: theme.text }]}>
                     {course.title}
                   </Text>
                   <View style={styles.mentorCourseMetaRow}>
                     <FontAwesome name="star" size={11} color="#FFB800" />
-                    <Text style={styles.mentorCourseRating}>{course.rating || "5.0"}</Text>
-                    <Text style={styles.mentorCoursePrice}>{course.price || "₹1,499"}</Text>
+                    <Text style={[styles.mentorCourseRating, { color: theme.text }]}>{course.rating || "5.0"}</Text>
+                    <Text style={[styles.mentorCoursePrice, { color: theme.primary }]}>{course.price || "₹1,499"}</Text>
                   </View>
                 </View>
               </Pressable>
             ))}
           </ScrollView>
         ) : (
-          <View style={styles.emptyCourseBox}>
+          <View style={[styles.emptyCourseBox, themedSoftSurface]}>
             <MaterialCommunityIcons name="book-open-page-variant" size={24} color="#A0A0B8" />
-            <Text style={styles.emptyCourseText}>No courses uploaded yet by this mentor.</Text>
+            <Text style={[styles.emptyCourseText, { color: theme.subtext }]}>No courses uploaded yet by this mentor.</Text>
           </View>
         )}
 
         {/* 7. Experience Timeline */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Experience</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Experience</Text>
           <Pressable onPress={() => Alert.alert("Experience", "Viewing career history.")}>
             <Text style={styles.viewAllText}>View All</Text>
           </Pressable>
         </View>
 
-        <View style={styles.experienceCard}>
+        <View style={[styles.experienceCard, themedSurface]}>
           {expList.map((exp, index) => (
             <View key={exp.id} style={styles.expRowWrapper}>
               {/* Stepper Node Left */}
               <View style={styles.stepperCol}>
-                <View style={styles.stepperNodeDot} />
-                {index < expList.length - 1 ? <View style={styles.stepperVerticalLine} /> : null}
+                <View style={[styles.stepperNodeDot, { backgroundColor: theme.primary }]} />
+                {index < expList.length - 1 ? <View style={[styles.stepperVerticalLine, { backgroundColor: theme.border }]} /> : null}
               </View>
 
               {/* Item Content */}
-              <View style={styles.expContentRow}>
-                <View style={styles.companyLogoWrap}>
+              <View style={[styles.expContentRow, themedSoftSurface]}>
+                <View style={[styles.companyLogoWrap, { backgroundColor: theme.cardBg }]}>
                   <MaterialCommunityIcons name={exp.icon || "domain"} size={22} color={exp.iconColor || "#5B3CF5"} />
                 </View>
 
                 <View style={styles.expTextCol}>
-                  <Text style={styles.expRoleTitle}>{exp.role}</Text>
-                  <Text style={styles.expCompanyText}>{exp.company}</Text>
+                  <Text style={[styles.expRoleTitle, { color: theme.text }]}>{exp.role}</Text>
+                  <Text style={[styles.expCompanyText, { color: theme.subtext }]}>{exp.company}</Text>
                 </View>
 
-                <View style={styles.durationPill}>
-                  <Text style={styles.durationPillText}>{exp.durationPill}</Text>
+                <View style={[styles.durationPill, { backgroundColor: theme.badgeBg }]}>
+                  <Text style={[styles.durationPillText, { color: theme.primary }]}>{exp.durationPill}</Text>
                 </View>
               </View>
             </View>
@@ -384,15 +393,15 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
         {data.certifications && data.certifications.length > 0 ? (
           <>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Certifications & Achievements</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Certifications & Achievements</Text>
             </View>
-            <View style={styles.certCardContainer}>
+            <View style={[styles.certCardContainer, themedSurface]}>
               {data.certifications.map((cert, cIdx) => (
                 <View key={cIdx} style={styles.certRow}>
-                  <View style={styles.certBadgeIcon}>
+                  <View style={[styles.certBadgeIcon, { backgroundColor: theme.badgeBg }]}>
                     <MaterialCommunityIcons name="certificate" size={18} color="#2E7D32" />
                   </View>
-                  <Text style={styles.certTitleText}>{typeof cert === "string" ? cert : cert.title}</Text>
+                  <Text style={[styles.certTitleText, { color: theme.text }]}>{typeof cert === "string" ? cert : cert.title}</Text>
                 </View>
               ))}
             </View>
@@ -403,13 +412,13 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
         {data.interests && data.interests.length > 0 ? (
           <>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Interests & Specializations</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Interests & Specializations</Text>
             </View>
             <View style={styles.interestsWrap}>
               {data.interests.map((tag, tIdx) => (
-                <View key={tIdx} style={styles.interestPill}>
-                  <MaterialCommunityIcons name="star-four-points" size={12} color="#5B3CF5" style={{ marginRight: 4 }} />
-                  <Text style={styles.interestPillText}>{typeof tag === "string" ? tag : tag.label}</Text>
+                <View key={tIdx} style={[styles.interestPill, themedBadgeSurface]}>
+                  <MaterialCommunityIcons name="star-four-points" size={12} color={theme.primary} style={{ marginRight: 4 }} />
+                  <Text style={[styles.interestPillText, { color: theme.primary }]}>{typeof tag === "string" ? tag : tag.label}</Text>
                 </View>
               ))}
             </View>
@@ -418,43 +427,43 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
 
         {/* 8. Ratings & Reviews */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Ratings & Reviews</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Ratings & Reviews</Text>
           <Pressable onPress={() => Alert.alert("Reviews", "Showing all student reviews.")}>
             <Text style={styles.viewAllText}>View All</Text>
           </Pressable>
         </View>
 
-        <View style={styles.reviewsOverviewCard}>
+        <View style={[styles.reviewsOverviewCard, themedSurface]}>
           {/* Left Rating Summary */}
-          <View style={styles.reviewsSummaryLeft}>
-            <Text style={styles.bigScoreText}>{ratings.score}</Text>
+          <View style={[styles.reviewsSummaryLeft, { borderRightColor: theme.border }]}>
+            <Text style={[styles.bigScoreText, { color: theme.text }]}>{ratings.score}</Text>
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((s) => (
                 <FontAwesome key={s} name="star" size={11} color="#FFB800" />
               ))}
             </View>
-            <Text style={styles.reviewsCountText}>{ratings.reviewsLabel}</Text>
+            <Text style={[styles.reviewsCountText, { color: theme.subtext }]}>{ratings.reviewsLabel}</Text>
 
             {/* Bars */}
             <View style={styles.ratingBarsCol}>
               {ratings.breakdown.map((b) => (
                 <View key={b.star} style={styles.barRow}>
-                  <Text style={styles.starLabelText}>{b.star}</Text>
-                  <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { width: `${b.percent}%` }]} />
+                  <Text style={[styles.starLabelText, { color: theme.subtext }]}>{b.star}</Text>
+                  <View style={[styles.barTrack, { backgroundColor: theme.isDark ? "#1E263B" : "#F4F3FA" }]}>
+                    <View style={[styles.barFill, { backgroundColor: theme.primary, width: `${b.percent}%` }]} />
                   </View>
-                  <Text style={styles.percentText}>{b.percent}%</Text>
+                  <Text style={[styles.percentText, { color: theme.subtext }]}>{b.percent}%</Text>
                 </View>
               ))}
             </View>
           </View>
 
           {/* Right Featured Review Card */}
-          <View style={styles.featuredReviewCard}>
+          <View style={[styles.featuredReviewCard, themedSoftSurface]}>
             <View style={styles.reviewAuthorRow}>
               <Image source={{ uri: ratings.featuredReview.authorAvatar }} style={styles.reviewAvatar} />
               <View style={styles.reviewAuthorWrap}>
-                <Text style={styles.reviewAuthorName}>{ratings.featuredReview.authorName}</Text>
+                <Text style={[styles.reviewAuthorName, { color: theme.text }]}>{ratings.featuredReview.authorName}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 2 }}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <FontAwesome key={s} name="star" size={10} color="#FFB800" />
@@ -463,21 +472,21 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
                 </View>
               </View>
             </View>
-            <Text style={styles.reviewBodyText}>"{ratings.featuredReview.text}"</Text>
-            <MaterialCommunityIcons name="format-quote-close" size={32} color="#EAE7FF" style={styles.quoteIcon} />
+            <Text style={[styles.reviewBodyText, { color: theme.subtext }]}>"{ratings.featuredReview.text}"</Text>
+            <MaterialCommunityIcons name="format-quote-close" size={32} color={theme.border} style={styles.quoteIcon} />
           </View>
         </View>
       </ScrollView>
 
       {/* 9. Sticky Bottom Booking Bar */}
-      <View style={styles.stickyPurchaseBar}>
+      <View style={[styles.stickyPurchaseBar, { backgroundColor: theme.cardBg, borderTopColor: theme.border }]}>
         <View style={styles.stickyLeftCol}>
-          <View style={styles.stickyIconCircle}>
-            <Feather name="calendar" size={18} color="#5B3CF5" />
+          <View style={[styles.stickyIconCircle, { backgroundColor: theme.badgeBg }]}>
+            <Feather name="calendar" size={18} color={theme.primary} />
           </View>
           <View style={styles.stickyTextWrap}>
-            <Text style={styles.stickyTitle}>Want to learn from {data.name.split(" ")[0]}?</Text>
-            <Text style={styles.stickySub}>Book a 1:1 session and achieve your goals.</Text>
+            <Text style={[styles.stickyTitle, { color: theme.text }]}>Want to learn from {data.name.split(" ")[0]}?</Text>
+            <Text style={[styles.stickySub, { color: theme.subtext }]}>Book a 1:1 session and achieve your goals.</Text>
           </View>
         </View>
 

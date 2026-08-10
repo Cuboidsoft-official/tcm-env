@@ -622,6 +622,15 @@ export function getPostComments(token, postId) {
   });
 }
 
+export function deletePostComment(token, postId, commentId) {
+  return request(`/home/post/${postId}/comment/${commentId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
 export function sharePost(token, postId) {
   return request(`/home/post/${postId}/share`, {
     method: "POST",

@@ -28,6 +28,7 @@
     "android": {
       "package": "com.tcm.app",
       "versionCode": 2,
+      "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

@@ -19,6 +19,7 @@ import { getContinueLearningDetails, submitClassReflection } from "../api/client
 import { generateMcqQuizWithGemini, generateClassNotesWithGemini } from "../api/gemini";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
@@ -87,6 +88,7 @@ const reflectionQuestions = [
 ];
 
 export default function ContinueLearningScreen({ session, user = {}, onBack, onNotifications, onOpenCourseDetails }) {
+  const { theme } = useTheme();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState(false);
@@ -325,42 +327,46 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
     });
   }
 
+  const themedSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
+  const themedSoftSurface = { backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#F9F8FE", borderColor: theme.border };
+  const themedBadgeSurface = { backgroundColor: theme.badgeBg, borderColor: theme.border };
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Top Header Bar */}
-      <View style={styles.topHeader}>
+      <View style={[styles.topHeader, themedSurface]}>
         <View style={styles.headerLeft}>
-          <Pressable onPress={onBack} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#181725" />
+          <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.badgeBg }]}>
+            <Feather name="arrow-left" size={20} color={theme.text} />
           </Pressable>
           <View style={styles.titleWrap}>
-            <Text style={styles.screenTitle}>Continue Learning</Text>
-            <Text style={styles.screenSub}>Stay consistent, achieve your goals 🚀</Text>
+            <Text style={[styles.screenTitle, { color: theme.text }]}>Continue Learning</Text>
+            <Text style={[styles.screenSub, { color: theme.subtext }]}>Stay consistent, achieve your goals 🚀</Text>
           </View>
         </View>
 
-        <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", "You have learning notifications."))} style={styles.headerIconBtn}>
-          <Feather name="bell" size={18} color="#181725" />
+        <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", "You have learning notifications."))} style={[styles.headerIconBtn, { backgroundColor: theme.badgeBg }]}>
+          <Feather name="bell" size={18} color={theme.text} />
           <View style={styles.notifDot} />
         </Pressable>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* 2. Top Live Class Banner Card (Original Clean Design) */}
-        <View style={styles.liveClassCard}>
+        <View style={[styles.liveClassCard, themedSurface]}>
           <View style={styles.liveTopRow}>
-            <View style={styles.liveTagPill}>
-              <Text style={styles.liveTagText}>{payload.liveClass.tag}</Text>
+            <View style={[styles.liveTagPill, { backgroundColor: theme.badgeBg }]}>
+              <Text style={[styles.liveTagText, { color: theme.primary }]}>{payload.liveClass.tag}</Text>
             </View>
-            <Text style={styles.liveTimeText}>{payload.liveClass.time}</Text>
+            <Text style={[styles.liveTimeText, { color: theme.subtext }]}>{payload.liveClass.time}</Text>
           </View>
 
           <View style={styles.liveTitleRow}>
             <View style={styles.liveTitleLeft}>
-              <Text style={styles.liveTitle}>{payload.liveClass.title}</Text>
+              <Text style={[styles.liveTitle, { color: theme.text }]}>{payload.liveClass.title}</Text>
               <View style={styles.instructorRow}>
-                <Text style={styles.instructorPrefix}>with </Text>
-                <Text style={styles.instructorName}>{payload.liveClass.instructor}</Text>
+                <Text style={[styles.instructorPrefix, { color: theme.subtext }]}>with </Text>
+                <Text style={[styles.instructorName, { color: theme.text }]}>{payload.liveClass.instructor}</Text>
                 <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 3 }} />
               </View>
 
@@ -370,18 +376,18 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                   {(payload.liveClass?.avatars || []).map((url, i) => (
                     <Image key={i} source={{ uri: url }} style={[styles.avatarStackImg, { left: i * 16 }]} />
                   ))}
-                  <View style={[styles.moreLearnersPill, { left: (payload.liveClass?.avatars?.length || 4) * 16 }]}>
-                    <Text style={styles.moreLearnersText}>+256</Text>
+                  <View style={[styles.moreLearnersPill, { backgroundColor: theme.badgeBg, borderColor: theme.cardBg, left: (payload.liveClass?.avatars?.length || 4) * 16 }]}>
+                    <Text style={[styles.moreLearnersText, { color: theme.primary }]}>+256</Text>
                   </View>
                 </View>
-                <Text style={styles.joiningText}>{payload.liveClass?.joiningText || "342 learners ready"}</Text>
+                <Text style={[styles.joiningText, { color: theme.subtext }]}>{payload.liveClass?.joiningText || "342 learners ready"}</Text>
               </View>
             </View>
 
             {/* Right Live Broadcast Pulse Graphic */}
             <View style={styles.liveGraphicWrap}>
-              <View style={styles.livePulseCircle}>
-                <MaterialCommunityIcons name="broadcast" size={28} color="#5B3CF5" />
+              <View style={[styles.livePulseCircle, { backgroundColor: theme.badgeBg }]}>
+                <MaterialCommunityIcons name="broadcast" size={28} color={theme.primary} />
                 <View style={styles.liveBadgeSmall}>
                   <Text style={styles.liveBadgeSmallText}>LIVE</Text>
                 </View>
@@ -391,60 +397,60 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
 
           {/* Action Row */}
           <View style={styles.liveActionsRow}>
-            <Pressable onPress={handleJoinLiveClass} style={styles.joinLiveBtn}>
+            <Pressable onPress={handleJoinLiveClass} style={[styles.joinLiveBtn, { backgroundColor: theme.primary }]}>
               <Text style={styles.joinLiveBtnText}>Join Live Class →</Text>
             </Pressable>
 
-            <Pressable onPress={() => setBookmarked((p) => !p)} style={styles.bookmarkBtn}>
-              <Feather name="bookmark" size={18} color={bookmarked ? "#5B3CF5" : "#181725"} fill={bookmarked ? "#5B3CF5" : "none"} />
+            <Pressable onPress={() => setBookmarked((p) => !p)} style={[styles.bookmarkBtn, { backgroundColor: theme.badgeBg }]}>
+              <Feather name="bookmark" size={18} color={bookmarked ? theme.primary : theme.text} fill={bookmarked ? theme.primary : "none"} />
             </Pressable>
           </View>
         </View>
 
         {/* 3. Your Progress Section */}
-        <Text style={styles.sectionTitle}>Your Progress</Text>
-        <View style={styles.progressCard}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Your Progress</Text>
+        <View style={[styles.progressCard, themedSurface]}>
           <View style={styles.progressCol}>
             <View style={styles.circleProgressRing}>
-              <Text style={styles.circlePercentText}>{prog.courseProgress}%</Text>
+              <Text style={[styles.circlePercentText, { color: theme.primary }]}>{prog.courseProgress}%</Text>
             </View>
-            <Text style={styles.progressLabel}>Course Progress</Text>
+            <Text style={[styles.progressLabel, { color: theme.subtext }]}>Course Progress</Text>
           </View>
 
-          <View style={styles.progressDivider} />
+          <View style={[styles.progressDivider, { backgroundColor: theme.border }]} />
 
           <View style={styles.progressCol}>
             <View style={styles.metricIconWrap}>
               <MaterialCommunityIcons name="fire" size={22} color="#FF6D00" />
             </View>
-            <Text style={styles.metricVal}>{prog.dayStreak}</Text>
-            <Text style={styles.progressLabel}>Day Streak</Text>
+            <Text style={[styles.metricVal, { color: theme.text }]}>{prog.dayStreak}</Text>
+            <Text style={[styles.progressLabel, { color: theme.subtext }]}>Day Streak</Text>
           </View>
 
-          <View style={styles.progressDivider} />
+          <View style={[styles.progressDivider, { backgroundColor: theme.border }]} />
 
           <View style={styles.progressCol}>
             <View style={styles.metricIconWrap}>
               <MaterialCommunityIcons name="medal-outline" size={22} color="#5B3CF5" />
             </View>
-            <Text style={styles.metricVal}>{prog.xpPoints}</Text>
-            <Text style={styles.progressLabel}>XP Points</Text>
+            <Text style={[styles.metricVal, { color: theme.text }]}>{prog.xpPoints}</Text>
+            <Text style={[styles.progressLabel, { color: theme.subtext }]}>XP Points</Text>
           </View>
 
-          <View style={styles.progressDivider} />
+          <View style={[styles.progressDivider, { backgroundColor: theme.border }]} />
 
           <View style={styles.progressCol}>
             <View style={styles.metricIconWrap}>
               <MaterialCommunityIcons name="certificate-outline" size={22} color="#2E7D32" />
             </View>
-            <Text style={styles.metricVal}>{prog.certificates}</Text>
-            <Text style={styles.progressLabel}>Certificates</Text>
+            <Text style={[styles.metricVal, { color: theme.text }]}>{prog.certificates}</Text>
+            <Text style={[styles.progressLabel, { color: theme.subtext }]}>Certificates</Text>
           </View>
         </View>
 
         {/* 4. Learning Journey Section (Accordion System) */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Learning Journey</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Learning Journey</Text>
           <Pressable onPress={() => Alert.alert("Roadmap", "Opening full web development learning roadmap.")}>
             <Text style={styles.viewRoadmapText}>View Roadmap ›</Text>
           </Pressable>
@@ -506,16 +512,16 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                   {/* Module Card Accordion Header */}
                   <Pressable
                     onPress={() => setExpandedModuleId(isExpanded ? null : item.id)}
-                    style={({ pressed }) => [styles.moduleCardHeader, pressed && styles.pressed]}
+                  style={({ pressed }) => [styles.moduleCardHeader, themedSurface, pressed && styles.pressed]}
                   >
                     <View style={styles.moduleHeaderLeft}>
-                      <View style={styles.moduleIconBox}>
+                      <View style={[styles.moduleIconBox, { backgroundColor: theme.badgeBg }]}>
                         <MaterialCommunityIcons name={item.icon || "code-tags"} size={18} color={isInProgress ? "#5B3CF5" : isCompleted ? "#2E7D32" : "#A0A0B8"} />
                       </View>
                       <View style={{ marginLeft: 10, flex: 1 }}>
-                        <Text style={styles.moduleNumText}>{item.moduleNum}</Text>
-                        <Text style={styles.moduleTitleText}>{item.title}</Text>
-                        {item.sub ? <Text style={styles.moduleSubText}>{item.sub}</Text> : null}
+                        <Text style={[styles.moduleNumText, { color: theme.subtext }]}>{item.moduleNum}</Text>
+                        <Text style={[styles.moduleTitleText, { color: theme.text }]}>{item.title}</Text>
+                        {item.sub ? <Text style={[styles.moduleSubText, { color: theme.primary }]}>{item.sub}</Text> : null}
                       </View>
                     </View>
 
@@ -529,8 +535,8 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                           <Text style={styles.joinNowBtnText}>Join Now ›</Text>
                         </Pressable>
                       ) : (
-                        <View style={styles.upcomingBadge}>
-                          <Text style={styles.upcomingBadgeText}>Locked</Text>
+                        <View style={[styles.upcomingBadge, { backgroundColor: theme.isDark ? "#1E263B" : "#F4F3FA" }]}>
+                          <Text style={[styles.upcomingBadgeText, { color: theme.subtext }]}>Locked</Text>
                         </View>
                       )}
 
@@ -546,19 +552,19 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                       <View style={[
                         styles.reflectionAccordionCard,
                         {
-                          backgroundColor: !prevCompleted ? "#FFF8F6" : "#FFFDF0",
-                          borderColor: !prevCompleted ? "#FFDCD6" : "#FDE68A",
+                          backgroundColor: !prevCompleted ? (theme.isDark ? "#3A2118" : "#FFF8F6") : (theme.isDark ? "#332B14" : "#FFFDF0"),
+                          borderColor: !prevCompleted ? (theme.isDark ? "#7C2D12" : "#FFDCD6") : (theme.isDark ? "#713F12" : "#FDE68A"),
                           borderWidth: 1,
                           padding: 14
                         }
                       ]}>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
                           <Feather name={!prevCompleted ? "lock" : "clock"} size={16} color={!prevCompleted ? "#E76F51" : "#D97706"} style={{ marginRight: 8 }} />
-                          <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: !prevCompleted ? "#D9381E" : "#B45309", flex: 1 }}>
+                          <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: !prevCompleted ? "#F97316" : "#FBBF24", flex: 1 }}>
                             {!prevCompleted ? "Class Locked: Previous Session Pending" : "Class Locked: Waiting for Mentor Joining Link"}
                           </Text>
                         </View>
-                        <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: !prevCompleted ? "#66443D" : "#78350F", marginTop: 4 }}>
+                        <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: theme.isDark ? "#FED7AA" : (!prevCompleted ? "#66443D" : "#78350F"), marginTop: 4 }}>
                           {!prevCompleted
                             ? `Please complete Day ${index}'s Feedback & 10-MCQs Practice Quiz to unlock this session.`
                             : `You completed Day ${index}'s feedback & quiz! Day ${index + 1} will unlock as soon as your mentor adds the live class joining link.`}
@@ -567,9 +573,9 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                     ) : (
                       <>
                         {/* 1. Mentor Class Feedback & Rating Card */}
-                        <View style={styles.reflectionAccordionCard}>
+                        <View style={[styles.reflectionAccordionCard, themedSurface]}>
                           <View style={styles.reflectionTitleRow}>
-                            <Text style={styles.reflectionTitleText}>Step 1: Class & Mentor Feedback</Text>
+                            <Text style={[styles.reflectionTitleText, { color: theme.text }]}>Step 1: Class & Mentor Feedback</Text>
                             {hasFeedback ? (
                               <View style={styles.completedTagPill}>
                                 <Feather name="check-circle" size={11} color="#2E7D32" style={{ marginRight: 3 }} />
@@ -577,7 +583,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                               </View>
                             ) : null}
                           </View>
-                          <Text style={styles.reflectionSubtitleText}>
+                          <Text style={[styles.reflectionSubtitleText, { color: theme.subtext }]}>
                             Share your feedback for {payload.mentorName || "your Mentor"} for today's session.
                           </Text>
 
@@ -588,7 +594,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                                 const isRatingQ = q.id === "q5";
 
                                 return (
-                                  <View key={q.id} style={styles.qAccordionRow}>
+                                  <View key={q.id} style={[styles.qAccordionRow, themedSoftSurface]}>
                                     <Pressable
                                       onPress={() => setExpandedQuestionId(isQExpanded ? null : q.id)}
                                       style={styles.qAccordionHeader}
@@ -597,7 +603,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                                         <View style={[styles.qIconCircle, { backgroundColor: q.iconBg }]}>
                                           <Feather name={q.icon} size={13} color={q.iconColor} />
                                         </View>
-                                        <Text style={styles.qHeaderText}>
+                                        <Text style={[styles.qHeaderText, { color: theme.text }]}>
                                           {q.num} {q.question}
                                         </Text>
                                       </View>
@@ -623,10 +629,10 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                                                 <Pressable
                                                   key={opt.label}
                                                   onPress={() => setAnswers((prev) => ({ ...prev, [q.id]: opt.label }))}
-                                                  style={[styles.optChip, selected && styles.optChipSelected]}
+                                                  style={[styles.optChip, { backgroundColor: theme.cardBg, borderColor: theme.border }, selected && { backgroundColor: theme.badgeBg, borderColor: theme.primary }]}
                                                 >
                                                   <Feather name={opt.optIcon} size={12} color={selected ? "#5B3CF5" : opt.optColor} style={{ marginRight: 5 }} />
-                                                  <Text style={[styles.optChipText, selected && styles.optChipTextSelected]}>
+                                                  <Text style={[styles.optChipText, { color: theme.subtext }, selected && { color: theme.primary, fontFamily: fonts.bold }]}>
                                                     {opt.label}
                                                   </Text>
                                                 </Pressable>
@@ -645,12 +651,12 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                                   value={feedbackNote}
                                   onChangeText={setFeedbackNote}
                                   placeholder={`Feedback note for ${payload.mentorName || "Mentor"} (Optional)...`}
-                                  placeholderTextColor="#A0A0B8"
-                                  style={styles.feedbackInput}
+                                  placeholderTextColor={theme.subtext}
+                                  style={[styles.feedbackInput, { backgroundColor: theme.inputBg || theme.bg, borderColor: theme.border, color: theme.text }]}
                                 />
                               </View>
 
-                              <View style={styles.reflectionFooterRow}>
+                              <View style={[styles.reflectionFooterRow, { borderTopColor: theme.border }]}>
                                 <View style={styles.footerLockNotice}>
                                   <Feather name="shield" size={12} color="#5B3CF5" style={{ marginRight: 4 }} />
                                   <Text style={styles.footerLockText}>Feedback unlocks 10-MCQs Practice Quiz.</Text>
@@ -679,11 +685,11 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                         </View>
 
                         {/* 2. AI 10-MCQs Practice Quiz Card */}
-                        <View style={[styles.reflectionAccordionCard, { marginTop: 12, backgroundColor: "#FAF8FF", borderColor: "#E5DEFF", borderWidth: 1 }]}>
+                        <View style={[styles.reflectionAccordionCard, themedSurface, { marginTop: 12 }]}>
                           <View style={styles.reflectionTitleRow}>
                             <View style={{ flexDirection: "row", alignItems: "center" }}>
                               <MaterialCommunityIcons name="lightning-bolt" size={18} color="#5B3CF5" style={{ marginRight: 4 }} />
-                              <Text style={[styles.reflectionTitleText, { color: "#5B3CF5" }]}>Step 2: 10-MCQ Practice Quiz</Text>
+                              <Text style={[styles.reflectionTitleText, { color: theme.primary }]}>Step 2: 10-MCQ Practice Quiz</Text>
                             </View>
                             {hasQuiz ? (
                               <View style={[styles.completedTagPill, { backgroundColor: "#ECF9E9" }]}>
@@ -692,14 +698,14 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                               </View>
                             ) : null}
                           </View>
-                          <Text style={styles.reflectionSubtitleText}>
+                          <Text style={[styles.reflectionSubtitleText, { color: theme.subtext }]}>
                             Test your understanding of "{item.title}" with 10 questions generated by AI.
                           </Text>
 
                           {!hasFeedback ? (
-                            <View style={{ backgroundColor: "#F3F4F6", padding: 10, borderRadius: 8, marginTop: 8, flexDirection: "row", alignItems: "center" }}>
+                            <View style={{ backgroundColor: theme.isDark ? "#1E263B" : "#F3F4F6", padding: 10, borderRadius: 8, marginTop: 8, flexDirection: "row", alignItems: "center" }}>
                               <Feather name="lock" size={14} color="#6B7280" style={{ marginRight: 6 }} />
-                              <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: "#4B5563" }}>
+                              <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.subtext }}>
                                 Submit Mentor Feedback above first to unlock today's Quiz.
                               </Text>
                             </View>
@@ -951,13 +957,13 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
         </View>
 
         {/* 5. What's Next Section */}
-        <Text style={styles.sectionTitle}>What's Next?</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>What's Next?</Text>
         <View style={styles.whatsNextGrid}>
           {(payload.whatsNext || []).map((item) => (
             <Pressable
               key={item.id}
               onPress={() => (item.meetingUrl ? handleJoinLiveClass() : Alert.alert(item.title, item.sub))}
-              style={({ pressed }) => [styles.nextCard, { backgroundColor: item.bg }, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.nextCard, theme.isDark ? themedSurface : { backgroundColor: item.bg }, pressed && styles.pressed]}
             >
               <View style={styles.nextCardHeader}>
                 <MaterialCommunityIcons name={item.icon} size={22} color={item.color} />
@@ -969,8 +975,8 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
                 </Pressable>
               </View>
 
-              <Text style={styles.nextCardTitle}>{item.title}</Text>
-              <Text style={styles.nextCardSub}>{item.sub}</Text>
+              <Text style={[styles.nextCardTitle, { color: theme.text }]}>{item.title}</Text>
+              <Text style={[styles.nextCardSub, { color: theme.subtext }]}>{item.sub}</Text>
             </Pressable>
           ))}
         </View>
@@ -979,7 +985,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
       {/* MODAL: MENTOR PDF DOCUMENT READER */}
       <Modal visible={showDocReaderModal} transparent animationType="slide" onRequestClose={() => setShowDocReaderModal(false)}>
         <View style={{ flex: 1, backgroundColor: "rgba(15, 23, 42, 0.8)", justifyContent: "center", alignItems: "center", padding: 12 }}>
-          <View style={{ width: "100%", maxWidth: 880, height: "88%", backgroundColor: "#FFFFFF", borderRadius: 16, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.25, shadowRadius: 20, elevation: 10 }}>
+          <View style={{ width: "100%", maxWidth: 880, height: "88%", backgroundColor: theme.cardBg, borderRadius: 16, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.25, shadowRadius: 20, elevation: 10 }}>
             {/* Reader Toolbar Header */}
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#0F172A", borderBottomWidth: 1, borderBottomColor: "#1E293B" }}>
               <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
@@ -1008,35 +1014,35 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
             </View>
 
             {/* Reader PDF View Frame */}
-            <View style={{ flex: 1, backgroundColor: "#F1F5F9", padding: 16, justifyContent: "center", alignItems: "center" }}>
-              <View style={{ width: "100%", flex: 1, backgroundColor: "#FFFFFF", borderRadius: 12, padding: 24, borderWidth: 1, borderColor: "#CBD5E1", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2, justifyContent: "space-between" }}>
+            <View style={{ flex: 1, backgroundColor: theme.bg, padding: 16, justifyContent: "center", alignItems: "center" }}>
+              <View style={{ width: "100%", flex: 1, backgroundColor: theme.cardBg, borderRadius: 12, padding: 24, borderWidth: 1, borderColor: theme.border, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2, justifyContent: "space-between" }}>
                 <View>
                   <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
                     <MaterialCommunityIcons name="file-pdf-box" size={32} color="#DC2626" style={{ marginRight: 10 }} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A" }}>
+                      <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: theme.text }}>
                         {selectedNotesTitle || "Class Notes PDF Document"}
                       </Text>
-                      <Text style={{ fontSize: 12, color: "#64748B", fontFamily: fonts.medium }}>
+                      <Text style={{ fontSize: 12, color: theme.subtext, fontFamily: fonts.medium }}>
                         Uploaded by Mentor • Official Study Material
                       </Text>
                     </View>
                   </View>
 
-                  <View style={{ height: 1, backgroundColor: "#E2E8F0", marginVertical: 14 }} />
+                  <View style={{ height: 1, backgroundColor: theme.border, marginVertical: 14 }} />
 
-                  <Text style={{ fontSize: 13, color: "#334155", fontFamily: fonts.regular, lineHeight: 22, marginBottom: 14 }}>
+                  <Text style={{ fontSize: 13, color: theme.subtext, fontFamily: fonts.regular, lineHeight: 22, marginBottom: 14 }}>
                     This PDF document contains handwritten class notes, diagram derivations, solved questions, and topic summaries uploaded directly by your mentor.
                   </Text>
 
-                  <View style={{ backgroundColor: "#F8FAFC", borderRadius: 10, padding: 14, borderWidth: 1, borderColor: "#E2E8F0", gap: 8 }}>
+                  <View style={{ backgroundColor: theme.inputBg || theme.bg, borderRadius: 10, padding: 14, borderWidth: 1, borderColor: theme.border, gap: 8 }}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <Feather name="link" size={14} color="#166534" style={{ marginRight: 6 }} />
-                      <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#1E293B", flex: 1 }} numberOfLines={1}>
+                      <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text, flex: 1 }} numberOfLines={1}>
                         {selectedNotesPdfUrl || "https://drive.google.com"}
                       </Text>
                     </View>
-                    <Text style={{ fontSize: 11, color: "#64748B", fontFamily: fonts.regular }}>
+                    <Text style={{ fontSize: 11, color: theme.subtext, fontFamily: fonts.regular }}>
                       Click below to open and view the full PDF document directly in Google Drive / Web Browser or download it to your device.
                     </Text>
                   </View>

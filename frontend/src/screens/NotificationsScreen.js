@@ -15,6 +15,7 @@ import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons
 import { getNotifications, respondToFriendRequestNotification, markAllNotificationsReadApi } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const filterTabs = ["All", "Unread", "Mentor", "Sessions", "System"];
 
@@ -25,6 +26,7 @@ export default function NotificationsScreen({
   onOpenCourseDetails,
   onOpenContinueLearning
 }) {
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState("All");
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -125,49 +127,49 @@ export default function NotificationsScreen({
     return true;
   });
 
+  const unreadCount = notifications.filter(n => n.unread).length;
+
   const sections = ["Today", "Yesterday", "Earlier"].filter((sec) =>
     filteredItems.some((item) => item.section === sec)
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Floating Header Bar */}
-      <View style={styles.topHeader}>
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <View style={styles.headerLeftRow}>
-          {onBack ? (
-            <Pressable onPress={onBack} style={styles.backBtn}>
-              <Feather name="arrow-left" size={20} color="#181725" />
-            </Pressable>
-          ) : null}
-          <Text style={styles.headerTitle}>Notifications</Text>
+          <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.badgeBg }]}>
+            <Feather name="chevron-left" size={22} color={theme.text} />
+          </Pressable>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Notifications</Text>
         </View>
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          {notifications.some((n) => n.unread) ? (
-            <Pressable onPress={handleMarkAllAsRead} style={styles.markReadBtn}>
-              <Feather name="check-circle" size={14} color="#5B3CF5" style={{ marginRight: 4 }} />
-              <Text style={styles.markReadText}>Read All</Text>
+          {unreadCount > 0 ? (
+            <Pressable onPress={handleMarkAllAsRead} style={[styles.markReadBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+              <Feather name="check-circle" size={14} color={theme.primary} style={{ marginRight: 4 }} />
+              <Text style={[styles.markReadText, { color: theme.primary }]}>Read All</Text>
             </Pressable>
           ) : null}
 
           <Pressable
             onPress={() => Alert.alert("Notification Settings", "Push Notifications: Enabled\nEmail Digest: Daily\nSound: On")}
-            style={styles.settingsBtn}
+            style={[styles.settingsBtn, { backgroundColor: theme.badgeBg }]}
           >
-            <Feather name="settings" size={18} color="#5B3CF5" />
+            <Feather name="settings" size={18} color={theme.primary} />
           </Pressable>
         </View>
       </View>
 
       {/* 2. Category Filter Tabs Row */}
-      <View style={styles.tabsContainer}>
+      <View style={[styles.tabsContainer, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScroll}>
           {filterTabs.map((tab) => {
             const isActive = activeTab === tab;
             return (
               <Pressable key={tab} onPress={() => setActiveTab(tab)} style={styles.tabItem}>
-                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab}</Text>
-                {isActive ? <View style={styles.activeUnderline} /> : null}
+                <Text style={[styles.tabText, { color: theme.subtext }, isActive && { color: theme.primary, fontFamily: fonts.bold }]}>{tab}</Text>
+                {isActive ? <View style={[styles.activeUnderline, { backgroundColor: theme.primary }]} /> : null}
               </Pressable>
             );
           })}
@@ -179,21 +181,21 @@ export default function NotificationsScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => loadNotificationData(true)} colors={["#5B3CF5"]} />
+          <RefreshControl refreshing={refreshing} onRefresh={() => loadNotificationData(true)} colors={[theme.primary]} />
         }
       >
         {loading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="small" color="#5B3CF5" />
-            <Text style={styles.loadingText}>Fetching updates...</Text>
+            <ActivityIndicator size="small" color={theme.primary} />
+            <Text style={[styles.loadingText, { color: theme.subtext }]}>Fetching updates...</Text>
           </View>
         ) : filteredItems.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <View style={styles.emptyIconCircle}>
-              <Feather name="bell-off" size={32} color="#5B3CF5" />
+          <View style={[styles.emptyBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: theme.badgeBg }]}>
+              <Feather name="bell-off" size={32} color={theme.primary} />
             </View>
-            <Text style={styles.emptyTitle}>No Notifications Yet</Text>
-            <Text style={styles.emptyText}>When you receive updates, messages, or course alerts, they will appear here.</Text>
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>No Notifications Yet</Text>
+            <Text style={[styles.emptyText, { color: theme.subtext }]}>When you receive updates, messages, or course alerts, they will appear here.</Text>
           </View>
         ) : null}
 
@@ -203,9 +205,9 @@ export default function NotificationsScreen({
 
             return (
               <View key={sectionName} style={styles.sectionGroup}>
-                <Text style={styles.sectionHeader}>{sectionName}</Text>
+                <Text style={[styles.sectionHeader, { color: theme.text }]}>{sectionName}</Text>
 
-                <View style={styles.itemsCard}>
+                <View style={[styles.itemsCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                   {sectionItems.map((item, index) => {
                     const isLast = index === sectionItems.length - 1;
 
@@ -215,8 +217,9 @@ export default function NotificationsScreen({
                         onPress={() => handleNotificationPress(item)}
                         style={({ pressed }) => [
                           styles.notificationRow,
-                          !isLast && styles.rowBorder,
-                          pressed && styles.rowPressed
+                          { backgroundColor: theme.cardBg },
+                          !isLast && { borderBottomWidth: 1, borderBottomColor: theme.border },
+                          pressed && { backgroundColor: theme.isDark ? "#1E263B" : "#F8F7FF" }
                         ]}
                       >
                         {/* Left Icon / Avatar */}

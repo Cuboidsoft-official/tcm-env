@@ -19,6 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { getChatConversations, getDoubtsList, createDoubtThread, getDoubtRooms, createDoubtRoom, searchKnowledgeBase } from "../api/client";
 import { shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoom }) {
   const [activeTab, setActiveTab] = useState("chats"); // "chats" | "doubts"
@@ -196,61 +197,63 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
     (c.role && c.role.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const { theme } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Main Section Header (No Duplicate App Header) */}
       <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitle}>All Chats</Text>
-        <Pressable onPress={() => fetchConversations()} style={styles.compactRefreshBtn}>
-          <Feather name="refresh-cw" size={14} color="#5B3CF5" />
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>All Chats</Text>
+        <Pressable onPress={() => fetchConversations()} style={[styles.compactRefreshBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F0EDFF" }]}>
+          <Feather name="refresh-cw" size={14} color={theme.primary} />
         </Pressable>
       </View>
 
       {/* 2. Compact Search Bar */}
-      <View style={styles.searchWrap}>
-        <Feather name="search" size={15} color="#8A879F" style={{ marginRight: 8 }} />
+      <View style={[styles.searchWrap, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        <Feather name="search" size={15} color={theme.subtext} style={{ marginRight: 8 }} />
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Search by name, role, or message..."
-          placeholderTextColor="#8A879F"
-          style={styles.searchInput}
+          placeholderTextColor={theme.subtext}
+          style={[styles.searchInput, { color: theme.text }]}
         />
         {searchQuery ? (
           <Pressable onPress={() => setSearchQuery("")}>
-            <Feather name="x-circle" size={15} color="#8A879F" />
+            <Feather name="x-circle" size={15} color={theme.subtext} />
           </Pressable>
         ) : null}
       </View>
 
       {/* 3. Small Compact Segmented Tabs */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: theme.isDark ? "#1E263B" : "#EFEFFF" }]}>
         <Pressable
           onPress={() => setActiveTab("chats")}
-          style={[styles.smallTabBtn, activeTab === "chats" && styles.smallTabBtnActive]}
+          style={[styles.smallTabBtn, activeTab === "chats" && [styles.smallTabBtnActive, { backgroundColor: theme.cardBg }]]}
         >
           <MaterialCommunityIcons
             name="chat-processing-outline"
             size={15}
-            color={activeTab === "chats" ? "#5B3CF5" : "#686780"}
+            color={activeTab === "chats" ? theme.primary : theme.subtext}
             style={{ marginRight: 5 }}
           />
-          <Text style={[styles.smallTabText, activeTab === "chats" && styles.smallTabTextActive]}>
+          <Text style={[styles.smallTabText, { color: activeTab === "chats" ? (theme.isDark ? "#C7D2FE" : "#5B3CF5") : theme.subtext }, activeTab === "chats" && styles.smallTabTextActive]}>
             Chats ({conversations.length})
           </Text>
         </Pressable>
 
         <Pressable
           onPress={() => setActiveTab("doubts")}
-          style={[styles.smallTabBtn, activeTab === "doubts" && styles.smallTabBtnActive]}
+          style={[styles.smallTabBtn, activeTab === "doubts" && [styles.smallTabBtnActive, { backgroundColor: theme.cardBg }]]}
         >
           <Feather
             name="help-circle"
             size={14}
-            color={activeTab === "doubts" ? "#5B3CF5" : "#686780"}
+            color={activeTab === "doubts" ? theme.primary : theme.subtext}
             style={{ marginRight: 5 }}
           />
-          <Text style={[styles.smallTabText, activeTab === "doubts" && styles.smallTabTextActive]}>
+          <Text style={[styles.smallTabText, { color: activeTab === "doubts" ? (theme.isDark ? "#C7D2FE" : "#5B3CF5") : theme.subtext }, activeTab === "doubts" && styles.smallTabTextActive]}>
             Doubts ({doubts.length})
           </Text>
         </Pressable>
@@ -261,61 +264,61 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {loadingChats ? (
             <View style={styles.loadingBox}>
-              <ActivityIndicator size="small" color="#5B3CF5" />
-              <Text style={styles.loadingText}>Fetching real conversations from database...</Text>
+              <ActivityIndicator size="small" color={theme.primary} />
+              <Text style={[styles.loadingText, { color: theme.subtext }]}>Fetching real conversations from database...</Text>
             </View>
           ) : filteredConversations.length === 0 ? (
             <View style={styles.emptyBox}>
-              <View style={styles.emptyIconCircle}>
-                <Feather name="message-square" size={24} color="#5B3CF5" />
+              <View style={[styles.emptyIconCircle, { backgroundColor: theme.badgeBg }]}>
+                <Feather name="message-square" size={24} color={theme.primary} />
               </View>
-              <Text style={styles.emptyTitle}>No Conversations Found</Text>
-              <Text style={styles.emptySub}>Connect with members or mentors in the community to start direct messaging!</Text>
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>No Conversations Found</Text>
+              <Text style={[styles.emptySub, { color: theme.subtext }]}>Connect with members or mentors in the community to start direct messaging!</Text>
             </View>
           ) : (
             filteredConversations.map((item) => (
               <Pressable
                 key={item.id}
                 onPress={() => onSelectChat && onSelectChat(item)}
-                style={styles.chatRowCard}
+                style={[styles.chatRowCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
               >
                 {/* Avatar with Online Badge */}
                 <View style={styles.chatAvatarWrap}>
-                  <Image source={{ uri: item.avatarUrl }} style={styles.chatAvatar} />
-                  <View style={styles.onlineBadge} />
+                  <Image source={{ uri: item.avatarUrl }} style={[styles.chatAvatar, { borderColor: theme.border }]} />
+                  <View style={[styles.onlineBadge, { borderColor: theme.cardBg }]} />
                 </View>
 
                 {/* Info Column */}
                 <View style={styles.chatInfoCol}>
                   <View style={styles.chatTitleRow}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1 }}>
-                      <Text style={styles.chatName} numberOfLines={1}>{item.name}</Text>
+                      <Text style={[styles.chatName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
                       {item.role?.toLowerCase().includes("mentor") || item.isMentor ? (
-                        <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                          <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                        <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                          <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
                         </View>
                       ) : (
-                        <View style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                          <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#475569" }}>Student</Text>
+                        <View style={{ backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                          <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.subtext }}>Student</Text>
                         </View>
                       )}
                       {item.isPremium ? (
-                        <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                        <MaterialCommunityIcons name="check-decagram" size={14} color={theme.primary} style={{ marginLeft: 2 }} />
                       ) : null}
                     </View>
-                    <Text style={styles.chatTime}>{item.time}</Text>
+                    <Text style={[styles.chatTime, { color: theme.subtext }]}>{item.time}</Text>
                   </View>
 
-                  <View style={styles.rolePillWrap}>
-                    <Text style={styles.chatRolePillText} numberOfLines={1}>{item.role}</Text>
+                  <View style={[styles.rolePillWrap, { backgroundColor: theme.badgeBg }]}>
+                    <Text style={[styles.chatRolePillText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]} numberOfLines={1}>{item.role}</Text>
                   </View>
 
                   <View style={styles.lastMsgRow}>
-                    <Text style={styles.lastMsgText} numberOfLines={1}>
+                    <Text style={[styles.lastMsgText, { color: theme.subtext }]} numberOfLines={1}>
                       {item.lastMessage}
                     </Text>
                     {item.unreadCount > 0 ? (
-                      <View style={styles.unreadBadge}>
+                      <View style={[styles.unreadBadge, { backgroundColor: theme.primary }]}>
                         <Text style={styles.unreadBadgeText}>{item.unreadCount}</Text>
                       </View>
                     ) : null}
@@ -331,7 +334,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
           <View style={styles.actionBtnRow}>
             <Pressable onPress={() => setShowRoomModal(true)} style={[styles.askDoubtCtaBtn, { flex: 1 }]}>
               <LinearGradient
-                colors={["#5B3CF5", "#7F65FF"]}
+                colors={[theme.primary, theme.primaryDark || "#7F65FF"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.askDoubtGradient}
@@ -344,9 +347,9 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
 
           {/* COLLABORATIVE DOUBT ROOMS SECTION */}
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionHeaderTitle}>Collaborative Doubt Rooms 💬</Text>
-            <View style={styles.roomCountPill}>
-              <Text style={styles.roomCountText}>{doubtRooms.length} Active</Text>
+            <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Collaborative Doubt Rooms 💬</Text>
+            <View style={[styles.roomCountPill, { backgroundColor: theme.badgeBg }]}>
+              <Text style={[styles.roomCountText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>{doubtRooms.length} Active</Text>
             </View>
           </View>
 
@@ -354,29 +357,29 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
             <Pressable
               key={roomItem.roomId}
               onPress={() => onSelectDoubtRoom && onSelectDoubtRoom(roomItem)}
-              style={styles.doubtRoomCard}
+              style={[styles.doubtRoomCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             >
               <View style={styles.roomAvatarWrap}>
-                <Image source={{ uri: roomItem.assignedMentor?.avatarUrl }} style={styles.roomMentorAvatar} />
-                <View style={styles.onlineBadgeDot} />
+                <Image source={{ uri: roomItem.assignedMentor?.avatarUrl }} style={[styles.roomMentorAvatar, { borderColor: theme.border }]} />
+                <View style={[styles.onlineBadgeDot, { borderColor: theme.cardBg }]} />
               </View>
 
               <View style={styles.roomMainCol}>
                 <View style={styles.roomTitleRow}>
-                  <Text style={styles.roomTitleText} numberOfLines={1}>{roomItem.title}</Text>
-                  <View style={styles.roomIdTag}>
-                    <Text style={styles.roomIdTagText}>{roomItem.roomId}</Text>
+                  <Text style={[styles.roomTitleText, { color: theme.text }]} numberOfLines={1}>{roomItem.title}</Text>
+                  <View style={[styles.roomIdTag, { backgroundColor: theme.badgeBg }]}>
+                    <Text style={[styles.roomIdTagText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>{roomItem.roomId}</Text>
                   </View>
                 </View>
 
-                <Text style={styles.roomSubInfoText}>
-                  Assigned Mentor: <Text style={{ fontWeight: "700", color: "#1E293B" }}>{roomItem.assignedMentor?.name}</Text> ({roomItem.assignedMentor?.role})
+                <Text style={[styles.roomSubInfoText, { color: theme.subtext }]}>
+                  Assigned Mentor: <Text style={{ fontWeight: "700", color: theme.text }}>{roomItem.assignedMentor?.name}</Text> ({roomItem.assignedMentor?.role})
                 </Text>
 
                 <View style={styles.roomMetaRow}>
-                  <Text style={styles.roomMembersText}>{roomItem.membersCount || "1.2K"} Members • <Text style={{ color: "#10B981" }}>🟢 {roomItem.onlineCount || 86} Online</Text></Text>
-                  <View style={styles.joinRoomBtn}>
-                    <Text style={styles.joinRoomText}>Enter Room &gt;</Text>
+                  <Text style={[styles.roomMembersText, { color: theme.subtext }]}>{roomItem.membersCount || "1.2K"} Members • <Text style={{ color: "#10B981" }}>🟢 {roomItem.onlineCount || 86} Online</Text></Text>
+                  <View style={[styles.joinRoomBtn, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }]}>
+                    <Text style={[styles.joinRoomText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>Enter Room &gt;</Text>
                   </View>
                 </View>
               </View>
@@ -580,7 +583,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
     paddingTop: 12
   },

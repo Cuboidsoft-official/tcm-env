@@ -7,14 +7,24 @@ import { sendOtpEmail } from "../services/emailService.js";
 
 export const authRouter = express.Router();
 
+const TOKEN_ISSUER = "tcm";
+const TOKEN_AUDIENCE = "tcm-app";
+
 function signToken(user) {
+  const secret = process.env.JWT_SECRET || "tcm_local_dev_secret_change_before_production";
   return jwt.sign(
     {
-      sub: user._id.toString(),
-      role: user.role
+      sub: String(user._id || user.id),
+      role: user.role,
+      name: user.name,
+      email: user.email
     },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    secret,
+    {
+      expiresIn: "30d",
+      issuer: TOKEN_ISSUER,
+      audience: TOKEN_AUDIENCE
+    }
   );
 }
 

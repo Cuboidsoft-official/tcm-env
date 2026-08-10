@@ -30,7 +30,7 @@ import * as VideoThumbnails from "expo-video-thumbnails";
 import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
-import { addPostComment, createCommunityPost, deleteCommunityPost, getHome, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost, applyJobPost, deleteJobPost } from "../api/client";
+import { addPostComment, deletePostComment, createCommunityPost, deleteCommunityPost, getHome, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost, applyJobPost, deleteJobPost } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import ApplyJobModal from "../components/ApplyJobModal";
@@ -969,29 +969,34 @@ export default function HomeScreen({ session, onLogout }) {
 }
 
 function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings, isSelfProfile, onNotifications, showBack, backLabel, onBack, onOpenWallet }) {
+  const { theme } = useTheme();
+  const iconColor = theme.isDark ? "#C7D2FE" : "#261B94";
+  const brandColor = theme.isDark ? "#A78BFA" : colors.primaryDark;
+  const subtextColor = theme.isDark ? "#94A3B8" : "#64748B";
+
   if (showBack) {
     return (
       <View style={styles.header}>
         <View style={styles.brandRow}>
           <Pressable onPress={onBack} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
-            <Feather name="chevron-left" size={26} color={colors.primaryDark} />
+            <Feather name="chevron-left" size={26} color={iconColor} />
           </Pressable>
           <View style={styles.brandWrap}>
-            <Text style={styles.brand}>TCM</Text>
-            <Text style={styles.brandSub}>{backLabel || "Talent & Career Mission"}</Text>
+            <Text style={[styles.brand, { color: brandColor }]}>TCM</Text>
+            <Text style={[styles.brandSub, { color: subtextColor }]}>{backLabel || "Talent & Career Mission"}</Text>
           </View>
         </View>
         <View style={styles.headerActions}>
           <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={styles.iconButton}>
-            <Feather name="bell" size={24} color={colors.primaryDark} />
+            <Feather name="bell" size={24} color={iconColor} />
             {notifications ? (
               <View style={styles.headerBadge}>
                 <Text style={styles.headerBadgeText}>{notifications > 9 ? "9+" : notifications}</Text>
               </View>
             ) : null}
           </Pressable>
-          <Pressable onPress={onProfile} style={styles.profileRing}>
-            <Avatar name={user.name} uri={user.avatarUrl} size={28} />
+          <Pressable onPress={onProfile} style={[styles.profileRing, { backgroundColor: theme.cardBg, borderColor: theme.primary }]}>
+            <Avatar name={user.name} uri={user.avatarUrl} size={32} />
           </Pressable>
         </View>
       </View>
@@ -1002,11 +1007,11 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
     <View style={styles.header}>
       <View style={styles.brandRow}>
         <Pressable onPress={onOpenSidebar} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
-          <Feather name="menu" size={25} color={colors.primaryDark} />
+          <Feather name="menu" size={25} color={iconColor} />
         </Pressable>
         <View style={styles.brandWrap}>
-          <Text style={styles.brand}>TCM</Text>
-          <Text style={styles.brandSub}>Talent & Career Mission</Text>
+          <Text style={[styles.brand, { color: brandColor }]}>TCM</Text>
+          <Text style={[styles.brandSub, { color: subtextColor }]}>Talent & Career Mission</Text>
         </View>
       </View>
       <View style={styles.headerActions}>
@@ -1014,24 +1019,24 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
         {isSelfProfile ? (
           <Pressable
             onPress={onOpenWallet || (() => Alert.alert("TCM Wallet", "Opening your wallet..."))}
-            style={({ pressed }) => [styles.headerWalletPill, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.headerWalletPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
-            <MaterialCommunityIcons name="wallet-outline" size={15} color="#5B3CF5" style={{ marginRight: 4 }} />
-            <Text style={styles.headerWalletBalance}>
+            <MaterialCommunityIcons name="wallet-outline" size={15} color={theme.primary} style={{ marginRight: 4 }} />
+            <Text style={[styles.headerWalletBalance, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>
               ₹{user.wallet?.totalBalance !== undefined ? user.wallet.totalBalance.toLocaleString() : (user.balance || 1250)}
             </Text>
-            <View style={styles.headerCoinDivider} />
+            <View style={[styles.headerCoinDivider, { backgroundColor: theme.border }]} />
             <View style={styles.headerCoinIcon}>
               <Text style={styles.headerCoinIconText}>$</Text>
             </View>
-            <Text style={styles.headerCoinsText}>
+            <Text style={[styles.headerCoinsText, { color: theme.text }]}>
               {user.wallet?.tcmCoins !== undefined ? user.wallet.tcmCoins : (user.tcmCoins || user.coins || 120)}
             </Text>
           </Pressable>
         ) : null}
 
         <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={styles.iconButton}>
-          <Feather name="bell" size={24} color={colors.primaryDark} />
+          <Feather name="bell" size={24} color={iconColor} />
           {notifications ? (
             <View style={styles.headerBadge}>
               <Text style={styles.headerBadgeText}>{notifications > 9 ? "9+" : notifications}</Text>
@@ -1039,12 +1044,12 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
           ) : null}
         </Pressable>
         {isSelfProfile ? (
-          <Pressable onPress={onOpenSettings} style={[styles.iconButton, { backgroundColor: "#F0EDFF", borderRadius: 20, width: 34, height: 34, alignItems: "center", justifyContent: "center" }]}>
-            <Feather name="settings" size={20} color="#5B3CF5" />
+          <Pressable onPress={onOpenSettings} style={[styles.iconButton, { backgroundColor: theme.badgeBg, borderRadius: 20, width: 36, height: 36, alignItems: "center", justifyContent: "center" }]}>
+            <Feather name="settings" size={20} color={theme.primary} />
           </Pressable>
         ) : (
-          <Pressable onPress={onProfile} style={styles.profileRing}>
-            <Avatar name={user.name} uri={user.avatarUrl} size={28} />
+          <Pressable onPress={onProfile} style={[styles.profileRing, { backgroundColor: theme.cardBg, borderColor: theme.primary }]}>
+            <Avatar name={user.name} uri={user.avatarUrl} size={32} />
           </Pressable>
         )}
       </View>
@@ -1053,23 +1058,24 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
 }
 
 function SearchBar({ value, onChangeText, onRefresh, refreshing, onOpenSearch }) {
+  const { theme } = useTheme();
   return (
     <View style={styles.searchRow}>
-      <Pressable onPress={onOpenSearch} style={styles.searchBox}>
-        <Feather name="search" size={16} color="#52506E" />
+      <Pressable onPress={onOpenSearch} style={[styles.searchBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        <Feather name="search" size={18} color={theme.subtext} />
         <TextInput
           editable={!onOpenSearch}
           pointerEvents={onOpenSearch ? "none" : "auto"}
           autoCapitalize="none"
           placeholder="Search topics, posts, notes, people..."
-          placeholderTextColor="#77758E"
-          style={styles.searchInput}
+          placeholderTextColor={theme.subtext}
+          style={[styles.searchInput, { color: theme.text }]}
           value={value}
           onChangeText={onChangeText}
         />
       </Pressable>
-      <Pressable onPress={onOpenSearch || onRefresh} style={({ pressed }) => [styles.filterButton, pressed && styles.pressed]}>
-        {refreshing ? <ActivityIndicator color={colors.primary} size="small" /> : <Feather name="sliders" size={16} color={colors.ink} />}
+      <Pressable onPress={onOpenSearch || onRefresh} style={({ pressed }) => [styles.filterButton, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}>
+        {refreshing ? <ActivityIndicator color={theme.primary} size="small" /> : <Feather name="sliders" size={18} color={theme.isDark ? "#A78BFA" : "#261B94"} />}
       </Pressable>
     </View>
   );
@@ -1088,38 +1094,13 @@ function Avatar({ name, uri, size }) {
   );
 }
 
-function QuickAccess({ categories, activeCategory, setActiveCategory }) {
-  const quickItems = categories.filter((category) => !["For You", "Following", "Trending"].includes(category)).slice(0, 6);
-  if (!quickItems.length) return null;
-
-  return (
-    <View style={styles.quickPanel}>
-      <View style={styles.quickHeader}>
-        <Text style={styles.quickTitle}>Explore Feed</Text>
-        <Text style={styles.quickSub}>Pick a real category</Text>
-      </View>
-      <ScrollView horizontal contentContainerStyle={styles.quickContent} showsHorizontalScrollIndicator={false}>
-        {quickItems.map((item) => {
-          const active = activeCategory === item;
-          return (
-            <Pressable key={item} onPress={() => setActiveCategory(item)} style={[styles.quickItem, active && styles.quickItemActive]}>
-              <MaterialCommunityIcons name={item === "Coding" ? "code-tags" : item === "UPSC" ? "bank" : item === "Web Dev" ? "laptop" : "school"} size={19} color={active ? "#FFFFFF" : colors.primary} />
-              <Text style={[styles.quickItemText, active && styles.quickItemTextActive]}>{item}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
-}
-
 function getCategoryIconConfig(categoryName) {
   const clean = categoryName.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|💼|🔥|✨|👥/gu, "").trim();
 
-  if (clean.includes("For You")) return { icon: "sparkles", color: "#181725", label: "For You" };
+  if (clean.includes("For You")) return { icon: "sparkles", color: "#5B3CF5", label: "For You" };
   if (clean.includes("Following")) return { icon: "people", color: "#181725", label: "Following" };
   if (clean.includes("Trending")) return { icon: "flame", color: "#181725", label: "Trending" };
-  if (clean.includes("Jobs") || clean.includes("Hiring")) return { icon: "briefcase", color: "#181725", label: "Jobs & Hiring" };
+  if (clean.includes("Jobs") || clean.includes("Hiring")) return { icon: "briefcase", color: "#181725", label: "Jobs" };
   if (clean.includes("UPSC")) return { icon: "school", color: "#181725", label: "UPSC" };
   if (clean.includes("JEE")) return { icon: "calculator", color: "#181725", label: "JEE" };
   if (clean.includes("NEET")) return { icon: "medical", color: "#181725", label: "NEET" };
@@ -1131,6 +1112,7 @@ function getCategoryIconConfig(categoryName) {
 }
 
 function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
+  const { theme } = useTheme();
   if (!categories.length) return null;
 
   return (
@@ -1146,24 +1128,25 @@ function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
             style={[
               styles.categoryTab,
               active && styles.categoryTabActive,
-              { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8 }
+              { backgroundColor: active ? (theme.isDark ? "#1E1B4B" : "#F4F1FF") : (theme.isDark ? "#111625" : "#F8F7FC"), borderColor: active ? theme.primary : theme.border, borderWidth: 1 }
             ]}
           >
-            <Ionicons name={conf.icon} size={15} color={active ? "#FFFFFF" : conf.color} />
-            <Text numberOfLines={1} style={[styles.categoryText, active && styles.categoryTextActive]}>
-              {conf.label}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Ionicons name={conf.icon} size={16} color={active ? (theme.isDark ? "#A78BFA" : "#5B3CF5") : (theme.isDark ? "#94A3B8" : conf.color)} />
+              <Text numberOfLines={1} style={[styles.categoryText, { color: active ? (theme.isDark ? "#C7D2FE" : colors.primary) : (theme.isDark ? "#94A3B8" : "#5F5D76") }, active && styles.categoryTextActive]}>
+                {conf.label}
+              </Text>
+            </View>
+            {active ? <View style={[styles.activeCategoryIndicator, { backgroundColor: theme.primary }]} /> : null}
           </Pressable>
         );
       })}
-      <Pressable onPress={() => setActiveCategory("For You")} style={styles.categoryDrop}>
-        <Feather name="chevron-down" size={16} color="#646179" />
-      </Pressable>
     </ScrollView>
   );
 }
 
 function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeletePost, onApplyJob, onJobDetails }) {
+  const { theme } = useTheme();
   const metrics = post.metrics || {};
   const media = post.media || {};
 
@@ -1201,22 +1184,21 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
         style={[
           styles.postCard,
           {
-            borderRadius: 18,
+            borderRadius: 24,
             borderWidth: 1,
-            borderColor: "#E2E8F0",
-            backgroundColor: "#FFFFFF",
+            borderColor: theme.border,
+            backgroundColor: theme.cardBg,
             padding: 16,
             marginBottom: 16,
-            overflow: "hidden",
-            ...shadow.md
+            shadowColor: "#000000",
+            shadowOpacity: 0.05,
+            shadowRadius: 12,
+            elevation: 2
           }
         ]}
       >
-        {/* Top Accent Strip */}
-        <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, backgroundColor: "#5B3CF5" }} />
-
         {/* Header Row */}
-        <View style={[styles.postHeader, { marginTop: 4 }]}>
+        <View style={styles.postHeader}>
           <Pressable
             onPress={() =>
               onSelectUser &&
@@ -1230,16 +1212,20 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
             }
             style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
           >
-            <Avatar name={job.mentorName || post.authorName} uri={job.mentorAvatarUrl || post.authorAvatarUrl} size={44} />
+            {/* Avatar with Online Dot */}
+            <View style={{ position: "relative", marginRight: 10 }}>
+              <Avatar name={job.mentorName || post.authorName} uri={job.mentorAvatarUrl || post.authorAvatarUrl} size={44} />
+              <View style={{ position: "absolute", bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, backgroundColor: "#22C55E", borderWidth: 2, borderColor: theme.cardBg }} />
+            </View>
             <View style={styles.postAuthor}>
               <View style={styles.authorLine}>
-                <Text numberOfLines={1} style={styles.authorName}>{job.mentorName || post.authorName}</Text>
-                <View style={[styles.mentorBadgePill, { backgroundColor: "#F0EDFF", borderColor: "#C4B5FD", borderWidth: 1 }]}>
-                  <Ionicons name="shield-checkmark" size={10} color="#5B3CF5" style={{ marginRight: 3 }} />
-                  <Text style={[styles.mentorBadgeText, { color: "#5B3CF5", fontWeight: "700" }]}>Mentor Drive</Text>
+                <Text numberOfLines={1} style={[styles.authorName, { fontSize: 15, fontFamily: fonts.bold, color: theme.text }]}>{job.mentorName || post.authorName}</Text>
+                <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#ECE6FF", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, flexDirection: "row", alignItems: "center", gap: 3, marginLeft: 4, borderWidth: 1, borderColor: theme.border }}>
+                  <Ionicons name="shield-checkmark" size={10} color={theme.isDark ? "#A78BFA" : "#5B3CF5"} />
+                  <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: theme.isDark ? "#A78BFA" : "#5B3CF5" }}>Mentor Drive</Text>
                 </View>
               </View>
-              <Text numberOfLines={1} style={styles.authorRole}>{job.company || "TCM Hiring Partner"} • {job.mentorRole || "Senior Mentor"}</Text>
+              <Text numberOfLines={1} style={[styles.authorRole, { color: theme.subtext, fontSize: 11 }]}>{job.company || "TCM Hiring Partner"} • {job.mentorRole || "Mentor"}</Text>
             </View>
           </Pressable>
 
@@ -1260,121 +1246,172 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
             }}
             style={{ padding: 6 }}
           >
-            <Feather name="more-vertical" size={20} color="#64748B" />
+            <Feather name="more-vertical" size={20} color={theme.subtext} />
           </Pressable>
         </View>
 
+        {/* Category Pill Tag */}
+        <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EBFF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: "flex-start", marginTop: 10, borderWidth: 1, borderColor: theme.border }}>
+          <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: theme.isDark ? "#818CF8" : "#5B3CF5", textTransform: "uppercase", letterSpacing: 0.5 }}>INTERNSHIP</Text>
+        </View>
+
         {/* Job Title */}
-        <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: "#0F172A", marginTop: 8, lineHeight: 20 }}>
+        <Text style={{ fontSize: 18, fontFamily: fonts.extraBold, color: theme.text, marginTop: 6, lineHeight: 24 }}>
           {job.title}
         </Text>
 
-        {/* Professional Badges Grid */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-          {/* Salary Badge */}
-          <View style={{ backgroundColor: "#F0EDFF", borderWidth: 1, borderColor: "#C4B5FD", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Ionicons name="cash-outline" size={13} color="#5B3CF5" />
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#5B3CF5" }}>
-              ₹{job.minSalary}{job.maxSalary ? ` – ₹${job.maxSalary}` : ""} {job.salaryPeriod || "LPA"}
+        {/* Salary / Stipend Box */}
+        <View style={{ backgroundColor: theme.isDark ? "#161B33" : "#F0EBFF", borderRadius: 14, padding: 12, marginTop: 10, borderWidth: 1, borderColor: theme.border }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <MaterialCommunityIcons name="wallet-outline" size={20} color={theme.isDark ? "#A78BFA" : "#5B3CF5"} />
+            <Text style={{ fontSize: 15, fontFamily: fonts.extraBold, color: theme.isDark ? "#A78BFA" : "#5B3CF5" }}>
+              ₹{job.minSalary}{job.maxSalary ? ` – ₹${job.maxSalary}` : ""}
             </Text>
           </View>
+          <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.subtext, marginTop: 2, marginLeft: 28 }}>
+            Stipend / Fixed
+          </Text>
+        </View>
 
-          {/* Hiring Status Badge */}
-          <View style={{ backgroundColor: isFilled ? "#FEE2E2" : "#DCFCE7", borderWidth: 1, borderColor: isFilled ? "#FCA5A5" : "#86EFAC", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Ionicons name={isFilled ? "close-circle" : "checkmark-circle"} size={13} color={isFilled ? "#991B1B" : "#166534"} />
-            <Text style={{ fontSize: 11, fontWeight: "700", color: isFilled ? "#991B1B" : "#166534" }}>
+        {/* Status & Duration Pills Grid */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+          {/* Active Status Badge */}
+          <View style={{ backgroundColor: isFilled ? (theme.isDark ? "#450A0A" : "#FEE2E2") : (theme.isDark ? "#064E3B" : "#DCFCE7"), borderWidth: 1, borderColor: isFilled ? "#EF4444" : "#10B981", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Ionicons name={isFilled ? "close-circle" : "checkmark-circle"} size={14} color={isFilled ? "#EF4444" : "#10B981"} />
+            <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: isFilled ? "#FCA5A5" : "#A7F3D0" }}>
               {isFilled ? "HIRING CLOSED" : `ACTIVE (${selectedCount}/${reqCount} Selected)`}
             </Text>
           </View>
 
-          {/* Deadline Badge */}
-          {job.deadline ? (
-            <View style={{ backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <Feather name="clock" size={12} color="#64748B" />
-              <Text style={{ fontSize: 11, color: "#475569", fontWeight: "600" }}>{job.deadline}</Text>
-            </View>
-          ) : null}
+          {/* Duration Badge */}
+          <View style={{ backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Feather name="clock" size={13} color={theme.subtext} />
+            <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: theme.subtext }}>{job.deadline || "30 Days"}</Text>
+          </View>
         </View>
 
         {/* AI Selection Tracker Box */}
-        <View style={{ backgroundColor: "#F8FAFC", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "#E2E8F0", marginTop: 12 }}>
+        <View style={{ backgroundColor: theme.isDark ? "#131927" : "#F8FAFD", padding: 12, borderRadius: 14, borderWidth: 1, borderColor: theme.border, marginTop: 12 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-              <Ionicons name="hardware-chip-outline" size={14} color="#5B3CF5" />
-              <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#334155" }}>AI Candidate Limit Tracker</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <MaterialCommunityIcons name="chip" size={16} color={theme.primary} />
+              <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text }}>AI Candidate Limit Tracker</Text>
             </View>
-            <Text style={{ fontSize: 11, fontWeight: "700", color: isFilled ? "#DC2626" : "#5B3CF5" }}>
+            <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: isFilled ? "#DC2626" : theme.primary }}>
               {selectedCount} / {reqCount} Selected ({fillPercent}%)
             </Text>
           </View>
-          <View style={{ height: 6, width: "100%", backgroundColor: "#E2E8F0", borderRadius: 3, marginTop: 6, overflow: "hidden" }}>
-            <View style={{ height: "100%", width: `${fillPercent}%`, backgroundColor: isFilled ? "#EF4444" : "#5B3CF5", borderRadius: 3 }} />
+          <View style={{ height: 6, width: "100%", backgroundColor: theme.isDark ? "#1E263B" : "#E2E8F0", borderRadius: 3, marginTop: 8, overflow: "hidden" }}>
+            <View style={{ height: "100%", width: `${fillPercent}%`, backgroundColor: isFilled ? "#EF4444" : theme.primary, borderRadius: 3 }} />
           </View>
         </View>
 
-        {/* Formatted Job Description */}
-        <ReadMoreText text={job.description || post.text} />
+        {/* Job Description */}
+        <View style={{ marginTop: 10 }}>
+          <ReadMoreText text={job.description || post.text} />
+          <Text style={{ fontSize: 12.5, color: theme.primary, fontFamily: fonts.bold, marginTop: 4 }}>
+            Read more ↓
+          </Text>
+        </View>
 
-        {/* Banner Image */}
-        {isValidBanner ? (
-          <Image source={{ uri: job.imageUrl }} style={{ width: "100%", height: 160, borderRadius: 12, marginTop: 12 }} resizeMode="cover" />
-        ) : null}
+        {/* Side-by-Side Compact Image Grid with Full Preview on Tap */}
+        <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+          <Pressable
+            onPress={() =>
+              onPreview &&
+              onPreview({
+                type: "image",
+                title: job.title || "Job Illustration",
+                subtitle: job.company || "TCM Hiring Partner",
+                imageUrl: isValidBanner ? job.imageUrl : require("../../assets/job_code_illustration.jpg")
+              })
+            }
+            style={({ pressed }) => [{ flex: 1, borderRadius: 12, overflow: "hidden" }, pressed && styles.pressed]}
+          >
+            <Image
+              source={isValidBanner ? { uri: job.imageUrl } : require("../../assets/job_code_illustration.jpg")}
+              style={{ width: "100%", height: 80, borderRadius: 12 }}
+              resizeMode="cover"
+            />
+          </Pressable>
+          <Pressable
+            onPress={() =>
+              onPreview &&
+              onPreview({
+                type: "image",
+                title: job.title || "Candidate Profile",
+                subtitle: job.company || "TCM Hiring Partner",
+                imageUrl: require("../../assets/job_profile_illustration.jpg")
+              })
+            }
+            style={({ pressed }) => [{ flex: 1, borderRadius: 12, overflow: "hidden" }, pressed && styles.pressed]}
+          >
+            <Image
+              source={require("../../assets/job_profile_illustration.jpg")}
+              style={{ width: "100%", height: 80, borderRadius: 12 }}
+              resizeMode="cover"
+            />
+          </Pressable>
+        </View>
 
         {/* JD PDF Attachment Reader Box */}
         {job.documentUrl ? (
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FCA5A5", padding: 10, borderRadius: 10, marginTop: 12 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: theme.isDark ? "#450A0A" : "#FEF2F2", borderWidth: 1, borderColor: "#EF4444", padding: 10, borderRadius: 10, marginTop: 12 }}>
             <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}>
               <MaterialCommunityIcons name="file-pdf-box" size={26} color="#EF4444" style={{ marginRight: 8 }} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#0F172A" }} numberOfLines={1}>{job.documentName || "Job_Description.pdf"}</Text>
-                <Text style={{ fontSize: 10.5, color: "#64748B" }}>{job.documentSize || "2.1 MB"} • Official JD Document</Text>
+                <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text }} numberOfLines={1}>{job.documentName || "Job_Description.pdf"}</Text>
+                <Text style={{ fontSize: 10.5, color: theme.subtext }}>{job.documentSize || "2.1 MB"} • Official JD Document</Text>
               </View>
             </View>
           </View>
         ) : null}
 
         {/* Professional Footer CTA Row */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.border }}>
           <TouchableOpacity
             onPress={() => onJobDetails && onJobDetails(job)}
             activeOpacity={0.8}
             style={{
-              backgroundColor: "#F8FAFC",
+              backgroundColor: theme.isDark ? "#131B2E" : "#F8FAFC",
               borderWidth: 1,
-              borderColor: "#E2E8F0",
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              borderRadius: 10,
+              borderColor: theme.border,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderRadius: 12,
               flexDirection: "row",
               alignItems: "center",
-              gap: 4
+              gap: 5
             }}
           >
-            <Ionicons name="information-circle-outline" size={15} color="#475569" />
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#334155" }}>View Details</Text>
+            <Ionicons name="information-circle-outline" size={16} color={theme.subtext} />
+            <Text style={{ fontSize: 12.5, fontFamily: fonts.bold, color: theme.subtext }}>View Details</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => onApplyJob && onApplyJob(job)}
             disabled={isFilled}
             activeOpacity={0.85}
-            style={{
-              backgroundColor: isFilled ? "#94A3B8" : "#5B3CF5",
-              paddingHorizontal: 20,
-              paddingVertical: 9,
-              borderRadius: 10,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              shadowColor: isFilled ? "transparent" : "#5B3CF5",
-              shadowOffset: { width: 0, height: 3 },
-              shadowOpacity: 0.3,
-              shadowRadius: 6,
-              elevation: isFilled ? 0 : 3
-            }}
+            style={{ borderRadius: 12, overflow: "hidden" }}
           >
-            <Ionicons name={isFilled ? "lock-closed" : "send"} size={13} color="#FFFFFF" />
-            <Text style={{ color: "#FFFFFF", fontSize: 12.5, fontFamily: fonts.bold }}>{isFilled ? "Hiring Closed" : "Apply Now →"}</Text>
+            <LinearGradient
+              colors={isFilled ? ["#64748B", "#64748B"] : [theme.primary, theme.primaryDark || "#4F46E5"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                borderRadius: 12,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6
+              }}
+            >
+              <Feather name={isFilled ? "lock" : "send"} size={14} color="#FFFFFF" />
+              <Text style={{ color: "#FFFFFF", fontSize: 12.5, fontFamily: fonts.bold }}>
+                {isFilled ? "Hiring Closed" : "Apply Now →"}
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -1384,7 +1421,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
   }
 
   return (
-    <View style={styles.postCard}>
+    <View style={[styles.postCard, { backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }]}>
       <Pressable
         onPress={() =>
           onSelectUser &&
@@ -1403,23 +1440,23 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
         <Avatar name={post.authorName} uri={post.authorAvatarUrl} size={42} />
         <View style={styles.postAuthor}>
           <View style={styles.authorLine}>
-            <Text numberOfLines={1} style={styles.authorName}>
+            <Text numberOfLines={1} style={[styles.authorName, { color: theme.text }]}>
               {post.authorName}
             </Text>
             {post.isMentor || post.authorRole?.toLowerCase().includes("mentor") || post.authorRole?.toLowerCase().includes("lead") || post.authorRole?.toLowerCase().includes("hod") || post.authorRole?.toLowerCase().includes("expert") ? (
-              <View style={styles.mentorBadgePill}>
-                <Text style={styles.mentorBadgeText}>Mentor</Text>
+              <View style={[styles.mentorBadgePill, { backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderColor: theme.border }]}>
+                <Text style={[styles.mentorBadgeText, { color: theme.isDark ? "#A78BFA" : "#D97706" }]}>Mentor</Text>
               </View>
             ) : (
-              <View style={styles.studentBadgePill}>
-                <Text style={styles.studentBadgeText}>Student</Text>
+              <View style={[styles.studentBadgePill, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderColor: theme.border }]}>
+                <Text style={[styles.studentBadgeText, { color: theme.subtext }]}>Student</Text>
               </View>
             )}
             {post.isPremium ? (
-              <MaterialCommunityIcons name="check-decagram" size={15} color={colors.primary} style={{ marginLeft: 4 }} />
+              <MaterialCommunityIcons name="check-decagram" size={15} color={theme.primary} style={{ marginLeft: 4 }} />
             ) : null}
           </View>
-          <Text numberOfLines={1} style={styles.authorRole}>
+          <Text numberOfLines={1} style={[styles.authorRole, { color: theme.subtext }]}>
             {post.authorRole}
           </Text>
         </View>
@@ -1462,15 +1499,15 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
           }}
           style={{ padding: 6 }}
         >
-          <Feather name="more-vertical" size={22} color={colors.ink} />
+          <Feather name="more-vertical" size={22} color={theme.subtext} />
         </Pressable>
       </Pressable>
 
       <View style={styles.postMetaLine}>
         {media.label ? <MediaLabel media={media} /> : null}
         <View style={styles.metaDot} />
-        <Text style={styles.postTime}>{post.timeLabel}</Text>
-        <Feather name="globe" size={13} color="#6D6A85" />
+        <Text style={[styles.postTime, { color: theme.subtext }]}>{post.timeLabel}</Text>
+        <Feather name="globe" size={13} color={theme.subtext} />
       </View>
       <ReadMoreText text={post.text} />
       <PostMedia post={post} onPreview={onPreview} />
@@ -1490,10 +1527,11 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
 }
 
 function MediaLabel({ media }) {
+  const { theme } = useTheme();
   return (
-    <View style={styles.mediaLabel}>
-      <MaterialCommunityIcons name={media.labelIcon || "tag"} size={12} color={colors.primary} />
-      <Text numberOfLines={1} ellipsizeMode="tail" style={styles.mediaLabelText}>{media.label}</Text>
+    <View style={[styles.mediaLabel, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F5F2FF" }]}>
+      <MaterialCommunityIcons name={media.labelIcon || "tag"} size={12} color={theme.primary} />
+      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.mediaLabelText, { color: theme.primary }]}>{media.label}</Text>
     </View>
   );
 }
@@ -1509,18 +1547,19 @@ function formatCleanText(rawText = "") {
 }
 
 function ReadMoreText({ text = "" }) {
+  const { theme } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const cleanText = formatCleanText(text);
   const isLong = cleanText.length > 110 || cleanText.split("\n").length > 3;
 
   return (
     <View style={{ marginTop: 8 }}>
-      <Text numberOfLines={expanded ? undefined : 3} style={styles.postText}>
+      <Text numberOfLines={expanded ? undefined : 3} style={[styles.postText, { color: theme.text }]}>
         {cleanText}
       </Text>
       {isLong ? (
         <Pressable hitSlop={8} onPress={() => setExpanded((value) => !value)} style={styles.readMoreButton}>
-          <Text style={styles.readMoreText}>{expanded ? "Show less ↑" : "Read more ↓"}</Text>
+          <Text style={[styles.readMoreText, { color: theme.primary }]}>{expanded ? "Show less ↑" : "Read more ↓"}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -1831,22 +1870,26 @@ function DocumentThumbnail({ title }) {
 }
 
 function PostActions({ post, session, metrics = {}, onComment }) {
+  const { theme } = useTheme();
+  const targetPostId = post?.id || post?._id;
   const [liked, setLiked] = useState(Boolean(post?.isLiked));
   const [likesCount, setLikesCount] = useState(metrics?.likes || 0);
   const postCommentCount = post?.metrics?.comments !== undefined ? post.metrics.comments : (post?.commentsList ? post.commentsList.length : (metrics?.comments || 0));
   const [commentsCount, setCommentsCount] = useState(postCommentCount);
   const [sharesCount, setSharesCount] = useState(metrics?.shares || 0);
-  const [saved, setSaved] = useState(Boolean(post?.bookmarked));
+  const [saved, setSaved] = useState(Boolean(post?.bookmarked || post?.userAction?.saved));
 
   useEffect(() => {
     setCommentsCount(postCommentCount);
-  }, [postCommentCount]);
+  }, [postCommentCount, post?.metrics?.comments, post?.commentsList?.length]);
+
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
   // Animated scale for Clapping bounce animation
   const clapScaleAnim = useRef(new Animated.Value(1)).current;
 
   async function handleToggleClap() {
+    if (!targetPostId) return;
     const nextLiked = !liked;
     setLiked(nextLiked);
     setLikesCount((prev) => Math.max(0, prev + (nextLiked ? 1 : -1)));
@@ -1857,9 +1900,9 @@ function PostActions({ post, session, metrics = {}, onComment }) {
       Animated.spring(clapScaleAnim, { toValue: 1, friction: 3, tension: 150, useNativeDriver: true })
     ]).start();
 
-    if (session?.token && post?.id) {
+    if (session?.token && targetPostId) {
       try {
-        const res = await togglePostLike(session.token, post.id);
+        const res = await togglePostLike(session.token, targetPostId);
         if (res && typeof res.likes === "number") setLikesCount(res.likes);
         if (res && typeof res.isLiked === "boolean") setLiked(res.isLiked);
       } catch (e) {}
@@ -1867,12 +1910,16 @@ function PostActions({ post, session, metrics = {}, onComment }) {
   }
 
   async function handleToggleSave() {
+    if (!targetPostId) return;
     const nextSaved = !saved;
     setSaved(nextSaved);
 
-    if (session?.token && post?.id) {
+    if (session?.token && targetPostId) {
       try {
-        await toggleSavePost(session.token, post.id);
+        const res = await toggleSavePost(session.token, targetPostId);
+        if (res && typeof res.saved === "boolean") {
+          setSaved(res.saved);
+        }
       } catch (e) {}
     }
     Alert.alert(
@@ -1902,8 +1949,8 @@ function PostActions({ post, session, metrics = {}, onComment }) {
     setShareModalOpen(false);
     setSharesCount((prev) => prev + 1);
     const text = encodeURIComponent(`*${post?.authorName || "TCM Member"}* on TCM Academy:\n"${postText}"\n\nRead more: ${shareUrl}`);
-    Linking.openURL(`whatsapp://send?text=${text}`).catch(() => {
-      Alert.alert("WhatsApp Not Installed", "Could not open WhatsApp app directly.");
+    Linking.openURL(`https://api.whatsapp.com/send?text=${text}`).catch(() => {
+      Alert.alert("App Not Found", "WhatsApp is not installed on this device.");
     });
   }
 
@@ -1916,6 +1963,33 @@ function PostActions({ post, session, metrics = {}, onComment }) {
 
   function handleCopyLink() {
     setShareModalOpen(false);
+    Alert.alert("Link Copied 🔗", "Post URL copied to clipboard!");
+  }
+
+  function handleDirectShare(platform) {
+    setShareModalOpen(false);
+    const postUrl = `https://thecodemunk.in/post/${post.id || "1"}`;
+    const textMsg = `Check out this post on TCM: "${post.caption?.slice(0, 60) || "Code & Tech update"}..."`;
+
+    if (platform === "whatsapp") {
+      Linking.openURL(`https://api.whatsapp.com/send?text=${encodeURIComponent(textMsg + " " + postUrl)}`).catch(() => {
+        Alert.alert("App Not Found", "WhatsApp is not installed on this device.");
+      });
+    } else if (platform === "telegram") {
+      Linking.openURL(`https://t.me/share/url?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(textMsg)}`).catch(() => {
+        Alert.alert("App Not Found", "Telegram is not installed on this device.");
+      });
+    } else if (platform === "linkedin") {
+      Linking.openURL(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`).catch(() => {});
+    } else if (platform === "copy") {
+      Alert.alert("Link Copied 🔗", "Post URL copied to clipboard!");
+    } else {
+      Share.share({ message: `${textMsg} ${postUrl}`, url: postUrl });
+    }
+  }
+
+  function handleShareOption(option) {
+    setShareModalOpen(false);
     Alert.alert("Link Copied", "Post URL copied to clipboard.");
   }
 
@@ -1927,74 +2001,74 @@ function PostActions({ post, session, metrics = {}, onComment }) {
           <MaterialCommunityIcons
             name={liked ? "hand-clap" : "hand-clap"}
             size={24}
-            color={liked ? "#5B3CF5" : "#64748B"}
+            color={liked ? theme.primary : theme.subtext}
           />
         </Animated.View>
-        <Text style={[styles.metricText, liked && { color: "#5B3CF5", fontFamily: fonts.bold }]}>{likesCount} Claps</Text>
+        <Text style={[styles.metricText, { color: theme.subtext }, liked && { color: theme.primary, fontFamily: fonts.bold }]}>{likesCount} Claps</Text>
       </Pressable>
 
       {/* 2. Comments Button */}
       <Pressable onPress={onComment} style={styles.metric}>
-        <Feather name="message-circle" size={22} color="#64748B" />
-        <Text style={styles.metricText}>{commentsCount}</Text>
+        <Feather name="message-circle" size={22} color={theme.subtext} />
+        <Text style={[styles.metricText, { color: theme.subtext }]}>{commentsCount}</Text>
       </Pressable>
 
       {/* 3. Social Share Button */}
       <Pressable onPress={() => setShareModalOpen(true)} style={styles.metric}>
-        <Feather name="send" size={22} color="#64748B" />
-        <Text style={styles.metricText}>{sharesCount}</Text>
+        <Feather name="send" size={22} color={theme.subtext} />
+        <Text style={[styles.metricText, { color: theme.subtext }]}>{sharesCount}</Text>
       </Pressable>
 
       {/* 4. Save Bookmark Button (Filled Icon when Saved) */}
       <Pressable onPress={handleToggleSave} style={styles.saveAction}>
-        <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={23} color={saved ? "#5B3CF5" : "#64748B"} />
+        <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={23} color={saved ? theme.primary : theme.subtext} />
       </Pressable>
 
       {/* Social Share Sheet Modal (Clean Vector Icons, No Emojis) */}
       <Modal visible={shareModalOpen} transparent animationType="fade" onRequestClose={() => setShareModalOpen(false)}>
         <Pressable onPress={() => setShareModalOpen(false)} style={styles.modalOverlay}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={styles.modalContent}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
             <View style={styles.sheetHandle} />
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <Text style={{ fontFamily: fonts.bold, fontSize: 16, color: "#0F172A" }}>Share Post</Text>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 16, color: theme.text }}>Share Post</Text>
               <Pressable onPress={() => setShareModalOpen(false)}>
-                <Feather name="x" size={18} color="#64748B" />
+                <Feather name="x" size={18} color={theme.subtext} />
               </Pressable>
             </View>
-            <Text style={{ fontSize: 12, color: "#64748B", marginBottom: 16 }}>Share this post across social media networks</Text>
+            <Text style={{ fontSize: 12, color: theme.subtext, marginBottom: 16 }}>Share this post across social media networks</Text>
 
             <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 12 }}>
               <TouchableOpacity onPress={handleShareWhatsApp} activeOpacity={0.8} style={{ alignItems: "center", gap: 6 }}>
                 <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#25D366", alignItems: "center", justifyContent: "center" }}>
                   <FontAwesome name="whatsapp" size={24} color="#FFFFFF" />
                 </View>
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: "#0F172A" }}>WhatsApp</Text>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.text }}>WhatsApp</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={handleShareFacebook} activeOpacity={0.8} style={{ alignItems: "center", gap: 6 }}>
                 <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#1877F2", alignItems: "center", justifyContent: "center" }}>
                   <FontAwesome name="facebook" size={22} color="#FFFFFF" />
                 </View>
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: "#0F172A" }}>Facebook</Text>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.text }}>Facebook</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={handleCopyLink} activeOpacity={0.8} style={{ alignItems: "center", gap: 6 }}>
-                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#64748B", alignItems: "center", justifyContent: "center" }}>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: theme.isDark ? "#334155" : "#64748B", alignItems: "center", justifyContent: "center" }}>
                   <Feather name="copy" size={20} color="#FFFFFF" />
                 </View>
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: "#0F172A" }}>Copy Link</Text>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.text }}>Copy Link</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={handleNativeShare} activeOpacity={0.8} style={{ alignItems: "center", gap: 6 }}>
-                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#5B3CF5", alignItems: "center", justifyContent: "center" }}>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: theme.primary, alignItems: "center", justifyContent: "center" }}>
                   <Feather name="share-2" size={20} color="#FFFFFF" />
                 </View>
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: "#0F172A" }}>More</Text>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.text }}>More</Text>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity onPress={() => setShareModalOpen(false)} style={{ marginTop: 12, backgroundColor: "#F1F5F9", borderRadius: 12, paddingVertical: 12, alignItems: "center" }}>
-              <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: "#64748B" }}>Close</Text>
+            <TouchableOpacity onPress={() => setShareModalOpen(false)} style={{ marginTop: 12, backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderRadius: 12, paddingVertical: 12, alignItems: "center" }}>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: theme.subtext }}>Close</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -2199,51 +2273,63 @@ function MediaPreviewModal({ item, onClose }) {
   );
 }
 
-function renderFormattedCommentText(text) {
+function renderFormattedCommentText(text, theme) {
   if (!text) return null;
   const regex = /(@[A-Za-z0-9_.\-]+)/g;
   const parts = text.split(regex);
+  const textColor = theme?.text || "#181725";
+  const tagColor = theme?.primary || "#3897F0";
 
   return (
-    <Text style={styles.commentText}>
+    <Text style={[styles.commentText, { color: textColor }]}>
       {parts.map((part, index) => {
         if (part.match(regex)) {
           return (
-            <Text key={index} style={{ color: "#3897F0", fontFamily: fonts.bold }}>
+            <Text key={index} style={{ color: tagColor, fontFamily: fonts.bold }}>
               {part}
             </Text>
           );
         }
-        return <Text key={index}>{part}</Text>;
+        return <Text key={index} style={{ color: textColor }}>{part}</Text>;
       })}
     </Text>
   );
 }
 
 function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
+  const { theme } = useTheme();
   const [commentText, setCommentText] = useState("");
-  const [comments, setComments] = useState([]);
+  const [comments, setComments] = useState(post?.commentsList || []);
   const [loadingComments, setLoadingComments] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
 
+  const targetPostId = post?.id || post?._id;
+
   useEffect(() => {
     setCommentText("");
     setReplyingTo(null);
-    if (post?.id) {
-      loadComments();
+    if (Array.isArray(post?.commentsList) && post.commentsList.length > 0) {
+      setComments(post.commentsList);
     }
-  }, [post?.id]);
+    if (targetPostId) {
+      loadComments(targetPostId);
+    } else {
+      setLoadingComments(false);
+    }
+  }, [targetPostId]);
 
-  async function loadComments() {
+  async function loadComments(postIdToUse) {
+    const activeId = postIdToUse || targetPostId;
+    if (!activeId) return;
     setLoadingComments(true);
     try {
-      const res = await getPostComments(session?.token, post.id);
-      if (res?.comments) {
+      const res = await getPostComments(session?.token, activeId);
+      if (res?.comments && Array.isArray(res.comments)) {
         setComments(res.comments);
       }
     } catch (e) {
-      // quiet catch
+      console.log("Failed to load comments:", e);
     } finally {
       setLoadingComments(false);
     }
@@ -2258,7 +2344,9 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
   async function handleToggleCommentLike(commentId) {
     setComments((prev) =>
       prev.map((c) => {
-        if (c.id === commentId || c._id === commentId) {
+        const cId = String(c.id || c._id);
+        const matchId = String(commentId);
+        if (cId === matchId) {
           const isLikedNow = !c.isLiked;
           return {
             ...c,
@@ -2270,9 +2358,9 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
       })
     );
 
-    if (session?.token && post?.id) {
+    if (session?.token && targetPostId) {
       try {
-        await toggleCommentLike(session.token, post.id, commentId);
+        await toggleCommentLike(session.token, targetPostId, commentId);
       } catch (e) {}
     }
   }
@@ -2288,6 +2376,40 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
     }
   }
 
+  async function handleDeleteComment(commentId) {
+    if (!commentId || !targetPostId) return;
+
+    setComments((prev) =>
+      prev
+        .filter((c) => String(c.id || c._id) !== String(commentId))
+        .map((c) => ({
+          ...c,
+          replies: Array.isArray(c.replies)
+            ? c.replies.filter((r) => String(r.id || r._id) !== String(commentId))
+            : []
+        }))
+    );
+
+    if (post) {
+      const curCount = post?.metrics?.comments !== undefined ? post.metrics.comments : (post?.commentsList ? post.commentsList.length : 1);
+      const newCount = Math.max(0, curCount - 1);
+      if (!post.metrics) post.metrics = { likes: 0, comments: 0, shares: 0 };
+      post.metrics.comments = newCount;
+      if (Array.isArray(post.commentsList)) {
+        post.commentsList = post.commentsList.filter((c) => String(c.id || c._id) !== String(commentId));
+      }
+    }
+
+    if (session?.token) {
+      try {
+        const res = await deletePostComment(session.token, targetPostId, commentId);
+        if (res && typeof res.commentsCount === "number" && post && post.metrics) {
+          post.metrics.comments = res.commentsCount;
+        }
+      } catch (e) {}
+    }
+  }
+
   async function submitComment() {
     if (!commentText.trim()) return;
     setSubmittingComment(true);
@@ -2296,34 +2418,43 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
     setCommentText("");
     setReplyingTo(null);
 
+    if (post) {
+      const curCount = post?.metrics?.comments !== undefined ? post.metrics.comments : (post?.commentsList ? post.commentsList.length : 0);
+      if (!post.metrics) post.metrics = { likes: 0, comments: 0, shares: 0 };
+      post.metrics.comments = curCount + 1;
+    }
+
     try {
-      const targetPostId = post?.id || post?._id;
       if (session?.token && targetPostId) {
         const parentId = currentReplyTarget ? (currentReplyTarget.id || currentReplyTarget._id) : undefined;
         const res = await addPostComment(session.token, targetPostId, textToSend, parentId);
 
+        const newComment = res?.comment || {
+          id: `c-${Date.now()}`,
+          name: session?.user?.name || "You",
+          avatarUrl: session?.user?.avatarUrl,
+          text: textToSend,
+          time: "Just now",
+          likes: 0,
+          replies: []
+        };
+
         if (currentReplyTarget) {
-          const newReply = res?.comment || {
-            id: `r-${Date.now()}`,
-            name: session?.user?.name || "You",
-            avatarUrl: session?.user?.avatarUrl,
-            text: textToSend,
-            time: "Just now",
-            likes: 0
-          };
           setComments((prev) =>
             prev.map((c) => {
-              if (c.id === currentReplyTarget.id || c._id === currentReplyTarget.id) {
+              const cId = String(c.id || c._id);
+              const rId = String(currentReplyTarget.id || currentReplyTarget._id);
+              if (cId === rId) {
                 return {
                   ...c,
-                  replies: [...(c.replies || []), newReply]
+                  replies: [...(c.replies || []), newComment]
                 };
               }
               return c;
             })
           );
-        } else if (res?.comment) {
-          setComments((prev) => [res.comment, ...prev]);
+        } else {
+          setComments((prev) => [newComment, ...prev]);
         }
       } else if (currentReplyTarget) {
         const newReply = {
@@ -2336,7 +2467,9 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
         };
         setComments((prev) =>
           prev.map((c) => {
-            if (c.id === currentReplyTarget.id || c._id === currentReplyTarget.id) {
+            const cId = String(c.id || c._id);
+            const rId = String(currentReplyTarget.id || currentReplyTarget._id);
+            if (cId === rId) {
               return {
                 ...c,
                 replies: [...(c.replies || []), newReply]
@@ -2347,7 +2480,7 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
         );
       } else {
         setComments((prev) => [
-          { id: `c-${Date.now()}`, name: "You", text: textToSend, time: "Just now", likes: 0, replies: [] },
+          { id: `c-${Date.now()}`, name: session?.user?.name || "You", avatarUrl: session?.user?.avatarUrl, text: textToSend, time: "Just now", likes: 0, replies: [] },
           ...prev
         ]);
       }
@@ -2368,24 +2501,24 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
       >
         <View style={styles.commentSheetShell}>
           <Pressable style={styles.commentBackdrop} onPress={onClose} />
-          <View style={styles.commentSheet}>
+          <View style={[styles.commentSheet, { backgroundColor: theme.cardBg }]}>
             <View style={styles.sheetHandle} />
-            <View style={styles.commentHeader}>
-              <Text style={styles.commentTitle}>Comments</Text>
-              <Text style={styles.commentCount}>{comments.length}</Text>
+            <View style={[styles.commentHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.commentTitle, { color: theme.text }]}>Comments</Text>
+              <Text style={[styles.commentCount, { color: theme.subtext }]}>{comments.length}</Text>
               <Pressable hitSlop={10} onPress={onClose} style={styles.commentClose}>
-                <Feather name="x" size={21} color={colors.ink} />
+                <Feather name="x" size={21} color={theme.text} />
               </Pressable>
             </View>
 
             <View style={{ flex: 1 }}>
               {loadingComments ? (
-                <ActivityIndicator size="medium" color="#5B3CF5" style={{ marginVertical: 30 }} />
+                <ActivityIndicator size="medium" color={theme.primary} style={{ marginVertical: 30 }} />
               ) : comments.length === 0 ? (
                 <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 40, paddingHorizontal: 20 }}>
-                  <Feather name="message-circle" size={36} color="#B5B3C8" style={{ marginBottom: 8 }} />
-                  <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: "#181725" }}>No comments yet</Text>
-                  <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: "#7C7C9A", textAlign: "center", marginTop: 2 }}>
+                  <Feather name="message-circle" size={36} color={theme.subtext} style={{ marginBottom: 8 }} />
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: theme.text }}>No comments yet</Text>
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: theme.subtext, textAlign: "center", marginTop: 2 }}>
                     Be the first to share your thoughts on this post!
                   </Text>
                 </View>
@@ -2401,49 +2534,56 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
                             <Avatar name={authorName} uri={comment.avatarUrl} size={36} />
                           </TouchableOpacity>
                           <View style={styles.commentBody}>
-                            <View style={styles.commentBubble}>
+                            <View style={[styles.commentBubble, { backgroundColor: theme.isDark ? "#1E263B" : "#F7F6FB" }]}>
                               <TouchableOpacity onPress={() => handleCommentUserClick(comment)} activeOpacity={0.8}>
-                                <Text numberOfLines={1} style={styles.commentName}>{authorName}</Text>
+                                <Text numberOfLines={1} style={[styles.commentName, { color: theme.text }]}>{authorName}</Text>
                               </TouchableOpacity>
-                              {renderFormattedCommentText(comment.text)}
+                              {renderFormattedCommentText(comment.text, theme)}
                             </View>
                             <View style={styles.commentActions}>
-                              <Text style={styles.commentActionText}>{comment.time || "Just now"}</Text>
-                              <Text style={styles.commentActionText}>{comment.likes || 0} likes</Text>
+                              <Text style={[styles.commentActionText, { color: theme.subtext }]}>{comment.time || "Just now"}</Text>
+                              <Text style={[styles.commentActionText, { color: theme.subtext }]}>{comment.likes || 0} likes</Text>
                               <TouchableOpacity onPress={() => handleReplyComment(comment)}>
-                                <Text style={[styles.commentActionText, { color: "#3897F0", fontFamily: fonts.semiBold }]}>Reply</Text>
+                                <Text style={[styles.commentActionText, { color: theme.primary, fontFamily: fonts.semiBold }]}>Reply</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => handleDeleteComment(commentId)}>
+                                <Text style={[styles.commentActionText, { color: "#EF4444", fontFamily: fonts.medium }]}>Delete</Text>
                               </TouchableOpacity>
                             </View>
                           </View>
                           <Pressable hitSlop={8} onPress={() => handleToggleCommentLike(commentId)} style={styles.commentLike}>
-                            <Ionicons name={comment.isLiked ? "heart" : "heart-outline"} size={16} color={comment.isLiked ? "#FF304D" : "#68677D"} />
+                            <Ionicons name={comment.isLiked ? "heart" : "heart-outline"} size={16} color={comment.isLiked ? "#FF304D" : theme.subtext} />
                           </Pressable>
                         </View>
 
                         {/* Instagram-Style Nested Replies */}
                         {Array.isArray(comment.replies) && comment.replies.length > 0 && (
-                          <View style={{ paddingLeft: 42, borderLeftWidth: 1.5, borderLeftColor: "#E2E8F0", marginLeft: 18, marginTop: 4, gap: 8 }}>
-                            {comment.replies.map((reply) => (
-                              <View key={reply.id} style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
-                                <TouchableOpacity onPress={() => handleCommentUserClick(reply)} activeOpacity={0.8}>
-                                  <Avatar name={reply.name} uri={reply.avatarUrl} size={26} />
-                                </TouchableOpacity>
-                                <View style={{ flex: 1 }}>
-                                  <View style={styles.commentBubble}>
-                                    <TouchableOpacity onPress={() => handleCommentUserClick(reply)} activeOpacity={0.8}>
-                                      <Text numberOfLines={1} style={styles.commentName}>{reply.name}</Text>
-                                    </TouchableOpacity>
-                                    {renderFormattedCommentText(reply.text)}
-                                  </View>
-                                  <View style={styles.commentActions}>
-                                    <Text style={styles.commentActionText}>{reply.time || "Just now"}</Text>
-                                    <TouchableOpacity onPress={() => handleReplyComment(comment)}>
-                                      <Text style={[styles.commentActionText, { color: "#3897F0", fontFamily: fonts.semiBold }]}>Reply</Text>
-                                    </TouchableOpacity>
+                          <View style={{ paddingLeft: 42, borderLeftWidth: 1.5, borderLeftColor: theme.border, marginLeft: 18, marginTop: 4, gap: 8 }}>
+                            {comment.replies.map((reply) => {
+                              const replyId = reply.id || reply._id;
+                              const replyAuthor = reply.name || reply.userName || "Learner";
+                              return (
+                                <View key={replyId} style={styles.commentRow}>
+                                  <TouchableOpacity onPress={() => handleCommentUserClick(reply)} activeOpacity={0.8}>
+                                    <Avatar name={replyAuthor} uri={reply.avatarUrl} size={28} />
+                                  </TouchableOpacity>
+                                  <View style={styles.commentBody}>
+                                    <View style={[styles.commentBubble, { backgroundColor: theme.isDark ? "#1E263B" : "#F7F6FB" }]}>
+                                      <TouchableOpacity onPress={() => handleCommentUserClick(reply)} activeOpacity={0.8}>
+                                        <Text numberOfLines={1} style={[styles.commentName, { color: theme.text }]}>{replyAuthor}</Text>
+                                      </TouchableOpacity>
+                                      {renderFormattedCommentText(reply.text, theme)}
+                                    </View>
+                                    <View style={styles.commentActions}>
+                                      <Text style={[styles.commentActionText, { color: theme.subtext }]}>{reply.time || "Just now"}</Text>
+                                      <TouchableOpacity onPress={() => handleDeleteComment(replyId)}>
+                                        <Text style={[styles.commentActionText, { color: "#EF4444", fontFamily: fonts.medium }]}>Delete</Text>
+                                      </TouchableOpacity>
+                                    </View>
                                   </View>
                                 </View>
-                              </View>
-                            ))}
+                              );
+                            })}
                           </View>
                         )}
                       </View>
@@ -2454,22 +2594,22 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
             </View>
 
             {replyingTo && (
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#EFF6FF", paddingHorizontal: 12, paddingVertical: 6, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderWidth: 1, borderColor: "#BFDBFE" }}>
-                <Text style={{ fontSize: 11, color: "#3897F0", fontFamily: fonts.semiBold }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: theme.isDark ? "#1E1B4B" : "#EFF6FF", paddingHorizontal: 12, paddingVertical: 6, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderWidth: 1, borderColor: theme.border }}>
+                <Text style={{ fontSize: 11, color: theme.primary, fontFamily: fonts.semiBold }}>
                   Replying to @{replyingTo.name || replyingTo.userName || "Learner"}
                 </Text>
                 <Pressable onPress={() => { setReplyingTo(null); setCommentText(""); }}>
-                  <Feather name="x" size={14} color="#3897F0" />
+                  <Feather name="x" size={14} color={theme.primary} />
                 </Pressable>
               </View>
             )}
 
-            <View style={styles.commentInputRow}>
+            <View style={[styles.commentInputRow, { backgroundColor: theme.cardBg, borderTopColor: theme.border }]}>
               <Avatar name="You" size={34} />
               <TextInput
                 placeholder="Add a comment..."
-                placeholderTextColor="#8A879F"
-                style={styles.commentInput}
+                placeholderTextColor={theme.subtext}
+                style={[styles.commentInput, { backgroundColor: theme.isDark ? "#1E263B" : "#F8F7FC", color: theme.text }]}
                 value={commentText}
                 onChangeText={setCommentText}
               />
@@ -3021,32 +3161,45 @@ function DetailInputRow({ icon, label, placeholder, value, onChangeText, ...prop
   );
 }
 function ActionDock({ open, setOpen, onAction, tabs, activeTab, setActiveTab }) {
+  const { theme } = useTheme();
   return (
     <View style={styles.bottomDock}>
       <View style={styles.fabRow}>
         <Pressable onPress={() => onAction("post")} style={({ pressed }) => [styles.fab, pressed && styles.pressed]}>
-          <Feather name="plus" size={24} color="#FFFFFF" />
+          <LinearGradient colors={[theme.primary, theme.primaryDark || "#7B52FF"]} style={styles.fabGradient}>
+            <Feather name="plus" size={26} color="#FFFFFF" />
+          </LinearGradient>
         </Pressable>
       </View>
 
-      <BlurView intensity={34} tint="light" style={styles.tabs}>
-        <LinearGradient colors={["rgba(255,255,255,0.68)", "rgba(255,255,255,0.36)"]} style={styles.tabsGlass}>
+      <View style={[styles.floatingNavCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         {tabs.map(({ key, icon }) => {
           const active = activeTab === key;
+          let iconName = icon;
+          if (key === "Doubts") iconName = "message-square";
+          if (key === "Learn") iconName = "book-open";
+          if (key === "Community") iconName = "users";
+          if (key === "Home") iconName = "home";
+          if (key === "Profile") iconName = "user";
+
+          const activeColor = theme.isDark ? "#818CF8" : "#5B3CF5";
+          const inactiveColor = theme.isDark ? "#94A3B8" : "#7C7C9A";
+
           return (
             <Pressable key={key} onPress={() => setActiveTab(key)} style={({ pressed }) => [styles.tabItem, pressed && styles.pressed]}>
-              <Feather name={icon} size={22} color={active ? colors.primary : "#68677D"} />
-              <Text numberOfLines={1} style={[styles.tabLabel, active && styles.tabLabelActive]}>{key}</Text>
+              <Feather name={iconName} size={22} color={active ? activeColor : inactiveColor} />
+              <Text numberOfLines={1} style={[styles.tabLabel, { color: active ? activeColor : inactiveColor }, active && styles.tabLabelActive]}>{key}</Text>
+              {active ? <View style={[styles.activeTabLine, { backgroundColor: activeColor }]} /> : null}
             </Pressable>
           );
         })}
-        </LinearGradient>
-      </BlurView>
+      </View>
     </View>
   );
 }
 
 function DrawerFeatureModal({ feature, onClose, user }) {
+  const { theme } = useTheme();
   const [leaveReason, setLeaveReason] = useState("");
   const [leaveDays, setLeaveDays] = useState("1");
   const [appliedLeaves, setAppliedLeaves] = useState([
@@ -3065,6 +3218,9 @@ function DrawerFeatureModal({ feature, onClose, user }) {
   if (!feature) return null;
 
   const isLeaveFeature = ["My Leaves", "Apply for Leave", "Leave Calendar", "Leave Balance", "Leave Requests"].includes(feature);
+  const modalSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
+  const softSurface = { backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#F4F3FB", borderColor: theme.border };
+  const premiumGradient = theme.isDark ? ["#312E81", "#111827"] : ["#5B3CF5", "#3A1CC9"];
 
   function handleApplyLeave() {
     if (!leaveReason.trim()) {
@@ -3087,14 +3243,14 @@ function DrawerFeatureModal({ feature, onClose, user }) {
 
   return (
     <Modal animationType="slide" visible={Boolean(feature)} onRequestClose={onClose}>
-      <SafeAreaView style={styles.modalSafeArea}>
-        <View style={styles.modalHeader}>
-          <Pressable hitSlop={10} onPress={onClose} style={styles.modalCloseBtn}>
-            <Feather name="arrow-left" size={22} color="#18172B" />
+      <SafeAreaView style={[styles.modalSafeArea, { backgroundColor: theme.bg }]}>
+        <View style={[styles.modalHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+          <Pressable hitSlop={10} onPress={onClose} style={[styles.modalCloseBtn, softSurface]}>
+            <Feather name="arrow-left" size={22} color={theme.text} />
           </Pressable>
-          <Text style={styles.modalTitleText}>{feature}</Text>
-          <Pressable hitSlop={10} onPress={onClose} style={styles.modalCloseBtn}>
-            <Feather name="x" size={22} color="#18172B" />
+          <Text style={[styles.modalTitleText, { color: theme.text }]}>{feature}</Text>
+          <Pressable hitSlop={10} onPress={onClose} style={[styles.modalCloseBtn, softSurface]}>
+            <Feather name="x" size={22} color={theme.text} />
           </Pressable>
         </View>
 
@@ -3106,49 +3262,49 @@ function DrawerFeatureModal({ feature, onClose, user }) {
                   <Pressable
                     key={tab}
                     onPress={() => setActiveLeaveTab(tab)}
-                    style={[styles.leaveNavTab, activeLeaveTab === tab && styles.leaveNavTabActive]}
+                    style={[styles.leaveNavTab, softSurface, activeLeaveTab === tab && styles.leaveNavTabActive]}
                   >
-                    <Text style={[styles.leaveNavText, activeLeaveTab === tab && styles.leaveNavTextActive]}>{tab}</Text>
+                    <Text style={[styles.leaveNavText, { color: theme.subtext }, activeLeaveTab === tab && styles.leaveNavTextActive]}>{tab}</Text>
                   </Pressable>
                 ))}
               </ScrollView>
 
               {activeLeaveTab === "Leave Balance" || activeLeaveTab === "My Leaves" ? (
                 <View style={styles.leaveMetricsGrid}>
-                  <View style={[styles.leaveCard, { borderLeftColor: "#7D45EA" }]}>
-                    <Text style={styles.leaveCardVal}>8</Text>
-                    <Text style={styles.leaveCardLbl}>Casual Leaves</Text>
+                  <View style={[styles.leaveCard, modalSurface, { borderLeftColor: "#7D45EA" }]}>
+                    <Text style={[styles.leaveCardVal, { color: theme.text }]}>8</Text>
+                    <Text style={[styles.leaveCardLbl, { color: theme.subtext }]}>Casual Leaves</Text>
                   </View>
-                  <View style={[styles.leaveCard, { borderLeftColor: "#2E7D32" }]}>
-                    <Text style={styles.leaveCardVal}>5</Text>
-                    <Text style={styles.leaveCardLbl}>Sick Leaves</Text>
+                  <View style={[styles.leaveCard, modalSurface, { borderLeftColor: "#2E7D32" }]}>
+                    <Text style={[styles.leaveCardVal, { color: theme.text }]}>5</Text>
+                    <Text style={[styles.leaveCardLbl, { color: theme.subtext }]}>Sick Leaves</Text>
                   </View>
-                  <View style={[styles.leaveCard, { borderLeftColor: "#E7A900" }]}>
-                    <Text style={styles.leaveCardVal}>12</Text>
-                    <Text style={styles.leaveCardLbl}>Earned Leaves</Text>
+                  <View style={[styles.leaveCard, modalSurface, { borderLeftColor: "#E7A900" }]}>
+                    <Text style={[styles.leaveCardVal, { color: theme.text }]}>12</Text>
+                    <Text style={[styles.leaveCardLbl, { color: theme.subtext }]}>Earned Leaves</Text>
                   </View>
                 </View>
               ) : null}
 
               {activeLeaveTab === "Apply for Leave" ? (
-                <View style={styles.applyLeaveBox}>
-                  <Text style={styles.formLabel}>Leave Reason / Purpose</Text>
+                <View style={[styles.applyLeaveBox, modalSurface]}>
+                  <Text style={[styles.formLabel, { color: theme.text }]}>Leave Reason / Purpose</Text>
                   <TextInput
                     placeholder="Enter reason for leave..."
-                    placeholderTextColor="#8A879F"
+                    placeholderTextColor={theme.subtext}
                     value={leaveReason}
                     onChangeText={setLeaveReason}
-                    style={styles.formInput}
+                    style={[styles.formInput, softSurface, { color: theme.text }]}
                     multiline
                   />
-                  <Text style={styles.formLabel}>Number of Days</Text>
+                  <Text style={[styles.formLabel, { color: theme.text }]}>Number of Days</Text>
                   <TextInput
                     placeholder="1"
-                    placeholderTextColor="#8A879F"
+                    placeholderTextColor={theme.subtext}
                     keyboardType="number-pad"
                     value={leaveDays}
                     onChangeText={setLeaveDays}
-                    style={styles.formInputSingle}
+                    style={[styles.formInputSingle, softSurface, { color: theme.text }]}
                   />
                   <Pressable onPress={handleApplyLeave} style={styles.submitLeaveBtn}>
                     <Text style={styles.submitLeaveText}>Submit Application</Text>
@@ -3158,52 +3314,52 @@ function DrawerFeatureModal({ feature, onClose, user }) {
 
               {activeLeaveTab === "My Leaves" || activeLeaveTab === "Leave Requests" ? (
                 <View style={styles.leaveListSection}>
-                  <Text style={styles.subSectionTitle}>Recent Applications</Text>
+                  <Text style={[styles.subSectionTitle, { color: theme.text }]}>Recent Applications</Text>
                   {appliedLeaves.map((item) => (
-                    <View key={item.id} style={styles.leaveRecordCard}>
+                    <View key={item.id} style={[styles.leaveRecordCard, modalSurface]}>
                       <View style={styles.leaveRecordTop}>
-                        <Text style={styles.leaveRecordType}>{item.type}</Text>
+                        <Text style={[styles.leaveRecordType, { color: theme.text }]}>{item.type}</Text>
                         <View style={[styles.statusBadge, item.status === "Approved" ? styles.statusApproved : styles.statusPending]}>
                           <Text style={styles.statusBadgeText}>{item.status}</Text>
                         </View>
                       </View>
                       <Text style={styles.leaveRecordDates}>{item.dates} ({item.days})</Text>
-                      <Text style={styles.leaveRecordReason}>Reason: {item.reason}</Text>
+                      <Text style={[styles.leaveRecordReason, { color: theme.subtext }]}>Reason: {item.reason}</Text>
                     </View>
                   ))}
                 </View>
               ) : null}
 
               {activeLeaveTab === "Leave Calendar" ? (
-                <View style={styles.calendarMockCard}>
+                <View style={[styles.calendarMockCard, modalSurface]}>
                   <MaterialCommunityIcons name="calendar-month" size={44} color="#5B3CF5" />
-                  <Text style={styles.calendarTitle}>Academic Calendar 2026</Text>
-                  <Text style={styles.calendarSub}>Holidays: Independence Day (15 Aug), Diwali (1 Nov), New Year (1 Jan)</Text>
+                  <Text style={[styles.calendarTitle, { color: theme.text }]}>Academic Calendar 2026</Text>
+                  <Text style={[styles.calendarSub, { color: theme.subtext }]}>Holidays: Independence Day (15 Aug), Diwali (1 Nov), New Year (1 Jan)</Text>
                 </View>
               ) : null}
             </View>
           ) : feature === "Settings" ? (
             <View style={styles.featureContainer}>
-              <View style={styles.settingsRow}>
+              <View style={[styles.settingsRow, modalSurface]}>
                 <View style={styles.settingsLeft}>
-                  <Feather name="bell" size={20} color="#5B3CF5" />
-                  <Text style={styles.settingsText}>Push Notifications</Text>
+                  <Feather name="bell" size={20} color={theme.primary} />
+                  <Text style={[styles.settingsText, { color: theme.text }]}>Push Notifications</Text>
                 </View>
-                <Text style={styles.settingStateText}>Active</Text>
+                <Text style={[styles.settingStateText, { color: theme.isDark ? "#C7D2FE" : theme.primary }]}>Active</Text>
               </View>
-              <View style={styles.settingsRow}>
+              <View style={[styles.settingsRow, modalSurface]}>
                 <View style={styles.settingsLeft}>
-                  <Feather name="lock" size={20} color="#5B3CF5" />
-                  <Text style={styles.settingsText}>Privacy & Security</Text>
+                  <Feather name="lock" size={20} color={theme.primary} />
+                  <Text style={[styles.settingsText, { color: theme.text }]}>Privacy & Security</Text>
                 </View>
-                <Feather name="chevron-right" size={18} color="#8A879F" />
+                <Feather name="chevron-right" size={18} color={theme.subtext} />
               </View>
-              <View style={styles.settingsRow}>
+              <View style={[styles.settingsRow, modalSurface]}>
                 <View style={styles.settingsLeft}>
-                  <Feather name="globe" size={20} color="#5B3CF5" />
-                  <Text style={styles.settingsText}>App Language</Text>
+                  <Feather name="globe" size={20} color={theme.primary} />
+                  <Text style={[styles.settingsText, { color: theme.text }]}>App Language</Text>
                 </View>
-                <Text style={styles.settingStateText}>English</Text>
+                <Text style={[styles.settingStateText, { color: theme.isDark ? "#C7D2FE" : theme.primary }]}>English</Text>
               </View>
             </View>
           ) : feature === "Notifications" ? (
@@ -3213,28 +3369,28 @@ function DrawerFeatureModal({ feature, onClose, user }) {
                 { id: "2", title: "Doubt Solved", desc: "Mentor Rohit Singh answered your question.", time: "1h ago" },
                 { id: "3", title: "Class Reminder", desc: "Live session starts at 5:00 PM today.", time: "3h ago" }
               ].map((item) => (
-                <View key={item.id} style={styles.notifCard}>
-                  <View style={styles.notifIconWrap}>
-                    <Feather name="bell" size={18} color="#5B3CF5" />
+                <View key={item.id} style={[styles.notifCard, modalSurface]}>
+                  <View style={[styles.notifIconWrap, { backgroundColor: theme.badgeBg }]}>
+                    <Feather name="bell" size={18} color={theme.primary} />
                   </View>
                   <View style={styles.notifCopy}>
-                    <Text style={styles.notifTitle}>{item.title}</Text>
-                    <Text style={styles.notifDesc}>{item.desc}</Text>
-                    <Text style={styles.notifTime}>{item.time}</Text>
+                    <Text style={[styles.notifTitle, { color: theme.text }]}>{item.title}</Text>
+                    <Text style={[styles.notifDesc, { color: theme.subtext }]}>{item.desc}</Text>
+                    <Text style={[styles.notifTime, { color: theme.subtext }]}>{item.time}</Text>
                   </View>
                 </View>
               ))}
             </View>
           ) : feature === "Payment & Billing" ? (
             <View style={styles.featureContainer}>
-              <View style={styles.billingCard}>
-                <Text style={styles.billingPlanTitle}>Active Plan: Premium</Text>
-                <Text style={styles.billingPlanSub}>Next renewal date: Nov 15, 2026</Text>
+              <View style={[styles.billingCard, modalSurface]}>
+                <Text style={[styles.billingPlanTitle, { color: theme.isDark ? "#C7D2FE" : theme.primary }]}>Active Plan: Premium</Text>
+                <Text style={[styles.billingPlanSub, { color: theme.subtext }]}>Next renewal date: Nov 15, 2026</Text>
               </View>
             </View>
           ) : feature === "Go Premium" ? (
             <View style={styles.featureContainer}>
-              <LinearGradient colors={["#5B3CF5", "#3A1CC9"]} style={styles.premiumHeroCard}>
+              <LinearGradient colors={premiumGradient} style={[styles.premiumHeroCard, { borderWidth: 1, borderColor: theme.isDark ? "#4338CA" : "#E6E1FF" }]}>
                 <FontAwesome5 name="crown" size={36} color="#FFD700" />
                 <Text style={styles.premiumHeroTitle}>Go Premium</Text>
                 <Text style={styles.premiumHeroSub}>Unlock all premium courses, doubt solving & certificate downloads.</Text>
@@ -3245,10 +3401,10 @@ function DrawerFeatureModal({ feature, onClose, user }) {
             </View>
           ) : (
             <View style={styles.featureContainer}>
-              <View style={styles.genericFeatureCard}>
-                <MaterialCommunityIcons name="star-shooting" size={44} color="#5B3CF5" />
-                <Text style={styles.genericTitle}>{feature}</Text>
-                <Text style={styles.genericSub}>Welcome to {feature} section in TCM.</Text>
+              <View style={[styles.genericFeatureCard, modalSurface]}>
+                <MaterialCommunityIcons name="star-shooting" size={44} color={theme.primary} />
+                <Text style={[styles.genericTitle, { color: theme.text }]}>{feature}</Text>
+                <Text style={[styles.genericSub, { color: theme.subtext }]}>Welcome to {feature} section in TCM.</Text>
               </View>
             </View>
           )}
@@ -3297,7 +3453,7 @@ function TabPlaceholder({ activeTab }) {
 
 const styles = StyleSheet.create({
   safe: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "transparent",
     flex: 1
   },
   appShell: {
@@ -3434,36 +3590,44 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 21
+    marginBottom: 16
   },
   searchBox: {
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderColor: "#E6E3F0",
-    borderRadius: 9,
+    borderColor: "#F0EEF8",
+    borderRadius: 16,
     borderWidth: 1,
     flex: 1,
     flexDirection: "row",
-    height: 50,
-    paddingHorizontal: 15
+    height: 52,
+    paddingHorizontal: 16,
+    shadowColor: "#261B94",
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 1
   },
   searchInput: {
-    color: colors.ink,
+    color: "#181725",
     flex: 1,
     fontFamily: fonts.medium,
-    fontSize: 13,
+    fontSize: 13.5,
     marginLeft: 10,
     paddingVertical: 0
   },
   filterButton: {
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderColor: "#E6E3F0",
-    borderRadius: 9,
+    borderColor: "#F0EEF8",
+    borderRadius: 16,
     borderWidth: 1,
-    height: 50,
+    height: 52,
     justifyContent: "center",
-    width: 50
+    width: 52,
+    shadowColor: "#261B94",
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 1
   },
   initialAvatar: {
     alignItems: "center",
@@ -3540,7 +3704,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12
   },
   categoryTabActive: {
-    backgroundColor: "#F4F1FF",
     borderBottomColor: colors.primary,
     borderBottomWidth: 2.5
   },
@@ -5491,64 +5654,68 @@ const styles = StyleSheet.create({
   },
   fabRow: {
     alignItems: "flex-end",
-    bottom: 82,
-    paddingRight: 10,
+    bottom: 84,
     position: "absolute",
-    right: 16,
-    zIndex: 2
+    right: 18,
+    zIndex: 10
   },
   fab: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: 26,
-    height: 52,
-    justifyContent: "center",
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.24,
-    shadowRadius: 14,
-    width: 52,
-    elevation: 8
+    borderRadius: 28,
+    height: 56,
+    width: 56,
+    shadowColor: "#5B3CF5",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+    overflow: "hidden"
   },
-  tabs: {
-    ...shadow,
+  fabGradient: {
+    width: "100%",
+    height: "100%",
     alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: "rgba(255,255,255,0.18)",
-    borderColor: "rgba(255,255,255,0.62)",
-    borderRadius: 22,
-    borderWidth: 1,
-    overflow: "hidden",
-    shadowColor: "#241863",
-    shadowOpacity: 0.1,
-    shadowRadius: 22,
-    width: "100%"
+    justifyContent: "center"
   },
-  tabsGlass: {
+  floatingNavCard: {
     flexDirection: "row",
-    height: 72,
+    alignItems: "center",
     justifyContent: "space-around",
-    maxWidth: 820,
-    paddingHorizontal: 6,
-    width: "100%"
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#F0EEF8",
+    paddingVertical: 8,
+    shadowColor: "#261B94",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6
   },
   tabItem: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    minWidth: 0,
-    paddingVertical: 5
+    paddingVertical: 6,
+    position: "relative"
   },
   tabLabel: {
-    color: "#68677D",
+    color: "#7C7C9A",
     fontFamily: fonts.medium,
-    fontSize: 10,
+    fontSize: 10.5,
     marginTop: 3,
     textAlign: "center"
   },
   tabLabelActive: {
-    color: colors.primary,
+    color: "#5B3CF5",
     fontFamily: fonts.bold
+  },
+  activeTabLine: {
+    position: "absolute",
+    bottom: 0,
+    width: 20,
+    height: 3,
+    backgroundColor: "#5B3CF5",
+    borderRadius: 2
   },
   placeholderCard: {
     ...shadow,

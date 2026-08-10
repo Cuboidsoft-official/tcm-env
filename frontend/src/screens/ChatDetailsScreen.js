@@ -16,6 +16,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 import { manageCommunityJoinRequest, updateCommunityChannel } from "../api/client";
 
 export default function ChatDetailsScreen({
@@ -31,6 +32,7 @@ export default function ChatDetailsScreen({
   onOpenMedia,
   onOpenUserProfile
 }) {
+  const { theme } = useTheme();
   const [muted, setMuted] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(targetUser?.name || "");
@@ -122,14 +124,20 @@ export default function ChatDetailsScreen({
     } catch (e) {}
   }
 
+  const themedSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
+  const themedSoftSurface = {
+    backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#F8FAFC",
+    borderColor: theme.border
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Header Bar */}
-      <View style={styles.headerBar}>
-        <Pressable onPress={onClose} style={styles.closeBtn}>
-          <Feather name="arrow-left" size={22} color="#0F172A" />
+      <View style={[styles.headerBar, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+        <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.badgeBg }]}>
+          <Feather name="arrow-left" size={22} color={theme.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
           {isChannelChat ? "Community Channel Info" : "Contact Details"}
         </Text>
         <View style={{ width: 36 }} />
@@ -138,7 +146,7 @@ export default function ChatDetailsScreen({
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* 2. Banner & Profile Hero Card */}
         {isChannelChat ? (
-          <View style={styles.heroCard}>
+          <View style={[styles.heroCard, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
             <View style={{ position: "relative" }}>
               <Image
                 source={{
@@ -168,7 +176,7 @@ export default function ChatDetailsScreen({
             </View>
 
             {isEditingCover ? (
-              <View style={{ padding: 12, backgroundColor: "#F1F5F9", alignItems: "center" }}>
+              <View style={{ padding: 12, backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", alignItems: "center" }}>
                 <TouchableOpacity
                   onPress={async () => {
                     try {
@@ -217,7 +225,8 @@ export default function ChatDetailsScreen({
                     <TextInput
                       value={titleInput}
                       onChangeText={setTitleInput}
-                      style={styles.editInput}
+                      style={[styles.editInput, { backgroundColor: theme.inputBg || theme.bg, borderColor: theme.primary, color: theme.text }]}
+                      placeholderTextColor={theme.subtext}
                     />
                     <Pressable onPress={handleSaveTitle} style={styles.savePill}>
                       <Text style={styles.savePillText}>Save</Text>
@@ -225,7 +234,7 @@ export default function ChatDetailsScreen({
                   </View>
                 ) : (
                   <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
-                    <Text style={styles.channelName}>{targetUser?.name || titleInput}</Text>
+                    <Text style={[styles.channelName, { color: theme.text }]}>{targetUser?.name || titleInput}</Text>
                     {targetUser?.isPremium ? (
                       <MaterialCommunityIcons name="check-decagram" size={18} color="#5B3CF5" style={{ marginLeft: 6 }} />
                     ) : null}
@@ -253,7 +262,7 @@ export default function ChatDetailsScreen({
 
               {/* Description */}
               <View style={{ marginTop: 12 }}>
-                <Text style={styles.sectionLabel}>Channel Description</Text>
+                <Text style={[styles.sectionLabel, { color: theme.subtext }]}>Channel Description</Text>
                 {isEditingDesc ? (
                   <View style={{ marginTop: 4 }}>
                     <TextInput
@@ -261,7 +270,8 @@ export default function ChatDetailsScreen({
                       onChangeText={setDescInput}
                       multiline
                       numberOfLines={3}
-                      style={styles.editInputArea}
+                      style={[styles.editInputArea, { backgroundColor: theme.inputBg || theme.bg, borderColor: theme.border, color: theme.text }]}
+                      placeholderTextColor={theme.subtext}
                     />
                     <Pressable onPress={handleSaveDesc} style={[styles.savePill, { alignSelf: "flex-end", marginTop: 6 }]}>
                       <Text style={styles.savePillText}>Save Description</Text>
@@ -269,7 +279,7 @@ export default function ChatDetailsScreen({
                   </View>
                 ) : (
                   <View style={{ flexDirection: "row", alignItems: "flex-start", marginTop: 4 }}>
-                    <Text style={styles.descriptionText}>
+                    <Text style={[styles.descriptionText, { color: theme.subtext }]}>
                       {targetUser?.description || descInput || "Official TCM community channel for batch updates, class schedules and notes."}
                     </Text>
                     {isUserMentor ? (
@@ -292,14 +302,14 @@ export default function ChatDetailsScreen({
               }
             }}
             activeOpacity={0.85}
-            style={styles.userHeroCard}
+            style={[styles.userHeroCard, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}
           >
             <Image
               source={{ uri: targetUser?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200" }}
               style={styles.userAvatarLarge}
             />
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12 }}>
-              <Text style={styles.userNameLarge}>{targetUser?.name || "TCM Member"}</Text>
+              <Text style={[styles.userNameLarge, { color: theme.text }]}>{targetUser?.name || "TCM Member"}</Text>
               {targetUser?.role?.toLowerCase().includes("mentor") || targetUser?.isMentor ? (
                 <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
                   <Text style={{ fontSize: 10, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
@@ -313,26 +323,26 @@ export default function ChatDetailsScreen({
                 <MaterialCommunityIcons name="check-decagram" size={18} color="#5B3CF5" />
               ) : null}
             </View>
-            <Text style={styles.userRoleText}>{targetUser?.role || "Active Member"}</Text>
+            <Text style={[styles.userRoleText, { color: theme.subtext }]}>{targetUser?.role || "Active Member"}</Text>
 
             <View style={{
               flexDirection: "row",
               alignItems: "center",
               gap: 6,
-              backgroundColor: "#EEF2FF",
+              backgroundColor: theme.badgeBg,
               paddingHorizontal: 14,
               paddingVertical: 8,
               borderRadius: 20,
               marginTop: 12
             }}>
-              <Feather name="user" size={14} color="#4F46E5" />
-              <Text style={{ fontSize: 13, color: "#4F46E5", fontFamily: fonts.bold }}>View Profile</Text>
+              <Feather name="user" size={14} color={theme.primary} />
+              <Text style={{ fontSize: 13, color: theme.primary, fontFamily: fonts.bold }}>View Profile</Text>
             </View>
           </TouchableOpacity>
         )}
 
         {/* 3. Action Controls */}
-        <View style={styles.actionGrid}>
+        <View style={[styles.actionGrid, themedSurface]}>
           {!isChannelChat && (
             <TouchableOpacity
               onPress={() => {
@@ -343,39 +353,39 @@ export default function ChatDetailsScreen({
               }}
               style={styles.actionGridItem}
             >
-              <View style={[styles.actionIconBox, { backgroundColor: "#EEF2FF" }]}>
-                <Feather name="user" size={18} color="#4F46E5" />
+              <View style={[styles.actionIconBox, { backgroundColor: theme.badgeBg }]}>
+                <Feather name="user" size={18} color={theme.primary} />
               </View>
-              <Text style={styles.actionGridLabel}>Profile</Text>
+              <Text style={[styles.actionGridLabel, { color: theme.text }]}>Profile</Text>
             </TouchableOpacity>
           )}
 
           <TouchableOpacity onPress={handleShareLink} style={styles.actionGridItem}>
-            <View style={[styles.actionIconBox, { backgroundColor: "#E0F2FE" }]}>
+            <View style={[styles.actionIconBox, { backgroundColor: theme.isDark ? "#1E263B" : "#E0F2FE" }]}>
               <Feather name="share-2" size={18} color="#0284C7" />
             </View>
-            <Text style={styles.actionGridLabel}>Share Link</Text>
+            <Text style={[styles.actionGridLabel, { color: theme.text }]}>Share Link</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => setMuted(!muted)} style={styles.actionGridItem}>
-            <View style={[styles.actionIconBox, { backgroundColor: muted ? "#FEE2E2" : "#DCFCE7" }]}>
+            <View style={[styles.actionIconBox, { backgroundColor: muted ? (theme.isDark ? "#3F1D27" : "#FEE2E2") : (theme.isDark ? "#143528" : "#DCFCE7") }]}>
               <Feather name={muted ? "bell-off" : "bell"} size={18} color={muted ? "#DC2626" : "#166534"} />
             </View>
-            <Text style={styles.actionGridLabel}>{muted ? "Muted" : "Mute"}</Text>
+            <Text style={[styles.actionGridLabel, { color: theme.text }]}>{muted ? "Muted" : "Mute"}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={onClose} style={styles.actionGridItem}>
-            <View style={[styles.actionIconBox, { backgroundColor: "#F3E8FF" }]}>
-              <Feather name="message-square" size={18} color="#7E22CE" />
+            <View style={[styles.actionIconBox, { backgroundColor: theme.badgeBg }]}>
+              <Feather name="message-square" size={18} color={theme.primary} />
             </View>
-            <Text style={styles.actionGridLabel}>Messages</Text>
+            <Text style={[styles.actionGridLabel, { color: theme.text }]}>Messages</Text>
           </TouchableOpacity>
         </View>
 
         {/* 4. Creator / Mentor Section */}
         {isChannelChat ? (
-          <View style={styles.infoSection}>
-            <Text style={styles.sectionHeaderTitle}>Channel Host & Mentor</Text>
+          <View style={[styles.infoSection, themedSurface]}>
+            <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Channel Host & Mentor</Text>
             <TouchableOpacity
               onPress={() => {
                 if (onOpenUserProfile) {
@@ -389,22 +399,22 @@ export default function ChatDetailsScreen({
                 }
               }}
               activeOpacity={0.8}
-              style={styles.mentorCard}
+              style={[styles.mentorCard, themedSoftSurface]}
             >
               <Image source={{ uri: creatorAvatar }} style={styles.mentorAvatar} />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Text style={styles.mentorName}>{creatorName}</Text>
-                  <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                    <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                  <Text style={[styles.mentorName, { color: theme.text }]}>{creatorName}</Text>
+                  <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                    <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
                   </View>
                   {targetUser?.isPremium ? (
                     <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 2 }} />
                   ) : null}
                 </View>
-                <Text style={styles.mentorRole}>{creatorRole}</Text>
+                <Text style={[styles.mentorRole, { color: theme.subtext }]}>{creatorRole}</Text>
               </View>
-              <View style={styles.verifiedBadgePill}>
+              <View style={[styles.verifiedBadgePill, { backgroundColor: theme.isDark ? "#143528" : "#DCFCE7" }]}>
                 <Feather name="shield" size={12} color="#166534" style={{ marginRight: 4 }} />
                 <Text style={styles.verifiedBadgeText}>Verified</Text>
               </View>
@@ -414,26 +424,26 @@ export default function ChatDetailsScreen({
 
         {/* 4b. Pending Private Batch Join Requests */}
         {isChannelChat && targetUser?.privacy === "private" && isUserMentor ? (
-          <View style={styles.infoSection}>
+          <View style={[styles.infoSection, themedSurface]}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <Text style={styles.sectionHeaderTitle}>Pending Batch Join Requests ({joinRequests.length})</Text>
-              <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, backgroundColor: "#FEF3C7" }}>
-                <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: "#D97706" }}>Mentor Approval Required</Text>
+              <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Pending Batch Join Requests ({joinRequests.length})</Text>
+              <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, backgroundColor: theme.badgeBg }}>
+                <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: theme.primary }}>Mentor Approval Required</Text>
               </View>
             </View>
 
             {joinRequests.length === 0 ? (
               <View style={styles.emptyMediaBox}>
                 <Feather name="check-circle" size={24} color="#CBD5E1" />
-                <Text style={styles.emptyMediaText}>No pending join requests</Text>
+                <Text style={[styles.emptyMediaText, { color: theme.subtext }]}>No pending join requests</Text>
               </View>
             ) : (
               joinRequests.map((req) => (
-                <View key={req.userId} style={styles.requestRow}>
+                <View key={req.userId} style={[styles.requestRow, themedSoftSurface]}>
                   <Image source={{ uri: req.avatarUrl }} style={styles.requestAvatar} />
                   <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={styles.requestName}>{req.name}</Text>
-                    <Text style={styles.requestRole}>{req.role || "Student"}</Text>
+                    <Text style={[styles.requestName, { color: theme.text }]}>{req.name}</Text>
+                    <Text style={[styles.requestRole, { color: theme.subtext }]}>{req.role || "Student"}</Text>
                   </View>
                   <View style={{ flexDirection: "row", gap: 6 }}>
                     <TouchableOpacity
@@ -457,15 +467,15 @@ export default function ChatDetailsScreen({
         ) : null}
 
         {/* 5. Shared Media & Attachments */}
-        <View style={styles.infoSection}>
+        <View style={[styles.infoSection, themedSurface]}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <Text style={styles.sectionHeaderTitle}>Shared Files & Media ({mediaMessages.length})</Text>
+            <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Shared Files & Media ({mediaMessages.length})</Text>
           </View>
 
           {mediaMessages.length === 0 ? (
             <View style={styles.emptyMediaBox}>
               <Feather name="folder" size={24} color="#CBD5E1" />
-              <Text style={styles.emptyMediaText}>No media or documents shared yet</Text>
+              <Text style={[styles.emptyMediaText, { color: theme.subtext }]}>No media or documents shared yet</Text>
             </View>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
@@ -473,14 +483,14 @@ export default function ChatDetailsScreen({
                 <Pressable
                   key={m.id || idx}
                   onPress={() => onOpenMedia && onOpenMedia(m)}
-                  style={styles.mediaItemCard}
+                  style={[styles.mediaItemCard, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}
                 >
                   {m.imageUrl ? (
                     <Image source={{ uri: m.imageUrl }} style={styles.mediaThumb} />
                   ) : (
                     <View style={styles.docThumb}>
                       <MaterialCommunityIcons name="file-pdf-box" size={32} color="#DC2626" />
-                      <Text style={styles.docThumbText} numberOfLines={1}>
+                      <Text style={[styles.docThumbText, { color: theme.subtext }]} numberOfLines={1}>
                         {m.documentName || "Document.pdf"}
                       </Text>
                     </View>
@@ -492,13 +502,13 @@ export default function ChatDetailsScreen({
         </View>
 
         {/* 6. Settings & Admin Controls */}
-        <View style={styles.infoSection}>
-          <Text style={styles.sectionHeaderTitle}>Notification & Privacy Settings</Text>
+        <View style={[styles.infoSection, themedSurface]}>
+          <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Notification & Privacy Settings</Text>
 
-          <View style={styles.settingRow}>
+          <View style={[styles.settingRow, { borderBottomColor: theme.border }]}>
             <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-              <Feather name="bell" size={16} color="#64748B" style={{ marginRight: 10 }} />
-              <Text style={styles.settingText}>Mute Channel Notifications</Text>
+              <Feather name="bell" size={16} color={theme.subtext} style={{ marginRight: 10 }} />
+              <Text style={[styles.settingText, { color: theme.text }]}>Mute Channel Notifications</Text>
             </View>
             <Switch value={muted} onValueChange={setMuted} trackColor={{ true: "#5B3CF5", false: "#CBD5E1" }} />
           </View>

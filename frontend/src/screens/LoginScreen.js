@@ -30,15 +30,6 @@ const roleOptions = [
     loginSubtitle: "Continue as mentor",
     icon: "person",
     color: "#28A745"
-  },
-  {
-    key: "admin",
-    title: "Admin",
-    loginTitle: "Admin Login",
-    subtitle: "Manage & Support",
-    loginSubtitle: "Continue as admin",
-    icon: "shield-checkmark",
-    color: "#3478F6"
   }
 ];
 

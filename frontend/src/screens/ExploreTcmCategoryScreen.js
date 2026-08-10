@@ -15,6 +15,7 @@ import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons
 import { getCategoryCourses } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
@@ -539,6 +540,7 @@ const categoryDetails = {
 };
 
 export default function ExploreTcmCategoryScreen({ session, categoryKey = "inform", onBack, onSelectCourse, onSelectUser }) {
+  const { theme } = useTheme();
   const cat = categoryDetails[categoryKey] || categoryDetails.inform;
   const comingSoonList = comingSoonBatches[categoryKey] || comingSoonBatches.inform;
   const [realCourses, setRealCourses] = useState([]);
@@ -589,37 +591,46 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
     }
   }
 
+  const themedSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
+  const themedSoftSurface = {
+    backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#F8F7FF",
+    borderColor: theme.border
+  };
+  const themedBadgeSurface = { backgroundColor: theme.badgeBg, borderColor: theme.border };
+  const accentColor = theme.isDark ? theme.primaryDark || theme.primary : cat.iconColor;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Top Header Bar with Moving Marquee Info Ticker */}
-      <View style={styles.topHeader}>
-        <Pressable onPress={onBack} style={styles.backBtn}>
-          <Feather name="arrow-left" size={20} color="#181725" />
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.badgeBg }]}>
+          <Feather name="arrow-left" size={20} color={theme.text} />
         </Pressable>
 
         <View style={styles.titleWrap}>
-          <View style={[styles.badgePill, { backgroundColor: cat.badgeBg }]}>
-            <Text style={[styles.badgeText, { color: cat.badgeColor }]}>{cat.badge}</Text>
+          <View style={[styles.badgePill, { backgroundColor: theme.isDark ? "#1E1B4B" : cat.badgeBg }]}>
+            <Text style={[styles.badgeText, { color: theme.isDark ? "#A78BFA" : cat.badgeColor }]}>{cat.badge}</Text>
           </View>
-          <Text style={styles.screenTitle}>{cat.title}</Text>
+          <Text style={[styles.screenTitle, { color: theme.text }]}>{cat.title}</Text>
         </View>
 
-        <View style={[styles.categoryIconWrap, { backgroundColor: cat.iconBg }]}>
-          <MaterialCommunityIcons name={cat.icon} size={22} color={cat.iconColor} />
+        <View style={[styles.categoryIconWrap, { backgroundColor: theme.isDark ? "#1E1B4B" : cat.iconBg }]}>
+          <MaterialCommunityIcons name={cat.icon} size={22} color={theme.isDark ? "#A78BFA" : cat.iconColor} />
         </View>
       </View>
 
       {/* 🌟 Moving Text Header Announcement Ticker Bar */}
-      <View style={styles.tickerContainer}>
-        <View style={styles.tickerBadge}>
-          <MaterialCommunityIcons name="bullhorn-outline" size={14} color="#5B3CF5" />
-          <Text style={styles.tickerBadgeText}>INFO</Text>
+      <View style={[styles.tickerContainer, themedSurface]}>
+        <View style={[styles.tickerBadge, { backgroundColor: theme.badgeBg }]}>
+          <MaterialCommunityIcons name="bullhorn-outline" size={14} color={theme.primary} />
+          <Text style={[styles.tickerBadgeText, { color: theme.primary }]}>INFO</Text>
         </View>
         <View style={styles.tickerClip}>
           <Animated.Text
             style={[
               styles.tickerText,
               {
+                color: theme.subtext,
                 transform: [{ translateX: tickerAnim }]
               }
             ]}
@@ -642,18 +653,24 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
               scrollEventThrottle={16}
             >
               {cat.banners.map((banner) => (
-                <View key={banner.id} style={[styles.bannerCard, { backgroundColor: banner.cardBg, borderColor: banner.borderColor }]}>
+                <View
+                  key={banner.id}
+                  style={[
+                    styles.bannerCard,
+                    theme.isDark ? themedSurface : { backgroundColor: banner.cardBg, borderColor: banner.borderColor }
+                  ]}
+                >
                   <View style={styles.bannerLeft}>
-                    <View style={[styles.newBatchPill, { backgroundColor: cat.badgeBg }]}>
-                      <Text style={[styles.newBatchText, { color: cat.badgeColor }]}>{banner.tag}</Text>
+                    <View style={[styles.newBatchPill, theme.isDark ? themedBadgeSurface : { backgroundColor: cat.badgeBg }]}>
+                      <Text style={[styles.newBatchText, { color: theme.isDark ? accentColor : cat.badgeColor }]}>{banner.tag}</Text>
                     </View>
 
-                    <Text style={styles.bannerTitle}>{banner.title}</Text>
-                    <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>
+                    <Text style={[styles.bannerTitle, { color: theme.text }]}>{banner.title}</Text>
+                    <Text style={[styles.bannerSubtitle, { color: theme.subtext }]}>{banner.subtitle}</Text>
 
                     <Pressable
                       onPress={() => (onSelectCourse ? onSelectCourse(banner.id) : Alert.alert(banner.title.replace("\n", " "), "Opening specialized batch details..."))}
-                      style={[styles.exploreBtn, { backgroundColor: cat.iconColor }]}
+                      style={[styles.exploreBtn, { backgroundColor: theme.isDark ? theme.primary : cat.iconColor }]}
                     >
                       <Text style={styles.exploreBtnText}>{banner.buttonText}</Text>
                     </Pressable>
@@ -661,10 +678,10 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
 
                   <View style={styles.bannerRight}>
                     <Image source={{ uri: banner.image }} style={styles.bannerGraphic} />
-                    <View style={styles.techBadgeReact}>
+                    <View style={[styles.techBadgeReact, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                       <MaterialCommunityIcons name="star-decagram" size={18} color="#00D8FF" />
                     </View>
-                    <View style={styles.techBadgeNode}>
+                    <View style={[styles.techBadgeNode, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                       <MaterialCommunityIcons name="lightning-bolt" size={18} color="#FFB800" />
                     </View>
                   </View>
@@ -675,7 +692,14 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
             {/* Carousel Pagination Dots */}
             <View style={styles.dotsRow}>
               {cat.banners.map((_, i) => (
-                <View key={i} style={[styles.dot, i === activeBannerIndex && [styles.activeDot, { backgroundColor: cat.iconColor }]]} />
+                <View
+                  key={i}
+                  style={[
+                    styles.dot,
+                    { backgroundColor: theme.isDark ? "#334155" : "#C8C4E6" },
+                    i === activeBannerIndex && [styles.activeDot, { backgroundColor: theme.isDark ? theme.primary : cat.iconColor }]
+                  ]}
+                />
               ))}
             </View>
           </View>
@@ -685,8 +709,8 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
         {realCourses.length > 0 ? (
           <>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Featured Real Courses & Batches</Text>
-              <Text style={styles.totalCountText}>{realCourses.length} Live Available</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Featured Real Courses & Batches</Text>
+              <Text style={[styles.totalCountText, { color: theme.subtext }]}>{realCourses.length} Live Available</Text>
             </View>
 
             <View style={styles.coursesGrid}>
@@ -694,20 +718,20 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
                 <Pressable
                   key={course.id}
                   onPress={() => (onSelectCourse ? onSelectCourse(course.id) : Alert.alert(course.title, "Opening course details..."))}
-                  style={({ pressed }) => [styles.courseCard, pressed && styles.pressed]}
+                  style={({ pressed }) => [styles.courseCard, themedSurface, pressed && styles.pressed]}
                 >
                   <Image source={{ uri: course.image }} style={styles.courseImage} />
                   <View style={styles.courseBody}>
                     <View style={styles.ratingRow}>
                       <FontAwesome name="star" size={12} color="#FFB800" />
-                      <Text style={styles.ratingText}>{course.rating}</Text>
-                      <Text style={styles.reviewsText}>({course.reviews})</Text>
-                      <View style={styles.lessonsBadge}>
-                        <Text style={styles.lessonsText}>{course.lessons}</Text>
+                      <Text style={[styles.ratingText, { color: theme.text }]}>{course.rating}</Text>
+                      <Text style={[styles.reviewsText, { color: theme.subtext }]}>({course.reviews})</Text>
+                      <View style={[styles.lessonsBadge, { backgroundColor: theme.badgeBg }]}>
+                        <Text style={[styles.lessonsText, { color: theme.primary }]}>{course.lessons}</Text>
                       </View>
                     </View>
-                    <Text style={styles.courseTitle} numberOfLines={2}>{course.title}</Text>
-                    <Text style={styles.courseTags} numberOfLines={1}>{course.tags}</Text>
+                    <Text style={[styles.courseTitle, { color: theme.text }]} numberOfLines={2}>{course.title}</Text>
+                    <Text style={[styles.courseTags, { color: theme.subtext }]} numberOfLines={1}>{course.tags}</Text>
                   </View>
                 </Pressable>
               ))}
@@ -716,32 +740,32 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
         ) : (
           <>
             {/* Empty State Card when no mentor has uploaded courses in this category */}
-            <View style={styles.emptyCoursesCard}>
-              <View style={styles.emptyIconWrap}>
-                <MaterialCommunityIcons name="book-open-page-variant-outline" size={30} color="#5B3CF5" />
+            <View style={[styles.emptyCoursesCard, themedSoftSurface]}>
+              <View style={[styles.emptyIconWrap, { backgroundColor: theme.badgeBg }]}>
+                <MaterialCommunityIcons name="book-open-page-variant-outline" size={30} color={theme.primary} />
               </View>
-              <Text style={styles.emptyTitle}>No Live Courses Published Yet</Text>
-              <Text style={styles.emptySub}>
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>No Live Courses Published Yet</Text>
+              <Text style={[styles.emptySub, { color: theme.subtext }]}>
                 Mentors have not published live courses in {cat.title} yet. Pre-register for upcoming batches below or create a course if you are a mentor!
               </Text>
             </View>
 
             {/* Coming Soon & Pre-Registration Batches Carousel */}
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Upcoming Batches & Coming Soon</Text>
-              <Text style={styles.totalCountText}>{comingSoonList.length} Upcoming</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Upcoming Batches & Coming Soon</Text>
+              <Text style={[styles.totalCountText, { color: theme.subtext }]}>{comingSoonList.length} Upcoming</Text>
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContent}>
               {comingSoonList.map((batch) => (
-                <View key={batch.id} style={[styles.comingSoonCard, { backgroundColor: batch.cardBg }]}>
+                <View key={batch.id} style={[styles.comingSoonCard, theme.isDark ? themedSurface : { backgroundColor: batch.cardBg }]}>
                   <Image source={{ uri: batch.image }} style={styles.comingSoonImg} />
                   <View style={styles.comingSoonBody}>
-                    <View style={styles.comingSoonTagPill}>
-                      <Text style={styles.comingSoonTagText}>{batch.tag}</Text>
+                    <View style={[styles.comingSoonTagPill, { backgroundColor: theme.badgeBg }]}>
+                      <Text style={[styles.comingSoonTagText, { color: theme.primary }]}>{batch.tag}</Text>
                     </View>
-                    <Text numberOfLines={2} style={styles.comingSoonTitle}>{batch.title}</Text>
-                    <Text numberOfLines={1} style={styles.comingSoonSub}>{batch.subtitle}</Text>
+                    <Text numberOfLines={2} style={[styles.comingSoonTitle, { color: theme.text }]}>{batch.title}</Text>
+                    <Text numberOfLines={1} style={[styles.comingSoonSub, { color: theme.subtext }]}>{batch.subtitle}</Text>
                     <Text style={styles.comingSoonDate}>📅 {batch.date}</Text>
 
                     <Pressable
@@ -760,8 +784,8 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
 
         {/* 4. Dedicated Mentors Section */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Top Mentors & Advisors</Text>
-          <Text style={styles.totalCountText}>{cat.mentors.length} Mentors</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Top Mentors & Advisors</Text>
+          <Text style={[styles.totalCountText, { color: theme.subtext }]}>{cat.mentors.length} Mentors</Text>
         </View>
 
         <View style={styles.mentorsRow}>
@@ -769,18 +793,18 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
             <Pressable
               key={mentor.id}
               onPress={() => (onSelectUser ? onSelectUser({ id: mentor.id, name: mentor.name, role: mentor.role }) : Alert.alert(mentor.name, mentor.role))}
-              style={({ pressed }) => [styles.mentorCard, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.mentorCard, themedSurface, pressed && styles.pressed]}
             >
               <Image source={{ uri: mentor.avatar }} style={styles.mentorAvatar} />
               <View style={styles.mentorContent}>
-                <Text style={styles.mentorName}>{mentor.name}</Text>
-                <Text style={styles.mentorRole}>{mentor.role}</Text>
+                <Text style={[styles.mentorName, { color: theme.text }]}>{mentor.name}</Text>
+                <Text style={[styles.mentorRole, { color: theme.subtext }]}>{mentor.role}</Text>
                 <View style={styles.mentorMeta}>
                   <View style={styles.ratingRow}>
                     <FontAwesome name="star" size={11} color="#FFB800" />
-                    <Text style={styles.ratingText}>{mentor.rating}</Text>
+                    <Text style={[styles.ratingText, { color: theme.text }]}>{mentor.rating}</Text>
                   </View>
-                  <Text style={styles.expText}>{mentor.exp}</Text>
+                  <Text style={[styles.expText, { color: theme.primary }]}>{mentor.exp}</Text>
                 </View>
               </View>
               <Feather name="chevron-right" size={16} color="#9E9EB2" />
