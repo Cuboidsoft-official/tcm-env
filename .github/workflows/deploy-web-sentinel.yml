@@ -70,7 +70,7 @@ jobs:
           SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=15"
 
           ssh $SSH_OPTS "$TARGET" \
-            "install -d -m 755 /var/www/tcm-web/releases/$RELEASE"
+            "sudo install -d -m 755 -o '$SENTINEL_USER' -g '$SENTINEL_USER' /var/www/tcm-web/releases/$RELEASE"
 
           rsync -az --delete --delay-updates \
             -e "ssh $SSH_OPTS" \
