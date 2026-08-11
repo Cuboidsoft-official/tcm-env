@@ -1,4 +1,4 @@
-app.thecodemunk.in, app.thecodmunk.in {
+app.thecodemunk.in {
     root * /var/www/tcm-web/current
     encode zstd gzip
 
