@@ -9,8 +9,10 @@ import {
   KeyboardAvoidingView,
   Linking,
   Modal,
+  PanResponder,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Share,
   StatusBar,
@@ -200,6 +202,33 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
   }
 
   return config.media;
+}
+
+function SwipeBackWrapper({ children, onBack, enabled = true }) {
+  const panResponder = useMemo(() => {
+    if (!enabled || !onBack) return PanResponder.create({});
+
+    return PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return (
+          gestureState.dx > 25 &&
+          Math.abs(gestureState.dy) < 40 &&
+          gestureState.vx > 0.1
+        );
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > 60 && Math.abs(gestureState.dy) < 80) {
+          onBack();
+        }
+      }
+    });
+  }, [onBack, enabled]);
+
+  return (
+    <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+      {children}
+    </View>
+  );
 }
 
 export default function HomeScreen({ session, onLogout }) {
@@ -495,6 +524,59 @@ export default function HomeScreen({ session, onLogout }) {
     });
   }, [activeCategory, posts, search]);
 
+  const activeBackAction = useMemo(() => {
+    if (selectedJobForApply) return () => setSelectedJobForApply(null);
+    if (selectedJobForDetails) return () => setSelectedJobForDetails(null);
+    if (commentsPost) return () => setCommentsPost(null);
+    if (previewItem) return () => setPreviewItem(null);
+    if (drawerFeatureModal) return () => setDrawerFeatureModal(null);
+    if (getVerifiedModalOpen) return () => setGetVerifiedModalOpen(false);
+    if (sidebarOpen) return () => setSidebarOpen(false);
+    if (activeDoubtRoom) return () => setActiveDoubtRoom(null);
+    if (activeChatUser) return () => setActiveChatUser(null);
+    if (selectedCourseId) return () => setSelectedCourseId(null);
+    if (selectedMentorId) return () => setSelectedMentorId(null);
+    if (showContinueLearning) return () => setShowContinueLearning(false);
+    if (showPopularCourses) return () => setShowPopularCourses(false);
+    if (showSearchScreen) return () => setShowSearchScreen(false);
+    if (showNotificationsScreen) return () => setShowNotificationsScreen(false);
+    if (exploreCategoryKey) return () => setExploreCategoryKey(null);
+    if (showAllMentorsScreen) return () => setShowAllMentorsScreen(false);
+    if (showCommunityScreen) return () => setShowCommunityScreen(false);
+    if (showWalletScreen) return () => setShowWalletScreen(false);
+    if (showMentorDashboard) return () => setShowMentorDashboard(false);
+    if (showCreateCourseScreen) return () => { setCourseToEdit(null); setShowCreateCourseScreen(false); };
+    if (showCreateWebinarScreen) return () => setShowCreateWebinarScreen(false);
+    if (targetUserProfile) return () => setTargetUserProfile(null);
+    if (activeTab !== "Home") return () => { setActiveTab("Home"); setActiveDrawerItem("Home"); };
+    return null;
+  }, [
+    selectedJobForApply,
+    selectedJobForDetails,
+    commentsPost,
+    previewItem,
+    drawerFeatureModal,
+    getVerifiedModalOpen,
+    sidebarOpen,
+    activeDoubtRoom,
+    activeChatUser,
+    selectedCourseId,
+    selectedMentorId,
+    showContinueLearning,
+    showPopularCourses,
+    showSearchScreen,
+    showNotificationsScreen,
+    exploreCategoryKey,
+    showAllMentorsScreen,
+    showCommunityScreen,
+    showWalletScreen,
+    showMentorDashboard,
+    showCreateCourseScreen,
+    showCreateWebinarScreen,
+    targetUserProfile,
+    activeTab
+  ]);
+
   if (composerMode) {
     return (
       <CreatePostScreen
@@ -503,10 +585,11 @@ export default function HomeScreen({ session, onLogout }) {
         posting={posting}
         user={user}
         uploadType={uploadType}
-        setDraft={setDraft}
         setUploadType={setUploadType}
+        setDraft={setDraft}
         onClose={() => setComposerMode("")}
         onSubmit={submitPost}
+        onPreviewMedia={(mediaItem) => setPreviewItem(mediaItem)}
       />
     );
   }
@@ -516,7 +599,8 @@ export default function HomeScreen({ session, onLogout }) {
   const isFullWidthChat = Boolean(activeDoubtRoom || activeChatUser);
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
+    <SwipeBackWrapper onBack={activeBackAction} enabled={Boolean(activeBackAction)}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
       <View style={[styles.appShell, { backgroundColor: theme.bg }]}>
         {isFullScreenView ? (
           <View style={[styles.page, { width: isFullWidthChat ? "100%" : contentWidth, flex: 1, paddingBottom: 0, paddingHorizontal: isFullWidthChat ? 0 : undefined }]}>
@@ -553,7 +637,10 @@ export default function HomeScreen({ session, onLogout }) {
                   setSelectedMentorId(null);
                   setSelectedCourseId(cId || "p1");
                 }}
-                onOpenChat={(targetM) => setActiveChatUser(targetM || { id: "m1", name: "Rahul Sharma" })}
+                onOpenChat={(targetM) => {
+                  setSelectedMentorId(null);
+                  setActiveChatUser(targetM || { id: "m1", name: "Rahul Sharma", role: "mentor" });
+                }}
               />
             ) : showNotificationsScreen ? (
               <NotificationsScreen
@@ -713,7 +800,24 @@ export default function HomeScreen({ session, onLogout }) {
             ) : null}
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={async () => {
+                  setRefreshing(true);
+                  await loadHome({ quiet: true });
+                  setRefreshing(false);
+                }}
+                colors={[theme.primary]}
+                tintColor={theme.primary}
+                progressBackgroundColor={theme.cardBg}
+              />
+            }
+          >
             <View style={[styles.page, { width: contentWidth }]}>
               {!targetUserProfile && (activeTab === "Learn" || (activeTab === "Community" && isCommChannelOpen)) ? null : (
                 <Header
@@ -965,13 +1069,14 @@ export default function HomeScreen({ session, onLogout }) {
         />
       </View>
     </SafeAreaView>
+    </SwipeBackWrapper>
   );
 }
 
 function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings, isSelfProfile, onNotifications, showBack, backLabel, onBack, onOpenWallet }) {
   const { theme } = useTheme();
-  const iconColor = theme.isDark ? "#C7D2FE" : "#261B94";
-  const brandColor = theme.isDark ? "#A78BFA" : colors.primaryDark;
+  const iconColor = theme.isDark ? "#81C784" : colors.primary;
+  const brandColor = theme.isDark ? "#A7F3D0" : colors.primary;
   const subtextColor = theme.isDark ? "#94A3B8" : "#64748B";
 
   if (showBack) {
@@ -1022,7 +1127,7 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
             style={({ pressed }) => [styles.headerWalletPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <MaterialCommunityIcons name="wallet-outline" size={15} color={theme.primary} style={{ marginRight: 4 }} />
-            <Text style={[styles.headerWalletBalance, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>
+            <Text style={[styles.headerWalletBalance, { color: theme.primary }]}>
               ₹{user.wallet?.totalBalance !== undefined ? user.wallet.totalBalance.toLocaleString() : (user.balance || 1250)}
             </Text>
             <View style={[styles.headerCoinDivider, { backgroundColor: theme.border }]} />
@@ -1097,18 +1202,18 @@ function Avatar({ name, uri, size }) {
 function getCategoryIconConfig(categoryName) {
   const clean = categoryName.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|💼|🔥|✨|👥/gu, "").trim();
 
-  if (clean.includes("For You")) return { icon: "sparkles", color: "#5B3CF5", label: "For You" };
-  if (clean.includes("Following")) return { icon: "people", color: "#181725", label: "Following" };
-  if (clean.includes("Trending")) return { icon: "flame", color: "#181725", label: "Trending" };
-  if (clean.includes("Jobs") || clean.includes("Hiring")) return { icon: "briefcase", color: "#181725", label: "Jobs" };
-  if (clean.includes("UPSC")) return { icon: "school", color: "#181725", label: "UPSC" };
-  if (clean.includes("JEE")) return { icon: "calculator", color: "#181725", label: "JEE" };
-  if (clean.includes("NEET")) return { icon: "medical", color: "#181725", label: "NEET" };
-  if (clean.includes("Coding")) return { icon: "code-slash", color: "#181725", label: "Coding" };
-  if (clean.includes("AI") || clean.includes("ML")) return { icon: "hardware-chip", color: "#181725", label: "AI / ML" };
-  if (clean.includes("Design")) return { icon: "color-palette", color: "#181725", label: "Design" };
+  if (clean.includes("For You")) return { icon: "sparkles", color: "#0A6836", label: "For You" };
+  if (clean.includes("Following")) return { icon: "people", color: "#0F172A", label: "Following" };
+  if (clean.includes("Trending")) return { icon: "flame", color: "#0F172A", label: "Trending" };
+  if (clean.includes("Jobs") || clean.includes("Hiring")) return { icon: "briefcase", color: "#0F172A", label: "Jobs" };
+  if (clean.includes("UPSC")) return { icon: "school", color: "#0F172A", label: "UPSC" };
+  if (clean.includes("JEE")) return { icon: "calculator", color: "#0F172A", label: "JEE" };
+  if (clean.includes("NEET")) return { icon: "medical", color: "#0F172A", label: "NEET" };
+  if (clean.includes("Coding")) return { icon: "code-slash", color: "#0F172A", label: "Coding" };
+  if (clean.includes("AI") || clean.includes("ML")) return { icon: "hardware-chip", color: "#0F172A", label: "AI / ML" };
+  if (clean.includes("Design")) return { icon: "color-palette", color: "#0F172A", label: "Design" };
 
-  return { icon: "grid", color: "#181725", label: clean || categoryName };
+  return { icon: "grid", color: "#0F172A", label: clean || categoryName };
 }
 
 function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
@@ -1128,12 +1233,27 @@ function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
             style={[
               styles.categoryTab,
               active && styles.categoryTabActive,
-              { backgroundColor: active ? (theme.isDark ? "#1E1B4B" : "#F4F1FF") : (theme.isDark ? "#111625" : "#F8F7FC"), borderColor: active ? theme.primary : theme.border, borderWidth: 1 }
+              {
+                backgroundColor: active ? (theme.activeChipBg || theme.primary) : (theme.inactiveChipBg || theme.cardBg),
+                borderColor: active ? theme.primary : theme.border,
+                borderWidth: 1
+              }
             ]}
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Ionicons name={conf.icon} size={16} color={active ? (theme.isDark ? "#A78BFA" : "#5B3CF5") : (theme.isDark ? "#94A3B8" : conf.color)} />
-              <Text numberOfLines={1} style={[styles.categoryText, { color: active ? (theme.isDark ? "#C7D2FE" : colors.primary) : (theme.isDark ? "#94A3B8" : "#5F5D76") }, active && styles.categoryTextActive]}>
+              <Ionicons
+                name={conf.icon}
+                size={16}
+                color={active ? (theme.activeChipText || "#FFFFFF") : theme.primary}
+              />
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.categoryText,
+                  { color: active ? (theme.activeChipText || "#FFFFFF") : (theme.inactiveChipText || theme.text) },
+                  active && styles.categoryTextActive
+                ]}
+              >
                 {conf.label}
               </Text>
             </View>
@@ -1220,9 +1340,9 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
             <View style={styles.postAuthor}>
               <View style={styles.authorLine}>
                 <Text numberOfLines={1} style={[styles.authorName, { fontSize: 15, fontFamily: fonts.bold, color: theme.text }]}>{job.mentorName || post.authorName}</Text>
-                <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#ECE6FF", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, flexDirection: "row", alignItems: "center", gap: 3, marginLeft: 4, borderWidth: 1, borderColor: theme.border }}>
-                  <Ionicons name="shield-checkmark" size={10} color={theme.isDark ? "#A78BFA" : "#5B3CF5"} />
-                  <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: theme.isDark ? "#A78BFA" : "#5B3CF5" }}>Mentor Drive</Text>
+                <View style={{ backgroundColor: theme.badgeBg || "#E8F5E9", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, flexDirection: "row", alignItems: "center", gap: 3, marginLeft: 4, borderWidth: 1, borderColor: theme.badgeBorder || "#C8E6C9" }}>
+                  <Ionicons name="shield-checkmark" size={10} color={theme.badgeText || theme.primary} />
+                  <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: theme.badgeText || theme.primary }}>Mentor Drive</Text>
                 </View>
               </View>
               <Text numberOfLines={1} style={[styles.authorRole, { color: theme.subtext, fontSize: 11 }]}>{job.company || "TCM Hiring Partner"} • {job.mentorRole || "Mentor"}</Text>
@@ -1251,8 +1371,8 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
         </View>
 
         {/* Category Pill Tag */}
-        <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EBFF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: "flex-start", marginTop: 10, borderWidth: 1, borderColor: theme.border }}>
-          <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: theme.isDark ? "#818CF8" : "#5B3CF5", textTransform: "uppercase", letterSpacing: 0.5 }}>INTERNSHIP</Text>
+        <View style={{ backgroundColor: theme.badgeBg || "#E8F5E9", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: "flex-start", marginTop: 10, borderWidth: 1, borderColor: theme.badgeBorder || "#C8E6C9" }}>
+          <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: theme.badgeText || theme.primary, textTransform: "uppercase", letterSpacing: 0.5 }}>INTERNSHIP</Text>
         </View>
 
         {/* Job Title */}
@@ -1261,10 +1381,10 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
         </Text>
 
         {/* Salary / Stipend Box */}
-        <View style={{ backgroundColor: theme.isDark ? "#161B33" : "#F0EBFF", borderRadius: 14, padding: 12, marginTop: 10, borderWidth: 1, borderColor: theme.border }}>
+        <View style={{ backgroundColor: theme.isDark ? "#161B33" : "#F0F7F1", borderRadius: 14, padding: 12, marginTop: 10, borderWidth: 1, borderColor: theme.badgeBorder || theme.border }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <MaterialCommunityIcons name="wallet-outline" size={20} color={theme.isDark ? "#A78BFA" : "#5B3CF5"} />
-            <Text style={{ fontSize: 15, fontFamily: fonts.extraBold, color: theme.isDark ? "#A78BFA" : "#5B3CF5" }}>
+            <MaterialCommunityIcons name="wallet-outline" size={20} color={theme.primary} />
+            <Text style={{ fontSize: 15, fontFamily: fonts.extraBold, color: theme.primary }}>
               ₹{job.minSalary}{job.maxSalary ? ` – ₹${job.maxSalary}` : ""}
             </Text>
           </View>
@@ -1276,17 +1396,17 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
         {/* Status & Duration Pills Grid */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
           {/* Active Status Badge */}
-          <View style={{ backgroundColor: isFilled ? (theme.isDark ? "#450A0A" : "#FEE2E2") : (theme.isDark ? "#064E3B" : "#DCFCE7"), borderWidth: 1, borderColor: isFilled ? "#EF4444" : "#10B981", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 5 }}>
-            <Ionicons name={isFilled ? "close-circle" : "checkmark-circle"} size={14} color={isFilled ? "#EF4444" : "#10B981"} />
-            <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: isFilled ? "#FCA5A5" : "#A7F3D0" }}>
+          <View style={{ backgroundColor: isFilled ? (theme.isDark ? "#450A0A" : "#FEE2E2") : (theme.badgeBg || "#E8F5E9"), borderWidth: 1, borderColor: isFilled ? "#EF4444" : (theme.badgeBorder || theme.primary), paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Ionicons name={isFilled ? "close-circle" : "checkmark-circle"} size={14} color={isFilled ? "#EF4444" : theme.primary} />
+            <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: isFilled ? "#EF4444" : (theme.badgeText || theme.primary) }}>
               {isFilled ? "HIRING CLOSED" : `ACTIVE (${selectedCount}/${reqCount} Selected)`}
             </Text>
           </View>
 
           {/* Duration Badge */}
-          <View style={{ backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 5 }}>
-            <Feather name="clock" size={13} color={theme.subtext} />
-            <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: theme.subtext }}>{job.deadline || "30 Days"}</Text>
+          <View style={{ backgroundColor: theme.badgeBg || "#E8F5E9", borderWidth: 1, borderColor: theme.badgeBorder || theme.border, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Feather name="clock" size={13} color={theme.primary} />
+            <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.badgeText || theme.primary }}>{job.deadline || "30 Days"}</Text>
           </View>
         </View>
 
@@ -1309,9 +1429,6 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
         {/* Job Description */}
         <View style={{ marginTop: 10 }}>
           <ReadMoreText text={job.description || post.text} />
-          <Text style={{ fontSize: 12.5, color: theme.primary, fontFamily: fonts.bold, marginTop: 4 }}>
-            Read more ↓
-          </Text>
         </View>
 
         {/* Side-by-Side Compact Image Grid with Full Preview on Tap */}
@@ -1549,16 +1666,91 @@ function formatCleanText(rawText = "") {
 function ReadMoreText({ text = "" }) {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(false);
-  const cleanText = formatCleanText(text);
-  const isLong = cleanText.length > 110 || cleanText.split("\n").length > 3;
+
+  if (!text) return null;
+
+  const rawLines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const isLong = text.length > 130 || rawLines.length > 3;
+  const visibleLines = expanded ? rawLines : rawLines.slice(0, 3);
 
   return (
-    <View style={{ marginTop: 8 }}>
-      <Text numberOfLines={expanded ? undefined : 3} style={[styles.postText, { color: theme.text }]}>
-        {cleanText}
-      </Text>
+    <View style={{ marginTop: 6 }}>
+      {visibleLines.map((rawLine, idx) => {
+        const isHashHeader = /^#{1,6}\s+/.test(rawLine);
+        const lineWithoutHashes = rawLine.replace(/^#{1,6}\s*/, "").trim();
+
+        const isBullet = lineWithoutHashes.startsWith("•") || lineWithoutHashes.startsWith("- ") || lineWithoutHashes.startsWith("* ") || /^\d+[\.\)]\s/.test(lineWithoutHashes);
+        const cleanLine = lineWithoutHashes.replace(/^[•\-\*]\s*|^\d+[\.\)]\s*/, "").trim();
+        const isHeader = isHashHeader || (lineWithoutHashes.startsWith("**") && lineWithoutHashes.endsWith("**")) || (lineWithoutHashes.endsWith(":") && lineWithoutHashes.length < 50 && !lineWithoutHashes.includes("http"));
+
+        if (isHeader) {
+          const headerText = cleanLine.replace(/\*\*/g, "").trim();
+          return (
+            <Text
+              key={idx}
+              style={{
+                fontSize: 13,
+                fontFamily: fonts.bold,
+                color: theme.primary,
+                marginTop: idx === 0 ? 0 : 8,
+                marginBottom: 3
+              }}
+            >
+              {headerText}
+            </Text>
+          );
+        }
+
+        if (isBullet) {
+          const parts = cleanLine.split(/(\*\*.*?\*\*)/g);
+          return (
+            <View key={idx} style={{ flexDirection: "row", alignItems: "flex-start", marginTop: 4, paddingLeft: 4 }}>
+              <Text style={{ fontSize: 13, color: theme.primary, marginRight: 6, lineHeight: 19 }}>•</Text>
+              <Text style={{ flex: 1, fontSize: 12.5, fontFamily: fonts.regular, color: theme.text, lineHeight: 19 }}>
+                {parts.map((part, pIdx) => {
+                  if (part.startsWith("**") && part.endsWith("**")) {
+                    return (
+                      <Text key={pIdx} style={{ fontFamily: fonts.bold, color: theme.text }}>
+                        {part.slice(2, -2)}
+                      </Text>
+                    );
+                  }
+                  return part;
+                })}
+              </Text>
+            </View>
+          );
+        }
+
+        const parts = cleanLine.split(/(\*\*.*?\*\*)/g);
+        return (
+          <Text
+            key={idx}
+            numberOfLines={expanded ? undefined : (idx === 2 ? 1 : undefined)}
+            style={{
+              fontSize: 12.5,
+              fontFamily: fonts.regular,
+              color: theme.text,
+              lineHeight: 19,
+              marginTop: idx === 0 ? 0 : 4
+            }}
+          >
+            {parts.map((part, pIdx) => {
+              if (part.startsWith("**") && part.endsWith("**")) {
+                return (
+                  <Text key={pIdx} style={{ fontFamily: fonts.bold, color: theme.text }}>
+                    {part.slice(2, -2)}
+                  </Text>
+                );
+              }
+              return part;
+            })}
+          </Text>
+        );
+      })}
+
       {isLong ? (
-        <Pressable hitSlop={8} onPress={() => setExpanded((value) => !value)} style={styles.readMoreButton}>
+        <Pressable hitSlop={8} onPress={() => setExpanded((val) => !val)} style={styles.readMoreButton}>
           <Text style={[styles.readMoreText, { color: theme.primary }]}>{expanded ? "Show less ↑" : "Read more ↓"}</Text>
         </Pressable>
       ) : null}
@@ -1699,10 +1891,10 @@ function PostMedia({ post, onPreview }) {
 
   if (media.kind !== "video") return null;
 
-  return <VideoFeedPlayer media={media} />;
+  return <VideoFeedPlayer media={media} onPreviewItem={onPreview} />;
 }
 
-function VideoFeedPlayer({ media }) {
+function VideoFeedPlayer({ media, onPreviewItem }) {
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [showControls, setShowControls] = useState(false);
@@ -1826,6 +2018,45 @@ function VideoFeedPlayer({ media }) {
       <View style={styles.videoControlRow}>
         <Pressable onPress={toggleMute} style={styles.videoMiniControl}>
           <Feather name={muted ? "volume-x" : "volume-2"} size={15} color="#FFFFFF" />
+        </Pressable>
+        {onPreviewItem ? (
+          <Pressable
+            onPress={() => {
+              onPreviewItem({
+                type: "video",
+                kind: "video",
+                title: media.title || "Video Post",
+                subtitle: media.subtitle || "TCM Community",
+                imageUrl: posterUri,
+                videoUrl: sourceUri,
+                fileUri: sourceUri
+              });
+            }}
+            style={styles.videoMiniControl}
+          >
+            <Feather name="maximize-2" size={15} color="#FFFFFF" />
+          </Pressable>
+        ) : null}
+        <Pressable
+          onPress={() => {
+            const targetUrl = sourceUri || posterUri;
+            if (Platform.OS === "web" && typeof document !== "undefined") {
+              const a = document.createElement("a");
+              a.href = targetUrl;
+              a.download = media.title || "video.mp4";
+              a.target = "_blank";
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              Alert.alert("Downloading 📥", "Video download initiated.");
+            } else {
+              Linking.openURL(targetUrl).catch(() => {});
+              Alert.alert("Downloading 📥", "Opening video download link.");
+            }
+          }}
+          style={styles.videoMiniControl}
+        >
+          <Feather name="download" size={15} color="#FFFFFF" />
         </Pressable>
         <View style={styles.durationBadge}>
           <Text style={styles.durationText}>{media.duration || "0:30"}</Text>
@@ -2091,8 +2322,42 @@ function MediaPreviewModal({ item, onClose }) {
 
   const safeTopPadding = Platform.OS === "ios" ? 54 : Platform.OS === "android" ? (StatusBar.currentHeight || 28) + 8 : 12;
   const isDocument = item?.type === "document";
+  const isVideo = item?.kind === "video" || item?.type === "video" || Boolean(item?.videoUrl) || item?.mimeType?.startsWith("video/");
+  const videoSource = item?.videoUrl || item?.fileUri || item?.imageUrl || "";
   const docUri = item?.fileUri || item?.imageUrl || item?.documentUrl || "";
   const isImageDoc = Boolean(item?.imageUrl || item?.mimeType?.startsWith("image/") || (typeof docUri === "string" && (docUri.endsWith(".png") || docUri.endsWith(".jpg") || docUri.endsWith(".jpeg") || docUri.endsWith(".webp"))));
+
+  async function handleDownloadMedia(mediaUrl, fileName = "download") {
+    if (!mediaUrl) {
+      Alert.alert("Download Error", "Media URL is missing.");
+      return;
+    }
+    setDownloading(true);
+    try {
+      if (Platform.OS === "web" && typeof document !== "undefined") {
+        const a = document.createElement("a");
+        a.href = mediaUrl;
+        a.download = fileName || "media_file";
+        a.target = "_blank";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        Alert.alert("Downloading 📥", "File download initiated.");
+      } else {
+        await Linking.openURL(mediaUrl);
+        Alert.alert("Downloading 📥", `Opening download link for ${fileName}`);
+      }
+      setDownloaded(true);
+    } catch (err) {
+      try {
+        await Share.share({ url: mediaUrl, message: `Download Media: ${fileName} - ${mediaUrl}` });
+      } catch (e) {
+        Alert.alert("Media Link", mediaUrl);
+      }
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   useEffect(() => {
     setDownloading(false);
@@ -2253,6 +2518,30 @@ function MediaPreviewModal({ item, onClose }) {
             </View>
           </View>
         </SafeAreaView>
+      ) : isVideo ? (
+        <SafeAreaView style={styles.imageViewer}>
+          <View style={styles.imagePreviewStage}>
+            <VideoFeedPlayer media={{ ...item, videoUrl: videoSource, frameKey: "landscape" }} />
+          </View>
+          <View style={[styles.imageCaption, { paddingTop: safeTopPadding }]}>
+            <View style={styles.imageCaptionCopy}>
+              <Text numberOfLines={1} style={styles.imageCaptionTitle}>{item.title || "Video Preview"}</Text>
+              <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle || "TCM Video Update"}</Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => handleDownloadMedia(videoSource, item.title || "video.mp4")}
+                style={{ backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                <Feather name="download" size={16} color="#FFFFFF" />
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFFFFF" }}>Download</Text>
+              </TouchableOpacity>
+              <Pressable hitSlop={12} onPress={onClose} style={styles.imageCloseButton}>
+                <Feather name="x" size={24} color="#FFFFFF" />
+              </Pressable>
+            </View>
+          </View>
+        </SafeAreaView>
       ) : (
         <SafeAreaView style={styles.imageViewer}>
           <View style={styles.imagePreviewStage}>
@@ -2260,12 +2549,21 @@ function MediaPreviewModal({ item, onClose }) {
           </View>
           <View style={[styles.imageCaption, { paddingTop: safeTopPadding }]}>
             <View style={styles.imageCaptionCopy}>
-              <Text numberOfLines={1} style={styles.imageCaptionTitle}>{item.title}</Text>
-              <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle}</Text>
+              <Text numberOfLines={1} style={styles.imageCaptionTitle}>{item.title || "Photo Attachment"}</Text>
+              <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle || "TCM Photo Update"}</Text>
             </View>
-            <Pressable hitSlop={12} onPress={onClose} style={styles.imageCloseButton}>
-              <Feather name="x" size={24} color="#FFFFFF" />
-            </Pressable>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => handleDownloadMedia(item.imageUrl, item.title || "photo.jpg")}
+                style={{ backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                <Feather name="download" size={16} color="#FFFFFF" />
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFFFFF" }}>Download</Text>
+              </TouchableOpacity>
+              <Pressable hitSlop={12} onPress={onClose} style={styles.imageCloseButton}>
+                <Feather name="x" size={24} color="#FFFFFF" />
+              </Pressable>
+            </View>
           </View>
         </SafeAreaView>
       )}
@@ -2631,7 +2929,7 @@ function LearnDashboard({ learn, user, onSelectUser }) {
 
   return (
     <View style={styles.learnWrap}>
-      <LinearGradient colors={["#5B3CF5", "#20165A"]} style={styles.learnHero}>
+      <LinearGradient colors={["#0A6836", "#044324"]} style={styles.learnHero}>
         <View style={styles.learnHeroCopy}>
           <Text style={styles.learnWelcome}>{hero.greeting}</Text>
           <Text numberOfLines={1} style={styles.learnName}>{hero.name || user.name}</Text>
@@ -2700,7 +2998,7 @@ function LearnDashboard({ learn, user, onSelectUser }) {
   );
 }
 
-function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadType, setDraft, onClose, onSubmit }) {
+function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadType, setDraft, onClose, onSubmit, onPreviewMedia }) {
   const textLength = draft.text.length;
   const canSubmit = Boolean(draft.text.trim()) && !posting;
   const imagesList = (draft.carouselImages && draft.carouselImages.length > 0)
@@ -2744,12 +3042,9 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
             "text/*"
           ]
         });
-
         if (result.canceled) return;
-
         const asset = result.assets?.[0];
         if (!asset?.uri) return;
-
         const isImageDocument = asset.mimeType?.startsWith("image/");
         setDraft((current) => ({
           ...current,
@@ -2842,9 +3137,33 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
             <Text style={styles.createTitle}>Create Post</Text>
             <Text style={styles.createSubtitle}>Share your knowledge or updates with TCM community</Text>
           </View>
-          <Pressable disabled={!canSubmit} onPress={onSubmit} style={[styles.createPublish, !canSubmit && styles.createPublishDisabled]}>
-            <Text style={styles.createPublishText}>{posting ? "Posting" : "Post"}</Text>
-          </Pressable>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => {
+                if (!hasMediaPreview && !hasDocumentPreview && !draft.text.trim()) {
+                  Alert.alert("Preview Post", "Write text or attach media to preview your post.");
+                  return;
+                }
+                onPreviewMedia?.({
+                  type: uploadType === "document" ? "document" : uploadType === "video" ? "video" : "photo",
+                  kind: uploadType,
+                  title: draft.title || "Post Preview",
+                  subtitle: draft.text || "TCM Community Post",
+                  imageUrl: previewImage || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80",
+                  videoUrl: draft.fileUri || previewImage,
+                  fileUri: draft.fileUri,
+                  fileName: draft.fileName
+                });
+              }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.badgeBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}
+            >
+              <Feather name="eye" size={15} color={colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Preview</Text>
+            </TouchableOpacity>
+            <Pressable disabled={!canSubmit} onPress={onSubmit} style={[styles.createPublish, !canSubmit && styles.createPublishDisabled]}>
+              <Text style={styles.createPublishText}>{posting ? "Posting" : "Post"}</Text>
+            </Pressable>
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.createScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -2903,6 +3222,15 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
                     label={`Image ${idx + 1}`}
                     onRemove={() => removeImageAtIndex(idx)}
                     type="image"
+                    frameKey={selectedFrameKey}
+                    onPress={() => {
+                      onPreviewMedia?.({
+                        type: "photo",
+                        kind: "photo",
+                        imageUrl: imgUri,
+                        title: `Image ${idx + 1} Preview`
+                      });
+                    }}
                   />
                 ))
               ) : uploadType === "video" && hasMediaPreview ? (
@@ -2911,7 +3239,17 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
                   label="00:30"
                   onRemove={removeAttachedMedia}
                   type="video"
+                  frameKey={selectedFrameKey}
                   videoUri={draft.fileUri.trim()}
+                  onPress={() => {
+                    onPreviewMedia?.({
+                      type: "video",
+                      kind: "video",
+                      imageUrl: previewImage,
+                      videoUrl: draft.fileUri.trim(),
+                      title: "Video Preview"
+                    });
+                  }}
                 />
               ) : null}
               {hasDocumentPreview ? (
@@ -2921,6 +3259,15 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
                   onRemove={removeAttachedMedia}
                   type="document"
                   label={draft.fileName.trim() || "Document"}
+                  onPress={() => {
+                    onPreviewMedia?.({
+                      type: "document",
+                      kind: "document",
+                      imageUrl: previewImage,
+                      fileUri: draft.fileUri,
+                      title: draft.fileName.trim() || "Document Preview"
+                    });
+                  }}
                 />
               ) : null}
               <Pressable onPress={attachSelectedMedia} style={styles.addMoreCard}>
@@ -2938,28 +3285,29 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
                   {frameOptions.map((item) => {
                     const active = selectedFrameKey === item.key;
                     return (
-                    <Pressable
-                      key={item.key}
-                      onPress={() => {
-                        setFramePreview(item);
-                        setDraft((current) => ({ ...current, frameKey: item.key }));
-                      }}
-                      style={[styles.frameOption, active && styles.frameOptionActive]}
-                    >
-                      <View style={[styles.frameThumb, item.key === "none" && styles.frameThumbNone, active && styles.frameThumbActive]}>
-                        {item.icon ? (
-                          <Feather name={item.icon} size={25} color={colors.primary} />
-                        ) : uploadType === "video" && !previewImage ? (
-                          <View style={styles.frameVideoThumb}>
-                            <FontAwesome name="play" size={16} color={colors.primary} />
-                          </View>
-                        ) : (
-                          <Image source={{ uri: previewImage }} style={styles.frameImage} />
-                        )}
-                      </View>
-                      <Text numberOfLines={1} style={styles.frameLabel}>{item.label}</Text>
-                    </Pressable>
-                  );})}
+                      <Pressable
+                        key={item.key}
+                        onPress={() => {
+                          setFramePreview(item);
+                          setDraft((current) => ({ ...current, frameKey: item.key }));
+                        }}
+                        style={[styles.frameOption, active && styles.frameOptionActive]}
+                      >
+                        <View style={[styles.frameThumb, item.key === "none" && styles.frameThumbNone, active && styles.frameThumbActive]}>
+                          {item.icon ? (
+                            <Feather name={item.icon} size={25} color={colors.primary} />
+                          ) : uploadType === "video" && !previewImage ? (
+                            <View style={styles.frameVideoThumb}>
+                              <FontAwesome name="play" size={16} color={colors.primary} />
+                            </View>
+                          ) : (
+                            <Image source={{ uri: previewImage }} style={styles.frameImage} />
+                          )}
+                        </View>
+                        <Text numberOfLines={1} style={styles.frameLabel}>{item.label}</Text>
+                      </Pressable>
+                    );
+                  })}
                 </ScrollView>
               ) : (
                 <View style={styles.emptyFrameState}>
@@ -3017,12 +3365,12 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
           mediaType={uploadType}
           selectedKey={selectedFrameKey}
           videoUri={uploadType === "video" ? draft.fileUri.trim() : ""}
+          onSelect={(item) => setFramePreview(item)}
           onApply={(key) => {
             setDraft((current) => ({ ...current, frameKey: key }));
             setFramePreview(null);
           }}
           onClose={() => setFramePreview(null)}
-          onSelect={setFramePreview}
         />
       </View>
     </SafeAreaView>
@@ -3087,11 +3435,24 @@ function FramePreviewModal({ frame, frames, imageUrl, mediaType, selectedKey, vi
   );
 }
 
-function CreateMediaPreview({ type, imageUrl, videoUri, label, fileSize, onRemove }) {
+function CreateMediaPreview({ type, imageUrl, videoUri, label, fileSize, onRemove, onPress, frameKey = "none" }) {
+  const isPolaroid = frameKey === "polaroid";
+  const isRounded = frameKey === "rounded";
+
   return (
-    <View style={styles.createPreviewCard}>
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.createPreviewCard,
+        frameKey === "square" && { width: 140, height: 140 },
+        frameKey === "portrait" && { width: 130, height: 160 },
+        frameKey === "landscape" && { width: 180, height: 110 },
+        isPolaroid && { backgroundColor: "#FFFFFF", padding: 6, borderRadius: 10, borderWidth: 1, borderColor: "#E2E8F0" },
+        isRounded && { borderRadius: 24, overflow: "hidden" }
+      ]}
+    >
       {type === "image" ? (
-        <Image source={{ uri: imageUrl }} style={styles.createPreviewImage} />
+        <Image source={{ uri: imageUrl }} style={[styles.createPreviewImage, isRounded && { borderRadius: 20 }]} resizeMode={frameKey === "none" || frameKey === "original" ? "contain" : "cover"} />
       ) : type === "document" ? (
         imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.createPreviewImage} />
@@ -3104,26 +3465,25 @@ function CreateMediaPreview({ type, imageUrl, videoUri, label, fileSize, onRemov
             {fileSize ? <Text numberOfLines={1} style={styles.documentUploadSize}>{fileSize}</Text> : null}
           </View>
         )
-      ) : imageUrl ? (
-        <Image source={{ uri: imageUrl }} style={styles.createPreviewImage} />
       ) : (
-        <VideoPreviewSurface videoUri={videoUri} />
+        <VideoPreviewSurface videoUri={videoUri} imageUrl={imageUrl} />
       )}
       <LinearGradient colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.62)"]} style={styles.createPreviewOverlay}>
         <Text numberOfLines={1} style={styles.createPreviewLabel}>{type === "document" ? "Document" : label}</Text>
         <View style={styles.cropIcon}>
-          <Feather name="crop" size={16} color="#FFFFFF" />
+          <Feather name="eye" size={16} color="#FFFFFF" />
         </View>
       </LinearGradient>
       <Pressable onPress={onRemove} style={styles.removeMediaButton}>
         <Feather name="x" size={18} color="#FFFFFF" />
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 
-function VideoPreviewSurface({ videoUri }) {
-  const player = useVideoPlayer(videoUri ? { uri: videoUri } : null, (videoPlayer) => {
+function VideoPreviewSurface({ videoUri, imageUrl }) {
+  const sourceUri = videoUri || imageUrl || "";
+  const player = useVideoPlayer(sourceUri ? { uri: sourceUri } : null, (videoPlayer) => {
     videoPlayer.loop = false;
     videoPlayer.muted = true;
     videoPlayer.pause();
@@ -3131,42 +3491,45 @@ function VideoPreviewSurface({ videoUri }) {
 
   return (
     <LinearGradient colors={["#343148", "#18162B"]} style={styles.createVideoPreview}>
-      {videoUri ? <VideoView player={player} nativeControls={false} contentFit="cover" style={styles.createPreviewImage} /> : null}
+      {sourceUri ? (
+        <VideoView player={player} nativeControls={false} contentFit="cover" style={styles.createPreviewImage} />
+      ) : imageUrl ? (
+        <Image source={{ uri: imageUrl }} style={styles.createPreviewImage} />
+      ) : null}
       <View style={styles.videoPlayButton}>
-        <FontAwesome name="play" size={14} color="#17143C" />
+        <FontAwesome name="play" size={14} color="#FFFFFF" />
       </View>
     </LinearGradient>
   );
 }
 
-function DetailInputRow({ icon, label, placeholder, value, onChangeText, ...props }) {
+function DetailInputRow({ icon, label, placeholder, value, onChangeText, autoCapitalize }) {
+  const { theme } = useTheme();
   return (
     <View style={styles.detailRow}>
-      <View style={styles.detailIcon}>
-        <Feather name={icon} size={22} color={colors.primary} />
+      <View style={[styles.detailIcon, { backgroundColor: theme.badgeBg || "#E8F5E9" }]}>
+        <Feather name={icon} size={18} color={theme.primary} />
       </View>
-      <Text numberOfLines={1} ellipsizeMode="tail" style={styles.detailLabel}>{label}</Text>
+      <Text style={[styles.detailLabel, { color: theme.text }]}>{label}</Text>
       <TextInput
-        multiline={false}
-        numberOfLines={1}
         placeholder={placeholder}
-        placeholderTextColor="#73708B"
-        style={styles.detailInput}
+        placeholderTextColor={theme.subtext || "#64748B"}
+        style={[styles.detailInput, { color: theme.text }]}
         value={value}
         onChangeText={onChangeText}
-        {...props}
+        autoCapitalize={autoCapitalize}
       />
-      <Feather name="chevron-right" size={20} color={colors.ink} />
     </View>
   );
 }
+
 function ActionDock({ open, setOpen, onAction, tabs, activeTab, setActiveTab }) {
   const { theme } = useTheme();
   return (
     <View style={styles.bottomDock}>
       <View style={styles.fabRow}>
         <Pressable onPress={() => onAction("post")} style={({ pressed }) => [styles.fab, pressed && styles.pressed]}>
-          <LinearGradient colors={[theme.primary, theme.primaryDark || "#7B52FF"]} style={styles.fabGradient}>
+          <LinearGradient colors={[theme.fabBg || theme.primary, theme.primaryDark || "#044324"]} style={styles.fabGradient}>
             <Feather name="plus" size={26} color="#FFFFFF" />
           </LinearGradient>
         </Pressable>
@@ -3182,8 +3545,8 @@ function ActionDock({ open, setOpen, onAction, tabs, activeTab, setActiveTab }) 
           if (key === "Home") iconName = "home";
           if (key === "Profile") iconName = "user";
 
-          const activeColor = theme.isDark ? "#818CF8" : "#5B3CF5";
-          const inactiveColor = theme.isDark ? "#94A3B8" : "#7C7C9A";
+          const activeColor = theme.primary;
+          const inactiveColor = theme.subtext;
 
           return (
             <Pressable key={key} onPress={() => setActiveTab(key)} style={({ pressed }) => [styles.tabItem, pressed && styles.pressed]}>
@@ -3220,7 +3583,7 @@ function DrawerFeatureModal({ feature, onClose, user }) {
   const isLeaveFeature = ["My Leaves", "Apply for Leave", "Leave Calendar", "Leave Balance", "Leave Requests"].includes(feature);
   const modalSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
   const softSurface = { backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#F4F3FB", borderColor: theme.border };
-  const premiumGradient = theme.isDark ? ["#312E81", "#111827"] : ["#5B3CF5", "#3A1CC9"];
+  const premiumGradient = theme.isDark ? ["#064E26", "#111827"] : ["#0A6836", "#044324"];
 
   function handleApplyLeave() {
     if (!leaveReason.trim()) {
@@ -3332,7 +3695,7 @@ function DrawerFeatureModal({ feature, onClose, user }) {
 
               {activeLeaveTab === "Leave Calendar" ? (
                 <View style={[styles.calendarMockCard, modalSurface]}>
-                  <MaterialCommunityIcons name="calendar-month" size={44} color="#5B3CF5" />
+                  <MaterialCommunityIcons name="calendar-month" size={44} color={colors.primary} />
                   <Text style={[styles.calendarTitle, { color: theme.text }]}>Academic Calendar 2026</Text>
                   <Text style={[styles.calendarSub, { color: theme.subtext }]}>Holidays: Independence Day (15 Aug), Diwali (1 Nov), New Year (1 Jan)</Text>
                 </View>
@@ -3523,7 +3886,7 @@ const styles = StyleSheet.create({
   headerWalletBalance: {
     fontFamily: fonts.bold,
     fontSize: 11,
-    color: "#5B3CF5"
+    color: colors.primary
   },
   headerCoinDivider: {
     width: 1,
@@ -3713,7 +4076,7 @@ const styles = StyleSheet.create({
     fontSize: 12
   },
   categoryTextActive: {
-    color: colors.primary
+    color: "#FFFFFF"
   },
   categoryDrop: {
     alignItems: "center",
@@ -5521,7 +5884,7 @@ const styles = StyleSheet.create({
   },
   guidelinesCard: {
     alignItems: "center",
-    backgroundColor: "#F4F0FF",
+    backgroundColor: "#E8F5E9",
     borderRadius: 12,
     flexDirection: "row",
     gap: 12,
@@ -5531,7 +5894,7 @@ const styles = StyleSheet.create({
   },
   guidelineIcon: {
     alignItems: "center",
-    backgroundColor: "#EAE3FF",
+    backgroundColor: "#C8E6C9",
     borderRadius: 14,
     height: 48,
     justifyContent: "center",
@@ -5663,7 +6026,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     height: 56,
     width: 56,
-    shadowColor: "#5B3CF5",
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
@@ -5685,7 +6048,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F0EEF8",
     paddingVertical: 8,
-    shadowColor: "#261B94",
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
@@ -5706,7 +6069,7 @@ const styles = StyleSheet.create({
     textAlign: "center"
   },
   tabLabelActive: {
-    color: "#5B3CF5",
+    color: colors.primary,
     fontFamily: fonts.bold
   },
   activeTabLine: {
@@ -5714,7 +6077,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 20,
     height: 3,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: colors.primary,
     borderRadius: 2
   },
   placeholderCard: {
@@ -5821,8 +6184,8 @@ const styles = StyleSheet.create({
     borderColor: "#EBE9F5"
   },
   leaveNavTabActive: {
-    backgroundColor: "#5B3CF5",
-    borderColor: "#5B3CF5"
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
   },
   leaveNavText: {
     fontFamily: fonts.medium,
@@ -5895,7 +6258,7 @@ const styles = StyleSheet.create({
     color: "#18172B"
   },
   submitLeaveBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
@@ -5951,7 +6314,7 @@ const styles = StyleSheet.create({
   leaveRecordDates: {
     fontFamily: fonts.medium,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: colors.primary
   },
   leaveRecordReason: {
     fontFamily: fonts.regular,
@@ -6001,7 +6364,7 @@ const styles = StyleSheet.create({
   settingStateText: {
     fontFamily: fonts.medium,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: colors.primary
   },
   notifCard: {
     flexDirection: "row",
@@ -6050,7 +6413,7 @@ const styles = StyleSheet.create({
   billingPlanTitle: {
     fontFamily: fonts.bold,
     fontSize: 15,
-    color: "#5B3CF5"
+    color: colors.primary
   },
   billingPlanSub: {
     fontFamily: fonts.regular,

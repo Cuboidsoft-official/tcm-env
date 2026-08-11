@@ -333,9 +333,9 @@ const styles = StyleSheet.create({
     position: "relative"
   },
   planCardActive: {
-    backgroundColor: "#FAF5FF",
-    borderColor: "#5B3CF5",
-    shadowColor: "#5B3CF5",
+    backgroundColor: "#E8F5E9",
+    borderColor: "#0A6836",
+    shadowColor: "#0A6836",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     color: "#475569"
   },
   planTitleActive: {
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   radioCircle: {
     width: 18,
@@ -380,13 +380,13 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   radioCircleActive: {
-    borderColor: "#5B3CF5"
+    borderColor: "#0A6836"
   },
   radioInnerCircle: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#5B3CF5"
+    backgroundColor: "#0A6836"
   },
   priceRow: {
     flexDirection: "row",
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -467,13 +467,13 @@ const styles = StyleSheet.create({
     paddingTop: 10
   },
   subscribeBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     borderRadius: 14,
     paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#5B3CF5",
+    shadowColor: "#0A6836",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

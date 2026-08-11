@@ -26,18 +26,18 @@ import WalletScreen from "./WalletScreen";
 
 const themesList = [
   {
-    id: "Lime",
-    name: "Lime",
-    subtitle: "Fresh Energetic Lime Green Accent",
-    icon: "zap",
-    primaryColor: "#84CC16",
-    bgColor: "#F7FEE7",
-    badgeColor: "#ECFDF5"
+    id: "Nature",
+    name: "Nature",
+    subtitle: "Fresh Forest & Soft Mint Emerald (Default)",
+    icon: "leaf",
+    primaryColor: "#0A6836",
+    bgColor: "#F4F7F4",
+    badgeColor: "#E8F5E9"
   },
   {
     id: "Day",
     name: "Day",
-    subtitle: "Classic Light & Crisp Daylight (Default)",
+    subtitle: "Classic Light & Crisp Daylight",
     icon: "sun",
     primaryColor: "#5B3CF5",
     bgColor: "#FFFFFF",
@@ -48,9 +48,18 @@ const themesList = [
     name: "Night",
     subtitle: "Deep Midnight Dark Mode",
     icon: "moon",
-    primaryColor: "#6366F1",
+    primaryColor: "#10B981",
     bgColor: "#0F172A",
-    badgeColor: "#1E293B"
+    badgeColor: "#064E3B"
+  },
+  {
+    id: "Lime",
+    name: "Lime",
+    subtitle: "Fresh Energetic Lime Green Accent",
+    icon: "zap",
+    primaryColor: "#84CC16",
+    bgColor: "#F7FEE7",
+    badgeColor: "#ECFDF5"
   },
   {
     id: "Evening",

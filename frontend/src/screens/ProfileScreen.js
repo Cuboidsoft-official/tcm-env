@@ -953,7 +953,7 @@ const styles = StyleSheet.create({
     borderColor: "#F4F0FF"
   },
   avatarInitialsContainer: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     borderWidth: 3,
     borderColor: "#F4F0FF",
     alignItems: "center",
@@ -968,7 +968,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 2,
     right: 2,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -997,7 +997,7 @@ const styles = StyleSheet.create({
   getVerifiedPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 14,
@@ -1073,7 +1073,7 @@ const styles = StyleSheet.create({
     color: "#7C7C9A"
   },
   metaLink: {
-    color: "#5B3CF5",
+    color: "#0A6836",
     textDecorationLine: "underline"
   },
 
@@ -1084,7 +1084,7 @@ const styles = StyleSheet.create({
   },
   editBtn: {
     flex: 1,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingVertical: 8,
     borderRadius: 10,
     flexDirection: "row",

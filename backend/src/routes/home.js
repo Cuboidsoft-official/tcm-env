@@ -3547,7 +3547,7 @@ homeRouter.get("/doubt-rooms/:roomId", requireAuth, async (req, res) => {
 homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, async (req, res) => {
   try {
     const { roomId } = req.params;
-    const { text, codeSnippet, attachmentUrl, attachmentType, replyToId, reactionEmoji } = req.body;
+    const { text, codeSnippet, attachmentUrl, attachmentType, mediaUrl, mediaType, driveLink, fileName, replyToId, reactionEmoji } = req.body;
     let room = null;
     try { room = await DoubtRoom.findOne({ roomId }); } catch (e) {}
     if (!room) room = getInMemoryDoubtRoom(req, roomId);
@@ -3570,7 +3570,7 @@ homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, async (req, res) =
       }
     }
 
-    if (!text && !codeSnippet && !attachmentUrl) {
+    if (!text && !codeSnippet && !attachmentUrl && !mediaUrl && !driveLink) {
       return res.status(400).json({ message: "Message content cannot be empty." });
     }
 
@@ -3588,20 +3588,30 @@ homeRouter.post("/doubt-rooms/:roomId/messages", requireAuth, async (req, res) =
         "kare", "kam", "kaam", "python", "django", "react", "html", "css", "js", "javascript", "node", "code"
       ].some((kw) => textStr.includes(kw));
 
+    const resolvedMediaUrl = mediaUrl || attachmentUrl || undefined;
+    const resolvedMediaType = mediaType || (driveLink ? "document" : resolvedMediaUrl ? "image" : undefined);
+    const resolvedDriveLink = driveLink || undefined;
+    const resolvedFileName = fileName || undefined;
+
     const newMsg = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      authorId: req.user?._id || req.user?.id || "seed-user",
       authorName: req.user?.name || "Learner",
       authorRole: isUserMentor ? "Admin" : undefined,
       authorAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      text: text ? text.trim() : "",
+      text: text ? text.trim() : (resolvedDriveLink ? `📁 Google Drive Doc: ${resolvedFileName || "Shared File"}` : "📷 Shared Image"),
       codeSnippet: codeSnippet ? codeSnippet.trim() : undefined,
-      attachmentUrl: attachmentUrl || undefined,
-      attachmentType: attachmentType || undefined,
+      attachmentUrl: resolvedMediaUrl,
+      attachmentType: resolvedMediaType,
+      mediaUrl: resolvedMediaUrl,
+      mediaType: resolvedMediaType,
+      driveLink: resolvedDriveLink,
+      fileName: resolvedFileName,
       reactions: [],
       isSelf: true,
       isAdmin: isUserMentor,
-      type: codeSnippet ? "code" : attachmentUrl ? "file" : "text",
+      type: codeSnippet ? "code" : resolvedMediaUrl ? "file" : "text",
       canAskAi: Boolean(!isUserMentor && isQuestionOrDoubt)
     };
 

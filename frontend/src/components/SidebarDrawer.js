@@ -60,11 +60,11 @@ export default function SidebarDrawer({
                   {avatarUri ? (
                     <Image source={{ uri: avatarUri }} style={[styles.avatarImage, { borderColor: theme.cardBg }]} />
                   ) : (
-                    <View style={[styles.avatarCircle, { borderColor: theme.cardBg }]}>
+                    <View style={[styles.avatarCircle, { backgroundColor: theme.primary, borderColor: theme.cardBg }]}>
                       <Text style={styles.avatarInitials}>{initials}</Text>
                     </View>
                   )}
-                  <Pressable onPress={() => handleNavigate("Profile")} style={[styles.editBadge, { borderColor: theme.cardBg }]}>
+                  <Pressable onPress={() => handleNavigate("Profile")} style={[styles.editBadge, { backgroundColor: theme.primaryDark, borderColor: theme.cardBg }]}>
                     <Feather name="edit-2" size={9} color="#FFFFFF" />
                   </Pressable>
                 </View>
@@ -82,7 +82,7 @@ export default function SidebarDrawer({
                     if (onOpenGetVerified) onOpenGetVerified();
                   }}
                   activeOpacity={0.8}
-                  style={styles.drawerGetVerifiedBtn}
+                  style={[styles.drawerGetVerifiedBtn, { backgroundColor: theme.primary }]}
                 >
                   <Ionicons name="sparkles" size={10} color="#FFFFFF" />
                   <Text style={styles.drawerGetVerifiedBtnText}>Get Verified</Text>
@@ -90,9 +90,9 @@ export default function SidebarDrawer({
               </View>
               <Text style={[styles.userHandle, { color: theme.subtext }]}>{handle}</Text>
 
-              <View style={[styles.premiumPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+              <View style={[styles.premiumPill, { backgroundColor: theme.badgeBg, borderColor: theme.badgeBorder || theme.border }]}>
                 <FontAwesome5 name="crown" size={11} color={theme.primary} />
-                <Text style={[styles.premiumPillText, { color: theme.isDark ? "#C7D2FE" : theme.primary }]}>{memberBadge}</Text>
+                <Text style={[styles.premiumPillText, { color: theme.badgeText || theme.primary }]}>{memberBadge}</Text>
               </View>
             </View>
 
@@ -111,7 +111,7 @@ export default function SidebarDrawer({
               </View>
 
               <View style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-                <MaterialCommunityIcons name="shield-check" size={18} color="#2E7D32" />
+                <MaterialCommunityIcons name="shield-check" size={18} color={theme.primary} />
                 <Text style={[styles.metricVal, { color: theme.text }]}>5</Text>
                 <Text style={[styles.metricLbl, { color: theme.subtext }]}>Certificates</Text>
               </View>
@@ -185,19 +185,20 @@ export default function SidebarDrawer({
               }}
               style={({ pressed }) => [
                 styles.premiumCard,
-                { backgroundColor: theme.badgeBg, borderColor: activeItem === "Go Premium" ? theme.primary : theme.border },
+                { backgroundColor: theme.badgeBg, borderColor: activeItem === "Go Premium" ? theme.primary : theme.badgeBorder || theme.border },
                 pressed && styles.pressed
               ]}
             >
-              <View style={styles.premiumIconWrap}>
+              <View style={[styles.premiumIconWrap, { backgroundColor: theme.primary }]}>
                 <FontAwesome5 name="crown" size={14} color="#FFFFFF" />
               </View>
               <View style={styles.premiumTextWrap}>
-                <Text style={[styles.premiumTitle, { color: theme.isDark ? "#C7D2FE" : theme.primary }]}>Get TCM Verified Pro</Text>
+                <Text style={[styles.premiumTitle, { color: theme.badgeText || theme.primary }]}>Get TCM Verified Pro</Text>
                 <Text style={[styles.premiumSub, { color: theme.subtext }]}>Verified Badge, Real Projects & ATS Resume from ₹29/mo</Text>
               </View>
               <Feather name="chevron-right" size={18} color={theme.primary} />
             </Pressable>
+
 
             {/* 7. Logout Button */}
             <Pressable
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
     right: -2,
-    backgroundColor: "#7D45EA",
+    backgroundColor: "#0A6836",
     width: 20,
     height: 20,
     borderRadius: 10,
@@ -350,7 +351,7 @@ const styles = StyleSheet.create({
   drawerGetVerifiedBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 12,
@@ -371,8 +372,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     borderWidth: 1,
+    borderColor: "#C8E6C9",
     alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -380,7 +382,7 @@ const styles = StyleSheet.create({
     marginTop: 8
   },
   premiumPillText: {
-    color: "#5B3CF5",
+    color: "#0A6836",
     fontFamily: fonts.semiBold,
     fontSize: 12
   },
@@ -438,7 +440,7 @@ const styles = StyleSheet.create({
     marginBottom: 2
   },
   menuItemActive: {
-    backgroundColor: "#F0EDFF"
+    backgroundColor: "#E8F5E9"
   },
   menuLeft: {
     flexDirection: "row",
@@ -456,7 +458,7 @@ const styles = StyleSheet.create({
   },
   menuLabelActive: {
     fontFamily: fonts.bold,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   menuRight: {
@@ -480,7 +482,7 @@ const styles = StyleSheet.create({
 
   // 6. Go Premium
   premiumCard: {
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     borderRadius: 16,
     padding: 12,
     flexDirection: "row",
@@ -488,13 +490,13 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#E6E1FF"
+    borderColor: "#C8E6C9"
   },
   premiumIconWrap: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -504,7 +506,7 @@ const styles = StyleSheet.create({
   premiumTitle: {
     fontFamily: fonts.bold,
     fontSize: 13,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   premiumSub: {
     fontFamily: fonts.regular,

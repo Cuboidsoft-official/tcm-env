@@ -456,8 +456,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC"
   },
   periodPillActive: {
-    borderColor: "#5B3CF5",
-    backgroundColor: "#5B3CF5"
+    borderColor: colors.primary,
+    backgroundColor: colors.primary
   },
   periodPillText: {
     fontSize: 12,
@@ -468,9 +468,9 @@ const styles = StyleSheet.create({
     color: "#FFFFFF"
   },
   aiCard: {
-    backgroundColor: "#F5F3FF",
+    backgroundColor: colors.badgeBg,
     borderWidth: 1,
-    borderColor: "#DDD6FE",
+    borderColor: colors.badgeBorder,
     borderRadius: 12,
     padding: 12,
     marginBottom: 14
@@ -479,17 +479,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: colors.badgeBg,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#C4B5FD"
+    borderColor: colors.badgeBorder
   },
   uploadBtnText: {
     fontSize: 12,
     fontFamily: fonts.bold,
-    color: "#5B3CF5"
+    color: colors.primary
   },
   imagePreviewWrap: {
     position: "relative",
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     borderRadius: 15
   },
   submitBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     flexDirection: "row",

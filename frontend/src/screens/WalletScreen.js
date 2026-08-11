@@ -12,8 +12,9 @@ import {
   TextInput,
   View
 } from "react-native";
-import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, FontAwesome, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { addWalletMoney, convertCoinsToCash, convertReferralBonus, getWallet, withdrawWalletFunds } from "../api/client";
+import { Linking } from "react-native";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -70,6 +71,77 @@ export default function WalletScreen({ session, user = {}, onBack }) {
   const [addAmount, setAddAmount] = useState("");
   const [copiedToast, setCopiedToast] = useState(false);
   const [actionSubmitting, setActionSubmitting] = useState(false);
+  const [inputReferralCode, setInputReferralCode] = useState("");
+  const [appliedReferral, setAppliedReferral] = useState(false);
+
+  function handleApplyReferralCode() {
+    const code = inputReferralCode.trim().toUpperCase();
+    if (!code) {
+      Alert.alert("Referral Code Required", "Please enter a valid referral code to claim 20 coins.");
+      return;
+    }
+    if (appliedReferral) {
+      Alert.alert("Already Claimed", "You have already applied a referral code.");
+      return;
+    }
+    setAppliedReferral(true);
+
+    setWalletData((prev) => {
+      const newCoins = prev.tcmCoins + 20;
+      let newBalance = prev.availableBalance;
+      let newTotal = prev.totalBalance;
+      let finalCoins = newCoins;
+      const extraTx = [];
+
+      if (newCoins >= 500) {
+        const convertMultiplier = Math.floor(newCoins / 500);
+        const coinsDeducted = convertMultiplier * 500;
+        const cashAdded = convertMultiplier * 100;
+        finalCoins = newCoins - coinsDeducted;
+        newBalance += cashAdded;
+        newTotal += cashAdded;
+
+        extraTx.push({
+          id: `tx_autoconv_${Date.now()}`,
+          type: "credit",
+          title: "Auto Coins Conversion",
+          subtitle: `Auto-converted 500 Coins to ₹${cashAdded.toFixed(2)} Cash`,
+          amount: `+ ₹${cashAdded.toFixed(2)}`,
+          date: "Just now",
+          icon: "gift",
+          iconBg: "#ECFDF5",
+          iconColor: "#10B981"
+        });
+      }
+
+      return {
+        ...prev,
+        tcmCoins: finalCoins,
+        availableBalance: newBalance,
+        totalBalance: newTotal,
+        transactions: [
+          ...extraTx,
+          {
+            id: `tx_ref_applied_${Date.now()}`,
+            type: "credit",
+            title: "Referral Code Bonus",
+            subtitle: `Applied referral code ${code} (+20 Coins)`,
+            amount: "+ 20 Coins",
+            date: "Just now",
+            icon: "star",
+            iconBg: "#FEF3C7",
+            iconColor: "#D97706"
+          },
+          ...prev.transactions
+        ]
+      };
+    });
+
+    Alert.alert(
+      "Referral Bonus Added! 🎉",
+      `Referral code ${code} applied successfully!\n\n+20 TCM Coins added to your wallet.`
+    );
+  }
 
   function handleCopyReferral() {
     setCopiedToast(true);
@@ -85,43 +157,43 @@ export default function WalletScreen({ session, user = {}, onBack }) {
   }
 
   async function handleConvertCoins() {
-    if (walletData.tcmCoins < 100) {
+    if (walletData.tcmCoins < 500) {
       Alert.alert(
         "Coins Requirement",
-        `You currently have ${walletData.tcmCoins} TCM Coins. You need at least 100 coins to convert to ₹100 cash.\n\nEarn 10 coins for every friend who signs up with your referral code (${referralCode})!`
+        `You currently have ${walletData.tcmCoins} TCM Coins. You need 500 coins to convert to ₹100 cash (500 Coins = ₹100).\n\nApply a referral code (+20 coins) or invite friends to earn coins!`
       );
       return;
     }
 
     setActionSubmitting(true);
     try {
-      if (session?.token) {
-        const res = await convertCoinsToCash(session.token, 100);
-        if (res?.wallet) setWalletData(res.wallet);
-      } else {
-        setWalletData((prev) => ({
-          ...prev,
-          tcmCoins: Math.max(0, prev.tcmCoins - 100),
-          availableBalance: prev.availableBalance + 100,
-          totalBalance: prev.totalBalance + 100,
-          totalEarned: prev.totalEarned + 100,
-          transactions: [
-            {
-              id: `tx_conv_${Date.now()}`,
-              type: "credit",
-              title: "Coins Converted to Cash",
-              subtitle: "Converted 100 TCM Coins to ₹100.00 Cash",
-              amount: "+ ₹100.00",
-              date: "Just now",
-              icon: "gift",
-              iconBg: "#ECFDF5",
-              iconColor: "#10B981"
-            },
-            ...prev.transactions
-          ]
-        }));
-      }
-      Alert.alert("Coins Converted!", "100 TCM Coins converted successfully! ₹100.00 cash added to your available balance.");
+      const convertMultiplier = Math.floor(walletData.tcmCoins / 500);
+      const coinsDeducted = convertMultiplier * 500;
+      const cashAdded = convertMultiplier * 100;
+
+      setWalletData((prev) => ({
+        ...prev,
+        tcmCoins: Math.max(0, prev.tcmCoins - coinsDeducted),
+        availableBalance: prev.availableBalance + cashAdded,
+        totalBalance: prev.totalBalance + cashAdded,
+        totalEarned: prev.totalEarned + cashAdded,
+        transactions: [
+          {
+            id: `tx_conv_${Date.now()}`,
+            type: "credit",
+            title: "Coins Converted to Cash",
+            subtitle: `Converted ${coinsDeducted} TCM Coins to ₹${cashAdded.toFixed(2)} Cash`,
+            amount: `+ ₹${cashAdded.toFixed(2)}`,
+            date: "Just now",
+            icon: "gift",
+            iconBg: "#ECFDF5",
+            iconColor: "#10B981"
+          },
+          ...prev.transactions
+        ]
+      }));
+
+      Alert.alert("Coins Converted! 🎉", `${coinsDeducted} TCM Coins converted successfully! ₹${cashAdded.toFixed(2)} cash added to your available balance.`);
     } catch (err) {
       Alert.alert("Conversion Failed", err.message || "Failed to convert coins.");
     } finally {
@@ -165,58 +237,21 @@ export default function WalletScreen({ session, user = {}, onBack }) {
     }
   }
 
+  function handleWithdrawWhatsApp() {
+    const amt = parseFloat(withdrawAmount) || walletData.availableBalance || 100;
+    const upi = upiId.trim() || "Not specified";
+    const whatsappNum = "9238695500";
+    const msg = `Hi TCM Support! I want to withdraw ₹${amt.toFixed(2)} from my TCM Wallet. My UPI / Bank details: ${upi}. Please process my withdrawal.`;
+    const encoded = encodeURIComponent(msg);
+    const url = `https://wa.me/91${whatsappNum}?text=${encoded}`;
+
+    Linking.openURL(url).catch(() => {
+      Alert.alert("WhatsApp Direct Contact 💬", `Please send a WhatsApp message to +91 ${whatsappNum} with your UPI details: "${upi}" to withdraw ₹${amt.toFixed(2)}.`);
+    });
+  }
+
   async function handleWithdrawSubmit() {
-    const amt = parseFloat(withdrawAmount);
-    if (!amt || isNaN(amt) || amt <= 0) {
-      Alert.alert("Invalid Amount", "Please enter a valid withdrawal amount.");
-      return;
-    }
-    if (amt > walletData.availableBalance) {
-      Alert.alert("Insufficient Balance", `Available balance is ₹${walletData.availableBalance.toFixed(2)}.`);
-      return;
-    }
-    if (!upiId.trim()) {
-      Alert.alert("UPI / Bank Required", "Please enter your UPI ID or Bank account details.");
-      return;
-    }
-
-    setActionSubmitting(true);
-    try {
-      if (session?.token) {
-        const res = await withdrawWalletFunds(session.token, { amount: amt, upiId: upiId.trim() });
-        if (res?.wallet) setWalletData(res.wallet);
-      } else {
-        setWalletData((prev) => ({
-          ...prev,
-          availableBalance: prev.availableBalance - amt,
-          totalBalance: prev.totalBalance - amt,
-          totalWithdrawn: prev.totalWithdrawn + amt,
-          transactions: [
-            {
-              id: `tx_${Date.now()}`,
-              type: "debit",
-              title: "Withdrawal Requested",
-              subtitle: `Transferred to UPI: ${upiId}`,
-              amount: `- ₹${amt.toFixed(2)}`,
-              date: "Just now",
-              icon: "wallet",
-              iconBg: "#FFF3E0",
-              iconColor: "#EF6C00"
-            },
-            ...prev.transactions
-          ]
-        }));
-      }
-
-      setWithdrawModalOpen(false);
-      setWithdrawAmount("");
-      setUpiId("");
-      Alert.alert("Withdrawal Initiated", `₹${amt.toFixed(2)} will be credited to ${upiId} within 24 hours.`);
-    } catch (err) {
-      Alert.alert("Error", err.message || "Failed to process withdrawal.");
-    } finally {
-      setActionSubmitting(false);
-    }
+    handleWithdrawWhatsApp();
   }
 
   async function handleAddMoneySubmit() {
@@ -373,7 +408,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
           </View>
         </View>
 
-        {/* 4. Your Referral Code Card (Matching Reference Screenshot) */}
+        {/* 4. Your Referral Code & Add Referral Code Card */}
         <View style={styles.referralCard}>
           <Text style={styles.referralCardTitle}>Your Referral Code</Text>
 
@@ -387,18 +422,41 @@ export default function WalletScreen({ session, user = {}, onBack }) {
 
             <View style={styles.referralRightCol}>
               <Text style={styles.referralInviteText}>
-                Invite your friends and earn coins on successful referrals.
+                Earn <Text style={{ fontFamily: fonts.bold, color: "#10B981" }}>₹300 Cash</Text> per friend who buys a course using your code!
               </Text>
 
               <Pressable onPress={handleShareReferral} style={styles.shareEarnBtn}>
                 <Feather name="share-2" size={13} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.shareEarnBtnText}>Share & Earn</Text>
+                <Text style={styles.shareEarnBtnText}>Share & Earn ₹300</Text>
               </Pressable>
             </View>
 
-            {/* Gift Graphic */}
             <View style={styles.giftGraphicWrap}>
               <MaterialCommunityIcons name="gift-outline" size={40} color="#5B3CF5" />
+            </View>
+          </View>
+
+          {/* Add Friend's Referral Code Section */}
+          <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: "#E2E8F0" }}>
+            <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#0F172A", marginBottom: 4 }}>Have a Referral Code?</Text>
+            <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: "#64748B", marginBottom: 8 }}>Enter someone's referral code to get 20 TCM Coins instantly!</Text>
+
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <TextInput
+                placeholder="Enter referral code (e.g. AYU25X)"
+                placeholderTextColor="#94A3B8"
+                style={{ flex: 1, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, fontFamily: fonts.medium, textTransform: "uppercase" }}
+                value={inputReferralCode}
+                onChangeText={setInputReferralCode}
+                disabled={appliedReferral}
+              />
+              <Pressable
+                onPress={handleApplyReferralCode}
+                disabled={appliedReferral}
+                style={{ backgroundColor: appliedReferral ? "#94A3B8" : "#0A6836", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, justifyContent: "center" }}
+              >
+                <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: "#FFFFFF" }}>{appliedReferral ? "Applied ✓" : "Apply Code"}</Text>
+              </Pressable>
             </View>
           </View>
 
@@ -417,14 +475,14 @@ export default function WalletScreen({ session, user = {}, onBack }) {
               <MaterialCommunityIcons name="coins" size={22} color="#10B981" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.coinConvTitle}>Coin Conversion & Rewards</Text>
-              <Text style={styles.coinConvSub}>10 Coins per signup • 100 Coins = ₹100 Cash • ₹500 Converted Referral</Text>
+              <Text style={styles.coinConvTitle}>500 Coins = ₹100 Cash Conversion</Text>
+              <Text style={styles.coinConvSub}>20 Coins per referral code • 500 Coins = ₹100 Cash • ₹300 per successful course refer</Text>
             </View>
           </View>
 
           <View style={styles.coinProgressRow}>
             <Text style={styles.coinProgressText}>Current Balance: <Text style={{ fontFamily: fonts.bold, color: "#10B981" }}>{walletData.tcmCoins} Coins</Text></Text>
-            <Text style={styles.coinReqText}>Target: 100 Coins = ₹100.00</Text>
+            <Text style={styles.coinReqText}>Target: 500 Coins = ₹100.00</Text>
           </View>
 
           <Pressable
@@ -432,14 +490,25 @@ export default function WalletScreen({ session, user = {}, onBack }) {
             disabled={actionSubmitting}
             style={[
               styles.convertCoinsBtn,
-              walletData.tcmCoins < 100 && { backgroundColor: "#94A3B8" }
+              walletData.tcmCoins < 500 && { backgroundColor: "#94A3B8" }
             ]}
           >
             <MaterialCommunityIcons name="swap-horizontal" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
             <Text style={styles.convertCoinsBtnText}>
-              {walletData.tcmCoins >= 100 ? "Convert 100 Coins to ₹100 Cash" : `Need ${Math.max(0, 100 - walletData.tcmCoins)} More Coins to Convert`}
+              {walletData.tcmCoins >= 500 ? "Convert 500 Coins to ₹100 Cash" : `Need ${Math.max(0, 500 - walletData.tcmCoins)} More Coins to Convert`}
             </Text>
           </Pressable>
+
+          {/* Course Purchase Eligibility & Discount Banner */}
+          <View style={{ marginTop: 14, backgroundColor: "#E8F5E9", borderRadius: 14, padding: 12, borderWidth: 1, borderColor: "#C8E6C9" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <MaterialCommunityIcons name="school-outline" size={18} color="#0A6836" />
+              <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#0A6836" }}>Eligible for New Course Purchase 🎓</Text>
+            </View>
+            <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: "#1E293B", lineHeight: 17 }}>
+              Aap apne converted wallet cash (<Text style={{ fontFamily: fonts.bold, color: "#0A6836" }}>₹{walletData.availableBalance.toFixed(2)}</Text>) se naye TCM Courses purchase kar sakte hain ya instant course discount claim kar sakte hain!
+            </Text>
+          </View>
         </View>
 
         {/* Referral Tracking List */}
@@ -563,6 +632,14 @@ export default function WalletScreen({ session, user = {}, onBack }) {
               </Pressable>
             </View>
 
+            {/* Maintenance Warning Banner */}
+            <View style={{ backgroundColor: "#FEF3C7", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#FDE68A", marginBottom: 14 }}>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#92400E", marginBottom: 3 }}>Withdrawal Gateway Under Maintenance</Text>
+              <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: "#78350F", lineHeight: 17 }}>
+                Automated payout gateway is currently undergoing maintenance. Send your withdrawal request on WhatsApp to <Text style={{ fontWeight: "700" }}>9238695500</Text> for instant direct UPI transfer.
+              </Text>
+            </View>
+
             <Text style={styles.modalSubText}>
               Available balance for withdrawal:{" "}
               <Text style={{ fontFamily: fonts.bold, color: "#2E7D32" }}>
@@ -589,9 +666,10 @@ export default function WalletScreen({ session, user = {}, onBack }) {
               style={styles.modalInput}
             />
 
-            <Pressable onPress={handleWithdrawSubmit} style={styles.modalSubmitBtn}>
-              <Text style={styles.modalSubmitBtnText}>Confirm Withdrawal</Text>
-            </Pressable>
+            <TouchableOpacity onPress={handleWithdrawWhatsApp} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#0F172A", paddingVertical: 14, borderRadius: 14, marginTop: 8 }}>
+              <FontAwesome5 name="whatsapp" size={18} color="#25D366" style={{ marginRight: 8 }} />
+              <Text style={styles.modalSubmitBtnText}>Withdraw via WhatsApp (9238695500) 💬</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

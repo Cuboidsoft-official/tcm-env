@@ -682,9 +682,11 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                       </View>
                     </Pressable>
 
-                    <Text style={[styles.imageCaptionFilename, isMe ? styles.imageCaptionFilenameMe : [styles.imageCaptionFilenameOther, { color: theme.subtext }]]}>
-                      📷 {msg.fileName || msg.text}
-                    </Text>
+                    {msg.fileName && !msg.fileName.includes("Photo Attachment") && !msg.fileName.includes("Device Gallery Photo") && !msg.fileName.startsWith("data:image") ? (
+                      <Text style={[styles.imageCaptionFilename, isMe ? styles.imageCaptionFilenameMe : [styles.imageCaptionFilenameOther, { color: theme.subtext }]]}>
+                        {msg.fileName}
+                      </Text>
+                    ) : null}
                   </View>
                 ) : null}
 
@@ -1272,13 +1274,13 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: "#5B3CF5",
+    borderColor: "#0A6836",
     marginBottom: 2
   },
   senderLabelName: {
     fontFamily: fonts.bold,
     fontSize: 11,
-    color: "#5B3CF5",
+    color: "#0A6836",
     marginBottom: 3
   },
   msgBubble: {
@@ -1289,7 +1291,7 @@ const styles = StyleSheet.create({
     ...shadow.soft
   },
   msgBubbleMe: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     borderBottomRightRadius: 4
   },
   msgBubbleOther: {
@@ -1339,17 +1341,17 @@ const styles = StyleSheet.create({
     gap: 6
   },
   promptPill: {
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E5E1FF"
+    borderColor: "#C8E6C9"
   },
   promptPillText: {
     fontFamily: fonts.medium,
     fontSize: 10.5,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   // Input Footer
@@ -1394,14 +1396,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 2,
     ...shadow.soft
   },
   sendBtnDisabled: {
-    backgroundColor: "#A295F7"
+    backgroundColor: "#81C784"
   },
 
   // Media & Drive Attachments inside Bubbles

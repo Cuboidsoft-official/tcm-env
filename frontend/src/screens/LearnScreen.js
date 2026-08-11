@@ -18,6 +18,7 @@ import { getContinueLearningDetails } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
+import RazorpayPaymentModal from "../components/RazorpayPaymentModal";
 
 const { width } = Dimensions.get("window");
 
@@ -147,8 +148,10 @@ function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694
 export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
-  const [allMentorsModalOpen, setAllMentorsModalOpen] = useState(false);
-  const [roadmapModalOpen, setRoadmapModalOpen] = useState(false);
+  const [allMentorsModalVisible, setAllMentorsModalVisible] = useState(false);
+  const [roadmapModalVisible, setRoadmapModalVisible] = useState(false);
+  const [selectedPaymentCourse, setSelectedPaymentCourse] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const safeLearn = learn || {};
   const heroBanners = safeLearn.heroBanners?.length ? safeLearn.heroBanners : defaultHeroBanners;
@@ -201,13 +204,28 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
   }
 
   function handleEnroll(course) {
-    Alert.alert("Enrollment Confirmation", `Would you like to enroll in "${course.title}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Enroll Now",
-        onPress: () => Alert.alert("Enrolled", `Successfully enrolled in ${course.title}. Happy learning!`)
-      }
-    ]);
+    setSelectedPaymentCourse(course);
+    setShowPaymentModal(true);
+  }
+
+  function handlePaymentComplete(course) {
+    if (!course) return;
+    setContinueLearningList((prev) => {
+      const exists = prev.some((c) => c.id === course.id);
+      if (exists) return prev;
+      return [
+        {
+          id: course.id || `course_${Date.now()}`,
+          title: course.title,
+          subtitle: `Enrolled • ${course.category || "TCM Course"}`,
+          progress: 5,
+          icon: "book-open",
+          iconColor: "#0A6836",
+          bgColor: "#E8F5E9"
+        },
+        ...prev
+      ];
+    });
   }
 
   function handleScrollBanner(event) {
@@ -227,7 +245,6 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* 1. Top Header Bar matching reference UI */}
       <View style={styles.topHeader}>
         <View style={styles.headerLeft}>
           <Pressable onPress={onOpenSidebar} style={[styles.menuBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
@@ -250,7 +267,6 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       </View>
 
-      {/* 2. Floating Search Bar with Filter */}
       <View style={[styles.searchBoxCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <Feather name="search" size={18} color={theme.subtext} style={{ marginRight: 10 }} />
         <TextInput
@@ -270,9 +286,8 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </Pressable>
       </View>
 
-      {/* 2.5 Quick AI Roadmap Bar */}
       <Pressable
-        onPress={() => setRoadmapModalOpen(true)}
+        onPress={() => setRoadmapModalVisible(true)}
         style={({ pressed }) => [styles.quickAiRoadmapBar, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF", borderColor: theme.border }, pressed && styles.pressed]}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
@@ -281,7 +296,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           </View>
           <View style={{ flex: 1 }}>
             <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text }}>Plan My Learning Roadmap 🗺️</Text>
-            <Text numberOfLines={1} style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }}>Interactive AI Career & Budget Guide</Text>
+            <Text numberOfLines={1} style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.primary }}>Interactive AI Career & Budget Guide</Text>
           </View>
         </View>
         <View style={[styles.quickAiBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
@@ -289,7 +304,6 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       </Pressable>
 
-      {/* 3. Hero Carousel Banner */}
       {heroBanners.length > 0 ? (
         <View style={styles.bannerContainer}>
           <ScrollView
@@ -300,10 +314,10 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             scrollEventThrottle={16}
           >
             {heroBanners.map((banner) => (
-              <View key={banner.id} style={[styles.bannerCard, { backgroundColor: theme.isDark ? "#111625" : "#F0EDFF", borderColor: theme.border }]}>
+              <View key={banner.id} style={[styles.bannerCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                 <View style={styles.bannerLeft}>
-                  <View style={[styles.newBatchPill, { backgroundColor: theme.isDark ? "#1E1B4B" : "#E4DCFF" }]}>
-                    <Text style={[styles.newBatchText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>{banner.tag}</Text>
+                  <View style={[styles.newBatchPill, { backgroundColor: theme.badgeBg }]}>
+                    <Text style={[styles.newBatchText, { color: theme.badgeText || theme.primary }]}>{banner.tag}</Text>
                   </View>
 
                   <Text style={[styles.bannerTitle, { color: theme.text }]}>{banner.title}</Text>
@@ -333,7 +347,6 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             ))}
           </ScrollView>
 
-          {/* Carousel Pagination Dots */}
           <View style={styles.dotsRow}>
             {heroBanners.map((_, i) => (
               <View key={i} style={[styles.dot, { backgroundColor: theme.border }, i === activeBannerIndex && [styles.activeDot, { backgroundColor: theme.primary }]]} />
@@ -342,11 +355,9 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       ) : null}
 
-      {/* 3.5. Explore TCM Section (Matching Reference Screenshot) */}
       <View style={styles.exploreTcmSection}>
         <Text style={[styles.exploreTcmHeaderTitle, { color: theme.text }]}>Explore TCM</Text>
         <View style={styles.exploreTcmGrid}>
-          {/* 1. TCM Inform Tech */}
           <Pressable
             onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("inform") : Alert.alert("TCM Inform Tech", "Opening Live Classes, Notes & Assignments..."))}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
@@ -361,7 +372,6 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Live Classes, Notes, Assignments & More</Text>
           </Pressable>
 
-          {/* 2. TCM Academy */}
           <Pressable
             onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("academy") : Alert.alert("TCM Academy", "Opening Premium Courses & Specialized Programs..."))}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
@@ -376,7 +386,6 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Premium Courses, Specialized Programs</Text>
           </Pressable>
 
-          {/* 3. TCM Government */}
           <Pressable
             onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("govt") : Alert.alert("TCM Government", "Opening UPSC, SSC, Banking & Govt Exams..."))}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
@@ -391,7 +400,6 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>UPSC, SSC CGL, Banking & Govt Exams</Text>
           </Pressable>
 
-          {/* 4. TCM Career */}
           <Pressable
             onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("career") : Alert.alert("TCM Career", "Opening Internships, Jobs & Placements..."))}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
@@ -408,7 +416,6 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       </View>
 
-      {/* 4. Continue Learning Section */}
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionTitleText, { color: theme.text }]}>Continue Learning</Text>
         <Pressable onPress={() => (onOpenContinueLearning ? onOpenContinueLearning() : Alert.alert("Continue Learning", "Showing all active enrolled courses."))}>
@@ -456,7 +463,6 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       )}
 
-      {/* 5. Popular Courses Section */}
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionTitleText, { color: theme.text }]}>Popular Courses</Text>
         <Pressable onPress={() => (onOpenPopularCourses ? onOpenPopularCourses() : Alert.alert("Popular Courses", "Showing all popular featured courses."))}>
@@ -489,7 +495,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
                   <Text style={[styles.lessonsText, { color: theme.subtext }]}>{course.lessons}</Text>
                 </View>
 
-                <Pressable onPress={() => (onSelectCourse ? onSelectCourse(course.id) : handleEnroll(course))} style={[styles.enrollBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+                <Pressable onPress={() => handleEnroll(course)} style={[styles.enrollBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
                   <Text style={[styles.enrollBtnText, { color: theme.primary }]}>Enroll Now</Text>
                 </Pressable>
               </View>
@@ -507,12 +513,11 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       )}
 
-      {/* 6. Our Expert Mentors Carousel Section */}
       {expertMentors.length > 0 ? (
         <>
           <View style={styles.sectionHeaderRow}>
             <Text style={[styles.sectionTitleText, { color: theme.text }]}>Our Expert Mentors</Text>
-            <Pressable onPress={() => (onOpenAllMentors ? onOpenAllMentors() : setAllMentorsModalOpen(true))}>
+            <Pressable onPress={() => (onOpenAllMentors ? onOpenAllMentors() : setAllMentorsModalVisible(true))}>
               <Text style={[styles.viewAllText, { color: theme.primary }]}>View All Mentors ›</Text>
             </Pressable>
           </View>
@@ -531,27 +536,33 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
                         <Image source={{ uri: mAvatar }} style={styles.mentorAvatarImg} />
                       ) : (
                         <View style={[styles.mentorAvatarImg, { backgroundColor: theme.primary, alignItems: "center", justifyContent: "center" }]}>
-                          <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#FFFFFF" }}>{initials}</Text>
+                          <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: "#FFFFFF" }}>{initials}</Text>
                         </View>
                       )}
                       <View style={styles.onlineDot} />
                     </View>
+
                     <View style={styles.mentorInfoCol}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Text style={[styles.mentorCardName, { color: theme.text }]} numberOfLines={1}>{mentor.name}</Text>
-                        <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                          <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
-                        </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                        <Text style={[styles.mentorCardName, { color: theme.text, flexShrink: 1 }]} numberOfLines={1}>
+                          {mentor.name}
+                        </Text>
                         {mentor.isPremium ? (
-                          <MaterialCommunityIcons name="check-decagram" size={13} color={theme.primary} style={{ marginLeft: 2 }} />
+                          <MaterialCommunityIcons name="check-decagram" size={13} color={theme.primary} />
                         ) : null}
                       </View>
-                    <Text style={[styles.mentorCardRole, { color: theme.subtext }]} numberOfLines={1}>{mentor.role}</Text>
-                    <View style={[styles.mentorBadgePill, { backgroundColor: theme.badgeBg }]}>
-                      <Text style={[styles.mentorBadgeText, { color: theme.primary }]}>{mentor.badge}</Text>
+                      <Text style={[styles.mentorCardRole, { color: theme.subtext }]} numberOfLines={1}>
+                        {mentor.role}
+                      </Text>
+                      {mentor.badge ? (
+                        <View style={[styles.mentorBadgePill, { backgroundColor: theme.badgeBg }]}>
+                          <Text style={[styles.mentorBadgeText, { color: theme.primary }]} numberOfLines={1}>
+                            {mentor.badge}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
-                </View>
 
                 <View style={styles.mentorMetaRow}>
                   <View style={styles.mentorRatingRow}>
@@ -575,24 +586,29 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </>
       ) : null}
 
-      {/* View All Mentors Modal */}
       <ViewAllMentorsModal
-        visible={allMentorsModalOpen}
+        visible={allMentorsModalVisible}
         session={session || { token: user?.token }}
-        onClose={() => setAllMentorsModalOpen(false)}
+        onClose={() => setAllMentorsModalVisible(false)}
         onSelectMentor={(mId) => {
           if (onSelectUser) onSelectUser({ id: mId, role: "mentor" });
         }}
       />
       
-      {/* Groq AI Interactive Roadmap Planner Modal */}
       <AiRoadmapPlannerModal
-        visible={roadmapModalOpen}
+        visible={roadmapModalVisible}
         user={user}
-        onClose={() => setRoadmapModalOpen(false)}
+        onClose={() => setRoadmapModalVisible(false)}
+        onSelectUser={onSelectUser}
       />
 
-      {/* 7. Top Categories Section */}
+      <RazorpayPaymentModal
+        visible={showPaymentModal}
+        course={selectedPaymentCourse}
+        onClose={() => setShowPaymentModal(false)}
+        onPaymentComplete={handlePaymentComplete}
+      />
+
       {topCategories.length > 0 ? (
         <>
           <View style={styles.sectionHeaderRow}>
@@ -1231,7 +1247,7 @@ const styles = StyleSheet.create({
 
   // Expert Mentors Carousel
   mentorCard: {
-    width: 175,
+    width: 215,
     borderRadius: 18,
     padding: 12,
     marginRight: 12,
@@ -1244,15 +1260,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginBottom: 10
+    marginBottom: 8
   },
   mentorAvatarWrap: {
     position: "relative"
   },
   mentorAvatarImg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22
+    width: 46,
+    height: 46,
+    borderRadius: 23
   },
   onlineDot: {
     position: "absolute",
@@ -1266,18 +1282,19 @@ const styles = StyleSheet.create({
     borderColor: "#FFFFFF"
   },
   mentorInfoCol: {
-    flex: 1
+    flex: 1,
+    overflow: "hidden"
   },
   mentorCardName: {
     fontFamily: fonts.bold,
-    fontSize: 12,
+    fontSize: 12.5,
     color: "#181725"
   },
   mentorCardRole: {
     fontFamily: fonts.regular,
-    fontSize: 9,
+    fontSize: 10,
     color: "#7C7C9A",
-    marginTop: 1,
+    marginTop: 2,
     marginBottom: 4
   },
   mentorBadgePill: {

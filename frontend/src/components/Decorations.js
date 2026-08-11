@@ -1,20 +1,25 @@
 import { StyleSheet, View } from "react-native";
 import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Decorations() {
+  const { theme } = useTheme();
+  const iconColor = theme?.primaryLight || "#C8E6C9";
+  const dotColor = theme?.badgeBorder || "#A7F3D0";
+
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Feather name="book-open" size={34} color="#C8BCFF" style={[styles.icon, styles.book]} />
-      <Ionicons name="briefcase-outline" size={32} color="#C8BCFF" style={[styles.icon, styles.case]} />
-      <FontAwesome5 name="graduation-cap" size={28} color="#C8BCFF" style={[styles.icon, styles.cap]} />
-      <MaterialCommunityIcons name="trophy-outline" size={32} color="#C8BCFF" style={[styles.icon, styles.trophy]} />
-      <Ionicons name="chatbubble-ellipses-outline" size={34} color="#C8BCFF" style={[styles.icon, styles.chat]} />
-      <Ionicons name="headset-outline" size={36} color="#C8BCFF" style={[styles.icon, styles.headset]} />
+      <Feather name="book-open" size={34} color={iconColor} style={[styles.icon, styles.book]} />
+      <Ionicons name="briefcase-outline" size={32} color={iconColor} style={[styles.icon, styles.case]} />
+      <FontAwesome5 name="graduation-cap" size={28} color={iconColor} style={[styles.icon, styles.cap]} />
+      <MaterialCommunityIcons name="trophy-outline" size={32} color={iconColor} style={[styles.icon, styles.trophy]} />
+      <Ionicons name="chatbubble-ellipses-outline" size={34} color={iconColor} style={[styles.icon, styles.chat]} />
+      <Ionicons name="headset-outline" size={36} color={iconColor} style={[styles.icon, styles.headset]} />
       <View style={[styles.star, styles.starOne]} />
       <View style={[styles.star, styles.starTwo]} />
-      <View style={[styles.dot, styles.dotOne]} />
-      <View style={[styles.dot, styles.dotTwo]} />
+      <View style={[styles.dot, styles.dotOne, { backgroundColor: dotColor }]} />
+      <View style={[styles.dot, styles.dotTwo, { backgroundColor: dotColor }]} />
     </View>
   );
 }
@@ -66,7 +71,6 @@ const styles = StyleSheet.create({
     top: "51%"
   },
   dot: {
-    backgroundColor: "#B9A9FF",
     borderRadius: 5,
     height: 8,
     position: "absolute",
@@ -81,3 +85,4 @@ const styles = StyleSheet.create({
     top: "77%"
   }
 });
+

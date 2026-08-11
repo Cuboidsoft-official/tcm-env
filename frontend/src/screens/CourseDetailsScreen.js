@@ -16,6 +16,7 @@ import { generateCourseOverviewInsightsWithAI } from "../api/gemini";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
+import RazorpayPaymentModal from "../components/RazorpayPaymentModal";
 
 function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80") {
   if (!url || typeof url !== "string") return fallback;
@@ -28,6 +29,8 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isEnrolledState, setIsEnrolledState] = useState(false);
   const [expandedAbout, setExpandedAbout] = useState(false);
   const [expandedModules, setExpandedModules] = useState({ m1: true, m2: true });
   const [aiInsights, setAiInsights] = useState(null);
@@ -183,13 +186,12 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
   const courseData = course || fallbackCourseData;
 
   function handleEnrollNow() {
-    Alert.alert("Enrollment Confirmation", `Confirm enrollment for "${courseData.title || "Course"}" at ${courseData.price || "₹1,499"}?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Proceed to Payment",
-        onPress: () => Alert.alert("Success", `Payment successful! You now have lifetime access to ${courseData.title || "the course"}.`)
-      }
-    ]);
+    setShowPaymentModal(true);
+  }
+
+  function handlePaymentComplete(purchasedCourse) {
+    setIsEnrolledState(true);
+    Alert.alert("Course Unlocked! 🎉", `Congratulations! You now have full lifetime access to "${purchasedCourse?.title || "the course"}".`);
   }
 
   function handleShare() {

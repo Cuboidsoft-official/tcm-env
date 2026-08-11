@@ -1,12 +1,19 @@
 import { StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "../context/ThemeContext";
 
 export default function WaveFooter() {
+  const { theme } = useTheme();
+  const colorOne = theme?.badgeBg || "#E8F5E9";
+  const colorTwo = theme?.badgeBorder || "#C8E6C9";
+  const gradientStart = theme?.accent || "#0D7D3D";
+  const gradientEnd = theme?.primary || "#0A6836";
+
   return (
     <View style={styles.wrap}>
-      <View style={[styles.wave, styles.waveOne]} />
-      <View style={[styles.wave, styles.waveTwo]} />
-      <LinearGradient colors={["#917BFF", "#5B3CF5"]} style={[styles.wave, styles.waveThree]} />
+      <View style={[styles.wave, styles.waveOne, { backgroundColor: colorOne }]} />
+      <View style={[styles.wave, styles.waveTwo, { backgroundColor: colorTwo }]} />
+      <LinearGradient colors={[gradientStart, gradientEnd]} style={[styles.wave, styles.waveThree]} />
     </View>
   );
 }
@@ -29,12 +36,10 @@ const styles = StyleSheet.create({
     width: "124%"
   },
   waveOne: {
-    backgroundColor: "#DDD6FF",
     bottom: 54,
     transform: [{ rotate: "9deg" }]
   },
   waveTwo: {
-    backgroundColor: "#B9ACFF",
     bottom: 25,
     opacity: 0.88,
     transform: [{ rotate: "-7deg" }]
@@ -44,3 +49,4 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "5deg" }]
   }
 });
+

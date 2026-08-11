@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   TextInput,
   ScrollView,
   Image,
@@ -13,9 +14,12 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Share
+  Share,
+  Linking
 } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   getDoubtRoomDetails,
@@ -29,6 +33,7 @@ import {
 } from "../api/client";
 import RoomDetailsScreen from "./RoomDetailsScreen";
 import { useTheme } from "../context/ThemeContext";
+import { fonts } from "../constants/fonts";
 
 function generateClientSmartFallback(query, category = "Academic") {
   const text = (query || "").toLowerCase().trim();
@@ -262,6 +267,45 @@ function isQuestionMessage(item) {
   return questionKeywords.some((kw) => str.includes(kw));
 }
 
+function dedupeRoomMessages(list) {
+  if (!Array.isArray(list)) return [];
+  const result = [];
+  list.forEach((msg) => {
+    if (!msg || (!msg.text && !msg.mediaUrl)) return;
+    const isDup = result.some((existing, idx) => {
+      if (existing.id && msg.id && existing.id === msg.id) {
+        result[idx] = {
+          ...existing,
+          ...msg,
+          mediaUrl: existing.mediaUrl || msg.mediaUrl,
+          mediaType: existing.mediaType || msg.mediaType,
+          driveLink: existing.driveLink || msg.driveLink,
+          fileName: existing.fileName || msg.fileName
+        };
+        return true;
+      }
+      const sameUser = String(existing.authorId || existing.senderId || "").trim() === String(msg.authorId || msg.senderId || "").trim();
+      const sameText = String(existing.text || "").trim() === String(msg.text || "").trim();
+      if (sameUser && sameText && sameText.length > 0) {
+        result[idx] = {
+          ...existing,
+          ...msg,
+          mediaUrl: existing.mediaUrl || msg.mediaUrl,
+          mediaType: existing.mediaType || msg.mediaType,
+          driveLink: existing.driveLink || msg.driveLink,
+          fileName: existing.fileName || msg.fileName
+        };
+        return true;
+      }
+      return false;
+    });
+    if (!isDup) {
+      result.push(msg);
+    }
+  });
+  return result;
+}
+
 export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", onClose, onOpenMentorProfile }) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
@@ -280,6 +324,164 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
   const [aiLoading, setAiLoading] = useState(false);
   const [joining, setJoining] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Attachment Bottom Sheet & Media Upload State
+  const [showAttachModal, setShowAttachModal] = useState(false);
+  const [attachType, setAttachType] = useState("image");
+  const [previewImageUri, setPreviewImageUri] = useState(null);
+  const [previewImageTitle, setPreviewImageTitle] = useState("");
+  const [imageCaptionInput, setImageCaptionInput] = useState("");
+  const [imageUrlInput, setImageUrlInput] = useState("");
+  const [driveLinkInput, setDriveLinkInput] = useState("");
+  const [docTitleInput, setDocTitleInput] = useState("");
+  const [fullImageModalUri, setFullImageModalUri] = useState(null);
+
+  const sampleImagePresets = [
+    { label: "Diagram Sample", url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80" },
+    { label: "Handwritten Notes", url: "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=600&q=80" },
+    { label: "Code Screenshot", url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80" }
+  ];
+
+  const sampleDocPresets = [
+    { label: "Academic Notes PDF", driveUrl: "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view", title: "NEET_Chapter_Notes.pdf" },
+    { label: "Lab Formula Sheet", driveUrl: "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view", title: "Formula_Sheet_2026.pdf" }
+  ];
+
+  async function pickImageFromDevice() {
+    try {
+      if (Platform.OS === "web" && typeof document !== "undefined") {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.onchange = (e) => {
+          const file = e.target?.files?.[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const dataUrl = event.target?.result;
+              if (dataUrl) {
+                handleSendAttachment({
+                  type: "image",
+                  url: dataUrl,
+                  title: file.name || "Photo Attachment"
+                });
+              }
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        input.click();
+        return;
+      }
+
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permissionResult.granted === false) {
+        Alert.alert("Permission Needed", "Please grant access to your photo library to pick images.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.85,
+        base64: true
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        const imgUri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        handleSendAttachment({
+          type: "image",
+          url: imgUri,
+          title: "Device Gallery Photo"
+        });
+      }
+    } catch (e) {
+      Alert.alert("Photo Upload", "Opening file chooser...");
+    }
+  }
+
+  async function pickDocFromDevice() {
+    try {
+      if (Platform.OS === "web" && typeof document !== "undefined") {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".pdf,.doc,.docx,.ppt,.pptx,.txt";
+        input.onchange = (e) => {
+          const file = e.target?.files?.[0];
+          if (file) {
+            handleSendAttachment({
+              type: "doc",
+              driveUrl: "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
+              title: file.name || "Uploaded_Document.pdf"
+            });
+          }
+        };
+        input.click();
+        return;
+      }
+
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "application/msword", "text/*"],
+        copyToCacheDirectory: true
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        const doc = result.assets[0];
+        handleSendAttachment({
+          type: "doc",
+          driveUrl: "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
+          title: doc.name || "Device_Document.pdf"
+        });
+      }
+    } catch (e) {}
+  }
+
+  async function handleSendAttachment({ type, url, driveUrl, title }) {
+    const isImage = type === "image";
+    const mediaUrlVal = isImage ? (url || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80") : null;
+    const driveLinkVal = !isImage ? (driveUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view") : null;
+    const fileNameVal = title || (isImage ? "Photo Attachment" : "Google Drive Document.pdf");
+    const defaultText = isImage ? (title || "📷 Photo Attachment") : `📁 Google Drive Doc: ${fileNameVal}`;
+
+    const newMsg = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      authorId: currentUserId || "seed-user",
+      authorName: session?.user?.name || "Learner",
+      authorAvatar: session?.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+      text: defaultText,
+      mediaType: isImage ? "image" : "document",
+      mediaUrl: mediaUrlVal,
+      driveLink: driveLinkVal,
+      fileName: fileNameVal,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      timestamp: Date.now(),
+      isSelf: true
+    };
+
+    setMessages((prev) => dedupeRoomMessages([...prev, newMsg]));
+    setShowAttachModal(false);
+    setPreviewImageUri(null);
+    setPreviewImageTitle("");
+    setImageCaptionInput("");
+    setImageUrlInput("");
+    setDriveLinkInput("");
+    setDocTitleInput("");
+
+    try {
+      const res = await sendDoubtRoomMessage(session?.token, roomId, {
+        text: defaultText,
+        mediaType: isImage ? "image" : "document",
+        mediaUrl: mediaUrlVal,
+        driveLink: driveLinkVal,
+        fileName: fileNameVal
+      });
+      if (res && res.room && res.room.messages) {
+        setRoom(res.room);
+        setMessages((prev) => dedupeRoomMessages([...prev, ...res.room.messages]));
+      }
+    } catch (err) {}
+  }
 
   // Admin Management Modal State
   const [manageModalVisible, setManageModalVisible] = useState(false);
@@ -364,9 +566,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         setRoom(res.room);
         setMessages((prev) => {
           const serverMsgs = res.room.messages || [];
-          const existingIds = new Set(serverMsgs.map((m) => m.id));
-          const localAiMsgs = prev.filter((m) => (m.isAi || m.type === "ai_response") && !existingIds.has(m.id));
-          return [...serverMsgs, ...localAiMsgs];
+          return dedupeRoomMessages([...prev, ...serverMsgs]);
         });
       }
     } catch (err) {
@@ -384,7 +584,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
       const res = await sendDoubtRoomMessage(token, roomId, { text: inputText });
       if (res && res.room) {
         setRoom(res.room);
-        setMessages(res.room.messages || []);
+        setMessages((prev) => dedupeRoomMessages([...prev, ...(res.room.messages || [])]));
         setInputText("");
         setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 200);
       }
@@ -717,6 +917,74 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
               );
             }
 
+            const isImageMsg = item.mediaType === "image" || Boolean(item.mediaUrl) || (item.text || "").includes("Photo Attachment");
+            const isDocMsg = item.mediaType === "document" || Boolean(item.driveLink) || (item.text || "").includes("Google Drive Doc");
+
+            if (isImageMsg) {
+              const imageUri = item.mediaUrl || (item.text?.startsWith("data:image/") || item.text?.startsWith("http") ? item.text : null) || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80";
+              const captionText = (item.fileName || item.text || "").trim();
+              const isDefaultLabel = !captionText || captionText.includes("Photo Attachment") || captionText.includes("Device Gallery Photo") || captionText.startsWith("data:image");
+
+              return (
+                <View key={uniqueKey} style={item.isSelf ? styles.msgRowRight : styles.msgRowLeft}>
+                  {!item.isSelf && <Image source={{ uri: item.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }} style={styles.msgAvatar} />}
+                  <View style={[item.isSelf ? [styles.msgBodyRight, { backgroundColor: theme.primary }] : [styles.msgBodyLeft, { backgroundColor: theme.cardBg, borderColor: theme.border }], { padding: 4 }]}>
+                    {!item.isSelf && <Text style={styles.msgAuthor}>{item.authorName} <Text style={styles.msgTime}>{item.time}</Text></Text>}
+                    <Pressable onPress={() => setFullImageModalUri(imageUri)}>
+                      <Image source={{ uri: imageUri }} style={{ width: 220, height: 150, borderRadius: 12 }} resizeMode="cover" />
+                    </Pressable>
+                    {!isDefaultLabel ? (
+                      <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: item.isSelf ? "#FFFFFF" : theme.text, marginTop: 4, paddingHorizontal: 6 }}>
+                        {captionText}
+                      </Text>
+                    ) : null}
+                    {item.isSelf && (
+                      <View style={styles.metaRowRight}>
+                        <Text style={styles.msgTimeRight}>{item.time}</Text>
+                        <MaterialCommunityIcons name="check-all" size={14} color="#C4B5FD" style={{ marginLeft: 4 }} />
+                      </View>
+                    )}
+                  </View>
+                  {item.isSelf && <Image source={{ uri: item.authorAvatar || session?.user?.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80" }} style={[styles.msgAvatar, { marginLeft: 8 }]} />}
+                </View>
+              );
+            }
+
+            if (isDocMsg) {
+              const driveLinkVal = item.driveLink || "https://drive.google.com";
+              return (
+                <View key={uniqueKey} style={item.isSelf ? styles.msgRowRight : styles.msgRowLeft}>
+                  {!item.isSelf && <Image source={{ uri: item.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }} style={styles.msgAvatar} />}
+                  <View style={[item.isSelf ? styles.msgBodyRight : styles.msgBodyLeft, { padding: 8 }]}>
+                    {!item.isSelf && <Text style={styles.msgAuthor}>{item.authorName} <Text style={styles.msgTime}>{item.time}</Text></Text>}
+                    <Pressable
+                      onPress={() => {
+                        Linking.openURL(driveLinkVal).catch(() => Alert.alert("Doc Link", driveLinkVal));
+                      }}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: item.isSelf ? "rgba(255,255,255,0.15)" : theme.badgeBg, padding: 10, borderRadius: 10 }}
+                    >
+                      <MaterialCommunityIcons name="google-drive" size={24} color={item.isSelf ? "#FFFFFF" : "#0F9D58"} />
+                      <View style={{ flex: 1 }}>
+                        <Text numberOfLines={1} style={{ fontSize: 12.5, fontFamily: fonts.bold, color: item.isSelf ? "#FFFFFF" : theme.text }}>
+                          {item.fileName || item.text.replace("📁 Google Drive Doc: ", "")}
+                        </Text>
+                        <Text style={{ fontSize: 10, color: item.isSelf ? "rgba(255,255,255,0.8)" : theme.subtext }}>
+                          Tap to open Document 📄
+                        </Text>
+                      </View>
+                    </Pressable>
+                    {item.isSelf && (
+                      <View style={styles.metaRowRight}>
+                        <Text style={styles.msgTimeRight}>{item.time}</Text>
+                        <MaterialCommunityIcons name="check-all" size={14} color="#C4B5FD" style={{ marginLeft: 4 }} />
+                      </View>
+                    )}
+                  </View>
+                  {item.isSelf && <Image source={{ uri: item.authorAvatar || session?.user?.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80" }} style={[styles.msgAvatar, { marginLeft: 8 }]} />}
+                </View>
+              );
+            }
+
             // REGULAR CHAT BUBBLE (Self)
             if (item.isSelf) {
               return (
@@ -847,7 +1115,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         </View>
       ) : (
         <View style={[styles.inputContainer, { backgroundColor: theme.cardBg, borderTopColor: theme.border }]}>
-          <TouchableOpacity style={[styles.plusBtn, { backgroundColor: theme.primary }]} onPress={() => setPollModalVisible(true)}>
+          <TouchableOpacity style={[styles.plusBtn, { backgroundColor: theme.primary }]} onPress={() => setShowAttachModal(true)}>
             <MaterialCommunityIcons name="plus" size={24} color="#FFFFFF" />
           </TouchableOpacity>
 
@@ -1044,6 +1312,178 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+      {/* MODAL: SHARE ATTACHMENT OPTIONS */}
+      <Modal visible={showAttachModal} transparent animationType="slide" onRequestClose={() => setShowAttachModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeaderRow}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Feather name="paperclip" size={18} color={theme.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Share Attachment</Text>
+              </View>
+              <Pressable onPress={() => setShowAttachModal(false)} style={styles.modalCloseBtn}>
+                <Feather name="x" size={18} color={theme.subtext} />
+              </Pressable>
+            </View>
+
+            {/* Type Selector Tabs */}
+            <View style={styles.modalTabsRow}>
+              <Pressable
+                onPress={() => setAttachType("image")}
+                style={[styles.modalTabBtn, attachType === "image" && { backgroundColor: theme.badgeBg, borderColor: theme.primary }]}
+              >
+                <Feather name="image" size={15} color={attachType === "image" ? theme.primary : theme.subtext} style={{ marginRight: 6 }} />
+                <Text style={[styles.modalTabText, { color: attachType === "image" ? theme.primary : theme.subtext }]}>Photo / Image</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setAttachType("doc")}
+                style={[styles.modalTabBtn, attachType === "doc" && { backgroundColor: "#E8F5E9", borderColor: "#0F9D58" }]}
+              >
+                <MaterialCommunityIcons name="google-drive" size={16} color={attachType === "doc" ? "#0F9D58" : theme.subtext} style={{ marginRight: 6 }} />
+                <Text style={[styles.modalTabText, { color: attachType === "doc" ? "#0F9D58" : theme.subtext }]}>Document File</Text>
+              </Pressable>
+            </View>
+
+            {attachType === "image" ? (
+              previewImageUri ? (
+                <View style={{ marginTop: 12 }}>
+                  <View style={styles.previewHeaderRow}>
+                    <Text style={[styles.previewTitle, { color: theme.text }]}>Photo Attachment Preview</Text>
+                    <Pressable onPress={() => setPreviewImageUri(null)}>
+                      <Feather name="x" size={16} color={theme.subtext} />
+                    </Pressable>
+                  </View>
+
+                  <Image source={{ uri: previewImageUri }} style={{ width: "100%", height: 160, borderRadius: 12, marginVertical: 8 }} resizeMode="cover" />
+
+                  <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text, marginTop: 6 }}>Add Caption / Message:</Text>
+                  <TextInput
+                    value={imageCaptionInput}
+                    onChangeText={setImageCaptionInput}
+                    placeholder="e.g. Check this doubt diagram..."
+                    placeholderTextColor={theme.subtext}
+                    style={{ backgroundColor: theme.inputBg || theme.bg, borderRadius: 10, padding: 10, color: theme.text, marginTop: 4, borderWidth: 1, borderColor: theme.border }}
+                  />
+
+                  <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
+                    <Pressable onPress={() => setPreviewImageUri(null)} style={{ flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 10, backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.border }}>
+                      <Text style={{ fontSize: 13, fontFamily: fonts.semiBold, color: theme.text }}>Change Photo</Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() =>
+                        handleSendAttachment({
+                          type: "image",
+                          url: previewImageUri,
+                          title: imageCaptionInput || previewImageTitle || "Photo Attachment"
+                        })
+                      }
+                      style={{ flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 10, backgroundColor: theme.primary }}
+                    >
+                      <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: "#FFFFFF" }}>Send Photo Now</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <View style={{ marginTop: 12 }}>
+                  {/* Pick Photo Button */}
+                  <Pressable onPress={pickImageFromDevice} style={{ backgroundColor: theme.primary, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                    <Feather name="upload" size={17} color="#FFFFFF" style={{ marginRight: 8 }} />
+                    <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: "#FFFFFF" }}>Pick & Upload Photo from Device 📁</Text>
+                  </Pressable>
+
+                  {/* Preset Samples */}
+                  <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text, marginTop: 12, marginBottom: 6 }}>Sample Image Presets:</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                    {sampleImagePresets.map((preset, idx) => (
+                      <Pressable
+                        key={idx}
+                        onPress={() => {
+                          setPreviewImageUri(preset.url);
+                          setPreviewImageTitle(preset.label);
+                        }}
+                        style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: theme.border }}
+                      >
+                        <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: theme.primary }}>{preset.label}</Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              )
+            ) : (
+              <View style={{ marginTop: 12 }}>
+                {/* Pick Document File Button */}
+                <Pressable onPress={pickDocFromDevice} style={{ backgroundColor: "#0F9D58", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                  <MaterialCommunityIcons name="file-upload-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                  <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: "#FFFFFF" }}>Pick & Upload Document File 📄</Text>
+                </Pressable>
+
+                {/* Sample Document Presets */}
+                <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text, marginTop: 12, marginBottom: 6 }}>Sample Document Presets:</Text>
+                <View style={{ gap: 8 }}>
+                  {sampleDocPresets.map((docPreset, idx) => (
+                    <Pressable
+                      key={idx}
+                      onPress={() =>
+                        handleSendAttachment({
+                          type: "doc",
+                          driveUrl: docPreset.driveUrl,
+                          title: docPreset.title
+                        })
+                      }
+                      style={{ backgroundColor: theme.cardBg, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: theme.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+                    >
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <MaterialCommunityIcons name="file-pdf-box" size={20} color="#0F9D58" />
+                        <Text style={{ fontSize: 12.5, fontFamily: fonts.medium, color: theme.text }}>{docPreset.label}</Text>
+                      </View>
+                      <Feather name="send" size={14} color={theme.primary} />
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* QUICK ACTIONS ROW (POLL & CODE) */}
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.border }}>
+              <Pressable
+                onPress={() => {
+                  setShowAttachModal(false);
+                  setPollModalVisible(true);
+                }}
+                style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: theme.badgeBg, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
+              >
+                <MaterialCommunityIcons name="poll" size={16} color={theme.primary} />
+                <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.primary }}>Create Poll</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  setShowAttachModal(false);
+                  setCodeModalVisible(true);
+                }}
+                style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: "#EFF6FF", alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
+              >
+                <MaterialCommunityIcons name="code-json" size={16} color="#2563EB" />
+                <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#2563EB" }}>Share Code</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL: FULL SCREEN IMAGE VIEW */}
+      <Modal visible={Boolean(fullImageModalUri)} transparent animationType="fade" onRequestClose={() => setFullImageModalUri(null)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", alignItems: "center" }}>
+          <Pressable onPress={() => setFullImageModalUri(null)} style={{ position: "absolute", top: 40, right: 20, zIndex: 10, padding: 10 }}>
+            <Feather name="x" size={26} color="#FFFFFF" />
+          </Pressable>
+          {fullImageModalUri ? (
+            <Image source={{ uri: fullImageModalUri }} style={{ width: "90%", height: "70%", borderRadius: 12 }} resizeMode="contain" />
+          ) : null}
+        </View>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -1281,7 +1721,7 @@ const styles = StyleSheet.create({
     color: "#94A3B8"
   },
   adminTag: {
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
@@ -1290,7 +1730,7 @@ const styles = StyleSheet.create({
   adminTagText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   aiTag: {
     backgroundColor: "#ECF9E9",
@@ -1362,9 +1802,9 @@ const styles = StyleSheet.create({
   askAiBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5F3FF",
+    backgroundColor: "#E8F5E9",
     borderWidth: 1,
-    borderColor: "#DDD6FE",
+    borderColor: "#C8E6C9",
     alignSelf: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -1374,7 +1814,7 @@ const styles = StyleSheet.create({
   askAiText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#6366F1",
+    color: "#0A6836",
     marginLeft: 4
   },
   aiFooterMentionRow: {
@@ -1387,7 +1827,7 @@ const styles = StyleSheet.create({
   aiFooterMentionText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#6366F1",
+    color: "#0A6836",
     marginLeft: 4
   },
   mentorHelpBtn: {
@@ -1438,7 +1878,7 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   msgBodyRight: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -1753,6 +2193,56 @@ const styles = StyleSheet.create({
   submitModalText: {
     fontSize: 14,
     color: "#FFFFFF",
+    fontWeight: "700"
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: "80%"
+  },
+  modalHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700"
+  },
+  modalCloseBtn: {
+    padding: 6
+  },
+  modalTabsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 12
+  },
+  modalTabBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC"
+  },
+  modalTabText: {
+    fontSize: 12.5,
+    fontWeight: "600"
+  },
+  previewHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6
+  },
+  previewTitle: {
+    fontSize: 13,
     fontWeight: "700"
   }
 });

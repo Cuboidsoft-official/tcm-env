@@ -167,10 +167,10 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
             {/* 3. Experiences & Industry History */}
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionHeading}>Work Experiences</Text>
-              <Pressable onPress={handleAddExperience} style={styles.addSmallBtn}>
-                <Feather name="plus" size={13} color="#5B3CF5" style={{ marginRight: 4 }} />
-                <Text style={styles.addSmallBtnText}>Add Experience</Text>
-              </Pressable>
+              <TouchableOpacity onPress={handleAddExperience} style={styles.addSmallBtn}>
+                <Feather name="plus" size={13} color="#0A6836" style={{ marginRight: 4 }} />
+                <Text style={styles.addSmallBtnText}>Add</Text>
+              </TouchableOpacity>
             </View>
 
             {experiences.map((exp, idx) => (
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   addSmallBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   addSmallBtnText: {
     fontFamily: fonts.bold,
     fontSize: 11,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   inputLabel: {
     fontFamily: fonts.medium,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   expIndexText: {
     fontFamily: fonts.bold,
     fontSize: 11,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   footerRow: {
     flexDirection: "row",
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   saveBtn: {
     flex: 2,
     flexDirection: "row",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingVertical: 12,
     borderRadius: 14,
     alignItems: "center",

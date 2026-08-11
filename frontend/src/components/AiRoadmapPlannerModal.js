@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center"
   },
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     color: "#0F172A"
   },
   groqPill: {
-    backgroundColor: "#F0EDFF",
+    backgroundColor: colors.badgeBg,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   groqPillText: {
     fontSize: 11,
     fontFamily: fonts.bold,
-    color: "#5B3CF5"
+    color: colors.primary
   },
   modalSub: {
     fontSize: 12,
@@ -380,8 +380,8 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0"
   },
   chipActive: {
-    backgroundColor: "#5B3CF5",
-    borderColor: "#5B3CF5"
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
   },
   chipText: {
     fontSize: 12,

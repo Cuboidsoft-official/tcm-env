@@ -229,7 +229,10 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
         {/* 3. Action Buttons Row */}
         <View style={styles.actionsRow}>
           <Pressable
-            onPress={() => (onOpenChat ? onOpenChat(data) : Alert.alert("Message Mentor", `Opening chat with ${data.name}...`))}
+            onPress={() => {
+              if (onClose) onClose();
+              if (onOpenChat) onOpenChat(data);
+            }}
             style={[styles.msgBtn, { backgroundColor: theme.cardBg, borderColor: theme.primary }]}
           >
             <Feather name="message-circle" size={18} color={theme.primary} style={{ marginRight: 6 }} />

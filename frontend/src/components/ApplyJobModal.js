@@ -15,8 +15,10 @@ import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/v
 import * as DocumentPicker from "expo-document-picker";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 export default function ApplyJobModal({ visible, job, user = {}, onClose, onSubmitApplication }) {
+  const { theme } = useTheme();
   const [name, setName] = useState(user.name || "");
   const [email, setEmail] = useState(user.email || "student@tcm.edu");
   const [phone, setPhone] = useState(user.phone || "+91 9876543210");
@@ -100,7 +102,7 @@ export default function ApplyJobModal({ visible, job, user = {}, onClose, onSubm
           <View style={styles.modalHeader}>
             <View style={{ flex: 1, marginRight: 10 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Ionicons name="briefcase" size={18} color="#5B3CF5" />
+                <Ionicons name="briefcase" size={18} color={theme.primary} />
                 <Text style={styles.modalTitle} numberOfLines={1}>Apply for {job.title}</Text>
               </View>
               <Text style={styles.modalSub}>{job.company || "TCM Partner"} • Salary: ₹{job.minSalary} – ₹{job.maxSalary} {job.salaryPeriod}</Text>
@@ -326,7 +328,7 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   submitBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     flexDirection: "row",
