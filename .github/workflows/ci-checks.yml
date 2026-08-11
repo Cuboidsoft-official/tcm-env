@@ -77,3 +77,31 @@ jobs:
           EXPO_NO_TELEMETRY: 1
           EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'https://api.thecodemunk.in/api' }}
         run: npx expo export --platform android
+
+  frontend-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci --workspace=frontend
+
+      - name: Export production web app
+        working-directory: frontend
+        env:
+          CI: true
+          EXPO_NO_TELEMETRY: 1
+          EXPO_PUBLIC_API_URL: https://api.thecodemunk.in/api
+        run: npx expo export --platform web --output-dir ../web-dist-check
+
+      - name: Verify web output
+        run: |
+          test -s web-dist-check/index.html
+          find web-dist-check/_expo/static/js/web -type f -name '*.js' -size +100k -print -quit | grep -q .
