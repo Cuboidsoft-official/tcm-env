@@ -46,7 +46,7 @@ function ProfileAvatar({ name = "", uri, size = 90 }) {
   );
 }
 
-export default function ProfileScreen({ session, user: initialUser, onOpenSettings, onOpenWallet, onNotifications, onOpenMentorDashboard, onSelectPost }) {
+export default function ProfileScreen({ session, user: initialUser, onOpenSettings, onOpenWallet, onNotifications, onOpenMentorDashboard, onOpenPartnerDashboard, onSelectPost }) {
   const { theme } = useTheme();
   // Fixed JSX structure & Saved tab responsiveness
   const [profileUser, setProfileUser] = useState(initialUser || {});
@@ -427,6 +427,17 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
             >
               <MaterialCommunityIcons name="view-dashboard-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
               <Text style={styles.mentorDashboardBtnText}>Dashboard</Text>
+            </Pressable>
+          ) : null}
+
+          {/* Dashboard Button for Partners */}
+          {profileUser.role === "partner" || profileUser.memberBadge?.toLowerCase().includes("partner") ? (
+            <Pressable
+              onPress={onOpenPartnerDashboard || (() => Alert.alert("Partner Console", "Opening Partner Dashboard..."))}
+              style={[styles.mentorDashboardBtn, { backgroundColor: "#10B981", marginTop: 8 }]}
+            >
+              <MaterialCommunityIcons name="office-building-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.mentorDashboardBtnText}>Partner Console</Text>
             </Pressable>
           ) : null}
         </View>

@@ -51,12 +51,15 @@ import NotificationsScreen from "./NotificationsScreen";
 import ExploreTcmCategoryScreen from "./ExploreTcmCategoryScreen";
 import WalletScreen from "./WalletScreen";
 import MentorDashboardScreen from "./MentorDashboardScreen";
+import PartnerDashboardScreen from "./PartnerDashboardScreen";
 import CreateCourseScreen from "./CreateCourseScreen";
 import CreateWebinarScreen from "./CreateWebinarScreen";
 import AllMentorsScreen from "./AllMentorsScreen";
 import ChatListScreen from "./ChatListScreen";
 import DoubtRoomScreen from "./DoubtRoomScreen";
 import CommunityScreen from "./CommunityScreen";
+import DiscoverPartnersScreen from "./DiscoverPartnersScreen";
+import PartnerProfilePreviewScreen from "./PartnerProfilePreviewScreen";
 import SidebarDrawer from "../components/SidebarDrawer";
 import GetVerifiedModal from "../components/GetVerifiedModal";
 import { useTheme } from "../context/ThemeContext";
@@ -262,10 +265,13 @@ export default function HomeScreen({ session, onLogout }) {
   const [exploreCategoryKey, setExploreCategoryKey] = useState(null);
   const [showWalletScreen, setShowWalletScreen] = useState(false);
   const [showMentorDashboard, setShowMentorDashboard] = useState(false);
+  const [showPartnerDashboard, setShowPartnerDashboard] = useState(false);
   const [showCreateCourseScreen, setShowCreateCourseScreen] = useState(false);
   const [showCreateWebinarScreen, setShowCreateWebinarScreen] = useState(false);
   const [showAllMentorsScreen, setShowAllMentorsScreen] = useState(false);
   const [showCommunityScreen, setShowCommunityScreen] = useState(false);
+  const [showDiscoverPartnersScreen, setShowDiscoverPartnersScreen] = useState(false);
+  const [selectedPartnerForPreview, setSelectedPartnerForPreview] = useState(null);
   const [courseToEdit, setCourseToEdit] = useState(null);
   const [activeDoubtRoom, setActiveDoubtRoom] = useState(null);
   const [getVerifiedModalOpen, setGetVerifiedModalOpen] = useState(false);
@@ -287,6 +293,9 @@ export default function HomeScreen({ session, onLogout }) {
     setExploreCategoryKey(null);
     setShowWalletScreen(false);
     setShowMentorDashboard(false);
+    setShowPartnerDashboard(false);
+    setShowDiscoverPartnersScreen(false);
+    setSelectedPartnerForPreview(null);
     setShowCreateCourseScreen(false);
     setShowCreateWebinarScreen(false);
     setShowAllMentorsScreen(false);
@@ -594,16 +603,16 @@ export default function HomeScreen({ session, onLogout }) {
     );
   }
 
-  const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen);
+  const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen);
 
-  const isFullWidthChat = Boolean(activeDoubtRoom || activeChatUser);
+  const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard);
 
   return (
     <SwipeBackWrapper onBack={activeBackAction} enabled={Boolean(activeBackAction)}>
       <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
       <View style={[styles.appShell, { backgroundColor: theme.bg }]}>
         {isFullScreenView ? (
-          <View style={[styles.page, { width: isFullWidthChat ? "100%" : contentWidth, flex: 1, paddingBottom: 0, paddingHorizontal: isFullWidthChat ? 0 : undefined }]}>
+          <View style={[styles.page, { width: isFullWidthView ? "100%" : contentWidth, flex: 1, paddingBottom: 0, paddingHorizontal: isFullWidthView ? 0 : undefined }]}>
             {activeDoubtRoom ? (
               <DoubtRoomScreen
                 session={session}
@@ -744,6 +753,24 @@ export default function HomeScreen({ session, onLogout }) {
                 session={session}
                 user={user}
                 onBack={() => setShowWalletScreen(false)}
+              />
+            ) : showPartnerDashboard ? (
+              <PartnerDashboardScreen
+                session={session}
+                user={user}
+                onBack={() => setShowPartnerDashboard(false)}
+                onOpenDrawer={() => setDrawerOpen(true)}
+              />
+            ) : selectedPartnerForPreview ? (
+              <PartnerProfilePreviewScreen
+                partner={selectedPartnerForPreview}
+                onBack={() => setSelectedPartnerForPreview(null)}
+              />
+            ) : showDiscoverPartnersScreen ? (
+              <DiscoverPartnersScreen
+                session={session}
+                onBack={() => setShowDiscoverPartnersScreen(false)}
+                onSelectPartner={(partner) => setSelectedPartnerForPreview(partner)}
               />
             ) : showMentorDashboard ? (
               <MentorDashboardScreen
@@ -919,6 +946,7 @@ export default function HomeScreen({ session, onLogout }) {
                 onOpenPopularCourses={() => setShowPopularCourses(true)}
                 onOpenAllMentors={() => setShowAllMentorsScreen(true)}
                 onOpenExploreCategory={(catKey) => setExploreCategoryKey(catKey)}
+                onOpenDiscoverPartners={() => setShowDiscoverPartnersScreen(true)}
               />
             ) : activeTab === "Chats" || activeTab === "Doubts" ? (
               <ChatListScreen
@@ -941,6 +969,7 @@ export default function HomeScreen({ session, onLogout }) {
                 onOpenWallet={() => setShowWalletScreen(true)}
                 onNotifications={() => handleSelectDrawerItem("Notifications")}
                 onOpenMentorDashboard={() => setShowMentorDashboard(true)}
+                onOpenPartnerDashboard={() => setShowPartnerDashboard(true)}
                 onSelectPost={(post) => {
                   setTargetUserProfile(null);
                   resetSubScreens();
@@ -974,7 +1003,7 @@ export default function HomeScreen({ session, onLogout }) {
           </View>
           </ScrollView>
         )}
-        {!selectedCourseId && !showPopularCourses && !showSearchScreen && !selectedMentorId && !activeChatUser && !activeDoubtRoom && !showNotificationsScreen ? (
+        {!activeChatUser && !activeDoubtRoom ? (
           <ActionDock
             open={actionMenuOpen}
             setOpen={setActionMenuOpen}
@@ -982,6 +1011,10 @@ export default function HomeScreen({ session, onLogout }) {
             tabs={tabs}
             activeTab={activeTab}
             setActiveTab={(tab) => {
+              setShowPartnerDashboard(false);
+              setShowMentorDashboard(false);
+              setShowDiscoverPartnersScreen(false);
+              setSelectedPartnerForPreview(null);
               resetSubScreens();
               setActiveTab(tab);
               setActiveDrawerItem(tab);

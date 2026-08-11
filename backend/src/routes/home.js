@@ -218,7 +218,7 @@ async function buildLearnPayload(user, mentors, learn = {}, memoryStore = null, 
       }
     ],
     expertMentors: (() => {
-      let mentorUsers = (memoryStore?.users || Array.isArray(mentors) ? mentors : []).filter((u) => u.role === "mentor" || u.isMentor);
+      let mentorUsers = (memoryStore?.users || Array.isArray(mentors) ? mentors : []).filter((u) => (u.role === "mentor" || u.isMentor) && u.isApproved !== false);
 
       if (user && (user.role === "mentor" || user.isMentor) && !mentorUsers.some((u) => String(u._id || u.id) === String(user._id || user.id) || u.email === user.email)) {
         mentorUsers = [user, ...mentorUsers];
@@ -409,8 +409,8 @@ homeRouter.get("/", requireAuth, async (req, res) => {
     Story.find().sort({ order: 1, createdAt: 1 }).lean(),
     CommunityPost.find().sort({ publishedAt: -1 }).limit(20).lean(),
     Job.find().sort({ createdAt: -1 }).lean(),
-    Mentor.find().sort({ rating: -1 }).limit(6).lean(),
-    User.find({ role: "mentor" }).lean()
+    Mentor.find({ isApproved: { $ne: false } }).sort({ rating: -1 }).limit(6).lean(),
+    User.find({ role: "mentor", isApproved: { $ne: false } }).lean()
   ]);
 
   const dbJobCards = (dbJobs || []).map((j) => {
@@ -2649,8 +2649,8 @@ homeRouter.get("/all-mentors", requireAuth, async (req, res) => {
   // 2. Query MongoDB Mentor & User models
   try {
     const [dbMentors, dbMentorUsers] = await Promise.all([
-      Mentor.find().lean(),
-      User.find({ role: "mentor" }).lean()
+      Mentor.find({ isApproved: { $ne: false } }).lean(),
+      User.find({ role: "mentor", isApproved: { $ne: false } }).lean()
     ]);
 
     dbMentors.forEach((m) => {

@@ -24,6 +24,10 @@ const mentorSchema = new mongoose.Schema(
       type: String,
       default: "TCM Information Tech"
     },
+    isApproved: {
+      type: Boolean,
+      default: false
+    },
     rating: {
       type: Number,
       default: 5.0

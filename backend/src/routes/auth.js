@@ -35,11 +35,28 @@ export function publicUser(user) {
     name: user.name,
     email: user.email,
     role: user.role,
+    isApproved: user.isApproved !== undefined ? user.isApproved : (user.role === "mentor" ? false : true),
     avatarUrl: user.avatarUrl || "",
     handle: userHandle,
     verified: user.verified !== undefined ? user.verified : false,
-    memberBadge: user.memberBadge || (user.role === "mentor" ? "TCM Mentor" : "TCM Member"),
+    memberBadge: user.memberBadge || (user.role === "partner" ? "TCM Partner Institute" : user.role === "mentor" ? "TCM Mentor" : "TCM Member"),
     mentorCategory: user.mentorCategory || "TCM Information Tech",
+    instituteName: user.instituteName || user.name || "Future Tech Institute",
+    partnerCategory: user.partnerCategory || "TCM Partner Institute",
+    contactNumber: user.contactNumber || "+91 98765 43210",
+    totalRevenue: user.totalRevenue || "₹48,750",
+    monthlyRevenue: user.monthlyRevenue || "₹18,250",
+    totalStudentsCount: user.totalStudentsCount !== undefined ? user.totalStudentsCount : 56,
+    activeMentorsCount: user.activeMentorsCount !== undefined ? user.activeMentorsCount : 8,
+    rating: user.rating || 4.6,
+    reviewsCount: user.reviewsCount || "128 Reviews",
+    existingCourses: user.existingCourses || ["Full Stack Development", "Python Programming", "Web Development"],
+    galleryPhotos: user.galleryPhotos || [],
+    recentStudents: user.recentStudents || [
+      { id: "s1", name: "Aman Verma", course: "Full Stack Development", date: "20 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" },
+      { id: "s2", name: "Priya Sahu", course: "Python Programming", date: "18 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120" },
+      { id: "s3", name: "Rohit Patel", course: "Web Development", date: "15 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120" }
+    ],
     yearsExperience: user.yearsExperience || "5+ Yrs Exp",
     subjects: user.subjects || ["Full Stack Development", "React Native", "Node.js & MongoDB", "System Design"],
     experiences: user.experiences || [
@@ -48,7 +65,12 @@ export function publicUser(user) {
     certifications: user.certifications || ["Certified Technical Instructor", "Full Stack Systems Architect"],
     interests: user.interests || ["System Architecture", "AI & Machine Learning", "Student Mentorship"],
     bio: user.bio || "",
-    location: user.location || "",
+    location: user.location || "Bilaspur, Chhattisgarh",
+    city: user.city || (user.location || "Bilaspur").split(",")[0].trim(),
+    gmbLink: user.gmbLink || "",
+    heroCover: user.heroCover || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800",
+    labFee: user.labFee || "₹0 - ₹100 /hr",
+    timings: user.timings || "9:00 AM - 8:00 PM",
     joinedDate: user.joinedDate || `Joined ${new Date(user.createdAt || Date.now()).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`,
     website: user.website || "",
     stats: user.stats || {
@@ -93,6 +115,8 @@ authRouter.post("/register", async (req, res) => {
     const normalizedEmail = normalizeEmail(email);
     const cleanRefCode = referralCode ? String(referralCode).trim().toUpperCase() : "";
     const nowIso = new Date().toISOString();
+    const isMentorRole = role === "mentor";
+    const isApproved = !isMentorRole; // Mentors default to pending approval (false)
 
     if (memoryStore) {
       const users = getMemoryUsers(memoryStore);
@@ -103,11 +127,12 @@ authRouter.post("/register", async (req, res) => {
 
       const passwordHash = await bcrypt.hash(password, 12);
       const user = {
-        _id: `seed-user-${Date.now()}`,
+        _id: `user-${Date.now()}`,
         name,
         email: normalizedEmail,
         passwordHash,
         role,
+        isApproved,
         mentorCategory,
         avatarUrl: "",
         progress: 0,
@@ -119,7 +144,7 @@ authRouter.post("/register", async (req, res) => {
 
       users.push(user);
 
-      if (role === "mentor") {
+      if (isMentorRole) {
         if (!Array.isArray(memoryStore.mentors)) {
           memoryStore.mentors = [];
         }
@@ -129,18 +154,20 @@ authRouter.post("/register", async (req, res) => {
           userId: user._id,
           name: user.name,
           email: user.email,
-          title: `${user.mentorCategory} Senior Mentor`,
+          title: `${user.mentorCategory} Mentor`,
           mentorCategory: user.mentorCategory,
+          isApproved: false,
           rating: 5.0,
-          learners: "1.2K+",
+          learners: "0",
           avatarUrl: user.avatarUrl,
-          skills: ["Mentorship", "Live Sessions", user.mentorCategory]
+          skills: ["Mentorship", user.mentorCategory]
         });
       }
 
       return res.status(201).json({
         token: signToken(user),
-        user: publicUser(user)
+        user: publicUser(user),
+        message: isMentorRole ? "Mentor account registered! Pending admin approval before public listing." : "Account created successfully."
       });
     }
 
@@ -156,22 +183,24 @@ authRouter.post("/register", async (req, res) => {
       email: normalizedEmail,
       passwordHash,
       role,
+      isApproved,
       mentorCategory,
       referredBy: cleanRefCode,
       referralAppliedAt: cleanRefCode ? new Date() : null
     });
 
-    if (role === "mentor") {
+    if (isMentorRole) {
       try {
         await Mentor.create({
           userId: user._id.toString(),
           email: user.email,
           name: user.name,
-          title: `${user.mentorCategory} Senior Mentor`,
+          title: `${user.mentorCategory} Mentor`,
           mentorCategory: user.mentorCategory,
+          isApproved: false,
           rating: 5.0,
-          learners: "1.2K+",
-          skills: ["Mentorship", "Live Sessions", user.mentorCategory]
+          learners: "0",
+          skills: ["Mentorship", user.mentorCategory]
         });
       } catch (mErr) {
         console.warn("Could not auto-create Mentor document:", mErr);
@@ -180,7 +209,8 @@ authRouter.post("/register", async (req, res) => {
 
     res.status(201).json({
       token: signToken(user),
-      user: publicUser(user)
+      user: publicUser(user),
+      message: isMentorRole ? "Mentor account registered! Pending admin approval before public listing." : "Account created successfully."
     });
   } catch (error) {
     res.status(500).json({ message: "Could not create account" });
@@ -450,5 +480,22 @@ authRouter.post("/forgot-password/reset-password", async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Could not reset password" });
+  }
+});
+
+// Public Endpoint to Fetch All Partners & Collaborators
+authRouter.get("/partners", async (req, res) => {
+  try {
+    const memoryStore = req.app.locals.memoryStore;
+    if (memoryStore) {
+      const users = memoryStore.users || [memoryStore.user].filter(Boolean);
+      const partners = users.filter((u) => u.role === "partner").map(publicUser);
+      return res.json({ partners });
+    }
+
+    const partners = await User.find({ role: "partner" }).sort({ createdAt: -1 });
+    res.json({ partners: partners.map(publicUser) });
+  } catch (error) {
+    res.status(500).json({ message: "Could not fetch partners", error: error.message });
   }
 });

@@ -30,7 +30,7 @@ await CommunityPost.deleteMany({});
 const passwordHash = await bcrypt.hash("password123", 12);
 const seed = createVisualSeedData(passwordHash);
 
-await User.create(withoutMemoryId(seed.user));
+await User.insertMany(seed.users.map(withoutMemoryId));
 await Mentor.insertMany(seed.mentors.map(withoutMemoryId));
 await Story.insertMany(seed.stories.map(withoutMemoryId));
 

@@ -145,7 +145,7 @@ function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694
   return url;
 }
 
-export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory }) {
+export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory, onOpenDiscoverPartners }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [allMentorsModalVisible, setAllMentorsModalVisible] = useState(false);
@@ -295,7 +295,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             <MaterialCommunityIcons name="map-marker-path" size={20} color="#FFFFFF" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text }}>Plan My Learning Roadmap 🗺️</Text>
+            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text }}>Plan My Learning Roadmap</Text>
             <Text numberOfLines={1} style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.primary }}>Interactive AI Career & Budget Guide</Text>
           </View>
         </View>
@@ -462,6 +462,55 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           </View>
         </View>
       )}
+
+      {/* ALL PARTNERS & COLLABORATORS CARD SECTION */}
+      <View style={styles.sectionHeaderRow}>
+        <Text style={[styles.sectionTitleText, { color: theme.text }]}>All Partners & Collaborators</Text>
+        <Pressable onPress={() => (onOpenDiscoverPartners ? onOpenDiscoverPartners() : Alert.alert("Discover Partners", "Opening all partners list..."))}>
+          <Text style={[styles.viewAllText, { color: theme.primary }]}>View All →</Text>
+        </Pressable>
+      </View>
+
+      <Pressable
+        onPress={() => (onOpenDiscoverPartners ? onOpenDiscoverPartners() : Alert.alert("Discover Partners", "Opening all partners list..."))}
+        style={({ pressed }) => [
+          styles.partnersCollabCard,
+          { backgroundColor: theme.isDark ? "#064E3B25" : colors.lavender, borderColor: colors.lavenderLine },
+          pressed && styles.pressed
+        ]}
+      >
+        <View style={styles.collabHeaderInfo}>
+          <View style={[styles.collabBadge, { backgroundColor: colors.mint }]}>
+            <MaterialCommunityIcons name="shield-check" size={13} color={colors.primary} style={{ marginRight: 4 }} />
+            <Text style={{ color: colors.primary, fontFamily: fonts.bold, fontSize: 10 }}>ACCREDITED NETWORK</Text>
+          </View>
+          <Text style={[styles.collabTitle, { color: theme.text }]}>Verified IT Labs, Colleges & Govt Institutions</Text>
+          <Text style={[styles.collabSub, { color: theme.subtext }]}>
+            Access high-speed computer labs, research facilities, government public hubs, and campus training centers near you.
+          </Text>
+        </View>
+
+        <View style={styles.collabPreviewRow}>
+          <View style={styles.avatarGroupRow}>
+            <View style={[styles.miniAvatarCircle, { backgroundColor: "#0F172A" }]}>
+              <Text style={styles.miniAvatarText}>FT</Text>
+            </View>
+            <View style={[styles.miniAvatarCircle, { backgroundColor: "#1E293B", marginLeft: -8 }]}>
+              <Text style={styles.miniAvatarText}>CC</Text>
+            </View>
+            <View style={[styles.miniAvatarCircle, { backgroundColor: "#044324", marginLeft: -8 }]}>
+              <Text style={styles.miniAvatarText}>DS</Text>
+            </View>
+            <View style={[styles.miniAvatarCircle, { backgroundColor: "#4F46E5", marginLeft: -8 }]}>
+              <Text style={styles.miniAvatarText}>GP</Text>
+            </View>
+          </View>
+
+          <View style={[styles.explorePartnersBtn, { backgroundColor: colors.primary }]}>
+            <Text style={styles.explorePartnersBtnText}>Discover Partners →</Text>
+          </View>
+        </View>
+      </Pressable>
 
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionTitleText, { color: theme.text }]}>Popular Courses</Text>
@@ -1401,5 +1450,68 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#7C7C9A",
     lineHeight: 14
+  },
+
+  // Partners Collab Section Styles
+  partnersCollabCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 18
+  },
+  collabHeaderInfo: {
+    gap: 4
+  },
+  collabBadge: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginBottom: 4
+  },
+  collabTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14.5
+  },
+  collabSub: {
+    fontFamily: fonts.regular,
+    fontSize: 11.5,
+    lineHeight: 16
+  },
+  collabPreviewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12
+  },
+  avatarGroupRow: {
+    flexDirection: "row",
+    alignItems: "center"
+  },
+  miniAvatarCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF"
+  },
+  miniAvatarText: {
+    color: "#FFFFFF",
+    fontFamily: fonts.bold,
+    fontSize: 10
+  },
+  explorePartnersBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10
+  },
+  explorePartnersBtnText: {
+    color: "#FFFFFF",
+    fontFamily: fonts.bold,
+    fontSize: 11.5
   }
 });

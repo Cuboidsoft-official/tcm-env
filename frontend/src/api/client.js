@@ -1137,5 +1137,13 @@ export async function getMentorJobPosts(token, user = {}) {
   });
 }
 
+export async function getPublicPartners() {
+  try {
+    const res = await request("/partners");
+    if (res?.partners) return res.partners;
+  } catch (e) {}
+  return [];
+}
+
 
 

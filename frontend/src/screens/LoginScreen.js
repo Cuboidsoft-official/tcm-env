@@ -30,6 +30,15 @@ const roleOptions = [
     loginSubtitle: "Continue as mentor",
     icon: "person",
     color: "#28A745"
+  },
+  {
+    key: "partner",
+    title: "Partner",
+    loginTitle: "Partner Login",
+    subtitle: "Institute Portal",
+    loginSubtitle: "Login with Institute credentials",
+    icon: "business",
+    color: "#5B3CF5"
   }
 ];
 

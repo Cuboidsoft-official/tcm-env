@@ -24,7 +24,50 @@ export function createVisualSeedData(passwordHash = "") {
       draftsCount: 5,
       deletedCount: 12
     },
-    progress: 70
+    progress: 70,
+    isApproved: true
+  };
+
+  const adminUser = {
+    _id: "seed-admin",
+    name: "Admin User",
+    email: "admin@tcm.com",
+    passwordHash,
+    role: "admin",
+    isApproved: true,
+    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    handle: "admin",
+    verified: true,
+    memberBadge: "TCM Administrator",
+    bio: "TCM Platform Administrator"
+  };
+
+  const partnerUser = {
+    _id: "seed-partner",
+    name: "Future Tech Institute",
+    instituteName: "Future Tech Institute",
+    email: "partner@tcm.com",
+    passwordHash,
+    role: "partner",
+    isApproved: true,
+    avatarUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=300&q=80",
+    partnerCategory: "TCM Partner Institute",
+    location: "Bilaspur, Chhattisgarh",
+    rating: 4.6,
+    reviewsCount: "128 Reviews",
+    totalRevenue: "₹48,750",
+    monthlyRevenue: "₹18,250",
+    totalStudentsCount: 56,
+    activeMentorsCount: 8,
+    contactNumber: "+91 98765 43210",
+    existingCourses: ["Full Stack Development", "Python Programming", "Web Development"],
+    verified: true,
+    memberBadge: "TCM Partner Institute",
+    recentStudents: [
+      { id: "s1", name: "Aman Verma", course: "Full Stack Development", date: "20 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" },
+      { id: "s2", name: "Priya Sahu", course: "Python Programming", date: "18 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120" },
+      { id: "s3", name: "Rohit Patel", course: "Web Development", date: "15 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120" }
+    ]
   };
 
   const stories = [
@@ -108,7 +151,8 @@ export function createVisualSeedData(passwordHash = "") {
       rating: 4.8,
       learners: 1200,
       avatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=160&q=80",
-      skills: ["React", "Node.js", "MongoDB"]
+      skills: ["React", "Node.js", "MongoDB"],
+      isApproved: true
     },
     {
       _id: "mentor-priya",
@@ -117,7 +161,8 @@ export function createVisualSeedData(passwordHash = "") {
       rating: 4.9,
       learners: 980,
       avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80",
-      skills: ["Python", "ML", "Analytics"]
+      skills: ["Python", "ML", "Analytics"],
+      isApproved: true
     },
     {
       _id: "mentor-rohit",
@@ -126,7 +171,8 @@ export function createVisualSeedData(passwordHash = "") {
       rating: 4.7,
       learners: 750,
       avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&q=80",
-      skills: ["DSA", "Java", "System Design"]
+      skills: ["DSA", "Java", "System Design"],
+      isApproved: true
     }
   ];
 
@@ -299,5 +345,5 @@ export function createVisualSeedData(passwordHash = "") {
 
   const posts = [];
 
-  return { user, users: [user], stories, posts, mentors, learn };
+  return { user, users: [user, adminUser, partnerUser], stories, posts, mentors, learn };
 }
