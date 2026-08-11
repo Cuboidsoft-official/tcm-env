@@ -332,9 +332,6 @@ export default function HomeScreen({ session, onLogout }) {
       setSelectedMentorId(null);
       setActiveDrawerItem("Profile");
       setActiveTab("Profile");
-    } else if (u?.role?.toLowerCase().includes("mentor") || String(u?.id || "").startsWith("m") || u?.isMentor) {
-      setTargetUserProfile(null);
-      setSelectedMentorId(u?.id || u);
     } else {
       setSelectedMentorId(null);
       setTargetUserProfile(u);
@@ -373,23 +370,6 @@ export default function HomeScreen({ session, onLogout }) {
     }
   }
 
-  function resetSubScreens() {
-    setTargetUserProfile(null);
-    setSelectedCourseId(null);
-    setSelectedMentorId(null);
-    setActiveChatUser(null);
-    setShowSearchScreen(false);
-    setShowContinueLearning(false);
-    setShowPopularCourses(false);
-    setShowNotificationsScreen(false);
-    setExploreCategoryKey(null);
-    setShowWalletScreen(false);
-    setShowMentorDashboard(false);
-    setShowCreateCourseScreen(false);
-    setShowCreateWebinarScreen(false);
-    setShowAllMentorsScreen(false);
-  }
-
   function handleSelectDrawerItem(itemKey) {
     resetSubScreens();
     setActiveDrawerItem(itemKey);
@@ -405,6 +385,8 @@ export default function HomeScreen({ session, onLogout }) {
       setShowCommunityScreen(true);
     } else if (itemKey === "Notifications") {
       setShowNotificationsScreen(true);
+    } else if (itemKey === "Wallet" || itemKey === "TCM Wallet & Referrals" || itemKey === "TCM Wallet & Balance" || itemKey === "Referrals" || itemKey === "Refer & Earn (₹500 Bonus)" || itemKey === "Referral") {
+      setShowWalletScreen(true);
     } else if (itemKey === "Profile") {
       setActiveTab("Profile");
     } else if (itemKey === "Settings") {
@@ -414,6 +396,30 @@ export default function HomeScreen({ session, onLogout }) {
     } else {
       setDrawerFeatureModal(itemKey);
     }
+  }
+
+  function handleNavigateToPost(post) {
+    if (!post) return;
+    setTargetUserProfile(null);
+    setSelectedMentorId(null);
+    resetSubScreens();
+    setActiveCategory("For You");
+    setSearch("");
+
+    const postIdStr = String(post.id || post._id || "");
+    setHome((prev) => {
+      const existingPosts = prev?.posts || [];
+      const exists = existingPosts.some((p) => String(p.id || p._id || "") === postIdStr);
+      if (!exists) {
+        return { ...prev, posts: [post, ...existingPosts] };
+      }
+      const otherPosts = existingPosts.filter((p) => String(p.id || p._id || "") !== postIdStr);
+      return { ...prev, posts: [post, ...otherPosts] };
+    });
+
+    setActiveTab("Home");
+    setActiveDrawerItem("Home");
+    setCommentsPost(post);
   }
 
   function openComposer(mode) {
@@ -650,6 +656,7 @@ export default function HomeScreen({ session, onLogout }) {
                   setSelectedMentorId(null);
                   setActiveChatUser(targetM || { id: "m1", name: "Rahul Sharma", role: "mentor" });
                 }}
+                onSelectPost={handleNavigateToPost}
               />
             ) : showNotificationsScreen ? (
               <NotificationsScreen
@@ -718,6 +725,10 @@ export default function HomeScreen({ session, onLogout }) {
                   setSelectedCourseId(null);
                   setCourseToEdit(c);
                   setShowCreateCourseScreen(true);
+                }}
+                onSelectMentor={(mId) => {
+                  setSelectedCourseId(null);
+                  setSelectedMentorId(mId || "m1");
                 }}
               />
             ) : exploreCategoryKey ? (
@@ -879,13 +890,7 @@ export default function HomeScreen({ session, onLogout }) {
                     setTargetUserProfile(null);
                     setActiveChatUser(targetU || targetUserProfile);
                   }}
-                  onSelectPost={(post) => {
-                    setTargetUserProfile(null);
-                    resetSubScreens();
-                    setActiveTab("Home");
-                    setActiveDrawerItem("Home");
-                    setCommentsPost(post);
-                  }}
+                  onSelectPost={handleNavigateToPost}
                 />
               ) : activeTab === "Home" ? (
               <>
@@ -970,13 +975,7 @@ export default function HomeScreen({ session, onLogout }) {
                 onNotifications={() => handleSelectDrawerItem("Notifications")}
                 onOpenMentorDashboard={() => setShowMentorDashboard(true)}
                 onOpenPartnerDashboard={() => setShowPartnerDashboard(true)}
-                onSelectPost={(post) => {
-                  setTargetUserProfile(null);
-                  resetSubScreens();
-                  setActiveTab("Home");
-                  setActiveDrawerItem("Home");
-                  setCommentsPost(post);
-                }}
+                onSelectPost={handleNavigateToPost}
               />
             ) : activeTab === "ProfileSettings" ? (
               <ProfileSettingsScreen
@@ -1125,6 +1124,24 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
           </View>
         </View>
         <View style={styles.headerActions}>
+          {onOpenWallet ? (
+            <Pressable
+              onPress={onOpenWallet}
+              style={({ pressed }) => [styles.headerWalletPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }, pressed && styles.pressed]}
+            >
+              <MaterialCommunityIcons name="wallet-outline" size={15} color={theme.primary} style={{ marginRight: 4 }} />
+              <Text style={[styles.headerWalletBalance, { color: theme.primary }]}>
+                ₹{user.wallet?.totalBalance !== undefined ? user.wallet.totalBalance.toLocaleString() : (user.balance || 1250)}
+              </Text>
+              <View style={[styles.headerCoinDivider, { backgroundColor: theme.border }]} />
+              <View style={styles.headerCoinIcon}>
+                <Text style={styles.headerCoinIconText}>$</Text>
+              </View>
+              <Text style={[styles.headerCoinsText, { color: theme.text }]}>
+                {user.wallet?.tcmCoins !== undefined ? user.wallet.tcmCoins : (user.tcmCoins || user.coins || 120)}
+              </Text>
+            </Pressable>
+          ) : null}
           <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={styles.iconButton}>
             <Feather name="bell" size={24} color={iconColor} />
             {notifications ? (
@@ -1153,10 +1170,12 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
         </View>
       </View>
       <View style={styles.headerActions}>
-        {/* Coin / Wallet Pill displayed ONLY on Self Profile screen */}
-        {isSelfProfile ? (
+        {/* Coin / Wallet Pill displayed when onOpenWallet is passed or on Self Profile screen */}
+        {isSelfProfile || onOpenWallet ? (
           <Pressable
-            onPress={onOpenWallet || (() => Alert.alert("TCM Wallet", "Opening your wallet..."))}
+            onPress={() => {
+              if (onOpenWallet) onOpenWallet();
+            }}
             style={({ pressed }) => [styles.headerWalletPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <MaterialCommunityIcons name="wallet-outline" size={15} color={theme.primary} style={{ marginRight: 4 }} />
@@ -1679,7 +1698,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
 function MediaLabel({ media }) {
   const { theme } = useTheme();
   return (
-    <View style={[styles.mediaLabel, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F5F2FF" }]}>
+    <View style={[styles.mediaLabel, { backgroundColor: theme.isDark ? "#064E3B" : theme.badgeBg }]}>
       <MaterialCommunityIcons name={media.labelIcon || "tag"} size={12} color={theme.primary} />
       <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.mediaLabelText, { color: theme.primary }]}>{media.label}</Text>
     </View>
@@ -2925,7 +2944,7 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
             </View>
 
             {replyingTo && (
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: theme.isDark ? "#1E1B4B" : "#EFF6FF", paddingHorizontal: 12, paddingVertical: 6, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderWidth: 1, borderColor: theme.border }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: theme.isDark ? "#064E3B" : "#E8F5E9", paddingHorizontal: 12, paddingVertical: 6, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderWidth: 1, borderColor: theme.border }}>
                 <Text style={{ fontSize: 11, color: theme.primary, fontFamily: fonts.semiBold }}>
                   Replying to @{replyingTo.name || replyingTo.userName || "Learner"}
                 </Text>

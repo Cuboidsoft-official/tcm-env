@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Alert,
   Share,
+  KeyboardAvoidingView,
   Platform
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";

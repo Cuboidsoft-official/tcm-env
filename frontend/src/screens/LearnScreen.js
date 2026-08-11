@@ -64,8 +64,8 @@ const defaultContinueLearning = [
     subtitle: "React, Node.js, Express & MongoDB",
     progress: 0,
     icon: "code-tags",
-    iconColor: "#5B3CF5",
-    bgColor: "#F0EDFF"
+    iconColor: "#0A6836",
+    bgColor: "#E8F5E9"
   }
 ];
 const defaultPopularCourses = [];
@@ -76,8 +76,8 @@ const defaultTopCategories = [
     name: "Programming",
     coursesCount: "124 Courses",
     icon: "code-tags",
-    color: "#5B3CF5",
-    bgColor: "#F0EDFF"
+    color: "#0A6836",
+    bgColor: "#E8F5E9"
   },
   {
     id: "cat2",
@@ -127,8 +127,8 @@ const defaultExpertMentors = [
     name: "Rahul Sharma",
     role: "TCM Information Tech Mentor",
     badge: "TCM Mentor",
-    badgeBg: "#F0EDFF",
-    badgeColor: "#5B3CF5",
+    badgeBg: "#E8F5E9",
+    badgeColor: "#0A6836",
     cardBg: "#F6F4FF",
     avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
     verified: true,
@@ -186,8 +186,8 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               subtitle: `Mentor: ${data.mentorName || "Aayushmann C."} • Live Batch Ready`,
               progress: data.userProgress?.courseProgress || 0,
               icon: "code-tags",
-              iconColor: "#5B3CF5",
-              bgColor: "#F0EDFF"
+              iconColor: "#0A6836",
+              bgColor: "#E8F5E9"
             }
           ]);
         }
@@ -288,7 +288,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 
       <Pressable
         onPress={() => setRoadmapModalVisible(true)}
-        style={({ pressed }) => [styles.quickAiRoadmapBar, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF", borderColor: theme.border }, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.quickAiRoadmapBar, { backgroundColor: theme.isDark ? "#1E1B4B" : "#E8F5E9", borderColor: theme.border }, pressed && styles.pressed]}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
           <View style={styles.quickAiBadgeIcon}>
@@ -364,7 +364,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           >
             <View style={styles.exploreTcmHeaderRow}>
               <View style={[styles.exploreIconBox, { backgroundColor: theme.isDark ? "#1E1B4B" : "#EEECFE" }]}>
-                <MaterialCommunityIcons name="play" size={20} color={theme.isDark ? "#A78BFA" : "#5B3CF5"} />
+                <MaterialCommunityIcons name="play" size={20} color={theme.isDark ? "#A78BFA" : "#0A6836"} />
               </View>
               <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
@@ -432,10 +432,10 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               style={[styles.continueCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             >
               <View style={styles.continueTopRow}>
-                <View style={[styles.continueIconWrap, { backgroundColor: item.bgColor || (theme.isDark ? "#1E1B4B" : "#F0EDFF") }]}>
+                <View style={[styles.continueIconWrap, { backgroundColor: item.bgColor || (theme.isDark ? "#1E1B4B" : "#E8F5E9") }]}>
                   <MaterialCommunityIcons name={item.icon || "book-open"} size={22} color={item.iconColor || theme.primary} />
                 </View>
-                <View style={[styles.playCircleBtn, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }]}>
+                <View style={[styles.playCircleBtn, { backgroundColor: theme.isDark ? "#1E1B4B" : "#E8F5E9" }]}>
                   <Feather name="play" size={11} color={theme.primary} style={{ marginLeft: 1 }} />
                 </View>
               </View>
@@ -674,7 +674,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
                 onPress={() => Alert.alert("Category Selected", `Browsing ${cat.name} courses...`)}
                 style={[styles.categoryCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
               >
-                <View style={[styles.categoryIconWrap, { backgroundColor: cat.bgColor || (theme.isDark ? "#1E1B4B" : "#F0EDFF") }]}>
+                <View style={[styles.categoryIconWrap, { backgroundColor: cat.bgColor || (theme.isDark ? "#1E1B4B" : "#E8F5E9") }]}>
                   <MaterialCommunityIcons name={cat.icon || "code-tags"} size={22} color={cat.color || theme.primary} />
                 </View>
                 <Text style={[styles.categoryName, { color: theme.text }]} numberOfLines={1}>{cat.name}</Text>
@@ -753,7 +753,7 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: "#5B3CF5"
+    backgroundColor: "#0A6836"
   },
 
   // 2. Search Box Card
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
   },
   bannerCard: {
     width: width - 40,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     borderRadius: 22,
     padding: 18,
     flexDirection: "row",
@@ -816,7 +816,7 @@ const styles = StyleSheet.create({
   newBatchText: {
     fontFamily: fonts.bold,
     fontSize: 10,
-    color: "#5B3CF5",
+    color: "#0A6836",
     letterSpacing: 0.6
   },
   bannerTitle: {
@@ -835,7 +835,7 @@ const styles = StyleSheet.create({
   },
   exploreBtn: {
     alignSelf: "flex-start",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 12,
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 10,
     marginBottom: 10,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     borderWidth: 1.5,
     borderColor: "#C4B5FD",
     borderRadius: 16,
@@ -877,7 +877,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 14,
     marginBottom: 8,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     borderRadius: 20,
     padding: 18,
     flexDirection: "row",
@@ -943,7 +943,7 @@ const styles = StyleSheet.create({
   roadmapCardBtnText: {
     fontSize: 12.5,
     fontFamily: fonts.bold,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   roadmapCardRight: {
     alignItems: "center",
@@ -1005,7 +1005,7 @@ const styles = StyleSheet.create({
   },
   activeDot: {
     width: 18,
-    backgroundColor: "#5B3CF5"
+    backgroundColor: "#0A6836"
   },
 
   // Section Headers
@@ -1024,7 +1024,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontFamily: fonts.semiBold,
     fontSize: 13,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   horizontalScrollContent: {
@@ -1061,7 +1061,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -1082,7 +1082,7 @@ const styles = StyleSheet.create({
   },
   progressFillBar: {
     height: "100%",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     borderRadius: 3
   },
   progressPercentText: {
@@ -1108,7 +1108,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -1218,7 +1218,7 @@ const styles = StyleSheet.create({
   enrollBtnText: {
     fontFamily: fonts.semiBold,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   // Empty State - Popular Courses
@@ -1247,7 +1247,7 @@ const styles = StyleSheet.create({
     marginBottom: 14
   },
   clearSearchBtn: {
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 10,
@@ -1257,7 +1257,7 @@ const styles = StyleSheet.create({
   clearSearchText: {
     fontFamily: fonts.semiBold,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   // 6. Top Categories Cards
@@ -1385,7 +1385,7 @@ const styles = StyleSheet.create({
   viewProfileBtn: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#5B3CF5",
+    borderColor: "#0A6836",
     paddingVertical: 6,
     borderRadius: 10,
     alignItems: "center"
@@ -1393,7 +1393,7 @@ const styles = StyleSheet.create({
   viewProfileBtnText: {
     fontFamily: fonts.bold,
     fontSize: 11,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   pressed: {
     opacity: 0.9,

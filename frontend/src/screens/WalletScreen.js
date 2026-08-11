@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
   Image,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View
 } from "react-native";
 import { Feather, FontAwesome, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -223,7 +226,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
               date: "Just now",
               icon: "star",
               iconBg: "#F0EDFF",
-              iconColor: "#5B3CF5"
+              iconColor: "#0A6836"
             },
             ...prev.transactions
           ]
@@ -344,7 +347,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
           {/* Action Buttons Row */}
           <View style={styles.balanceActionsRow}>
             <Pressable onPress={() => setWithdrawModalOpen(true)} style={styles.withdrawBtn}>
-              <Feather name="upload" size={14} color="#5B3CF5" style={{ marginRight: 6 }} />
+              <Feather name="upload" size={14} color="#0A6836" style={{ marginRight: 6 }} />
               <Text style={styles.withdrawBtnText}>Withdraw Funds</Text>
             </Pressable>
 
@@ -416,7 +419,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
             <View style={styles.referralLeftCol}>
               <Pressable onPress={handleCopyReferral} style={styles.dashedCodeBox}>
                 <Text style={styles.referralCodeText}>{referralCode}</Text>
-                <Feather name="copy" size={16} color="#5B3CF5" style={{ marginLeft: 8 }} />
+                <Feather name="copy" size={16} color="#0A6836" style={{ marginLeft: 8 }} />
               </Pressable>
             </View>
 
@@ -432,7 +435,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
             </View>
 
             <View style={styles.giftGraphicWrap}>
-              <MaterialCommunityIcons name="gift-outline" size={40} color="#5B3CF5" />
+              <MaterialCommunityIcons name="gift-outline" size={40} color="#0A6836" />
             </View>
           </View>
 
@@ -530,7 +533,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
                 </View>
                 <View style={styles.refBadgeCol}>
                   <View style={[styles.refBadgePill, ref.status === "Converted" ? { backgroundColor: "#F0EDFF" } : { backgroundColor: "#ECFDF5" }]}>
-                    <Text style={[styles.refBadgeText, ref.status === "Converted" ? { color: "#5B3CF5" } : { color: "#10B981" }]}>
+                    <Text style={[styles.refBadgeText, ref.status === "Converted" ? { color: "#0A6836" } : { color: "#10B981" }]}>
                       {ref.status === "Converted" ? "Converted (+₹500)" : "Joined (+10 Coins)"}
                     </Text>
                   </View>
@@ -595,7 +598,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
           {/* Step 1 */}
           <View style={styles.stepCard}>
             <View style={styles.stepIconWrap}>
-              <Feather name="users" size={20} color="#5B3CF5" />
+              <Feather name="users" size={20} color="#0A6836" />
             </View>
             <Text style={styles.stepNumTitle}>1. Refer</Text>
             <Text style={styles.stepSubText}>Invite your friends to TCM Academy</Text>
@@ -613,7 +616,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
           {/* Step 3 */}
           <View style={styles.stepCard}>
             <View style={styles.stepIconWrap}>
-              <MaterialCommunityIcons name="wallet-outline" size={20} color="#5B3CF5" />
+              <MaterialCommunityIcons name="wallet-outline" size={20} color="#0A6836" />
             </View>
             <Text style={styles.stepNumTitle}>3. Redeem</Text>
             <Text style={styles.stepSubText}>Convert coins to cash and withdraw</Text>
@@ -623,91 +626,95 @@ export default function WalletScreen({ session, user = {}, onBack }) {
 
       {/* Withdraw Funds Modal */}
       <Modal visible={withdrawModalOpen} transparent animationType="slide" onRequestClose={() => setWithdrawModalOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeaderRow}>
-              <Text style={styles.modalTitle}>Withdraw Funds</Text>
-              <Pressable onPress={() => setWithdrawModalOpen(false)}>
-                <Feather name="x" size={20} color="#181725" />
-              </Pressable>
-            </View>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeaderRow}>
+                <Text style={styles.modalTitle}>Withdraw Funds</Text>
+                <Pressable onPress={() => setWithdrawModalOpen(false)}>
+                  <Feather name="x" size={20} color="#181725" />
+                </Pressable>
+              </View>
 
-            {/* Maintenance Warning Banner */}
-            <View style={{ backgroundColor: "#FEF3C7", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#FDE68A", marginBottom: 14 }}>
-              <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#92400E", marginBottom: 3 }}>Withdrawal Gateway Under Maintenance</Text>
-              <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: "#78350F", lineHeight: 17 }}>
-                Automated payout gateway is currently undergoing maintenance. Send your withdrawal request on WhatsApp to <Text style={{ fontWeight: "700" }}>9238695500</Text> for instant direct UPI transfer.
+              {/* Maintenance Warning Banner */}
+              <View style={{ backgroundColor: "#FEF3C7", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#FDE68A", marginBottom: 14 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#92400E", marginBottom: 3 }}>Withdrawal Gateway Under Maintenance</Text>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: "#78350F", lineHeight: 17 }}>
+                  Automated payout gateway is currently undergoing maintenance. Send your withdrawal request on WhatsApp to <Text style={{ fontWeight: "700" }}>9238695500</Text> for instant direct UPI transfer.
+                </Text>
+              </View>
+
+              <Text style={styles.modalSubText}>
+                Available balance for withdrawal:{" "}
+                <Text style={{ fontFamily: fonts.bold, color: "#2E7D32" }}>
+                  ₹{walletData.availableBalance.toFixed(2)}
+                </Text>
               </Text>
+
+              <Text style={styles.inputLabel}>Enter Amount (₹):</Text>
+              <TextInput
+                value={withdrawAmount}
+                onChangeText={setWithdrawAmount}
+                placeholder="e.g. 500"
+                placeholderTextColor="#A0A0B8"
+                keyboardType="numeric"
+                style={styles.modalInput}
+              />
+
+              <Text style={styles.inputLabel}>Enter UPI ID / Bank Details:</Text>
+              <TextInput
+                value={upiId}
+                onChangeText={setUpiId}
+                placeholder="e.g. name@upi or Account No."
+                placeholderTextColor="#A0A0B8"
+                style={styles.modalInput}
+              />
+
+              <TouchableOpacity onPress={handleWithdrawWhatsApp} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#0F172A", paddingVertical: 14, borderRadius: 14, marginTop: 8 }}>
+                <FontAwesome5 name="whatsapp" size={18} color="#25D366" style={{ marginRight: 8 }} />
+                <Text style={styles.modalSubmitBtnText}>Withdraw via WhatsApp (9238695500) 💬</Text>
+              </TouchableOpacity>
             </View>
-
-            <Text style={styles.modalSubText}>
-              Available balance for withdrawal:{" "}
-              <Text style={{ fontFamily: fonts.bold, color: "#2E7D32" }}>
-                ₹{walletData.availableBalance.toFixed(2)}
-              </Text>
-            </Text>
-
-            <Text style={styles.inputLabel}>Enter Amount (₹):</Text>
-            <TextInput
-              value={withdrawAmount}
-              onChangeText={setWithdrawAmount}
-              placeholder="e.g. 500"
-              placeholderTextColor="#A0A0B8"
-              keyboardType="numeric"
-              style={styles.modalInput}
-            />
-
-            <Text style={styles.inputLabel}>Enter UPI ID / Bank Details:</Text>
-            <TextInput
-              value={upiId}
-              onChangeText={setUpiId}
-              placeholder="e.g. name@upi or Account No."
-              placeholderTextColor="#A0A0B8"
-              style={styles.modalInput}
-            />
-
-            <TouchableOpacity onPress={handleWithdrawWhatsApp} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#0F172A", paddingVertical: 14, borderRadius: 14, marginTop: 8 }}>
-              <FontAwesome5 name="whatsapp" size={18} color="#25D366" style={{ marginRight: 8 }} />
-              <Text style={styles.modalSubmitBtnText}>Withdraw via WhatsApp (9238695500) 💬</Text>
-            </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Add Money Modal */}
       <Modal visible={addMoneyModalOpen} transparent animationType="slide" onRequestClose={() => setAddMoneyModalOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeaderRow}>
-              <Text style={styles.modalTitle}>Add Money to Wallet</Text>
-              <Pressable onPress={() => setAddMoneyModalOpen(false)}>
-                <Feather name="x" size={20} color="#181725" />
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeaderRow}>
+                <Text style={styles.modalTitle}>Add Money to Wallet</Text>
+                <Pressable onPress={() => setAddMoneyModalOpen(false)}>
+                  <Feather name="x" size={20} color="#181725" />
+                </Pressable>
+              </View>
+
+              <Text style={styles.inputLabel}>Enter Amount to Add (₹):</Text>
+              <TextInput
+                value={addAmount}
+                onChangeText={setAddAmount}
+                placeholder="e.g. 500"
+                placeholderTextColor="#A0A0B8"
+                keyboardType="numeric"
+                style={styles.modalInput}
+              />
+
+              <View style={styles.quickPillsRow}>
+                {[100, 500, 1000, 2000].map((amt) => (
+                  <Pressable key={amt} onPress={() => setAddAmount(amt.toString())} style={styles.quickPill}>
+                    <Text style={styles.quickPillText}>+ ₹{amt}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Pressable onPress={handleAddMoneySubmit} style={styles.modalSubmitBtn}>
+                <Text style={styles.modalSubmitBtnText}>Proceed to Pay with UPI</Text>
               </Pressable>
             </View>
-
-            <Text style={styles.inputLabel}>Enter Amount to Add (₹):</Text>
-            <TextInput
-              value={addAmount}
-              onChangeText={setAddAmount}
-              placeholder="e.g. 500"
-              placeholderTextColor="#A0A0B8"
-              keyboardType="numeric"
-              style={styles.modalInput}
-            />
-
-            <View style={styles.quickPillsRow}>
-              {[100, 500, 1000, 2000].map((amt) => (
-                <Pressable key={amt} onPress={() => setAddAmount(amt.toString())} style={styles.quickPill}>
-                  <Text style={styles.quickPillText}>+ ₹{amt}</Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Pressable onPress={handleAddMoneySubmit} style={styles.modalSubmitBtn}>
-              <Text style={styles.modalSubmitBtnText}>Proceed to Pay with UPI</Text>
-            </Pressable>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -997,7 +1004,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
     borderStyle: "dashed",
-    borderColor: "#5B3CF5",
+    borderColor: "#0A6836",
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 8
@@ -1005,7 +1012,7 @@ const styles = StyleSheet.create({
   referralCodeText: {
     fontFamily: fonts.bold,
     fontSize: 13,
-    color: "#5B3CF5",
+    color: "#0A6836",
     letterSpacing: 0.5
   },
   referralRightCol: {
@@ -1023,7 +1030,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 10
@@ -1071,7 +1078,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontFamily: fonts.medium,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   transactionsList: {
     backgroundColor: "#FFFFFF",
@@ -1287,7 +1294,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -1329,7 +1336,7 @@ const styles = StyleSheet.create({
   claimBonusText: {
     fontSize: 10,
     fontFamily: fonts.bold,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   emptyRefCard: {
     backgroundColor: "#FFFFFF",
@@ -1410,10 +1417,10 @@ const styles = StyleSheet.create({
   quickPillText: {
     fontFamily: fonts.bold,
     fontSize: 11,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   modalSubmitBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingVertical: 13,
     borderRadius: 12,
     alignItems: "center",

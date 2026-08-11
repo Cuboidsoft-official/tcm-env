@@ -218,8 +218,8 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
       studentName: "Rahul Verma",
       studentAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
       type: "Enrollment",
-      badgeBg: "#F0EDFF",
-      badgeColor: "#5B3CF5",
+      badgeBg: "#E8F5E9",
+      badgeColor: "#0A6836",
       title: "Enrolled in System Design Architecture 2026",
       time: "3 hours ago"
     }
@@ -298,7 +298,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           {/* Stat Card 1: Active Courses */}
           <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.kpiTopRow}>
-              <View style={[styles.kpiIconWrap, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }]}>
+              <View style={[styles.kpiIconWrap, { backgroundColor: theme.isDark ? "#1E1B4B" : "#E8F5E9" }]}>
                 <MaterialCommunityIcons name="school-outline" size={20} color={theme.primary} />
               </View>
               <View style={[styles.growthTag, { backgroundColor: theme.badgeBg }]}>
@@ -391,7 +391,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
             onPress={() => handleCardPress("Add Courses", "Open separate course management page.")}
             style={({ pressed }) => [styles.activityTouchCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
-            <View style={[styles.activityIconBox, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }]}>
+            <View style={[styles.activityIconBox, { backgroundColor: theme.isDark ? "#1E1B4B" : "#E8F5E9" }]}>
               <MaterialCommunityIcons name="book-open-page-variant" size={22} color={theme.primary} />
             </View>
 
@@ -432,7 +432,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
             }}
             style={({ pressed }) => [styles.activityTouchCard, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F5F3FF", borderColor: theme.border }, pressed && styles.pressed]}
           >
-            <View style={[styles.activityIconBox, { backgroundColor: theme.isDark ? "#312E81" : "#F0EDFF" }]}>
+            <View style={[styles.activityIconBox, { backgroundColor: theme.isDark ? "#312E81" : "#E8F5E9" }]}>
               <Ionicons name="briefcase" size={22} color={theme.primary} />
             </View>
 
@@ -487,18 +487,18 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           {/* Activity 5: Schedule Daily Live Class Link (Session-Wise) */}
           <Pressable
             onPress={() => setScheduleModalOpen(true)}
-            style={({ pressed }) => [styles.activityTouchCard, { borderColor: "#5B3CF5", backgroundColor: "#F0EDFF" }, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.activityTouchCard, { borderColor: "#0A6836", backgroundColor: "#E8F5E9" }, pressed && styles.pressed]}
           >
-            <View style={[styles.activityIconBox, { backgroundColor: "#5B3CF5" }]}>
+            <View style={[styles.activityIconBox, { backgroundColor: "#0A6836" }]}>
               <Feather name="video" size={20} color="#FFFFFF" />
             </View>
 
             <View style={styles.activityCopy}>
-              <Text style={[styles.activityTitle, { color: "#5B3CF5" }]}>Schedule Daily Class Links</Text>
+              <Text style={[styles.activityTitle, { color: "#0A6836" }]}>Schedule Daily Class Links</Text>
               <Text style={styles.activitySub}>Send session-wise live class links to enrolled students</Text>
             </View>
 
-            <View style={[styles.arrowCircle, { backgroundColor: "#5B3CF5" }]}>
+            <View style={[styles.arrowCircle, { backgroundColor: "#0A6836" }]}>
               <Feather name="plus" size={16} color="#FFFFFF" />
             </View>
           </Pressable>
@@ -515,8 +515,8 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
             }}
             style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
           >
-            <Feather name="plus-circle" size={15} color="#5B3CF5" />
-            <Text style={{ fontSize: 13, fontWeight: "700", color: "#5B3CF5" }}>Create New</Text>
+            <Feather name="plus-circle" size={15} color="#0A6836" />
+            <Text style={{ fontSize: 13, fontWeight: "700", color: "#0A6836" }}>Create New</Text>
           </TouchableOpacity>
         </View>
 
@@ -536,8 +536,8 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
             >
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <View style={{ flex: 1, paddingRight: 10 }}>
-                  <View style={{ backgroundColor: "#F0EDFF", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginBottom: 6 }}>
-                    <Text style={{ fontSize: 10, fontWeight: "700", color: "#5B3CF5" }}>{course.category || "Web Development"}</Text>
+                  <View style={{ backgroundColor: "#E8F5E9", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginBottom: 6 }}>
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: "#0A6836" }}>{course.category || "Web Development"}</Text>
                   </View>
                   <Text style={{ fontSize: 15, fontWeight: "700", color: "#0F172A" }}>{course.title}</Text>
                   <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
@@ -559,7 +559,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    backgroundColor: "#5B3CF5",
+                    backgroundColor: "#0A6836",
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                     borderRadius: 10
@@ -608,9 +608,9 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                           paddingHorizontal: 14,
                           paddingVertical: 10,
                           borderRadius: 12,
-                          backgroundColor: isSelected ? "#5B3CF5" : "#F8FAFC",
+                          backgroundColor: isSelected ? "#0A6836" : "#F8FAFC",
                           borderWidth: 1,
-                          borderColor: isSelected ? "#5B3CF5" : "#E2E8F0",
+                          borderColor: isSelected ? "#0A6836" : "#E2E8F0",
                           marginRight: 8
                         }}
                       >
@@ -640,19 +640,19 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                           alignItems: "center",
                           padding: 12,
                           borderRadius: 12,
-                          backgroundColor: isSelected ? "#F0EDFF" : "#F8FAFC",
+                          backgroundColor: isSelected ? "#E8F5E9" : "#F8FAFC",
                           borderWidth: 1,
-                          borderColor: isSelected ? "#5B3CF5" : "#E2E8F0",
+                          borderColor: isSelected ? "#0A6836" : "#E2E8F0",
                           marginBottom: 8
                         }}
                       >
-                        <View style={{ backgroundColor: isSelected ? "#5B3CF5" : "#E2E8F0", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 10 }}>
+                        <View style={{ backgroundColor: isSelected ? "#0A6836" : "#E2E8F0", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 10 }}>
                           <Text style={{ fontSize: 11, fontWeight: "700", color: isSelected ? "#FFFFFF" : "#64748B" }}>{sess.dayNum || `Day ${idx + 1}`}</Text>
                         </View>
-                        <Text style={{ flex: 1, fontSize: 13, fontWeight: isSelected ? "700" : "500", color: isSelected ? "#5B3CF5" : "#1E293B" }}>
+                        <Text style={{ flex: 1, fontSize: 13, fontWeight: isSelected ? "700" : "500", color: isSelected ? "#0A6836" : "#1E293B" }}>
                           {topicText}
                         </Text>
-                        {isSelected && <MaterialCommunityIcons name="check-circle" size={18} color="#5B3CF5" />}
+                        {isSelected && <MaterialCommunityIcons name="check-circle" size={18} color="#0A6836" />}
                       </TouchableOpacity>
                     );
                   })}
@@ -674,9 +674,9 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                           paddingHorizontal: 12,
                           paddingVertical: 8,
                           borderRadius: 20,
-                          backgroundColor: isSelected ? "#5B3CF5" : "#F1F5F9",
+                          backgroundColor: isSelected ? "#0A6836" : "#F1F5F9",
                           borderWidth: 1,
-                          borderColor: isSelected ? "#5B3CF5" : "#CBD5E1"
+                          borderColor: isSelected ? "#0A6836" : "#CBD5E1"
                         }}
                       >
                         <Text style={{ fontSize: 12, fontWeight: "600", color: isSelected ? "#FFFFFF" : "#334155" }}>
@@ -692,9 +692,9 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                       paddingHorizontal: 12,
                       paddingVertical: 8,
                       borderRadius: 20,
-                      backgroundColor: isCustomTime ? "#5B3CF5" : "#F1F5F9",
+                      backgroundColor: isCustomTime ? "#0A6836" : "#F1F5F9",
                       borderWidth: 1,
-                      borderColor: isCustomTime ? "#5B3CF5" : "#CBD5E1"
+                      borderColor: isCustomTime ? "#0A6836" : "#CBD5E1"
                     }}
                   >
                     <Text style={{ fontSize: 12, fontWeight: "600", color: isCustomTime ? "#FFFFFF" : "#334155" }}>
@@ -705,11 +705,11 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
                 {isCustomTime && (
                   <View style={{ marginBottom: 16 }}>
-                    <Text style={{ fontSize: 11, fontWeight: "600", color: "#5B3CF5", marginBottom: 4 }}>Enter Custom Class Schedule Time:</Text>
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: "#0A6836", marginBottom: 4 }}>Enter Custom Class Schedule Time:</Text>
                     <TextInput
                       value={customTimeInput}
                       onChangeText={setCustomTimeInput}
-                      style={{ borderWidth: 1, borderColor: "#5B3CF5", borderRadius: 10, padding: 10, fontSize: 13, color: "#0F172A", backgroundColor: "#F0EDFF" }}
+                      style={{ borderWidth: 1, borderColor: "#0A6836", borderRadius: 10, padding: 10, fontSize: 13, color: "#0F172A", backgroundColor: "#E8F5E9" }}
                       placeholder="e.g. Today • 04:30 PM – 06:00 PM"
                     />
                   </View>
@@ -744,7 +744,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
                 <TouchableOpacity
                   onPress={handleBroadcastLink}
-                  style={{ backgroundColor: "#5B3CF5", borderRadius: 14, paddingVertical: 15, alignItems: "center", shadowColor: "#5B3CF5", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4, flexDirection: "row", justifyContent: "center" }}
+                  style={{ backgroundColor: "#0A6836", borderRadius: 14, paddingVertical: 15, alignItems: "center", shadowColor: "#0A6836", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4, flexDirection: "row", justifyContent: "center" }}
                 >
                   <Feather name="send" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
                   <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>Save & Broadcast Resources</Text>
@@ -766,7 +766,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
         {/* ============================================================ */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 24, marginBottom: 12 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Ionicons name="briefcase" size={18} color="#5B3CF5" />
+            <Ionicons name="briefcase" size={18} color="#0A6836" />
             <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A" }}>My Posted Jobs & Hiring Drives</Text>
           </View>
 
@@ -776,7 +776,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
               setCreateJobModalOpen(true);
             }}
             activeOpacity={0.8}
-            style={{ backgroundColor: "#5B3CF5", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
+            style={{ backgroundColor: "#0A6836", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
           >
             <Text style={{ color: "#FFFFFF", fontSize: 11.5, fontFamily: fonts.bold }}>+ Post Job</Text>
           </TouchableOpacity>
@@ -791,7 +791,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
             </Text>
             <TouchableOpacity
               onPress={() => setCreateJobModalOpen(true)}
-              style={{ backgroundColor: "#5B3CF5", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, marginTop: 12 }}
+              style={{ backgroundColor: "#0A6836", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, marginTop: 12 }}
             >
               <Text style={{ color: "#FFFFFF", fontSize: 12, fontFamily: fonts.bold }}>+ Create First Job Posting</Text>
             </TouchableOpacity>
@@ -834,10 +834,10 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                 <View style={{ marginTop: 10, backgroundColor: "#F8FAFC", padding: 8, borderRadius: 8, borderWidth: 1, borderColor: "#F1F5F9" }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                     <Text style={{ fontSize: 10.5, fontFamily: fonts.bold, color: "#475569" }}>AI Candidate Limit Tracker</Text>
-                    <Text style={{ fontSize: 10.5, fontWeight: "700", color: "#5B3CF5" }}>{selectedCount} / {reqCount} Candidates Selected</Text>
+                    <Text style={{ fontSize: 10.5, fontWeight: "700", color: "#0A6836" }}>{selectedCount} / {reqCount} Candidates Selected</Text>
                   </View>
                   <View style={{ height: 5, width: "100%", backgroundColor: "#E2E8F0", borderRadius: 3, marginTop: 4, overflow: "hidden" }}>
-                    <View style={{ height: "100%", width: `${fillPercent}%`, backgroundColor: isFilled ? "#EF4444" : "#5B3CF5", borderRadius: 3 }} />
+                    <View style={{ height: "100%", width: `${fillPercent}%`, backgroundColor: isFilled ? "#EF4444" : "#0A6836", borderRadius: 3 }} />
                   </View>
                 </View>
 
@@ -846,10 +846,10 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                   <TouchableOpacity
                     onPress={() => setSelectedJobForApplicants(job)}
                     activeOpacity={0.8}
-                    style={{ backgroundColor: "#F0EDFF", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: "row", alignItems: "center" }}
+                    style={{ backgroundColor: "#E8F5E9", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: "row", alignItems: "center" }}
                   >
-                    <Ionicons name="people" size={13} color="#5B3CF5" style={{ marginRight: 4 }} />
-                    <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#5B3CF5" }}>
+                    <Ionicons name="people" size={13} color="#0A6836" style={{ marginRight: 4 }} />
+                    <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#0A6836" }}>
                       View Applicants & Resumes ({job.applicants?.length || 0})
                     </Text>
                   </TouchableOpacity>
@@ -1083,7 +1083,7 @@ const styles = StyleSheet.create({
   payoutNavBtnText: {
     fontFamily: fonts.bold,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   sectionHeaderTitle: {
@@ -1125,7 +1125,7 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   growthTag: {
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 8
@@ -1133,7 +1133,7 @@ const styles = StyleSheet.create({
   growthTagText: {
     fontFamily: fonts.bold,
     fontSize: 10,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   kpiValue: {
     fontFamily: fonts.bold,
@@ -1175,7 +1175,7 @@ const styles = StyleSheet.create({
     marginTop: 1
   },
   chartPill: {
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10
@@ -1183,7 +1183,7 @@ const styles = StyleSheet.create({
   chartPillText: {
     fontFamily: fonts.bold,
     fontSize: 11,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   barChartContainer: {
     flexDirection: "row",
@@ -1212,7 +1212,7 @@ const styles = StyleSheet.create({
   },
   barFill: {
     width: "100%",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     borderRadius: 7
   },
   barDayLabel: {
@@ -1263,7 +1263,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     alignItems: "center",
     justifyContent: "center"
   },

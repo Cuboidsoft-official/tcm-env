@@ -10,6 +10,7 @@ import {
   Linking,
   Alert,
   TextInput,
+  KeyboardAvoidingView,
   Platform
 } from "react-native";
 import { Feather, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
@@ -65,9 +66,10 @@ export default function RazorpayPaymentModal({ visible, course, onClose, onPayme
 
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Pressable style={styles.dimLayer} onPress={onClose} />
-        <View style={[styles.modalSheet, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <View style={styles.backdrop}>
+          <Pressable style={styles.dimLayer} onPress={onClose} />
+          <View style={[styles.modalSheet, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Header */}
           <View style={styles.headerRow}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -185,7 +187,8 @@ export default function RazorpayPaymentModal({ visible, course, onClose, onPayme
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </KeyboardAvoidingView>
+  </Modal>
   );
 }
 

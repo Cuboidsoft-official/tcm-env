@@ -16,6 +16,8 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { deleteCommunityPost, getTargetUserProfile, sendFriendRequestAction, toggleFollowUser } from "../api/client";
+import GetVerifiedModal from "../components/GetVerifiedModal";
+import MyReviewsModal from "../components/MyReviewsModal";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
@@ -34,6 +36,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
   // Bottom Sheets & Modals state
   const [followersModalOpen, setFollowersModalOpen] = useState(false);
   const [followingModalOpen, setFollowingModalOpen] = useState(false);
+  const [myReviewsModalOpen, setMyReviewsModalOpen] = useState(false);
   const [avatarEnlargedOpen, setAvatarEnlargedOpen] = useState(false);
   const [optionsSheetOpen, setOptionsSheetOpen] = useState(false);
   const [getVerifiedModalOpen, setGetVerifiedModalOpen] = useState(false);
@@ -218,10 +221,10 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           onPress={() => {
             if (onClose) onClose();
           }}
-          style={[styles.joinBtn, { backgroundColor: "#F0EDFF", borderWidth: 1, borderColor: "#5B3CF5" }]}
+          style={[styles.joinBtn, { backgroundColor: "#F0EDFF", borderWidth: 1, borderColor: "#0A6836" }]}
         >
-          <Feather name="user" size={15} color="#5B3CF5" />
-          <Text style={[styles.joinBtnText, { color: "#5B3CF5" }]}>Your Profile (You)</Text>
+          <Feather name="user" size={15} color="#0A6836" />
+          <Text style={[styles.joinBtnText, { color: "#0A6836" }]}>Your Profile (You)</Text>
         </Pressable>
       );
     }
@@ -249,7 +252,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           }}
           style={[styles.joinBtn, styles.joinedBtn]}
         >
-          <Feather name="check" size={15} color="#5B3CF5" />
+          <Feather name="check" size={15} color="#0A6836" />
           <Text style={[styles.joinBtnText, styles.joinedBtnText]}>Friends ✓</Text>
         </Pressable>
       );
@@ -261,7 +264,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           onPress={() => handleFriendRequest("cancel")}
           style={[styles.joinBtn, styles.pendingBtn]}
         >
-          <Feather name="clock" size={15} color="#5B3CF5" />
+          <Feather name="clock" size={15} color="#0A6836" />
           <Text style={[styles.joinBtnText, styles.pendingBtnText]}>Request Sent</Text>
         </Pressable>
       );
@@ -350,7 +353,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
               <Text style={[styles.metaText, { color: theme.subtext }]}>{joinedDate}</Text>
             </View>
             <View style={styles.metaItem}>
-              <Feather name="link" size={12} color="#5B3CF5" />
+              <Feather name="link" size={12} color="#0A6836" />
               <Text style={[styles.metaText, styles.metaLink]}>{website}</Text>
             </View>
           </View>
@@ -403,10 +406,10 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           <Text style={styles.statLbl}>Following</Text>
         </Pressable>
         <View style={styles.statDivider} />
-        <View style={styles.statCol}>
+        <Pressable onPress={() => setMyReviewsModalOpen(true)} style={styles.statCol}>
           <Text style={styles.statVal}>{stats.reviews || "0"}</Text>
           <Text style={styles.statLbl}>Reviews</Text>
-        </View>
+        </Pressable>
       </View>
 
       {/* 4. Highlight Categories Row */}
@@ -420,7 +423,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
         ].map((item) => (
           <Pressable key={item.label} onPress={() => Alert.alert(item.label, `Viewing ${item.label}...`)} style={styles.highlightItem}>
             <View style={styles.highlightCircle}>
-              <MaterialCommunityIcons name={item.icon} size={22} color="#5B3CF5" />
+              <MaterialCommunityIcons name={item.icon} size={22} color="#0A6836" />
             </View>
             <Text style={styles.highlightLabel}>{item.label}</Text>
           </Pressable>
@@ -447,7 +450,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
               onPress={() => setActiveTab(tab.key)}
               style={[styles.tabItem, isActive && styles.tabItemActive]}
             >
-              <Feather name={tab.icon} size={15} color={isActive ? "#5B3CF5" : "#7C7C9A"} />
+              <Feather name={tab.icon} size={15} color={isActive ? "#0A6836" : "#7C7C9A"} />
               <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.key}</Text>
             </Pressable>
           );
@@ -457,7 +460,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
       {/* 6. Content Grid Feed */}
       <View style={styles.gridFeed}>
         {loading ? (
-          <ActivityIndicator size="large" color="#5B3CF5" style={{ marginVertical: 35, alignSelf: "center", width: "100%" }} />
+          <ActivityIndicator size="large" color="#0A6836" style={{ marginVertical: 35, alignSelf: "center", width: "100%" }} />
         ) : filteredPosts.length > 0 ? (
           filteredPosts.map((post) => {
             const isDoc = post.media?.kind === "notes" || Boolean(post.documentUrl) || Boolean(post.documentName);
@@ -532,7 +535,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                   <Ionicons
                     name={post.bookmarked ? "bookmark" : "bookmark-outline"}
                     size={14}
-                    color={post.bookmarked ? "#5B3CF5" : "#7C7C9A"}
+                    color={post.bookmarked ? "#0A6836" : "#7C7C9A"}
                   />
                 </View>
               </View>
@@ -667,7 +670,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                       <View style={{ gap: 2 }}>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                           <Text style={styles.igUserName}>{u.name}</Text>
-                          {u.verified ? <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" /> : null}
+                          {u.verified ? <MaterialCommunityIcons name="check-decagram" size={14} color="#0A6836" /> : null}
                         </View>
                         <Text style={styles.igUserHandle}>@{u.handle || "member"} • {u.role || "TCM Member"}</Text>
                       </View>
@@ -747,7 +750,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
               }}
               style={styles.optionsItem}
             >
-              <Feather name="share-2" size={18} color="#5B3CF5" />
+              <Feather name="share-2" size={18} color="#0A6836" />
               <Text style={styles.optionsItemText}>Share Profile</Text>
             </Pressable>
 
@@ -823,6 +826,14 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           setProfileData((prev) => (prev ? { ...prev, user: { ...prev.user, verified: true } } : prev));
         }}
       />
+
+      <MyReviewsModal
+        visible={myReviewsModalOpen}
+        session={session}
+        userId={targetId}
+        user={userObj}
+        onClose={() => setMyReviewsModalOpen(false)}
+      />
     </View>
   );
 }
@@ -857,7 +868,7 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -869,7 +880,7 @@ const styles = StyleSheet.create({
   getVerifiedPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 9,
     paddingVertical: 3,
     borderRadius: 14,
@@ -892,7 +903,7 @@ const styles = StyleSheet.create({
     borderColor: "#DDD6FE"
   },
   verifiedPillText: {
-    color: "#5B3CF5",
+    color: "#0A6836",
     fontSize: 11,
     fontFamily: fonts.bold
   },
@@ -932,7 +943,7 @@ const styles = StyleSheet.create({
     color: "#7C7C9A"
   },
   metaLink: {
-    color: "#5B3CF5",
+    color: "#0A6836",
     textDecorationLine: "underline"
   },
 
@@ -944,7 +955,7 @@ const styles = StyleSheet.create({
   },
   joinBtn: {
     flex: 2,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingVertical: 10,
     borderRadius: 12,
     flexDirection: "row",
@@ -964,7 +975,7 @@ const styles = StyleSheet.create({
     borderColor: "#E4DCFF"
   },
   pendingBtnText: {
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   acceptBtn: {
     backgroundColor: "#2E7D32"
@@ -978,7 +989,7 @@ const styles = StyleSheet.create({
     fontSize: 13
   },
   joinedBtnText: {
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   messageBtn: {
     flex: 2,
@@ -1114,7 +1125,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent"
   },
   tabItemActive: {
-    borderBottomColor: "#5B3CF5"
+    borderBottomColor: "#0A6836"
   },
   tabText: {
     fontFamily: fonts.medium,
@@ -1123,7 +1134,7 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     fontFamily: fonts.bold,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   gridFeed: {
@@ -1197,7 +1208,7 @@ const styles = StyleSheet.create({
   cardTags: {
     fontFamily: fonts.medium,
     fontSize: 10,
-    color: "#5B3CF5",
+    color: "#0A6836",
     marginBottom: 6
   },
   cardFooter: {
@@ -1255,7 +1266,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent"
   },
   igTabActive: {
-    borderBottomColor: "#5B3CF5"
+    borderBottomColor: "#0A6836"
   },
   igTabText: {
     fontFamily: fonts.medium,
@@ -1308,7 +1319,7 @@ const styles = StyleSheet.create({
     color: "#7C7C9A"
   },
   igFollowBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 10
@@ -1324,7 +1335,7 @@ const styles = StyleSheet.create({
     fontSize: 12
   },
   igFollowBtnTextActive: {
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   enlargedAvatarBg: {
     flex: 1,
@@ -1373,7 +1384,7 @@ const styles = StyleSheet.create({
     marginTop: 22
   },
   enlargedShareBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 12,

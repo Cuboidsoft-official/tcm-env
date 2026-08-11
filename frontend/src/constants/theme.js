@@ -14,7 +14,8 @@ export const colors = {
   border: "#E2E8E2",
   amber: "#FFB11A",
   mint: "#E8F5E9",
-  blueSoft: "#EAF3FF",
+  natureSoft: "#E8F5E9",
+  greenSoft: "#E8F5E9",
   yellowSoft: "#FFF2CF"
 };
 

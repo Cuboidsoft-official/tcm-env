@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -15,6 +16,8 @@ import HomeScreen from "./src/screens/HomeScreen";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import { setupPushNotifications } from "./src/services/notificationService";
 
+const STORAGE_SESSION_KEY = "tcm_user_session_v1";
+
 function AppContent() {
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
@@ -28,21 +31,64 @@ function AppContent() {
   const { theme } = useTheme();
 
   useEffect(() => {
-    const timer = setTimeout(() => setScreen("login"), 1900);
-    return () => clearTimeout(timer);
+    let isMounted = true;
+    async function restorePersistentSession() {
+      try {
+        const storedSessionJson = await AsyncStorage.getItem(STORAGE_SESSION_KEY);
+        if (storedSessionJson) {
+          const parsedSession = JSON.parse(storedSessionJson);
+          if (parsedSession && (parsedSession.token || parsedSession.user)) {
+            if (isMounted) {
+              setSession(parsedSession);
+              setScreen("home");
+              if (parsedSession.token) {
+                setupPushNotifications(parsedSession.token);
+              }
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        console.log("Failed to restore session from AsyncStorage:", err);
+      }
+      if (isMounted) {
+        setScreen("login");
+      }
+    }
+
+    const timer = setTimeout(() => {
+      restorePersistentSession();
+    }, 1800);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, []);
 
-  function handleLogin(nextSession) {
+  async function handleLogin(nextSession) {
     setSession(nextSession);
     setScreen("home");
+    try {
+      if (nextSession) {
+        await AsyncStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(nextSession));
+      }
+    } catch (err) {
+      console.log("Failed to save session to AsyncStorage:", err);
+    }
     if (nextSession?.token) {
       setupPushNotifications(nextSession.token);
     }
   }
 
-  function handleLogout() {
+  async function handleLogout() {
     setSession(null);
     setScreen("login");
+    try {
+      await AsyncStorage.removeItem(STORAGE_SESSION_KEY);
+    } catch (err) {
+      console.log("Failed to remove session from AsyncStorage:", err);
+    }
   }
 
   return (

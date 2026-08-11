@@ -746,8 +746,8 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.bg }]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 20}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       {/* 1. TOP HEADER MATCHING CHATSCREEN */}
       <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
@@ -955,20 +955,32 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
               return (
                 <View key={uniqueKey} style={item.isSelf ? styles.msgRowRight : styles.msgRowLeft}>
                   {!item.isSelf && <Image source={{ uri: item.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }} style={styles.msgAvatar} />}
-                  <View style={[item.isSelf ? styles.msgBodyRight : styles.msgBodyLeft, { padding: 8 }]}>
+                  <View style={[item.isSelf ? styles.msgBodyRight : styles.msgBodyLeft, { padding: 8, minWidth: 230 }]}>
                     {!item.isSelf && <Text style={styles.msgAuthor}>{item.authorName} <Text style={styles.msgTime}>{item.time}</Text></Text>}
                     <Pressable
                       onPress={() => {
                         Linking.openURL(driveLinkVal).catch(() => Alert.alert("Doc Link", driveLinkVal));
                       }}
-                      style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: item.isSelf ? "rgba(255,255,255,0.15)" : theme.badgeBg, padding: 10, borderRadius: 10 }}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                        backgroundColor: item.isSelf ? "rgba(255, 255, 255, 0.18)" : theme.badgeBg,
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        width: "100%",
+                        minWidth: 210
+                      }}
                     >
-                      <MaterialCommunityIcons name="google-drive" size={24} color={item.isSelf ? "#FFFFFF" : "#0F9D58"} />
-                      <View style={{ flex: 1 }}>
+                      <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: item.isSelf ? "rgba(255,255,255,0.22)" : "#E8F5E9", alignItems: "center", justifyContent: "center" }}>
+                        <MaterialCommunityIcons name="google-drive" size={22} color={item.isSelf ? "#FFFFFF" : "#0F9D58"} />
+                      </View>
+                      <View style={{ flex: 1, justifyContent: "center" }}>
                         <Text numberOfLines={1} style={{ fontSize: 12.5, fontFamily: fonts.bold, color: item.isSelf ? "#FFFFFF" : theme.text }}>
                           {item.fileName || item.text.replace("📁 Google Drive Doc: ", "")}
                         </Text>
-                        <Text style={{ fontSize: 10, color: item.isSelf ? "rgba(255,255,255,0.8)" : theme.subtext }}>
+                        <Text numberOfLines={1} style={{ fontSize: 10.5, fontFamily: fonts.medium, color: item.isSelf ? "rgba(255,255,255,0.85)" : theme.subtext, marginTop: 1 }}>
                           Tap to open Document 📄
                         </Text>
                       </View>

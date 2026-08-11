@@ -12,17 +12,19 @@ import {
 import { Platform } from "react-native";
 import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getMentorDetails } from "../api/client";
+import MyReviewsModal from "../components/MyReviewsModal";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
-export default function MentorProfileScreen({ session, user = {}, targetMentor = null, mentorId, onClose, onOpenCourseDetails, onOpenChat, onEditCourse }) {
+export default function MentorProfileScreen({ session, user = {}, targetMentor = null, mentorId, onClose, onOpenCourseDetails, onOpenChat, onEditCourse, onSelectPost }) {
   const { theme } = useTheme();
   const [mentor, setMentor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState(false);
+  const [myReviewsModalOpen, setMyReviewsModalOpen] = useState(false);
 
   useEffect(() => {
     loadMentor();
@@ -52,7 +54,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
     reviewsCount: "1.2K",
     studentsCount: "12K+",
     tags: [
-      { label: "NEET Mentor", bg: "#F0EDFF", color: "#5B3CF5" },
+      { label: "NEET Mentor", bg: "#E8F5E9", color: "#0A6836" },
       { label: "JEE Mentor", bg: "#EAF5FF", color: "#2F79B9" },
       { label: "Coding Mentor", bg: "#ECF9E9", color: "#2E7D32" },
       { label: "+2 More", bg: "#F4F3FA", color: "#7C7C9A" }
@@ -60,14 +62,14 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
     bio: "Helping students master concepts and build real-world skills with 6+ years of teaching & industry experience.",
     avatarUrl: "",
     stats: [
-      { title: "6+", sub: "Years Exp.", icon: "school-outline", bg: "#F0EDFF" },
-      { title: "250+", sub: "Live Sessions", icon: "play-circle-outline", bg: "#F0EDFF" },
-      { title: "12K+", sub: "Students", icon: "account-group-outline", bg: "#F0EDFF" },
-      { title: "98%", sub: "Satisfaction", icon: "medal-outline", bg: "#F0EDFF" }
+      { title: "6+", sub: "Years Exp.", icon: "school-outline", bg: "#E8F5E9" },
+      { title: "250+", sub: "Live Sessions", icon: "play-circle-outline", bg: "#E8F5E9" },
+      { title: "12K+", sub: "Students", icon: "account-group-outline", bg: "#E8F5E9" },
+      { title: "98%", sub: "Satisfaction", icon: "medal-outline", bg: "#E8F5E9" }
     ],
     about: "I specialize in Full Stack Development (MERN Stack). I love breaking down complex concepts into simple, practical lessons that help students build confidence and real-world skills.",
     subjects: [
-      { id: "sub1", title: "Coding", desc: "Web Dev, DSA, Python, JS", icon: "code-tags", bg: "#F0EDFF" },
+      { id: "sub1", title: "Coding", desc: "Web Dev, DSA, Python, JS", icon: "code-tags", bg: "#E8F5E9" },
       { id: "sub2", title: "NEET", desc: "Physics, Chemistry, Biology", icon: "book-open-outline", bg: "#EAF5FF" },
       { id: "sub3", title: "JEE", desc: "Physics, Chemistry, Maths", icon: "calculator-variant-outline", bg: "#ECF9E9" },
       { id: "sub4", title: "Others", desc: "Interview Prep, Career Guidance", icon: "widgets-outline", bg: "#FFF7EE" }
@@ -318,7 +320,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
                       position: "absolute",
                       top: 8,
                       right: 8,
-                      backgroundColor: "#5B3CF5",
+                      backgroundColor: "#0A6836",
                       flexDirection: "row",
                       alignItems: "center",
                       gap: 4,
@@ -376,7 +378,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
               {/* Item Content */}
               <View style={[styles.expContentRow, themedSoftSurface]}>
                 <View style={[styles.companyLogoWrap, { backgroundColor: theme.cardBg }]}>
-                  <MaterialCommunityIcons name={exp.icon || "domain"} size={22} color={exp.iconColor || "#5B3CF5"} />
+                  <MaterialCommunityIcons name={exp.icon || "domain"} size={22} color={exp.iconColor || "#0A6836"} />
                 </View>
 
                 <View style={styles.expTextCol}>
@@ -431,12 +433,12 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
         {/* 8. Ratings & Reviews */}
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Ratings & Reviews</Text>
-          <Pressable onPress={() => Alert.alert("Reviews", "Showing all student reviews.")}>
+          <Pressable onPress={() => setMyReviewsModalOpen(true)}>
             <Text style={styles.viewAllText}>View All</Text>
           </Pressable>
         </View>
 
-        <View style={[styles.reviewsOverviewCard, themedSurface]}>
+        <Pressable onPress={() => setMyReviewsModalOpen(true)} style={[styles.reviewsOverviewCard, themedSurface]}>
           {/* Left Rating Summary */}
           <View style={[styles.reviewsSummaryLeft, { borderRightColor: theme.border }]}>
             <Text style={[styles.bigScoreText, { color: theme.text }]}>{ratings.score}</Text>
@@ -478,7 +480,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
             <Text style={[styles.reviewBodyText, { color: theme.subtext }]}>"{ratings.featuredReview.text}"</Text>
             <MaterialCommunityIcons name="format-quote-close" size={32} color={theme.border} style={styles.quoteIcon} />
           </View>
-        </View>
+        </Pressable>
       </ScrollView>
 
       {/* 9. Sticky Bottom Booking Bar */}
@@ -500,6 +502,14 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
           <Text style={styles.stickyBookBtnText}>Book a Session →</Text>
         </Pressable>
       </View>
+
+      <MyReviewsModal
+        visible={myReviewsModalOpen}
+        session={session}
+        userId={data.id || mentorId || "m1"}
+        user={data}
+        onClose={() => setMyReviewsModalOpen(false)}
+      />
     </View>
   );
 }
@@ -574,7 +584,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
@@ -602,7 +612,7 @@ const styles = StyleSheet.create({
   },
   topBadgePill: {
     alignSelf: "flex-start",
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8
@@ -610,7 +620,7 @@ const styles = StyleSheet.create({
   topBadgeText: {
     fontFamily: fonts.bold,
     fontSize: 10,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   mentorName: {
     fontFamily: fonts.bold,
@@ -687,7 +697,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#5B3CF5",
+    borderColor: "#0A6836",
     paddingVertical: 12,
     borderRadius: 14,
     ...shadow.soft
@@ -695,14 +705,14 @@ const styles = StyleSheet.create({
   msgBtnText: {
     fontFamily: fonts.bold,
     fontSize: 14,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   bookBtn: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingVertical: 12,
     borderRadius: 14,
     ...shadow.soft
@@ -735,7 +745,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4
@@ -768,7 +778,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontFamily: fonts.semiBold,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   // 5. About Me Section Card
@@ -858,7 +868,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#5B3CF5"
+    backgroundColor: "#0A6836"
   },
   stepperVerticalLine: {
     width: 2,
@@ -902,7 +912,7 @@ const styles = StyleSheet.create({
     marginTop: 1
   },
   durationPill: {
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8
@@ -910,7 +920,7 @@ const styles = StyleSheet.create({
   durationPillText: {
     fontFamily: fonts.bold,
     fontSize: 9,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   // 8. Ratings & Reviews Overview
@@ -972,7 +982,7 @@ const styles = StyleSheet.create({
   },
   barFill: {
     height: "100%",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     borderRadius: 2
   },
   percentText: {
@@ -1038,14 +1048,14 @@ const styles = StyleSheet.create({
   mentorCourseImg: {
     width: "100%",
     height: 105,
-    backgroundColor: "#F0EDFF"
+    backgroundColor: "#E8F5E9"
   },
   mentorCourseContent: {
     padding: 10
   },
   badgePillSmall: {
     alignSelf: "flex-start",
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -1054,7 +1064,7 @@ const styles = StyleSheet.create({
   badgePillSmallText: {
     fontFamily: fonts.bold,
     fontSize: 9,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   mentorCourseTitle: {
     fontFamily: fonts.bold,
@@ -1077,7 +1087,7 @@ const styles = StyleSheet.create({
   mentorCoursePrice: {
     fontFamily: fonts.bold,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   emptyCourseBox: {
     backgroundColor: "#F9F8FF",
@@ -1133,7 +1143,7 @@ const styles = StyleSheet.create({
   interestPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
@@ -1143,7 +1153,7 @@ const styles = StyleSheet.create({
   interestPillText: {
     fontFamily: fonts.medium,
     fontSize: 11,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   // 9. Sticky Bottom Booking Bar
@@ -1174,7 +1184,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -1192,7 +1202,7 @@ const styles = StyleSheet.create({
     color: "#7C7C9A"
   },
   stickyBookBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,

@@ -2,12 +2,15 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -115,8 +118,9 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.modalContent}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <View style={styles.overlay}>
+          <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.headerRow}>
             <Text style={styles.headerTitle}>Edit Mentor Profile</Text>
@@ -247,7 +251,8 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
           </View>
         </View>
       </View>
-    </Modal>
+    </KeyboardAvoidingView>
+  </Modal>
   );
 }
 

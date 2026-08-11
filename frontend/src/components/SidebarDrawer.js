@@ -37,6 +37,10 @@ export default function SidebarDrawer({
     .toUpperCase() || "AY";
   const softSurface = theme.isDark ? theme.inputBg || "#131927" : "#F0EEF8";
 
+  const enrolledCoursesCount = user?.enrolledCoursesCount ?? user?.enrolledCourses?.length ?? user?.coursesCount ?? (user?.role === "mentor" ? 8 : 4);
+  const tcmCoins = user?.wallet?.tcmCoins ?? user?.tcmCoins ?? user?.coins ?? user?.points ?? 250;
+  const certificatesCount = user?.certificatesCount ?? user?.completedCoursesCount ?? user?.certificates?.length ?? (user?.role === "mentor" ? 5 : 2);
+
   function handleNavigate(itemKey) {
     onClose();
     if (onSelectMenuItem) {
@@ -96,25 +100,25 @@ export default function SidebarDrawer({
               </View>
             </View>
 
-            {/* 2. Quick Metrics Row */}
+            {/* 2. Real Dynamic User Metrics Row */}
             <View style={styles.metricsRow}>
-              <View style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => handleNavigate("My Classes")} style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                 <MaterialCommunityIcons name="book-open-page-variant" size={18} color={theme.primary} />
-                <Text style={[styles.metricVal, { color: theme.text }]}>12</Text>
+                <Text style={[styles.metricVal, { color: theme.text }]}>{enrolledCoursesCount}</Text>
                 <Text style={[styles.metricLbl, { color: theme.subtext }]}>Enrolled Courses</Text>
-              </View>
+              </TouchableOpacity>
 
-              <View style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-                <FontAwesome5 name="star" size={16} color="#FFB800" solid />
-                <Text style={[styles.metricVal, { color: theme.text }]}>1,250</Text>
-                <Text style={[styles.metricLbl, { color: theme.subtext }]}>Points Earned</Text>
-              </View>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => handleNavigate("Wallet")} style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                <FontAwesome5 name="coins" size={16} color="#FFB800" />
+                <Text style={[styles.metricVal, { color: theme.text }]}>{typeof tcmCoins === "number" ? tcmCoins.toLocaleString() : tcmCoins}</Text>
+                <Text style={[styles.metricLbl, { color: theme.subtext }]}>TCM Coins</Text>
+              </TouchableOpacity>
 
-              <View style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => handleNavigate("Profile")} style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                 <MaterialCommunityIcons name="shield-check" size={18} color={theme.primary} />
-                <Text style={[styles.metricVal, { color: theme.text }]}>5</Text>
+                <Text style={[styles.metricVal, { color: theme.text }]}>{certificatesCount}</Text>
                 <Text style={[styles.metricLbl, { color: theme.subtext }]}>Certificates</Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             {/* 3. MAIN MENU Section */}
@@ -148,10 +152,22 @@ export default function SidebarDrawer({
               />
             </View>
 
-            {/* 4. ACCOUNT Section */}
+            {/* 4. ACCOUNT & REFERRALS Section */}
             <View style={styles.sectionWrap}>
-              <Text style={[styles.sectionTitle, { color: theme.subtext }]}>ACCOUNT</Text>
+              <Text style={[styles.sectionTitle, { color: theme.subtext }]}>ACCOUNT & REWARDS</Text>
 
+              <MenuItem
+                icon={<Feather name="credit-card" size={18} />}
+                label="TCM Wallet & Balance"
+                active={activeItem === "Wallet"}
+                onPress={() => handleNavigate("Wallet")}
+              />
+              <MenuItem
+                icon={<FontAwesome5 name="gift" size={16} />}
+                label="Refer & Earn (₹500 Bonus)"
+                active={activeItem === "Referrals"}
+                onPress={() => handleNavigate("Wallet")}
+              />
               <MenuItem
                 icon={<Feather name="user" size={18} />}
                 label="Profile"

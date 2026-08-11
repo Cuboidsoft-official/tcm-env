@@ -9,6 +9,7 @@ import {
   Pressable,
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Platform
 } from "react-native";
 import { Feather, MaterialCommunityIcons, FontAwesome5, Ionicons } from "@expo/vector-icons";
@@ -81,15 +82,11 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
   const activeTextColor = theme.isDark ? "#C7D2FE" : theme.primary;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <View style={[styles.backdropOverlay, { backgroundColor: theme.isDark ? "rgba(2, 6, 23, 0.78)" : "rgba(15, 23, 42, 0.65)" }]}>
-        <Pressable style={styles.backdropPressable} onPress={onClose} />
-        <View style={[styles.sheetContainer, sheetSurface]}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} statusBarTranslucent>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <View style={[styles.backdropOverlay, { backgroundColor: theme.isDark ? "rgba(2, 6, 23, 0.78)" : "rgba(15, 23, 42, 0.65)" }]}>
+          <Pressable style={styles.backdropPressable} onPress={onClose} />
+          <View style={[styles.sheetContainer, sheetSurface]}>
           {/* Top Handle bar */}
           <View style={styles.handleContainer}>
             <View style={[styles.sheetHandle, { backgroundColor: theme.border }]} />
@@ -228,7 +225,8 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
           </View>
         </View>
       </View>
-    </Modal>
+    </KeyboardAvoidingView>
+  </Modal>
   );
 }
 

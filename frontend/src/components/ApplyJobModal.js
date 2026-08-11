@@ -2,7 +2,9 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -91,8 +93,9 @@ export default function ApplyJobModal({ visible, job, user = {}, onClose, onSubm
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
           {/* Sheet Handle */}
           <View style={styles.sheetHandleWrap}>
             <View style={styles.sheetHandleBar} />
@@ -227,7 +230,8 @@ export default function ApplyJobModal({ visible, job, user = {}, onClose, onSubm
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </KeyboardAvoidingView>
+  </Modal>
   );
 }
 

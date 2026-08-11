@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -148,8 +149,9 @@ export default function CreateJobModal({ visible, user = {}, jobToEdit = null, o
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
           {/* Sheet Handle */}
           <View style={styles.sheetHandleWrap}>
             <View style={styles.sheetHandleBar} />
@@ -356,7 +358,8 @@ export default function CreateJobModal({ visible, user = {}, jobToEdit = null, o
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </KeyboardAvoidingView>
+  </Modal>
   );
 }
 

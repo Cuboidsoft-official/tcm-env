@@ -231,8 +231,12 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
         if (res.targetUser && !initialTargetUser) setTargetUser(res.targetUser);
         if (res.isMutual !== undefined) {
           setIsMutual(Boolean(res.isMutual));
+        } else if (res.targetUser?.friendStatus === "friends" || res.friendStatus === "friends" || initialTargetUser?.friendStatus === "friends") {
+          setIsMutual(true);
         } else if (targetId === "m1") {
           setIsMutual(true);
+        } else {
+          setIsMutual(false);
         }
         if (res.messages && res.messages.length > 0) {
           setMessages((prev) => dedupeMessages([...prev, ...res.messages]));
@@ -486,8 +490,8 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 20}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       style={[styles.container, { backgroundColor: theme.bg }]}
     >
       {/* 1. Redesigned Responsive Header Bar */}

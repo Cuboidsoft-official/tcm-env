@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
@@ -157,8 +158,9 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {} }) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
           {/* Header */}
           <View style={styles.modalHeader}>
             <View style={styles.headerTitleRow}>
@@ -287,7 +289,8 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {} }) {
           </View>
         </View>
       </View>
-    </Modal>
+    </KeyboardAvoidingView>
+  </Modal>
   );
 }
 

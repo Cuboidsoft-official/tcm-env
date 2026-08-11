@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,7 +25,7 @@ function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694
   return url;
 }
 
-export default function CourseDetailsScreen({ session, user = {}, courseId = "p1", onBack, onEditCourse }) {
+export default function CourseDetailsScreen({ session, user = {}, courseId = "p1", onBack, onEditCourse, onSelectMentor }) {
   const { theme } = useTheme();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -117,7 +118,7 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
       "Certificate of completion & placement support"
     ],
     features: [
-      { id: "f1", icon: "youtube-subscription", label: "Lifetime Access", color: "#5B3CF5", bg: "#F0EDFF" },
+      { id: "f1", icon: "youtube-subscription", label: "Lifetime Access", color: "#0A6836", bg: "#E8F5E9" },
       { id: "f2", icon: "certificate", label: "Certificate Included", color: "#2E7D32", bg: "#ECF9E9" },
       { id: "f3", icon: "account-group", label: "Community Access", color: "#E7A900", bg: "#FFF6DA" },
       { id: "f4", icon: "download", label: "Downloadable Resources", color: "#2F79B9", bg: "#EAF5FF" }
@@ -326,7 +327,7 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
     const getSectionIconInfo = (headerStr) => {
       const h = (headerStr || "").toLowerCase();
       if (h.includes("overview") || h.includes("scope")) {
-        return { icon: "compass-outline", color: "#5B3CF5", bg: "#F0EDFF" };
+        return { icon: "compass-outline", color: "#0A6836", bg: "#E8F5E9" };
       }
       if (h.includes("join") || h.includes("target") || h.includes("who")) {
         return { icon: "target", color: "#E7A900", bg: "#FFF8EC" };
@@ -613,6 +614,40 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
           </Pressable>
         </View>
 
+        {/* 4.5. Lead Instructor / Mentor Card */}
+        <View style={[styles.sectionContainer, themedSurface]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Lead Mentor & Instructor</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}>
+            <Image
+              source={{ uri: safeImageUri(courseData.mentorAvatarUrl || courseData.mentorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150") }}
+              style={{ width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: theme.primary }}
+            />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: theme.text }}>{courseData.mentorName || "Rahul Sharma"}</Text>
+                <MaterialCommunityIcons name="check-decagram" size={15} color={theme.primary} />
+              </View>
+              <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: theme.subtext }}>{courseData.mentorRole || "Full Stack Lead Mentor"}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 }}>
+                <FontAwesome name="star" size={11} color="#FFB800" />
+                <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: theme.text }}>4.9</Text>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: theme.subtext }}>(1.2K Reviews)</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                const targetMId = courseData.mentorId || "m1";
+                if (onSelectMentor) onSelectMentor(targetMId);
+                else if (onBack) onBack();
+              }}
+              activeOpacity={0.8}
+              style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: theme.border }}
+            >
+              <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: theme.primary }}>View Profile</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* 5. What you'll learn Section */}
         <View style={[styles.sectionContainer, themedSurface]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>What you'll learn</Text>
@@ -775,7 +810,7 @@ const styles = StyleSheet.create({
   editHeaderBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 20
@@ -821,7 +856,7 @@ const styles = StyleSheet.create({
   },
   tagBadge: {
     alignSelf: "flex-start",
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -1052,7 +1087,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#5B3CF5"
+    backgroundColor: "#0A6836"
   },
   autoSubHeaderTitle: {
     fontFamily: fonts.bold,
@@ -1101,7 +1136,7 @@ const styles = StyleSheet.create({
   miniAiPillText: {
     fontFamily: fonts.semiBold,
     fontSize: 9,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   miniBulletRow: {
     flexDirection: "row",
@@ -1112,7 +1147,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#5B3CF5"
+    backgroundColor: "#0A6836"
   },
   miniBulletText: {
     flex: 1,
@@ -1168,7 +1203,7 @@ const styles = StyleSheet.create({
   sleekMetricVal: {
     fontFamily: fonts.bold,
     fontSize: 12.5,
-    color: "#5B3CF5",
+    color: "#0A6836",
     marginTop: 1
   },
   sleekMetricDivider: {
@@ -1222,7 +1257,7 @@ const styles = StyleSheet.create({
   aiBadgeTagTextWhite: {
     fontFamily: fonts.semiBold,
     fontSize: 10,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   salaryStatsFlex: {
     flexDirection: "row",
@@ -1313,7 +1348,7 @@ const styles = StyleSheet.create({
   rolePillTextGradient: {
     fontFamily: fonts.semiBold,
     fontSize: 11.5,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   aiBadgeTag: {
     flexDirection: "row",
@@ -1327,7 +1362,7 @@ const styles = StyleSheet.create({
   aiBadgeTagText: {
     fontFamily: fonts.semiBold,
     fontSize: 9.5,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   aiBulletRow: {
     flexDirection: "row",
@@ -1338,7 +1373,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 2
@@ -1372,7 +1407,7 @@ const styles = StyleSheet.create({
   salaryStatVal: {
     fontFamily: fonts.bold,
     fontSize: 12.5,
-    color: "#5B3CF5",
+    color: "#0A6836",
     marginTop: 2
   },
   subMetaLabel: {
@@ -1397,7 +1432,7 @@ const styles = StyleSheet.create({
   companyPillText: {
     fontFamily: fonts.semiBold,
     fontSize: 11,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   rolePill: {
     backgroundColor: "#ECF9E9",
@@ -1419,7 +1454,7 @@ const styles = StyleSheet.create({
   readMoreText: {
     fontFamily: fonts.semiBold,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   // 5. What you'll learn Grid
@@ -1468,7 +1503,7 @@ const styles = StyleSheet.create({
   expandAllText: {
     fontFamily: fonts.semiBold,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   moduleCard: {
@@ -1495,7 +1530,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -1545,7 +1580,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#5B3CF5"
+    backgroundColor: "#0A6836"
   },
   playIconCircle: {
     width: 20,
@@ -1621,7 +1656,7 @@ const styles = StyleSheet.create({
   },
 
   stickyEnrollBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 14,

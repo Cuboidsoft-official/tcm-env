@@ -464,8 +464,8 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
           onPress={() => setMyReviewsModalOpen(true)}
           style={styles.statCol}
         >
-          <Text style={styles.statVal}>{stats.reviews || "0"}</Text>
-          <Text style={styles.statLbl}>Reviews</Text>
+          <Text style={[styles.statVal, { color: theme.text }]}>{stats.reviews || "0"}</Text>
+          <Text style={[styles.statLbl, { color: theme.subtext }]}>Reviews</Text>
         </Pressable>
       </View>
 
@@ -494,7 +494,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               <Feather
                 name={tab.icon}
                 size={15}
-                color={isActive ? "#5B3CF5" : "#7C7C9A"}
+                color={isActive ? "#0A6836" : "#7C7C9A"}
               />
               <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
                 {tab.key}
@@ -506,7 +506,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
 
       {/* Content Grid Feed */}
       {loading || (activeTab === "Saved" && loadingSaved) ? (
-        <ActivityIndicator size="large" color="#5B3CF5" style={{ marginVertical: 30 }} />
+        <ActivityIndicator size="large" color="#0A6836" style={{ marginVertical: 30 }} />
       ) : activeTab === "Saved" ? (
         <View style={styles.gridFeed}>
           {(() => {
@@ -529,7 +529,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                 <View style={styles.imagePostCard}>
                   <Image source={{ uri: post.imageUrl || post.media?.imageUrl || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=400" }} style={styles.cardImg} />
                   <View style={styles.mediaOverlayBadge}>
-                    <Ionicons name="bookmark" size={14} color="#5B3CF5" />
+                    <Ionicons name="bookmark" size={14} color="#0A6836" />
                   </View>
                 </View>
                 <View style={styles.cardBody}>
@@ -622,7 +622,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                   </View>
 
                   <View>
-                    <Ionicons name={post.bookmarked ? "bookmark" : "bookmark-outline"} size={15} color={post.bookmarked ? "#5B3CF5" : "#7C7C9A"} />
+                    <Ionicons name={post.bookmarked ? "bookmark" : "bookmark-outline"} size={15} color={post.bookmarked ? "#0A6836" : "#7C7C9A"} />
                   </View>
                 </View>
               </View>
@@ -732,7 +732,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               <View style={styles.avatarEditSection}>
                 <ProfileAvatar name={form.name || profileUser.name} uri={form.avatarUrl} size={76} />
                 <Pressable onPress={pickImage} style={[styles.changePicBtn, { marginTop: 8 }]}>
-                  <Feather name="camera" size={14} color="#5B3CF5" />
+                  <Feather name="camera" size={14} color="#0A6836" />
                   <Text style={styles.changePicText}>Choose Photo</Text>
                 </Pressable>
               </View>
@@ -866,7 +866,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                       <View style={{ gap: 2 }}>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                           <Text style={styles.igUserName}>{u.name}</Text>
-                          {u.verified ? <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" /> : null}
+                          {u.verified ? <MaterialCommunityIcons name="check-decagram" size={14} color="#0A6836" /> : null}
                         </View>
                         <Text style={styles.igUserHandle}>@{u.handle} • {u.role}</Text>
                       </View>
@@ -1033,7 +1033,7 @@ const styles = StyleSheet.create({
     borderColor: "#DDD6FE"
   },
   verifiedPillText: {
-    color: "#5B3CF5",
+    color: "#0A6836",
     fontSize: 11,
     fontFamily: fonts.bold
   },
@@ -1056,7 +1056,7 @@ const styles = StyleSheet.create({
   memberBadgeText: {
     fontFamily: fonts.semiBold,
     fontSize: 11,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   bioText: {
     fontFamily: fonts.regular,
@@ -1212,7 +1212,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent"
   },
   tabItemActive: {
-    borderBottomColor: "#5B3CF5"
+    borderBottomColor: "#0A6836"
   },
   tabText: {
     fontFamily: fonts.medium,
@@ -1221,7 +1221,7 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     fontFamily: fonts.bold,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   // Content Grid Feed
@@ -1296,7 +1296,7 @@ const styles = StyleSheet.create({
   cardTags: {
     fontFamily: fonts.medium,
     fontSize: 11,
-    color: "#5B3CF5",
+    color: "#0A6836",
     marginBottom: 8
   },
   cardFooter: {
@@ -1369,7 +1369,7 @@ const styles = StyleSheet.create({
     borderRadius: 12
   },
   changePicText: {
-    color: "#5B3CF5",
+    color: "#0A6836",
     fontSize: 12,
     fontFamily: fonts.semiBold
   },
@@ -1415,7 +1415,7 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     flex: 1,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center"
@@ -1443,7 +1443,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent"
   },
   igTabActive: {
-    borderBottomColor: "#5B3CF5"
+    borderBottomColor: "#0A6836"
   },
   igTabText: {
     fontFamily: fonts.medium,
@@ -1496,7 +1496,7 @@ const styles = StyleSheet.create({
     color: "#7C7C9A"
   },
   igFollowBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 10
@@ -1512,7 +1512,7 @@ const styles = StyleSheet.create({
     fontSize: 12
   },
   igFollowBtnTextActive: {
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
 
   // Instagram Enlarged Avatar Styles
@@ -1563,7 +1563,7 @@ const styles = StyleSheet.create({
     marginTop: 22
   },
   enlargedChangeBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 12,
@@ -1626,7 +1626,7 @@ const styles = StyleSheet.create({
   headerWalletBalance: {
     fontFamily: fonts.bold,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: "#0A6836"
   },
   headerCoinDivider: {
     width: 1,
@@ -1656,5 +1656,37 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.9,
     transform: [{ scale: 0.99 }]
+  },
+
+  // Wallet Banner Card
+  profileWalletBannerCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    ...shadow.soft
+  },
+  profileWalletIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12
+  },
+  profileWalletTextWrap: {
+    flex: 1
+  },
+  profileWalletTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14
+  },
+  profileWalletSub: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    marginTop: 2
   }
 });
