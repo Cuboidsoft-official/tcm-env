@@ -63,6 +63,8 @@ jobs:
           ln -sfn "/var/www/tcm-admin/releases/$RELEASE" /var/www/tcm-admin/current
           systemctl reload caddy
           systemctl is-active --quiet caddy
-          curl -fsS --max-time 10 http://127.0.0.1:80/ -H 'Host: admin.thecodemunk.in' | grep -qi '<div id="root">'
+          test "$(readlink -f /var/www/tcm-admin/current)" = "/var/www/tcm-admin/releases/$RELEASE"
+          grep -qi '<div id="root">' /var/www/tcm-admin/current/index.html
+          curl -fsS --max-time 15 https://api.thecodemunk.in/api/health | grep -q '"ok":true'
           find /var/www/tcm-admin/releases -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -rn | awk 'NR > 5 {print $2}' | xargs -r rm -rf
           REMOTE
