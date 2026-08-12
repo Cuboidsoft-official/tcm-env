@@ -13,6 +13,9 @@ concurrency:
   group: eas-update
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   update:
     runs-on: ubuntu-latest

@@ -8,12 +8,17 @@ on:
       - ".github/workflows/deploy-backend-oci.yml"
   workflow_dispatch:
 
+concurrency:
+  group: tcm-backend-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    concurrency:
-      group: tcm-backend-deploy
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 
@@ -24,8 +29,8 @@ jobs:
 
       - name: Sync backend source to VM
         env:
-          OCI_USER: ${{ secrets.OCI_USER }}
-          OCI_HOST: ${{ secrets.OCI_HOST }}
+          OCI_USER: ${{ vars.BACKEND_USER || secrets.OCI_USER }}
+          OCI_HOST: ${{ vars.BACKEND_HOST || secrets.OCI_HOST }}
         run: |
           set -euo pipefail
           ssh -o StrictHostKeyChecking=accept-new "$OCI_USER@$OCI_HOST" \
@@ -38,8 +43,8 @@ jobs:
       - name: Provision backend .env from secret
         env:
           TCM_BACKEND_ENV: ${{ secrets.TCM_BACKEND_ENV }}
-          OCI_USER: ${{ secrets.OCI_USER }}
-          OCI_HOST: ${{ secrets.OCI_HOST }}
+          OCI_USER: ${{ vars.BACKEND_USER || secrets.OCI_USER }}
+          OCI_HOST: ${{ vars.BACKEND_HOST || secrets.OCI_HOST }}
         run: |
           set -euo pipefail
           if [ -z "${TCM_BACKEND_ENV:-}" ]; then
@@ -53,9 +58,36 @@ jobs:
 
       - name: Install deps, restart service, verify health
         env:
-          OCI_USER: ${{ secrets.OCI_USER }}
-          OCI_HOST: ${{ secrets.OCI_HOST }}
+          OCI_USER: ${{ vars.BACKEND_USER || secrets.OCI_USER }}
+          OCI_HOST: ${{ vars.BACKEND_HOST || secrets.OCI_HOST }}
         run: |
           set -euo pipefail
           ssh -o StrictHostKeyChecking=accept-new "$OCI_USER@$OCI_HOST" \
-            "cd /opt/tcm/backend && npm ci --omit=dev --no-audit --no-fund && sudo systemctl restart tcm-backend && for i in \$(seq 1 30); do if body=\$(curl -fsS --max-time 5 http://127.0.0.1:5000/api/health 2>/dev/null); then if echo \"\$body\" | grep -q '\"ok\":true'; then echo 'HEALTH_OK after '\$i' polls: '\$body; exit 0; fi; fi; sleep 2; done; echo 'health check failed after 60s'; exit 1"
+            "cd /opt/tcm/backend && npm ci --omit=dev --no-audit --no-fund && sudo systemctl restart tcm-backend && for i in \$(seq 1 60); do if body=\$(curl -fsS --max-time 5 http://127.0.0.1:5000/api/health 2>/dev/null); then if echo \"\$body\" | grep -q '\"ok\":true'; then echo 'HEALTH_OK after '\$i' polls: '\$body; exit 0; fi; fi; sleep 1.5; done; echo 'health check failed after 90s'; exit 1"
+
+      - name: Report deployment status
+        if: always()
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          DEPLOY_ENV: tcm-backend
+        with:
+          script: |
+            const state = '${{ job.status }}' === 'success' ? 'success' : 'error';
+            const description = `Deploy to OCI backend (${context.sha.slice(0, 7)}): ${'${{ job.status }}'}`;
+            const dep = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: process.env.DEPLOY_ENV,
+              auto_merge: false,
+              required_contexts: [],
+            }).catch((e) => { console.log(`createDeployment skipped: ${e.message}`); return null; });
+            if (!dep) return;
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: dep.data.id,
+              state,
+              description,
+            }).catch((e) => { console.log(`createDeploymentStatus skipped: ${e.message}`); });

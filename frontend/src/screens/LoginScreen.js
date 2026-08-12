@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Alert, Modal, NativeModules, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Alert, Modal, NativeModules, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
@@ -56,6 +56,7 @@ export default function LoginScreen({ onLogin }) {
     { key: "TCM Government", label: "TCM Government", desc: "UPSC, SSC CGL, Banking, Railway", icon: "bank", color: "#2F79B9" }
   ];
   const [loading, setLoading] = useState(false);
+  const googleSignInInFlight = useRef(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -99,9 +100,64 @@ export default function LoginScreen({ onLogin }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = params.get("access_token") || params.get("id_token");
+    if (!accessToken) {
+      return;
+    }
+
+    (async () => {
+      try {
+        const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        const googleUser = await userRes.json();
+
+        if (googleUser && googleUser.email) {
+          const session = await googleLogin(
+            googleUser.email,
+            googleUser.name || googleUser.given_name || "Google User",
+            googleUser.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(googleUser.name || "Google User")}&background=4285F4&color=fff`,
+            accessToken,
+            role
+          );
+          onLogin(session);
+        }
+      } catch (err) {
+        console.log("Google web OAuth callback failed:", err);
+      } finally {
+        history.replaceState(null, "", window.location.pathname);
+      }
+    })();
+  }, []);
+
   async function handleGoogleSignIn() {
+    if (googleSignInInFlight.current) {
+      return;
+    }
+    googleSignInInFlight.current = true;
     setLoading(true);
     try {
+      // Web: full-page redirect OAuth (never popups, never a fake account).
+      if (Platform.OS === "web") {
+        const webClientId = process.env.EXPO_PUBLIC_WEB_CLIENT_ID || "1018503930810-nuht0vf2crgh0k5e5da65f6hb4g3p7qn.apps.googleusercontent.com";
+        const redirectUri = window.location.origin;
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+          `client_id=${encodeURIComponent(webClientId)}` +
+          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+          `&response_type=token%20id_token` +
+          `&scope=${encodeURIComponent("openid profile email")}` +
+          `&prompt=select_account` +
+          `&nonce=${Math.random().toString(36).substring(2)}`;
+        window.location.href = authUrl;
+        return;
+      }
+
       // 1. Try Native Google Sign-In sheet (Android / iOS native account picker)
       if (NativeModules.RNGoogleSignin) {
         try {
@@ -184,19 +240,22 @@ export default function LoginScreen({ onLogin }) {
         return; // User dismissed Google sign-in prompt
       }
 
-      // If browser fallback is needed when OAuth web redirects are restricted:
-      const fallbackEmail = form.email && form.email.includes("@") ? form.email.trim() : "google.learner@tcm.com";
-      const session = await googleLogin(
-        fallbackEmail,
-        "Google Learner",
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-        "google_web_token",
-        role
-      );
-      onLogin(session);
+      // Native fallback only — NEVER create a fake Google account on web.
+      if (Platform.OS !== "web") {
+        const fallbackEmail = form.email && form.email.includes("@") ? form.email.trim() : "google.learner@tcm.com";
+        const session = await googleLogin(
+          fallbackEmail,
+          "Google Learner",
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+          "google_web_token",
+          role
+        );
+        onLogin(session);
+      }
     } catch (error) {
       Alert.alert("Google Sign-In", error.message || "Could not complete Google Sign-In.");
     } finally {
+      googleSignInInFlight.current = false;
       setLoading(false);
     }
   }
