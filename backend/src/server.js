@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 import { connectDatabase } from "./config/db.js";
 import { createVisualSeedData } from "./data/visualSeed.js";
 import { authRouter } from "./routes/auth.js";
-import { homeRouter } from "./routes/home.js";
+import { homeRouter, serveOpenGraphPreview } from "./routes/home.js";
 import { profileRouter } from "./routes/profile.js";
 import { chatRouter } from "./routes/chat.js";
 import { jobsRouter } from "./routes/jobs.js";
@@ -32,6 +32,12 @@ app.get("/api/health", (req, res) => {
     mongo: mongoose.connection.readyState
   });
 });
+
+// Top-Level OpenGraph Share Preview Endpoints for WhatsApp Crawlers
+app.get("/share/:type/:id", serveOpenGraphPreview);
+app.get("/share/preview/:type/:id", serveOpenGraphPreview);
+app.get("/api/share/:type/:id", serveOpenGraphPreview);
+app.get("/api/share/preview/:type/:id", serveOpenGraphPreview);
 
 app.use("/api/auth", authRouter);
 app.use("/api/home", homeRouter);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -32,7 +32,8 @@ import * as VideoThumbnails from "expo-video-thumbnails";
 import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
-import { addPostComment, deletePostComment, createCommunityPost, deleteCommunityPost, getHome, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost, applyJobPost, deleteJobPost } from "../api/client";
+import { addPostComment, deletePostComment, createCommunityPost, deleteCommunityPost, getHome, getNotifications, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost, applyJobPost, deleteJobPost } from "../api/client";
+import { sanitizeImageUri } from "../utils/imageUtils";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import ApplyJobModal from "../components/ApplyJobModal";
@@ -48,7 +49,8 @@ import SearchScreen from "./SearchScreen";
 import MentorProfileScreen from "./MentorProfileScreen";
 import ChatScreen from "./ChatScreen";
 import NotificationsScreen from "./NotificationsScreen";
-import { setupPushNotifications } from "../services/notificationService";
+import { setupPushNotifications, setupNotificationListeners } from "../services/notificationService";
+import NotificationToast from "../components/NotificationToast";
 import ExploreTcmCategoryScreen from "./ExploreTcmCategoryScreen";
 import WalletScreen from "./WalletScreen";
 import MentorDashboardScreen from "./MentorDashboardScreen";
@@ -291,9 +293,106 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   const [getVerifiedModalOpen, setGetVerifiedModalOpen] = useState(false);
   const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
   const [selectedJobForApply, setSelectedJobForApply] = useState(null);
+  const [activeToast, setActiveToast] = useState(null);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const knownNotifIds = useRef(new Set());
   const { theme } = useTheme();
 
   const user = home?.user || session?.user || {};
+
+  // 1. Automatic Push Notification Token Registration on Launch
+  useEffect(() => {
+    if (session?.token) {
+      setupPushNotifications(session.token).catch(() => {});
+    }
+  }, [session?.token]);
+
+  // 2. Periodic Polling & Live Notification Badge Sync
+  useEffect(() => {
+    if (!session?.token) return;
+
+    let isMounted = true;
+    async function checkNotifs() {
+      try {
+        const res = await getNotifications(session.token);
+        if (!isMounted) return;
+        if (res && Array.isArray(res.notifications)) {
+          setUnreadNotifCount(res.unreadCount || 0);
+          const unreadList = res.notifications.filter((n) => n.unread);
+          for (const n of unreadList) {
+            const notifKey = n.id || `${n.type}_${n.title}`;
+            if (!knownNotifIds.current.has(notifKey)) {
+              knownNotifIds.current.add(notifKey);
+              setActiveToast(n);
+              break;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    checkNotifs();
+    const interval = setInterval(checkNotifs, 12000);
+
+    const cleanupListeners = setupNotificationListeners(
+      (notification) => {
+        const content = notification?.request?.content;
+        if (content && isMounted) {
+          setActiveToast({
+            title: content.title || "New Alert",
+            subtitle: content.body || "",
+            data: content.data || {},
+            type: content.data?.type || "general"
+          });
+        }
+      },
+      (response) => {
+        const data = response?.notification?.request?.content?.data;
+        if (data && isMounted) {
+          handleToastNavigate({ data });
+        }
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      if (cleanupListeners) cleanupListeners();
+    };
+  }, [session?.token]);
+
+  function handleToastNavigate(toastItem) {
+    const data = toastItem?.data || {};
+    const type = toastItem?.type || data?.type || "";
+
+    if (data.screen === "Notifications" || type.includes("friend")) {
+      resetSubScreens();
+      setShowNotificationsScreen(true);
+    } else if (data.screen === "Chat" || type === "chat_message") {
+      resetSubScreens();
+      setActiveTab("Chats");
+    } else if (data.screen === "Community" || type.includes("post")) {
+      resetSubScreens();
+      setActiveTab("Community");
+    } else if (data.screen === "JobDetails" || data.jobId) {
+      if (data.jobId) {
+        setSelectedJobForDetails({ id: data.jobId, title: toastItem.title || "Job Opportunity" });
+      } else {
+        resetSubScreens();
+        setActiveCategory("💼 Jobs & Hiring");
+      }
+    } else if (data.screen === "CourseDetails" || data.courseId) {
+      if (data.courseId) {
+        setSelectedCourseId(data.courseId);
+      } else {
+        resetSubScreens();
+        setActiveTab("Learn");
+      }
+    } else {
+      resetSubScreens();
+      setShowNotificationsScreen(true);
+    }
+  }
 
   function resetSubScreens() {
     setSelectedCourseId(null);
@@ -364,7 +463,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   async function loadHome({ quiet = false } = {}) {
     if (!session?.token) {
       setLoading(false);
-      setError("Please login again to load your live workspace.");
+      if (onRequireLogin) onRequireLogin();
+      else if (onLogout) onLogout();
       return;
     }
 
@@ -377,6 +477,11 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
       setHome(data);
       setActiveCategory((current) => current || data.categories?.[0] || "");
     } catch (nextError) {
+      if (nextError?.status === 401 || nextError?.message?.includes("401") || nextError?.message?.includes("token") || nextError?.message?.includes("login")) {
+        if (onLogout) onLogout();
+        else if (onRequireLogin) onRequireLogin();
+        return;
+      }
       setError(nextError.message || "Unable to load live home data.");
     } finally {
       setLoading(false);
@@ -515,9 +620,40 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
     }
   }
 
+  const handleTogglePostLike = useCallback((postId) => {
+    const userId = session?.user?.id;
+    setHome((current) => {
+      if (!current || !Array.isArray(current.posts)) return current;
+      const updatedPosts = current.posts.map((p) => {
+        const pId = p.id || p._id;
+        if (String(pId) === String(postId)) {
+          const currentLiked = Boolean(
+            p.isLiked ||
+            (Array.isArray(p.likedBy) && p.likedBy.map(String).includes(String(userId)))
+          );
+          const nextLiked = !currentLiked;
+          const currentLikes = p.metrics?.likes !== undefined ? p.metrics.likes : (p.likes || 0);
+          const nextLikesCount = Math.max(0, currentLikes + (nextLiked ? 1 : -1));
+          const updatedLikedBy = nextLiked
+            ? [...(p.likedBy || []), userId].filter(Boolean)
+            : (p.likedBy || []).filter((id) => String(id) !== String(userId));
+          return {
+            ...p,
+            isLiked: nextLiked,
+            likedBy: updatedLikedBy,
+            metrics: { ...(p.metrics || {}), likes: nextLikesCount },
+            likes: nextLikesCount
+          };
+        }
+        return p;
+      });
+      return { ...current, posts: updatedPosts };
+    });
+  }, [session?.user?.id]);
+
   const feedPosts = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return posts.filter((post) => {
+    const filtered = posts.filter((post) => {
       const isJobPost =
         post.postType === "job_news" ||
         Boolean(post.jobData) ||
@@ -550,6 +686,12 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
           .toLowerCase()
           .includes(query);
       return categoryMatch && queryMatch;
+    });
+
+    return [...filtered].sort((a, b) => {
+      const timeA = new Date(a.publishedAt || a.createdAt || 0).getTime() || (typeof a.id === "number" ? a.id : 0);
+      const timeB = new Date(b.publishedAt || b.createdAt || 0).getTime() || (typeof b.id === "number" ? b.id : 0);
+      return timeB - timeA;
     });
   }, [activeCategory, posts, search]);
 
@@ -868,7 +1010,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
               {!targetUserProfile && (activeTab === "Learn" || (activeTab === "Community" && isCommChannelOpen)) ? null : (
                 <Header
                   user={user}
-                  notifications={home?.notifications || 0}
+                  notifications={unreadNotifCount || home?.notifications || 0}
                   onOpenSidebar={() => setSidebarOpen(true)}
                   onProfile={() => {
                     resetSubScreens();
@@ -927,6 +1069,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
                             onSelectUser={(u) => handleSelectUser(u || { id: post.authorId || post.authorName, name: post.authorName, avatarUrl: post.authorAvatarUrl, role: post.authorRole })}
                             onApplyJob={(j) => setSelectedJobForApply(j)}
                             onJobDetails={(j) => setSelectedJobForDetails(j)}
+                            onToggleLike={handleTogglePostLike}
                           />
                         ))
                       ) : (
@@ -1118,6 +1261,12 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
             if (onRequireLogin) onRequireLogin();
           }}
         />
+
+        <NotificationToast
+          toast={activeToast}
+          onDismiss={() => setActiveToast(null)}
+          onPress={handleToastNavigate}
+        />
       </View>
     </SafeAreaView>
     </SwipeBackWrapper>
@@ -1258,9 +1407,9 @@ function SearchBar({ value, onChangeText, onRefresh, refreshing, onOpenSearch })
 }
 
 function Avatar({ name, uri, size }) {
-  const isInvalidWebUri = Platform.OS === "web" && typeof uri === "string" && uri.startsWith("file://");
-  if (uri && !isInvalidWebUri) {
-    return <Image source={{ uri }} style={{ borderRadius: size / 2, height: size, width: size }} />;
+  const safeUri = sanitizeImageUri(uri, null);
+  if (safeUri) {
+    return <Image source={{ uri: safeUri }} style={{ borderRadius: size / 2, height: size, width: size }} onError={() => {}} />;
   }
 
   return (
@@ -1336,10 +1485,11 @@ function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
   );
 }
 
-function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeletePost, onApplyJob, onJobDetails }) {
+function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeletePost, onApplyJob, onJobDetails, onToggleLike }) {
   const { theme } = useTheme();
   const metrics = post.metrics || {};
   const media = post.media || {};
+  const isPinnedCard = Boolean(post.isPinned || post.pinned || post.jobData?.isPinned || post.jobData?.pinned);
 
   const isJob = post.postType === "job_news" || Boolean(post.jobData);
   const job = post.jobData || {
@@ -1377,7 +1527,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
           {
             borderRadius: 24,
             borderWidth: 1,
-            borderColor: theme.border,
+            borderColor: isPinnedCard ? "#F59E0B" : theme.border,
             backgroundColor: theme.cardBg,
             padding: 16,
             marginBottom: 16,
@@ -1388,6 +1538,28 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
           }
         ]}
       >
+        {isPinnedCard && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              backgroundColor: theme.isDark ? "#312E81" : "#FEF3C7",
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderRadius: 10,
+              marginBottom: 12,
+              borderWidth: 1,
+              borderColor: theme.isDark ? "#4338CA" : "#FDE68A"
+            }}
+          >
+            <Ionicons name="pushpin" size={15} color="#D97706" />
+            <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#D97706", letterSpacing: 0.3 }}>
+              📌 PINNED JOB DRIVE
+            </Text>
+          </View>
+        )}
+
         {/* Header Row */}
         <View style={styles.postHeader}>
           <Pressable
@@ -1603,13 +1775,35 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
           </TouchableOpacity>
         </View>
 
-        <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} />
+        <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} onToggleLike={onToggleLike} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.postCard, { backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }]}>
+    <View style={[styles.postCard, { backgroundColor: theme.cardBg, borderColor: isPinnedCard ? "#F59E0B" : theme.border, borderWidth: 1 }]}>
+      {isPinnedCard && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            backgroundColor: theme.isDark ? "#312E81" : "#FEF3C7",
+            paddingHorizontal: 12,
+            paddingVertical: 7,
+            borderRadius: 10,
+            marginBottom: 12,
+            borderWidth: 1,
+            borderColor: theme.isDark ? "#4338CA" : "#FDE68A"
+          }}
+        >
+          <Ionicons name="pushpin" size={15} color="#D97706" />
+          <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#D97706", letterSpacing: 0.3 }}>
+            📌 PINNED POST
+          </Text>
+        </View>
+      )}
+
       <Pressable
         onPress={() =>
           onSelectUser &&
@@ -1699,7 +1893,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
       </View>
       <ReadMoreText text={post.text} />
       <PostMedia post={post} onPreview={onPreview} />
-      <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} />
+      <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} onToggleLike={onToggleLike} />
 
       {post.tags?.length ? (
         <View style={styles.tagsRow}>
@@ -1889,7 +2083,7 @@ function PostMedia({ post, onPreview }) {
             pressed && styles.pressed
           ]}
         >
-          <Image source={{ uri: singleImage }} style={{ width: "100%", height: "100%", borderRadius: fKey === "rounded" ? 24 : 10 }} resizeMode="cover" />
+          <Image source={{ uri: sanitizeImageUri(singleImage) }} style={{ width: "100%", height: "100%", borderRadius: fKey === "rounded" ? 24 : 10 }} resizeMode="cover" />
         </Pressable>
       );
     }
@@ -1909,12 +2103,12 @@ function PostMedia({ post, onPreview }) {
                   type: "image",
                   title,
                   subtitle,
-                  imageUrl
+                  imageUrl: sanitizeImageUri(imageUrl)
                 })
               }
               style={({ pressed }) => [styles.carouselSlide, pressed && styles.pressed]}
             >
-              <Image source={{ uri: imageUrl }} style={styles.carouselImage} />
+              <Image source={{ uri: sanitizeImageUri(imageUrl) }} style={styles.carouselImage} />
               <LinearGradient colors={["rgba(8,7,28,0)", "rgba(8,7,28,0.62)"]} style={styles.carouselOverlay}>
                 <View style={styles.carouselTitleRow}>
                   <View style={styles.carouselBadgeIcon}>
@@ -2069,9 +2263,9 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
       {sourceUri ? (
         <VideoView player={player} nativeControls={false} contentFit="cover" style={styles.videoPlayerView} />
       ) : posterUri ? (
-        <Image source={{ uri: posterUri }} style={styles.videoThumbImage} />
+        <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoThumbImage} />
       ) : null}
-      {!playing && posterUri ? <Image source={{ uri: posterUri }} style={styles.videoPosterImage} /> : null}
+      {!playing && posterUri ? <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoPosterImage} /> : null}
       <LinearGradient colors={["rgba(8,7,28,0.04)", "rgba(8,7,28,0.78)"]} style={styles.videoShade} />
       <Pressable onPress={togglePlay} style={styles.videoTapLayer} />
       <View style={styles.videoCopy}>
@@ -2171,15 +2365,28 @@ function DocumentThumbnail({ title }) {
   );
 }
 
-function PostActions({ post, session, metrics = {}, onComment }) {
+function PostActions({ post, session, metrics = {}, onComment, onToggleLike }) {
   const { theme } = useTheme();
   const targetPostId = post?.id || post?._id;
-  const [liked, setLiked] = useState(Boolean(post?.isLiked));
-  const [likesCount, setLikesCount] = useState(metrics?.likes || 0);
+  const isLikedByMe = Boolean(
+    post?.isLiked ||
+    (Array.isArray(post?.likedBy) && post.likedBy.map(String).includes(String(session?.user?.id)))
+  );
+  const [liked, setLiked] = useState(isLikedByMe);
+  const currentLikesCount = post?.metrics?.likes !== undefined ? post.metrics.likes : (post?.likes !== undefined ? post.likes : (metrics?.likes || 0));
+  const [likesCount, setLikesCount] = useState(currentLikesCount);
   const postCommentCount = post?.metrics?.comments !== undefined ? post.metrics.comments : (post?.commentsList ? post.commentsList.length : (metrics?.comments || 0));
   const [commentsCount, setCommentsCount] = useState(postCommentCount);
   const [sharesCount, setSharesCount] = useState(metrics?.shares || 0);
   const [saved, setSaved] = useState(Boolean(post?.bookmarked || post?.userAction?.saved));
+
+  useEffect(() => {
+    setLiked(isLikedByMe);
+  }, [isLikedByMe, targetPostId]);
+
+  useEffect(() => {
+    setLikesCount(currentLikesCount);
+  }, [currentLikesCount, targetPostId]);
 
   useEffect(() => {
     setCommentsCount(postCommentCount);
@@ -2195,6 +2402,10 @@ function PostActions({ post, session, metrics = {}, onComment }) {
     const nextLiked = !liked;
     setLiked(nextLiked);
     setLikesCount((prev) => Math.max(0, prev + (nextLiked ? 1 : -1)));
+
+    if (onToggleLike) {
+      onToggleLike(targetPostId);
+    }
 
     // Pop / bounce spring animation for clapping
     Animated.sequence([
@@ -2230,16 +2441,16 @@ function PostActions({ post, session, metrics = {}, onComment }) {
     );
   }
 
-  const postText = post?.content || post?.title || "Check out this post on TCM Academy!";
   const isVideo = Boolean(post?.videoUrl || post?.mediaType === "video" || post?.kind === "video");
   const isDoc = Boolean(post?.isDocument || post?.mediaType === "document" || post?.documentUrl);
-  const isJob = Boolean(post?.isJob);
+  const isJob = Boolean(post?.isJob || post?.postType === "job_news" || post?.jobData);
   const shareType = isJob ? "job" : isDoc ? "document" : isVideo ? "video" : "post";
-  const shareUrl = `https://app.thecodemunk.in/${shareType}/${post?.id || "p1"}`;
+  const targetId = post?.id || post?._id || "p1";
+  const shareUrl = `https://api.thecodemunk.in/api/share/${shareType}/${targetId}`;
 
-  const shareKindLabel = isJob ? "Job Opportunity" : isDoc ? "Document" : isVideo ? "Video" : "Post";
-  const shareTitleText = post?.title || post?.content?.slice(0, 80) || "TCM Update";
-  const formattedShareMsg = `*${shareKindLabel}: ${shareTitleText}*\nBy ${post?.authorName || "TCM Member"} on TCM Academy\n\n📌 Read / Preview on TCM: ${shareUrl}`;
+  const shareKindLabel = isJob ? "Job Opportunity 💼" : isDoc ? "Document 📄" : isVideo ? "Video Update 📹" : "Post 📝";
+  const shareTitleText = post?.title || post?.text?.slice(0, 80) || post?.content?.slice(0, 80) || "TCM Update";
+  const formattedShareMsg = `${shareUrl}\n\n*${shareKindLabel}: ${shareTitleText}*\nBy ${post?.authorName || "TCM Member"} on TCM Academy`;
 
   async function handleNativeShare() {
     setShareModalOpen(false);
@@ -2260,8 +2471,10 @@ function PostActions({ post, session, metrics = {}, onComment }) {
     setShareModalOpen(false);
     setSharesCount((prev) => prev + 1);
     const text = encodeURIComponent(formattedShareMsg);
-    Linking.openURL(`https://api.whatsapp.com/send?text=${text}`).catch(() => {
-      Alert.alert("App Not Found", "WhatsApp is not installed on this device.");
+    Linking.openURL(`whatsapp://send?text=${text}`).catch(() => {
+      Linking.openURL(`https://api.whatsapp.com/send?text=${text}`).catch(() => {
+        Alert.alert("App Not Found", "WhatsApp is not installed on this device.");
+      });
     });
   }
 
@@ -2349,58 +2562,7 @@ function PostActions({ post, session, metrics = {}, onComment }) {
                 <Feather name="x" size={18} color={theme.subtext} />
               </Pressable>
             </View>
-            <Text style={{ fontSize: 12, color: theme.subtext, marginBottom: 8 }}>Preview & share across social platforms</Text>
-
-            {/* Rich Preview Card inside Share Sheet */}
-            <View style={{
-              backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC",
-              borderRadius: 14,
-              padding: 12,
-              marginVertical: 10,
-              borderWidth: 1,
-              borderColor: theme.border
-            }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <View style={{ backgroundColor: theme.primary + "20", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
-                  <Text style={{ fontSize: 10.5, fontFamily: fonts.bold, color: theme.primary }}>
-                    {isJob ? "💼 JOB OPPORTUNITY" : isDoc ? "📄 DOCUMENT PREVIEW" : isVideo ? "📹 VIDEO PREVIEW" : "📝 POST PREVIEW"}
-                  </Text>
-                </View>
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.subtext }}>
-                  by {post?.authorName || "TCM Member"}
-                </Text>
-              </View>
-
-              <Text numberOfLines={2} style={{ fontSize: 13, fontFamily: fonts.bold, color: theme.text, marginBottom: 6 }}>
-                {post?.title || post?.content || "TCM Community Post"}
-              </Text>
-
-              {isVideo ? (
-                <View style={{ height: 95, borderRadius: 10, backgroundColor: "#0F172A", justifyContent: "center", alignItems: "center", marginVertical: 4, overflow: "hidden" }}>
-                  {post?.imageUrl ? <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%", opacity: 0.6, position: "absolute" }} /> : null}
-                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.65)", justifyContent: "center", alignItems: "center" }}>
-                    <Ionicons name="play" size={18} color="#FFFFFF" />
-                  </View>
-                  <Text style={{ color: "#FFFFFF", fontSize: 10, fontFamily: fonts.bold, marginTop: 4 }}>Video Preview</Text>
-                </View>
-              ) : isDoc ? (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 10, backgroundColor: theme.isDark ? "#0F172A" : "#EFF6FF" }}>
-                  <Ionicons name="document-text" size={24} color="#0284C7" />
-                  <View style={{ flex: 1 }}>
-                    <Text numberOfLines={1} style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text }}>
-                      {post?.documentName || "Shared_Document.pdf"}
-                    </Text>
-                    <Text style={{ fontSize: 10, color: theme.subtext }}>PDF Document • TCM Share</Text>
-                  </View>
-                </View>
-              ) : post?.imageUrl ? (
-                <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: 85, borderRadius: 8, marginVertical: 4, resizeMode: "cover" }} />
-              ) : null}
-
-              <Text numberOfLines={1} style={{ fontSize: 10.5, color: theme.subtext, marginTop: 6 }}>
-                🔗 {shareUrl}
-              </Text>
-            </View>
+            <Text style={{ fontSize: 12, color: theme.subtext, marginBottom: 16 }}>Choose a platform to share this content</Text>
 
             <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 12 }}>
               <TouchableOpacity onPress={handleShareWhatsApp} activeOpacity={0.8} style={{ alignItems: "center", gap: 6 }}>
@@ -2610,7 +2772,7 @@ function MediaPreviewModal({ item, onClose }) {
           <View style={styles.documentCanvas}>
             <View style={styles.documentPage}>
               {isImageDoc && docUri ? (
-                <Image resizeMode="contain" source={{ uri: docUri }} style={styles.previewImage} />
+                <Image resizeMode="contain" source={{ uri: sanitizeImageUri(docUri) }} style={styles.previewImage} />
               ) : Platform.OS === "web" && docUri ? (
                 <iframe
                   src={
@@ -2686,7 +2848,7 @@ function MediaPreviewModal({ item, onClose }) {
       ) : (
         <SafeAreaView style={styles.imageViewer}>
           <View style={styles.imagePreviewStage}>
-            <Image resizeMode="contain" source={{ uri: item.imageUrl }} style={styles.fullPreviewImage} />
+            <Image resizeMode="contain" source={{ uri: sanitizeImageUri(item.imageUrl) }} style={styles.fullPreviewImage} />
           </View>
           <View style={[styles.imageCaption, { paddingTop: safeTopPadding }]}>
             <View style={styles.imageCaptionCopy}>
@@ -3551,7 +3713,7 @@ function FramePreviewModal({ frame, frames, imageUrl, mediaType, selectedKey, vi
               {isVideo && !imageUrl ? (
                 <VideoPreviewSurface videoUri={videoUri} />
               ) : (
-                <Image resizeMode={frame.key === "original" || frame.key === "none" ? "contain" : "cover"} source={{ uri: imageUrl }} style={styles.framePreviewImage} />
+                <Image resizeMode={frame.key === "original" || frame.key === "none" ? "contain" : "cover"} source={{ uri: sanitizeImageUri(imageUrl) }} style={styles.framePreviewImage} />
               )}
             </View>
           </View>
@@ -3593,10 +3755,10 @@ function CreateMediaPreview({ type, imageUrl, videoUri, label, fileSize, onRemov
       ]}
     >
       {type === "image" ? (
-        <Image source={{ uri: imageUrl }} style={[styles.createPreviewImage, isRounded && { borderRadius: 20 }]} resizeMode={frameKey === "none" || frameKey === "original" ? "contain" : "cover"} />
+        <Image source={{ uri: sanitizeImageUri(imageUrl) }} style={[styles.createPreviewImage, isRounded && { borderRadius: 20 }]} resizeMode={frameKey === "none" || frameKey === "original" ? "contain" : "cover"} />
       ) : type === "document" ? (
         imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.createPreviewImage} />
+          <Image source={{ uri: sanitizeImageUri(imageUrl) }} style={styles.createPreviewImage} />
         ) : (
           <View style={styles.documentUploadPreview}>
             <View style={styles.documentUploadIcon}>

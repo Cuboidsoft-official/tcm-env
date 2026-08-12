@@ -8,7 +8,7 @@ let isRegistered = false;
 export async function checkNotificationPermissionStatus() {
   if (Platform.OS === "web") {
     if (typeof window !== "undefined" && "Notification" in window) {
-      return window.Notification.permission; // 'granted', 'denied', or 'default'
+      return window.Notification.permission;
     }
     return "unsupported";
   }
@@ -17,7 +17,7 @@ export async function checkNotificationPermissionStatus() {
     let Notifications = require("expo-notifications");
     if (Notifications && Notifications.getPermissionsAsync) {
       const { status } = await Notifications.getPermissionsAsync();
-      return status; // 'granted', 'denied', 'undetermined'
+      return status;
     }
   } catch (e) {
     console.log("Error checking mobile notification permissions:", e.message);
@@ -29,14 +29,10 @@ export async function setupPushNotifications(sessionToken, force = false) {
   if ((isRegistered && !force) || !sessionToken) return isRegistered;
 
   try {
-    // ----------------------------------------------------
-    // 1. WEB BROWSER NOTIFICATIONS (Web App)
-    // ----------------------------------------------------
     if (Platform.OS === "web") {
       if (typeof window !== "undefined" && "Notification" in window) {
         let permission = window.Notification.permission;
 
-        // If permission is 'default' (not yet asked) or forced by user click
         if (permission === "default" || force) {
           try {
             permission = await window.Notification.requestPermission();
@@ -61,9 +57,6 @@ export async function setupPushNotifications(sessionToken, force = false) {
       }
     }
 
-    // ----------------------------------------------------
-    // 2. MOBILE APP NOTIFICATIONS (Android / iOS with Expo)
-    // ----------------------------------------------------
     let Notifications = null;
     try {
       Notifications = require("expo-notifications");
@@ -74,7 +67,6 @@ export async function setupPushNotifications(sessionToken, force = false) {
 
     if (!Notifications || typeof Notifications.setNotificationHandler !== "function") return false;
 
-    // MANDATORY Android Notification Channel creation (Android 8.0+)
     if (Platform.OS === "android" && Notifications.setNotificationChannelAsync) {
       await Notifications.setNotificationChannelAsync("default", {
         name: "TCM Notifications",
@@ -87,7 +79,6 @@ export async function setupPushNotifications(sessionToken, force = false) {
       });
     }
 
-    // Configure foreground notification behavior
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -96,7 +87,6 @@ export async function setupPushNotifications(sessionToken, force = false) {
       }),
     });
 
-    // Request permissions from device OS
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -117,7 +107,6 @@ export async function setupPushNotifications(sessionToken, force = false) {
       return false;
     }
 
-    // Obtain Push Token
     let token = null;
     try {
       token = (
@@ -140,7 +129,6 @@ export async function setupPushNotifications(sessionToken, force = false) {
       token = `dev_token_${Platform.OS}_${Date.now()}`;
     }
 
-    // Register token with backend
     await registerPushTokenApi(sessionToken, token, Platform.OS);
     isRegistered = true;
     console.log("Successfully registered Push Notification Token:", token);
@@ -177,5 +165,28 @@ export async function sendLocalNotification({ title, body, data }) {
     }
   } catch (err) {
     console.log("Error displaying local notification:", err.message);
+  }
+}
+
+export function setupNotificationListeners(onReceived, onResponse) {
+  if (Platform.OS === "web") return () => {};
+  try {
+    const Notifications = require("expo-notifications");
+    if (!Notifications) return () => {};
+
+    const receivedSub = Notifications.addNotificationReceivedListener && Notifications.addNotificationReceivedListener((notification) => {
+      if (onReceived) onReceived(notification);
+    });
+
+    const responseSub = Notifications.addNotificationResponseReceivedListener && Notifications.addNotificationResponseReceivedListener((response) => {
+      if (onResponse) onResponse(response);
+    });
+
+    return () => {
+      if (receivedSub && receivedSub.remove) receivedSub.remove();
+      if (responseSub && responseSub.remove) responseSub.remove();
+    };
+  } catch (e) {
+    return () => {};
   }
 }

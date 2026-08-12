@@ -530,8 +530,8 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
 
                 <View style={styles.cardFooter}>
                   <View style={styles.metricRow}>
-                    <Ionicons name="heart-outline" size={14} color="#FF465F" />
-                    <Text style={styles.metricCount}>{post.likes}</Text>
+                    <Ionicons name={post.isLiked ? "heart" : "heart-outline"} size={14} color={post.isLiked ? "#EAB308" : "#7C7C9A"} />
+                    <Text style={[styles.metricCount, post.isLiked && { color: "#EAB308", fontFamily: fonts.bold }]}>{post.likes}</Text>
                   </View>
                   <Ionicons
                     name={post.bookmarked ? "bookmark" : "bookmark-outline"}

@@ -306,7 +306,10 @@ function mapPost(post, globalPostComments = {}, userId = null) {
   const totalComments = Math.max(metricCommentsCount, listCommentsCount, memCommentsCount);
 
   const likedByArr = post.likedBy || [];
-  const isLiked = userId ? likedByArr.some((id) => String(id) === String(userId)) : Boolean(post.isLiked);
+  const isLiked = Boolean(
+    post.isLiked ||
+    (userId && likedByArr.some((id) => String(id) === String(userId)))
+  );
 
   return {
     id: post._id || post.id,
@@ -331,6 +334,7 @@ function mapPost(post, globalPostComments = {}, userId = null) {
       shares: post.metrics?.shares || 0
     },
     isLiked,
+    likedBy: likedByArr,
     tags: post.tags,
     timeLabel: getTimeLabel(post.publishedAt)
   };
@@ -357,10 +361,13 @@ homeRouter.get("/", requireAuth, async (req, res) => {
     const posts = (memoryStore.posts || []).sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
     const jobs = memoryStore.jobs || [];
 
+    const currentUserIdStr = String(req.user._id || req.user.id);
     const jobPostCards = jobs.map((j) => {
       const selectedCount = (j.applicants || []).filter((a) => a.status === "selected").length;
       const reqLimit = Number(j.requiredCandidates || 1);
       const isFilled = selectedCount >= reqLimit;
+      const likedByArr = j.likedBy || [];
+      const isLiked = Boolean(j.isLiked || (currentUserIdStr && likedByArr.map(String).includes(currentUserIdStr)));
 
       return {
         id: String(j.id),
@@ -378,13 +385,17 @@ homeRouter.get("/", requireAuth, async (req, res) => {
           selectedCandidates: selectedCount,
           status: isFilled ? "filled" : j.status || "active"
         },
-        metrics: { likes: 12, comments: (j.applicants || []).length, reposts: 3 },
-        userAction: { liked: false, saved: false }
+        likedBy: likedByArr,
+        isLiked,
+        metrics: { likes: j.metrics?.likes || likedByArr.length || 12, comments: (j.applicants || []).length, reposts: 3 },
+        userAction: { liked: isLiked, saved: false }
       };
     });
 
     const globalComments = req.app.locals.globalPostComments || {};
-    const allHomePosts = [...jobPostCards, ...posts.map((p) => mapPost(p, globalComments))];
+    const allHomePosts = [...posts.map((p) => mapPost(p, globalComments, currentUserIdStr)), ...jobPostCards].sort(
+      (a, b) => new Date(b.publishedAt || b.createdAt || 0) - new Date(a.publishedAt || a.createdAt || 0)
+    );
 
     return res.json({
       user: {
@@ -435,10 +446,13 @@ homeRouter.get("/", requireAuth, async (req, res) => {
     User.find({ role: "mentor", isApproved: { $ne: false } }).lean()
   ]);
 
+  const currentUserIdStr = String(req.user._id || req.user.id);
   const dbJobCards = (dbJobs || []).map((j) => {
     const selectedCount = (j.applicants || []).filter((a) => a.status === "selected").length;
     const reqLimit = Number(j.requiredCandidates || 1);
     const isFilled = selectedCount >= reqLimit;
+    const likedByArr = j.likedBy || [];
+    const isLiked = Boolean(j.isLiked || (currentUserIdStr && likedByArr.map(String).includes(currentUserIdStr)));
 
     return {
       id: String(j._id),
@@ -456,12 +470,15 @@ homeRouter.get("/", requireAuth, async (req, res) => {
         selectedCandidates: selectedCount,
         status: isFilled ? "filled" : j.status || "active"
       },
-      metrics: { likes: 12, comments: (j.applicants || []).length, reposts: 3 },
-      userAction: { liked: false, saved: false }
+      likedBy: likedByArr,
+      isLiked,
+      metrics: { likes: j.metrics?.likes || likedByArr.length || 12, comments: (j.applicants || []).length, reposts: 3 },
+      userAction: { liked: isLiked, saved: false }
     };
   });
 
   const mentors = [...registeredMentorUsers, ...legacyMentors];
+  const globalComments = req.app.locals.globalPostComments || {};
 
   res.json({
     user: {
@@ -500,7 +517,9 @@ homeRouter.get("/", requireAuth, async (req, res) => {
         badge: story.badge
       }))
     ],
-    posts: [...dbJobCards, ...posts.map(mapPost)]
+    posts: [...posts.map((p) => mapPost(p, globalComments, currentUserIdStr)), ...dbJobCards].sort(
+      (a, b) => new Date(b.publishedAt || b.createdAt || 0) - new Date(a.publishedAt || a.createdAt || 0)
+    )
   });
 });
 
@@ -774,31 +793,40 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     publishedAt: new Date()
   };
 
-  if (memoryStore) {
-    const post = {
+  let createdPost = null;
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      createdPost = await CommunityPost.create(postPayload);
+      try {
+        await User.findByIdAndUpdate(req.user._id, { $inc: { "stats.postsCount": 1 } });
+      } catch (e) {}
+    } catch (err) {
+      console.warn("MongoDB post creation error, falling back to memoryStore:", err.message);
+    }
+  }
+
+  if (!createdPost) {
+    createdPost = {
       _id: `post-${Date.now()}`,
+      id: `post-${Date.now()}`,
       ...postPayload
     };
+  }
 
-    memoryStore.posts.unshift(post);
+  if (memoryStore) {
+    if (!memoryStore.posts) memoryStore.posts = [];
+    if (!memoryStore.communityPosts) memoryStore.communityPosts = [];
+    
+    const formatted = mapPost(createdPost, {}, req.user._id?.toString());
+    memoryStore.posts.unshift(formatted);
+    memoryStore.communityPosts.unshift(formatted);
 
-    // Increment user post count in memoryStore
-    const userInMem = memoryStore.users?.find((u) => u._id === req.user._id) || memoryStore.user;
+    const userInMem = memoryStore.users?.find((u) => String(u._id || u.id) === String(req.user._id)) || memoryStore.user;
     if (userInMem && userInMem.stats) {
       userInMem.stats.postsCount = (userInMem.stats.postsCount || 0) + 1;
     }
-
-    notifyNewCommunityPost({
-      authorName: req.user.name,
-      channelName: category || "TCM Community",
-      postTitle: postText,
-      channelId: targetCourseId || category
-    }).catch(() => {});
-
-    return res.status(201).json({ post: mapPost(post) });
   }
-
-  const post = await CommunityPost.create(postPayload);
 
   notifyNewCommunityPost({
     authorName: req.user.name,
@@ -807,12 +835,7 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     channelId: targetCourseId || category
   }).catch(() => {});
 
-  // Increment user post count in MongoDB
-  try {
-    await User.findByIdAndUpdate(req.user._id, { $inc: { "stats.postsCount": 1 } });
-  } catch (e) {}
-
-  res.status(201).json({ post: mapPost(post) });
+  return res.status(201).json({ post: mapPost(createdPost, {}, req.user._id?.toString()) });
 });
 
 homeRouter.delete("/posts/:postId", requireAuth, async (req, res) => {
@@ -937,6 +960,7 @@ homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
     post.metrics.likes = (post.metrics.likes || 0) + 1;
     isLiked = true;
   }
+  post.isLiked = isLiked;
 
   if (typeof post.save === "function") {
     await post.save();
@@ -3895,11 +3919,11 @@ homeRouter.get("/knowledge-base/search", requireAuth, async (req, res) => {
   }
 });
 
-// 10. GET /home/share/preview/:type/:id - Serve OpenGraph metadata preview HTML for social crawlers (WhatsApp, FB, etc.)
-homeRouter.get("/share/preview/:type/:id", async (req, res) => {
+// 10. GET /home/share/preview/:type/:id & /share/:type/:id - Serve OpenGraph metadata preview HTML for social crawlers (WhatsApp, FB, etc.)
+export async function serveOpenGraphPreview(req, res) {
   try {
     const { type, id } = req.params;
-    let title = "TCM Academy - Learning & Tech Community";
+    let title = "TCM Academy - Tech & Learning Community";
     let description = "Check out this update on TCM Academy!";
     let image = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80";
     let video = "";
@@ -3908,51 +3932,94 @@ homeRouter.get("/share/preview/:type/:id", async (req, res) => {
       let post = null;
       if (mongoose.connection.readyState === 1) {
         post = await CommunityPost.findById(id).catch(() => null);
+        if (!post) {
+          try {
+            const { JobPost } = await import("../models/JobPost.js");
+            post = await JobPost.findById(id).catch(() => null);
+          } catch (e) {}
+        }
       }
-      if (!post && req.app?.locals?.memoryStore?.communityPosts) {
-        post = req.app.locals.memoryStore.communityPosts.find((p) => String(p.id || p._id) === String(id));
+
+      if (!post && req.app?.locals?.memoryStore) {
+        const mem = req.app.locals.memoryStore;
+        post =
+          mem.posts?.find((p) => String(p.id || p._id) === String(id)) ||
+          mem.jobs?.find((j) => String(j.id || j._id) === String(id)) ||
+          mem.communityPosts?.find((p) => String(p.id || p._id) === String(id));
       }
 
       if (post) {
-        title = post.title || post.content?.slice(0, 70) || "TCM Post";
-        description = post.content || post.title || "Shared from TCM Academy App";
-        if (post.imageUrl) image = post.imageUrl;
-        if (post.videoUrl) video = post.videoUrl;
+        title = post.title || post.jobData?.title || post.text?.split("\n")[0] || post.content?.slice(0, 80) || "TCM Update";
+        description = post.content || post.text || post.description || post.title || "Shared from TCM Academy App";
+        if (description.length > 180) {
+          description = description.substring(0, 177) + "...";
+        }
+
+        const candidateImg =
+          post.media?.imageUrl ||
+          post.imageUrl ||
+          post.jobData?.imageUrl ||
+          post.jobData?.media?.imageUrl ||
+          post.media?.posterUri ||
+          post.posterUri ||
+          post.authorAvatarUrl;
+
+        if (candidateImg && typeof candidateImg === "string" && !candidateImg.startsWith("file://")) {
+          image = candidateImg;
+        }
+
+        const candidateVideo = post.media?.videoUrl || post.videoUrl || post.jobData?.videoUrl;
+        if (candidateVideo && typeof candidateVideo === "string" && !candidateVideo.startsWith("file://")) {
+          video = candidateVideo;
+        }
       }
     }
+
+    const previewUrl = `https://app.thecodemunk.in/${type || "post"}/${id}`;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}">
-  <!-- Open Graph / Facebook / WhatsApp -->
+  
+  <!-- Open Graph / WhatsApp / Facebook Meta Tags -->
+  <meta property="og:site_name" content="TCM Academy">
   <meta property="og:type" content="${video ? "video.other" : "article"}">
-  <meta property="og:url" content="https://app.thecodemunk.in/${type || "post"}/${id}">
+  <meta property="og:url" content="${escapeHtml(previewUrl)}">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:image" content="${escapeHtml(image)}">
+  <meta property="og:image:secure_url" content="${escapeHtml(image)}">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   ${video ? `<meta property="og:video" content="${escapeHtml(video)}">` : ""}
-  <!-- Twitter -->
+  ${video ? `<meta property="og:video:secure_url" content="${escapeHtml(video)}">` : ""}
+  ${video ? `<meta property="og:video:type" content="video/mp4">` : ""}
+
+  <!-- Twitter Meta Tags -->
   <meta name="twitter:card" content="${video ? "player" : "summary_large_image"}">
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(description)}">
   <meta name="twitter:image" content="${escapeHtml(image)}">
+
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0F172A; color: #F8FAFC; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
-    .card { background: #1E263B; padding: 24px; border-radius: 16px; max-width: 480px; width: 100%; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-    img { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin: 16px 0; }
-    a.btn { display: inline-block; background: #0A6836; color: #FFF; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 10px; margin-top: 12px; }
+    .card { background: #1E263B; padding: 24px; border-radius: 18px; max-width: 480px; width: 100%; border: 1px solid #334155; box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
+    img, video { width: 100%; max-height: 260px; object-fit: cover; border-radius: 14px; margin: 16px 0; }
+    a.btn { display: inline-block; background: #5B3CF5; color: #FFF; text-decoration: none; font-weight: bold; padding: 14px 28px; border-radius: 12px; margin-top: 14px; }
   </style>
 </head>
 <body>
   <div class="card">
     <h2>${escapeHtml(title)}</h2>
     <p>${escapeHtml(description)}</p>
-    ${image ? `<img src="${escapeHtml(image)}" alt="Preview" />` : ""}
+    ${video ? `<video src="${escapeHtml(video)}" controls poster="${escapeHtml(image)}"></video>` : image ? `<img src="${escapeHtml(image)}" alt="Preview" />` : ""}
     <br/>
-    <a href="https://app.thecodemunk.in/${type || "post"}/${id}" class="btn">Open in TCM App</a>
+    <a href="${escapeHtml(previewUrl)}" class="btn">Open in TCM Academy App</a>
   </div>
 </body>
 </html>`;
@@ -3962,7 +4029,10 @@ homeRouter.get("/share/preview/:type/:id", async (req, res) => {
   } catch (err) {
     return res.status(500).send("Error generating preview");
   }
-});
+}
+
+homeRouter.get("/share/preview/:type/:id", serveOpenGraphPreview);
+homeRouter.get("/share/:type/:id", serveOpenGraphPreview);
 
 function escapeHtml(str) {
   if (!str) return "";

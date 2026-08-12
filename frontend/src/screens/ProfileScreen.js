@@ -23,6 +23,28 @@ import MyReviewsModal from "../components/MyReviewsModal";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
+import { sanitizeImageUri } from "../utils/imageUtils";
+
+function AvatarImg({ name, uri, size = 64 }) {
+  const initials = (name || "U")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const safeUri = sanitizeImageUri(uri, null);
+
+  if (safeUri) {
+    return <Image source={{ uri: safeUri }} style={[styles.avatarImg, { width: size, height: size, borderRadius: size / 2 }]} onError={() => {}} />;
+  }
+
+  return (
+    <View style={[styles.avatarInitialsContainer, { width: size, height: size, borderRadius: size / 2 }]}>
+      <Text style={[styles.avatarInitialsText, { fontSize: Math.round(size * 0.36) }]}>{initials}</Text>
+    </View>
+  );
+}
 
 function ProfileAvatar({ name = "", uri, size = 90 }) {
   const initials = name

@@ -21,6 +21,7 @@ import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/v
 import * as ImagePicker from "expo-image-picker";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
+import { sanitizeImageUri } from "../utils/imageUtils";
 import CreateJobModal from "../components/CreateJobModal";
 import ApplyJobModal from "../components/ApplyJobModal";
 import JobDetailsModal from "../components/JobDetailsModal";
@@ -344,22 +345,47 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   }
 
   async function handleToggleLike(postId) {
+    const userId = session?.user?.id;
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (String(p.id || p._id) === String(postId)) {
+          const currentlyLiked = (p.likedBy || []).map(String).includes(String(userId)) || Boolean(p.isLiked);
+          const nextLiked = !currentlyLiked;
+          const currentLikes = p.metrics?.likes !== undefined ? p.metrics.likes : (p.likes || 0);
+          const nextLikesCount = Math.max(0, currentLikes + (nextLiked ? 1 : -1));
+          const updatedLikedBy = nextLiked
+            ? [...(p.likedBy || []), userId].filter(Boolean)
+            : (p.likedBy || []).filter((id) => String(id) !== String(userId));
+          return {
+            ...p,
+            isLiked: nextLiked,
+            metrics: { ...(p.metrics || {}), likes: nextLikesCount },
+            likedBy: updatedLikedBy
+          };
+        }
+        return p;
+      })
+    );
+
     try {
       const res = await togglePostLike(session?.token, postId);
-      setPosts((prev) =>
-        prev.map((p) => {
-          if (String(p.id || p._id) === String(postId)) {
-            return {
-              ...p,
-              metrics: { ...p.metrics, likes: res.likes },
-              likedBy: res.isLiked
-                ? [...(p.likedBy || []), session?.user?.id]
-                : (p.likedBy || []).filter((id) => String(id) !== String(session?.user?.id))
-            };
-          }
-          return p;
-        })
-      );
+      if (res && typeof res.likes === "number") {
+        setPosts((prev) =>
+          prev.map((p) => {
+            if (String(p.id || p._id) === String(postId)) {
+              return {
+                ...p,
+                isLiked: Boolean(res.isLiked),
+                metrics: { ...p.metrics, likes: res.likes },
+                likedBy: res.isLiked
+                  ? [...(p.likedBy || []), userId].filter(Boolean)
+                  : (p.likedBy || []).filter((id) => String(id) !== String(userId))
+              };
+            }
+            return p;
+          })
+        );
+      }
     } catch (err) {}
   }
 
@@ -935,7 +961,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
             </View>
           ) : (
             posts.map((post) => {
-              const isLiked = (post.likedBy || []).map(String).includes(String(session?.user?.id));
+              const isLiked = Boolean(post.isLiked || (post.likedBy || []).map(String).includes(String(session?.user?.id)));
 
               return (
                 <View key={post.id} style={styles.postCard}>
@@ -986,7 +1012,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
 
                   {/* Photo Attachment View */}
                   {post.media?.imageUrl ? (
-                    <Image source={{ uri: post.media.imageUrl }} style={styles.postImage} resizeMode="cover" />
+                    <Image source={{ uri: sanitizeImageUri(post.media.imageUrl) }} style={styles.postImage} resizeMode="cover" />
                   ) : null}
 
                   {/* PDF Document Attachment Card */}
@@ -1030,7 +1056,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                   {/* Post Metrics Actions */}
                   <View style={styles.metricsRow}>
                     <Pressable onPress={() => handleToggleLike(post.id)} style={styles.metricBtn}>
-                      <Feather name="heart" size={16} color={isLiked ? "#EAB308" : "#64748B"} />
+                      <Ionicons name={isLiked ? "heart" : "heart-outline"} size={17} color={isLiked ? "#EAB308" : "#64748B"} />
                       <Text style={[styles.metricText, isLiked && { color: "#EAB308", fontFamily: fonts.bold }]}>
                         {post.metrics?.likes || 0}
                       </Text>

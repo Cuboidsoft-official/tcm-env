@@ -52,7 +52,7 @@ function AppContent() {
         console.log("Failed to restore session from AsyncStorage:", err);
       }
       if (isMounted) {
-        setScreen("home");
+        setScreen("login");
       }
     }
 
@@ -83,7 +83,7 @@ function AppContent() {
 
   async function handleLogout() {
     setSession(null);
-    setScreen("home");
+    setScreen("login");
     try {
       await AsyncStorage.removeItem(STORAGE_SESSION_KEY);
     } catch (err) {

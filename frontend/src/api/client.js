@@ -182,6 +182,7 @@ export async function getHome(token) {
       authorRole: j.mentorRole || "Senior Mentor",
       publishedAt: j.createdAt || new Date().toISOString(),
       isMentor: true,
+      isPinned: Boolean(j.isPinned || j.pinned || j.isPinnedPost),
       postType: "job_news",
       category: "💼 Jobs & Hiring",
       text: `HIRING DRIVE: ${j.title} at ${j.company || "TCM Partner"}. Salary: ₹${j.minSalary} - ₹${j.maxSalary} ${j.salaryPeriod || "LPA"}. Deadline: ${j.deadline || "Open"}.\n\n${j.description}`,
@@ -191,8 +192,8 @@ export async function getHome(token) {
       documentSize: j.documentSize,
       media: j.imageUrl ? { kind: "photo", imageUrl: j.imageUrl } : { kind: "none" },
       jobData: formattedJob,
-      likedBy: [],
-      likesCount: 12,
+      likedBy: j.likedBy || [],
+      likesCount: j.likesCount !== undefined ? j.likesCount : (j.likes || 12),
       commentsCount: (j.applicants || []).length,
       comments: []
     };
