@@ -1,47 +1,6 @@
-import { NativeModules, Platform } from "react-native";
+import { getApiUrlCandidates } from "./api-url-candidates";
 
-const DEFAULT_API_PORT = 5000;
 const REQUEST_TIMEOUT_MS = 6000;
-const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL;
-
-function normalizeApiUrl(url) {
-  return url?.replace(/\/$/, "");
-}
-
-function inferApiUrlFromRuntime() {
-  if (Platform.OS === "web" && globalThis.location?.hostname) {
-    return `http://${globalThis.location.hostname}:${DEFAULT_API_PORT}/api`;
-  }
-
-  const scriptUrl = NativeModules.SourceCode?.scriptURL;
-  const host = scriptUrl?.match(/^https?:\/\/([^/:]+)/)?.[1];
-
-  if (host && host !== "localhost" && host !== "127.0.0.1") {
-    return `http://${host}:${DEFAULT_API_PORT}/api`;
-  }
-
-  if (Platform.OS === "android") {
-    return `http://10.0.2.2:${DEFAULT_API_PORT}/api`;
-  }
-
-  return `http://localhost:${DEFAULT_API_PORT}/api`;
-}
-
-function getApiUrlCandidates() {
-  const inferredApiUrl = normalizeApiUrl(inferApiUrlFromRuntime());
-  const configuredUrl = normalizeApiUrl(configuredApiUrl);
-  const shouldPreferInferredUrl =
-    configuredUrl?.includes("10.0.2.2") &&
-    inferredApiUrl &&
-    !inferredApiUrl.includes("10.0.2.2");
-
-  return [
-    ...(shouldPreferInferredUrl ? [inferredApiUrl, configuredUrl] : [configuredUrl, inferredApiUrl]),
-    `http://10.0.2.2:${DEFAULT_API_PORT}/api`,
-    `http://127.0.0.1:${DEFAULT_API_PORT}/api`,
-    `http://localhost:${DEFAULT_API_PORT}/api`
-  ].filter((url, index, urls) => url && urls.indexOf(url) === index);
-}
 
 async function fetchWithTimeout(url, options) {
   if (typeof AbortController === "undefined") {

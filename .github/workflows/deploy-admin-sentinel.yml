@@ -15,6 +15,7 @@ concurrency:
 
 permissions:
   contents: read
+  deployments: write
 
 jobs:
   build-and-deploy:
@@ -53,11 +54,14 @@ jobs:
           ssh $SSH_OPTS "$TARGET" "sudo install -d -m 755 -o '$SENTINEL_USER' -g '$SENTINEL_USER' /var/www/tcm-admin/releases/$RELEASE"
           rsync -az --delete --delay-updates -e "ssh $SSH_OPTS" admin-dashboard/dist/ "$TARGET:/var/www/tcm-admin/releases/$RELEASE/"
           scp $SSH_OPTS deploy/sentinel/admin.Caddyfile "$TARGET:/tmp/tcm-admin-Caddyfile"
+          scp $SSH_OPTS deploy/sentinel/Caddyfile "$TARGET:/tmp/tcm-web-Caddyfile"
           ssh $SSH_OPTS "$TARGET" "RELEASE='$RELEASE' sudo -E bash -s" <<'REMOTE'
           set -euo pipefail
           test -s "/var/www/tcm-admin/releases/$RELEASE/index.html"
           install -d -m 755 /etc/caddy/conf.d
           install -m 644 /tmp/tcm-admin-Caddyfile /etc/caddy/conf.d/tcm-admin.Caddyfile
+          install -m 644 /tmp/tcm-web-Caddyfile /etc/caddy/Caddyfile
+          caddy fmt --overwrite /etc/caddy/Caddyfile
           caddy fmt --overwrite /etc/caddy/conf.d/tcm-admin.Caddyfile
           caddy validate --config /etc/caddy/Caddyfile
           ln -sfn "/var/www/tcm-admin/releases/$RELEASE" /var/www/tcm-admin/current
@@ -65,6 +69,35 @@ jobs:
           systemctl is-active --quiet caddy
           test "$(readlink -f /var/www/tcm-admin/current)" = "/var/www/tcm-admin/releases/$RELEASE"
           grep -qi '<div id="root">' /var/www/tcm-admin/current/index.html
-          curl -fsS --max-time 15 https://api.thecodemunk.in/api/health | grep -q '"ok":true'
+          curl -fsS --max-time 15 --resolve admin.thecodemunk.in:443:127.0.0.1 https://admin.thecodemunk.in/ | grep -qi '<div id="root">'
+          curl -fsS --max-time 15 --resolve admin.thecodemunk.in:443:127.0.0.1 https://admin.thecodemunk.in/api/health | grep -q '"ok":true'
           find /var/www/tcm-admin/releases -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -rn | awk 'NR > 5 {print $2}' | xargs -r rm -rf
+          echo "ADMIN_DEPLOYED=$RELEASE"
           REMOTE
+
+      - name: Report deployment status
+        if: always()
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          DEPLOY_ENV: admin-thecodemunk-in
+        with:
+          script: |
+            const state = '${{ job.status }}' === 'success' ? 'success' : 'error';
+            const description = `Deploy admin dashboard to sentinel (${context.sha.slice(0, 7)}): ${'${{ job.status }}'}`;
+            const dep = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: process.env.DEPLOY_ENV,
+              auto_merge: false,
+              required_contexts: [],
+            }).catch((e) => { console.log(`createDeployment skipped: ${e.message}`); return null; });
+            if (!dep) return;
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: dep.data.id,
+              state,
+              description,
+            }).catch((e) => { console.log(`createDeploymentStatus skipped: ${e.message}`); });
