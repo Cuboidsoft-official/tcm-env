@@ -4,6 +4,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -52,9 +53,25 @@ export default function JobDetailsModal({ visible, job, isMentor, onClose, onApp
                 <Text style={styles.modalSub}>{job.company || "TCM Partner"}</Text>
               </View>
             </View>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={20} color="#64748B" />
-            </Pressable>
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  const shareUrl = `https://app.thecodemunk.in/job/${job.id || job._id || "job"}`;
+                  Share.share({
+                    title: job.title,
+                    message: `Check out this Job Opportunity on TCM: "${job.title}" at ${job.company || "TCM Partner"}\n\nApply via TCM: ${shareUrl}`
+                  }).catch(() => {});
+                }}
+                style={styles.closeBtn}
+              >
+                <Feather name="share-2" size={17} color="#5B3CF5" />
+              </TouchableOpacity>
+
+              <Pressable onPress={onClose} style={styles.closeBtn}>
+                <Feather name="x" size={20} color="#64748B" />
+              </Pressable>
+            </View>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>

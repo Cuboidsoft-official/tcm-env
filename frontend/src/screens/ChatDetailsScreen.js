@@ -117,7 +117,7 @@ export default function ChatDetailsScreen({
 
   async function handleShareLink() {
     try {
-      const shareUrl = `https://thecodemunk.in/community/${targetUser?.id || "channel"}`;
+      const shareUrl = `https://app.thecodemunk.in/community/${targetUser?.id || "channel"}`;
       await Share.share({
         title: targetUser?.name || "TCM Channel",
         message: `Join ${targetUser?.name || "TCM Community Channel"} on TCM App: ${shareUrl}`

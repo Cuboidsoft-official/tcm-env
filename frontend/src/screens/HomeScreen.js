@@ -63,6 +63,8 @@ import DiscoverPartnersScreen from "./DiscoverPartnersScreen";
 import PartnerProfilePreviewScreen from "./PartnerProfilePreviewScreen";
 import SidebarDrawer from "../components/SidebarDrawer";
 import GetVerifiedModal from "../components/GetVerifiedModal";
+import AuthRequiredModal from "../components/AuthRequiredModal";
+import PwaInstallBanner from "../components/PwaInstallBanner";
 import { useTheme } from "../context/ThemeContext";
 
 const fallbackTabs = [
@@ -235,8 +237,19 @@ function SwipeBackWrapper({ children, onBack, enabled = true }) {
   );
 }
 
-export default function HomeScreen({ session, onLogout }) {
+export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   const { width } = useWindowDimensions();
+  const [authModalVisible, setAuthModalVisible] = useState(false);
+  const [authActionTitle, setAuthActionTitle] = useState("perform this action");
+
+  function checkRequireAuth(actionTitle = "perform this action") {
+    if (!session?.token) {
+      setAuthActionTitle(actionTitle);
+      setAuthModalVisible(true);
+      return true;
+    }
+    return false;
+  }
   const [home, setHome] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -617,6 +630,7 @@ export default function HomeScreen({ session, onLogout }) {
   return (
     <SwipeBackWrapper onBack={activeBackAction} enabled={Boolean(activeBackAction)}>
       <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
+      <PwaInstallBanner />
       <View style={[styles.appShell, { backgroundColor: theme.bg }]}>
         {isFullScreenView ? (
           <View style={[styles.page, { width: isFullWidthView ? "100%" : contentWidth, flex: 1, paddingBottom: 0, paddingHorizontal: isFullWidthView ? 0 : undefined }]}>
@@ -627,7 +641,7 @@ export default function HomeScreen({ session, onLogout }) {
                 onClose={() => setActiveDoubtRoom(null)}
                 onOpenMentorProfile={(mId) => {
                   setActiveDoubtRoom(null);
-                  setSelectedMentorId(mId || "m1");
+                  handleSelectUser(typeof mId === "object" ? mId : { id: mId || "m1", name: "Rahul Sharma", role: "Mentor" });
                 }}
               />
             ) : activeChatUser ? (
@@ -688,11 +702,7 @@ export default function HomeScreen({ session, onLogout }) {
                 }}
                 onSelectUser={(u) => {
                   setShowSearchScreen(false);
-                  if (u?.role?.toLowerCase().includes("mentor") || u?.id?.startsWith("m")) {
-                    setSelectedMentorId(u?.id || "m1");
-                  } else {
-                    handleSelectUser(u);
-                  }
+                  handleSelectUser(u);
                 }}
               />
             ) : showPopularCourses ? (
@@ -729,7 +739,7 @@ export default function HomeScreen({ session, onLogout }) {
                 }}
                 onSelectMentor={(mId) => {
                   setSelectedCourseId(null);
-                  setSelectedMentorId(mId || "m1");
+                  handleSelectUser(typeof mId === "object" ? mId : { id: mId || "m1", name: "Rahul Sharma", role: "Mentor" });
                 }}
               />
             ) : exploreCategoryKey ? (
@@ -739,11 +749,8 @@ export default function HomeScreen({ session, onLogout }) {
                 onBack={() => setExploreCategoryKey(null)}
                 onSelectCourse={(cId) => setSelectedCourseId(cId || "p1")}
                 onSelectUser={(u) => {
-                  if (u?.role?.toLowerCase().includes("mentor") || u?.id?.startsWith("m")) {
-                    setSelectedMentorId(u?.id || "m1");
-                  } else {
-                    handleSelectUser(u);
-                  }
+                  setExploreCategoryKey(null);
+                  handleSelectUser(u);
                 }}
               />
             ) : showAllMentorsScreen ? (
@@ -752,7 +759,7 @@ export default function HomeScreen({ session, onLogout }) {
                 onBack={() => setShowAllMentorsScreen(false)}
                 onSelectMentor={(mId) => {
                   setShowAllMentorsScreen(false);
-                  setSelectedMentorId(mId || "m1");
+                  handleSelectUser(typeof mId === "object" ? mId : { id: mId || "m1", name: "Mentor" });
                 }}
               />
             ) : showCommunityScreen ? (
@@ -946,7 +953,7 @@ export default function HomeScreen({ session, onLogout }) {
                 session={session}
                 onOpenSidebar={() => setSidebarOpen(true)}
                 onNotifications={() => handleSelectDrawerItem("Notifications")}
-                onSelectUser={(m) => setSelectedMentorId(m?.id || "m1")}
+                onSelectUser={(m) => handleSelectUser(m)}
                 onSelectCourse={(cId) => setSelectedCourseId(cId || "p1")}
                 onOpenContinueLearning={() => setShowContinueLearning(true)}
                 onOpenPopularCourses={() => setShowPopularCourses(true)}
@@ -1077,6 +1084,7 @@ export default function HomeScreen({ session, onLogout }) {
           isMentor={false}
           onClose={() => setSelectedJobForDetails(null)}
           onApply={(j) => {
+            if (checkRequireAuth("apply for jobs")) return;
             setSelectedJobForDetails(null);
             setSelectedJobForApply(j);
           }}
@@ -1098,6 +1106,16 @@ export default function HomeScreen({ session, onLogout }) {
             } catch (err) {
               Alert.alert("Notice", err.message || "Failed to submit application.");
             }
+          }}
+        />
+
+        <AuthRequiredModal
+          visible={authModalVisible}
+          actionTitle={authActionTitle}
+          onClose={() => setAuthModalVisible(false)}
+          onLogin={() => {
+            setAuthModalVisible(false);
+            if (onRequireLogin) onRequireLogin();
           }}
         />
       </View>
@@ -2213,7 +2231,8 @@ function PostActions({ post, session, metrics = {}, onComment }) {
   }
 
   const postText = post?.content || post?.title || "Check out this post on TCM Academy!";
-  const shareUrl = `https://thecodemunk.in/post/${post?.id || "p1"}`;
+  const shareType = post?.isJob ? "job" : (post?.isDocument || post?.mediaType === "document") ? "document" : "post";
+  const shareUrl = `https://app.thecodemunk.in/${shareType}/${post?.id || "p1"}`;
 
   async function handleNativeShare() {
     setShareModalOpen(false);
@@ -2252,8 +2271,9 @@ function PostActions({ post, session, metrics = {}, onComment }) {
 
   function handleDirectShare(platform) {
     setShareModalOpen(false);
-    const postUrl = `https://thecodemunk.in/post/${post.id || "1"}`;
-    const textMsg = `Check out this post on TCM: "${post.caption?.slice(0, 60) || "Code & Tech update"}..."`;
+    const shareType = post?.isJob ? "job" : (post?.isDocument || post?.mediaType === "document") ? "document" : "post";
+    const postUrl = `https://app.thecodemunk.in/${shareType}/${post?.id || "1"}`;
+    const textMsg = `Check out this ${shareType} on TCM: "${post?.title?.slice(0, 60) || post?.caption?.slice(0, 60) || "Code & Tech update"}..."`;
 
     if (platform === "whatsapp") {
       Linking.openURL(`https://api.whatsapp.com/send?text=${encodeURIComponent(textMsg + " " + postUrl)}`).catch(() => {
@@ -2513,7 +2533,10 @@ function MediaPreviewModal({ item, onClose }) {
 
               {/* Optional Share Option */}
               <TouchableOpacity
-                onPress={() => Share.share({ url: docUri, message: `Document: ${item.title || "File Attachment"}` }).catch(() => {})}
+                onPress={() => {
+                  const docShareUrl = `https://app.thecodemunk.in/document/${item.id || item._id || "doc1"}`;
+                  Share.share({ url: docShareUrl, message: `Check out this document on TCM: ${item.title || "File Attachment"}\n\nLink: ${docShareUrl}` }).catch(() => {});
+                }}
                 activeOpacity={0.8}
                 style={[styles.documentButton, { backgroundColor: "rgba(100, 116, 139, 0.12)", borderWidth: 1, borderColor: "rgba(100, 116, 139, 0.25)", paddingVertical: 5, paddingHorizontal: 8, borderRadius: 10 }]}
               >

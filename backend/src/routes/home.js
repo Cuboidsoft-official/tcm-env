@@ -27,6 +27,23 @@ import { askGeminiAi, generateSmartAcademicFallback } from "../services/geminiSe
 
 export const homeRouter = express.Router();
 
+function getUnreadNotifCount(req, userId) {
+  if (!userId) return 0;
+  const uId = String(userId);
+  const memNotifs = getInAppNotifications(uId) || [];
+  const appNotifs = (req.app?.locals?.userNotifications && req.app.locals.userNotifications[uId]) || [];
+
+  const notifMap = new Map();
+  [...appNotifs, ...memNotifs].forEach((n) => {
+    if (!n) return;
+    const key = String(n.id || `${n.type || "gen"}_${n.title}_${n.senderId || ""}`);
+    notifMap.set(key, n);
+  });
+
+  const list = Array.from(notifMap.values());
+  return list.filter((n) => n.unread).length;
+}
+
 homeRouter.post("/notifications/register-token", requireAuth, (req, res) => {
   const { pushToken, platform } = req.body;
   if (pushToken) {
@@ -379,7 +396,7 @@ homeRouter.get("/", requireAuth, async (req, res) => {
         progress: req.user.progress,
         wallet: getOrCreateUserWallet(req, req.user._id || req.user.id)
       },
-      notifications: 5,
+      notifications: getUnreadNotifCount(req, req.user._id || req.user.id),
       progress: {
         label: "Today's Progress",
         value: req.user.progress
@@ -456,7 +473,7 @@ homeRouter.get("/", requireAuth, async (req, res) => {
       progress: req.user.progress,
       wallet: getOrCreateUserWallet(req, req.user._id || req.user.id)
     },
-    notifications: 5,
+    notifications: getUnreadNotifCount(req, req.user._id || req.user.id),
     progress: {
       label: "Today's Progress",
       value: req.user.progress
@@ -3080,37 +3097,17 @@ homeRouter.post("/user/:targetId/friend-request", requireAuth, async (req, res) 
 
 homeRouter.get("/notifications", requireAuth, (req, res) => {
   const userId = String(req.user?._id || req.user?.id || "seed-user");
-  let notifications = getInAppNotifications(userId);
+  const memNotifs = getInAppNotifications(userId) || [];
+  const appNotifs = (req.app.locals.userNotifications && req.app.locals.userNotifications[userId]) || [];
 
-  if (notifications.length === 0) {
-    notifications = [
-      {
-        id: "n1",
-        type: "mentor",
-        title: "Live Masterclass starting in 15m 🚀",
-        subtitle: "Full Stack MERN Architecture live session with Rahul Dev is about to start.",
-        time: "15m ago",
-        unread: true,
-        section: "Today",
-        icon: "video",
-        iconBg: "#F0EDFF",
-        iconColor: "#5B3CF5"
-      },
-      {
-        id: "n2",
-        type: "sessions",
-        title: "Reflection Submitted ✨",
-        subtitle: "You unlocked Module 4 DevOps & Deployment. 50 XP awarded to your wallet!",
-        time: "1h ago",
-        unread: false,
-        section: "Today",
-        icon: "award",
-        iconBg: "#ECF9E9",
-        iconColor: "#2E7D32"
-      }
-    ];
-  }
+  const notifMap = new Map();
+  [...appNotifs, ...memNotifs].forEach((n) => {
+    if (!n) return;
+    const key = String(n.id || `${n.type || "gen"}_${n.title}_${n.senderId || ""}`);
+    notifMap.set(key, n);
+  });
 
+  let notifications = Array.from(notifMap.values());
   const unreadCount = notifications.filter((n) => n.unread).length;
   return res.json({ notifications, unreadCount });
 });

@@ -52,7 +52,7 @@ function AppContent() {
         console.log("Failed to restore session from AsyncStorage:", err);
       }
       if (isMounted) {
-        setScreen("login");
+        setScreen("home");
       }
     }
 
@@ -83,7 +83,7 @@ function AppContent() {
 
   async function handleLogout() {
     setSession(null);
-    setScreen("login");
+    setScreen("home");
     try {
       await AsyncStorage.removeItem(STORAGE_SESSION_KEY);
     } catch (err) {
@@ -95,9 +95,15 @@ function AppContent() {
     <SafeAreaProvider style={{ backgroundColor: theme.bg }}>
       <StatusBar style={theme.isDark ? "light" : "dark"} backgroundColor={theme.bg} />
       {(!fontsLoaded || screen === "splash") && <SplashScreen />}
-      {fontsLoaded && screen === "login" && <LoginScreen onLogin={handleLogin} />}
+      {fontsLoaded && screen === "login" && (
+        <LoginScreen onLogin={handleLogin} onCancelGuest={() => setScreen("home")} />
+      )}
       {fontsLoaded && screen === "home" && (
-        <HomeScreen session={{ ...session, onLogout: handleLogout }} onLogout={handleLogout} />
+        <HomeScreen
+          session={{ ...session, onLogout: handleLogout }}
+          onLogout={handleLogout}
+          onRequireLogin={() => setScreen("login")}
+        />
       )}
     </SafeAreaProvider>
   );

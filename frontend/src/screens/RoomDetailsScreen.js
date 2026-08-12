@@ -441,11 +441,11 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
   }
 
   async function handleInviteViaLink() {
-    const inviteUrl = `https://tcm.academy/room/${room?.roomId || "NEET-DOUBT-001"}`;
+    const inviteUrl = `https://app.thecodemunk.in/community/${room?.roomId || "room-001"}`;
     try {
       Clipboard.setString(inviteUrl);
       await Share.share({
-        message: `Join our TCM Academy Doubt Room "${room?.title || "Learning Group"}":\n${inviteUrl}`,
+        message: `Join our TCM Doubt Room "${room?.title || "Learning Group"}":\n${inviteUrl}`,
         url: inviteUrl,
         title: `Join ${room?.title}`
       });

@@ -321,9 +321,11 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
   }
 
   function handleJoinLiveClass(customUrl) {
-    const url = customUrl || payload?.liveClass?.meetingUrl || "https://meet.jit.si/tcm-live-fullstack";
-    Linking.openURL(url).catch(() => {
-      Alert.alert("Joining Class", `Direct Video Link:\n${url}`);
+    const urlStr = typeof customUrl === "string" && customUrl.startsWith("http")
+      ? customUrl
+      : (payload?.liveClass?.meetingUrl || "https://meet.jit.si/tcm-live-fullstack");
+    Linking.openURL(urlStr).catch(() => {
+      Alert.alert("Joining Class", `Direct Video Link:\n${urlStr}`);
     });
   }
 

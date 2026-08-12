@@ -409,9 +409,13 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
             ) : null}
 
             <Pressable
-              onPress={() =>
-                Alert.alert("Share Profile", `Profile link: https://${profileUser.website || "thecodemunk.in"}/@${profileUser.handle || "ayushman"}`)
-              }
+              onPress={() => {
+                const shareUrl = `https://app.thecodemunk.in/user/${profileUser.handle || "user"}`;
+                Share.share({
+                  title: profileUser.name || "TCM Profile",
+                  message: `Check out ${profileUser.name || "TCM Member"}'s profile on TCM: ${shareUrl}`
+                }).catch(() => {});
+              }}
               style={[styles.shareBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             >
               <Feather name="share-2" size={14} color={theme.text} />

@@ -22,7 +22,7 @@ import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@exp
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import { getChatMessages, sendChatMessage, sendFriendRequest } from "../api/client";
+import { getChatMessages, sendChatMessage, sendFriendRequest, sendFriendRequestAction } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
@@ -141,8 +141,14 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isMutual, setIsMutual] = useState(true);
-  const [reqSent, setReqSent] = useState(false);
+  const [isMutual, setIsMutual] = useState(
+    initialTargetUser?.friendStatus === "friends" ||
+    (initialTargetUser?.id ? String(initialTargetUser.id) === "m1" : targetUserId === "m1")
+  );
+  const [reqSent, setReqSent] = useState(
+    initialTargetUser?.friendStatus === "pending_sent" || initialTargetUser?.friendStatus === "pending"
+  );
+  const [sendingRequest, setSendingRequest] = useState(false);
   const scrollViewRef = useRef(null);
 
   // Attachment Modal State
@@ -261,22 +267,27 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
   const currentTarget = initialTargetUser || targetUser || fallbackTargetUser;
 
-  async function handleSendFriendRequest() {
+  async function handleSendFriendRequestInChat() {
     if (!currentTarget?.id) return;
     setSendingRequest(true);
     try {
       if (session?.token) {
         await sendFriendRequestAction(session.token, currentTarget.id, "send");
       }
-      setFriendStatus("pending_sent");
-      Alert.alert("Friend Request Sent", `Sent friend request to ${currentTarget.name}. Once they accept, direct messaging will unlock!`);
+      setReqSent(true);
+      Alert.alert(
+        "Friend Request Sent 📩",
+        `Friend request sent to ${currentTarget.name}. Once they accept, direct messaging will unlock!`
+      );
     } catch (e) {
-      setFriendStatus("pending_sent");
-      Alert.alert("Friend Request Sent", `Sent friend request to ${currentTarget.name}!`);
+      setReqSent(true);
+      Alert.alert("Friend Request Sent 📩", `Friend request sent to ${currentTarget.name}!`);
     } finally {
       setSendingRequest(false);
     }
   }
+
+  const handleSendFriendRequest = handleSendFriendRequestInChat;
 
   function handleDisabledSendPress() {
     if (!isUnlocked) {
@@ -826,17 +837,23 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           </Text>
           <Pressable
             onPress={handleSendFriendRequestInChat}
+            disabled={sendingRequest || reqSent}
             style={{
-              backgroundColor: theme.primary,
+              backgroundColor: (reqSent || sendingRequest) ? (theme.isDark ? "#334155" : "#CBD5E1") : theme.primary,
               borderRadius: 12,
               paddingVertical: 10,
               alignItems: "center",
-              marginTop: 2
+              marginTop: 2,
+              opacity: (reqSent || sendingRequest) ? 0.85 : 1
             }}
           >
-            <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: fonts.bold }}>
-              {reqSent ? "Friend Request Sent" : "Send Friend Request"}
-            </Text>
+            {sendingRequest ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: fonts.bold }}>
+                {reqSent ? "Friend Request Sent ✓" : "Send Friend Request"}
+              </Text>
+            )}
           </Pressable>
         </View>
       ) : (

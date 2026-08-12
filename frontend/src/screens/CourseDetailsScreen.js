@@ -196,7 +196,11 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
   }
 
   function handleShare() {
-    Alert.alert("Share Course", `Course Link: https://thecodemunk.in/course/${courseId}`);
+    const shareUrl = `https://app.thecodemunk.in/course/${courseId}`;
+    Share.share({
+      title: courseData?.title || "TCM Course",
+      message: `Check out this course on TCM: "${courseData?.title || "Masterclass"}"\n\nEnroll link: ${shareUrl}`
+    }).catch(() => {});
   }
 
   const curriculumModules = courseData.curriculum?.modules || courseData.modules || [];

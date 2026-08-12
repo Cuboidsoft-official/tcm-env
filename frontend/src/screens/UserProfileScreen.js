@@ -205,12 +205,13 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
   }
 
   async function handleShareProfile() {
+    const shareUrl = `https://app.thecodemunk.in/user/${handle}`;
     try {
       await Share.share({
-        message: `Check out ${name}'s (@${handle}) profile on TCM: https://thecodemunk.in/user/${handle}`
+        message: `Check out ${name}'s (@${handle}) profile on TCM: ${shareUrl}`
       });
     } catch (err) {
-      Alert.alert("Share Profile", `Profile URL: https://thecodemunk.in/user/${handle}`);
+      Alert.alert("Share Profile", `Profile URL: ${shareUrl}`);
     }
   }
 
@@ -362,8 +363,8 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           <View style={styles.actionBtnRow}>
             {renderFriendButton()}
 
-            {/* Message Button - Available for direct chat with all users */}
-            {!isSelf ? (
+            {/* Message Button - Only unlocked after friend request is accepted (mutual friends) or for mentor/support */}
+            {!isSelf && (friendStatus === "friends" || String(targetId) === "m1" || userRole?.toLowerCase().includes("mentor") || isMentor) ? (
               <Pressable
                 onPress={() => (onOpenChat ? onOpenChat(userObj) : Alert.alert("Message", `Opening direct chat with ${name}.`))}
                 style={styles.messageBtn}
