@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getNotifications, respondToFriendRequestNotification, markAllNotificationsReadApi } from "../api/client";
+import { setupPushNotifications, checkNotificationPermissionStatus } from "../services/notificationService";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
@@ -31,10 +32,24 @@ export default function NotificationsScreen({
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [permStatus, setPermStatus] = useState("granted");
 
   useEffect(() => {
     loadNotificationData();
+    checkNotificationPermissionStatus().then((status) => setPermStatus(status));
   }, [session?.token]);
+
+  async function handleEnableNotifications() {
+    if (!session?.token) return;
+    const ok = await setupPushNotifications(session.token, true);
+    const newStatus = await checkNotificationPermissionStatus();
+    setPermStatus(newStatus);
+    if (ok) {
+      Alert.alert("Notifications Activated 🔔", "Push notifications are now active on your device!");
+    } else {
+      Alert.alert("Permission Required ⚠️", "Notifications are currently blocked. Please allow notification access in your browser/device permissions dialog.");
+    }
+  }
 
   async function loadNotificationData(isPull = false) {
     if (!session?.token) {
@@ -153,13 +168,33 @@ export default function NotificationsScreen({
           ) : null}
 
           <Pressable
-            onPress={() => Alert.alert("Notification Settings", "Push Notifications: Enabled\nEmail Digest: Daily\nSound: On")}
+            onPress={handleEnableNotifications}
             style={[styles.settingsBtn, { backgroundColor: theme.badgeBg }]}
           >
             <Feather name="settings" size={18} color={theme.primary} />
           </Pressable>
         </View>
       </View>
+
+      {/* Permission Request Banner if not yet granted */}
+      {permStatus !== "granted" ? (
+        <View style={[styles.permBanner, { backgroundColor: theme.isDark ? "#281F50" : "#F0EDFF", borderColor: theme.primary }]}>
+          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View style={[styles.permIconCircle, { backgroundColor: theme.primary }]}>
+              <Feather name="bell" size={18} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.permBannerTitle, { color: theme.text }]}>Notifications Disabled</Text>
+              <Text style={[styles.permBannerSub, { color: theme.subtext }]}>
+                Allow notifications to get instant alerts for jobs, live classes & doubt replies.
+              </Text>
+            </View>
+          </View>
+          <Pressable onPress={handleEnableNotifications} style={[styles.permEnableBtn, { backgroundColor: theme.primary }]}>
+            <Text style={styles.permEnableBtnText}>Allow</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {/* 2. Category Filter Tabs Row */}
       <View style={[styles.tabsContainer, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
@@ -606,5 +641,46 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: "#5B3CF5",
     marginLeft: 4
+  },
+
+  // Permission Banner
+  permBanner: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12
+  },
+  permIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  permBannerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    marginBottom: 2
+  },
+  permBannerSub: {
+    fontFamily: fonts.regular,
+    fontSize: 11.5,
+    lineHeight: 15
+  },
+  permEnableBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10
+  },
+  permEnableBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: 12.5,
+    color: "#FFFFFF"
   }
 });

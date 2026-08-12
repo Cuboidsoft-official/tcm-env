@@ -48,6 +48,7 @@ import SearchScreen from "./SearchScreen";
 import MentorProfileScreen from "./MentorProfileScreen";
 import ChatScreen from "./ChatScreen";
 import NotificationsScreen from "./NotificationsScreen";
+import { setupPushNotifications } from "../services/notificationService";
 import ExploreTcmCategoryScreen from "./ExploreTcmCategoryScreen";
 import WalletScreen from "./WalletScreen";
 import MentorDashboardScreen from "./MentorDashboardScreen";
@@ -3759,13 +3760,23 @@ function DrawerFeatureModal({ feature, onClose, user }) {
             </View>
           ) : feature === "Settings" ? (
             <View style={styles.featureContainer}>
-              <View style={[styles.settingsRow, modalSurface]}>
+              <Pressable
+                onPress={async () => {
+                  const success = await setupPushNotifications(session?.token, true);
+                  if (success) {
+                    Alert.alert("Push Notifications 🔔", "Notification permissions are active and configured successfully!");
+                  } else {
+                    Alert.alert("Permission Required ⚠️", "Notifications are currently blocked. Please allow notification access in your browser or device permissions dialog.");
+                  }
+                }}
+                style={[styles.settingsRow, modalSurface]}
+              >
                 <View style={styles.settingsLeft}>
                   <Feather name="bell" size={20} color={theme.primary} />
                   <Text style={[styles.settingsText, { color: theme.text }]}>Push Notifications</Text>
                 </View>
-                <Text style={[styles.settingStateText, { color: theme.isDark ? "#C7D2FE" : theme.primary }]}>Active</Text>
-              </View>
+                <Text style={[styles.settingStateText, { color: theme.isDark ? "#C7D2FE" : theme.primary }]}>Tap to Enable / Test</Text>
+              </Pressable>
               <View style={[styles.settingsRow, modalSurface]}>
                 <View style={styles.settingsLeft}>
                   <Feather name="lock" size={20} color={theme.primary} />
