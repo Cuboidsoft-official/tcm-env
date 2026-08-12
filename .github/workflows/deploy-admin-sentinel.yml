@@ -1,0 +1,70 @@
+name: Deploy Admin Dashboard to Cyber Sentinel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "admin-dashboard/**"
+      - "deploy/sentinel/**"
+      - ".github/workflows/deploy-admin-sentinel.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: tcm-admin-sentinel-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SENTINEL_HOST: ${{ vars.SENTINEL_HOST || '140.245.249.14' }}
+      SENTINEL_USER: ${{ vars.SENTINEL_USER || 'ubuntu' }}
+    defaults:
+      run:
+        working-directory: admin-dashboard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin-dashboard/package-lock.json
+
+      - run: npm ci
+      - run: npm run build
+      - run: test -s dist/index.html
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.OCI_SSH_KEY }}
+
+      - name: Deploy versioned dashboard release
+        working-directory: .
+        run: |
+          set -euo pipefail
+          RELEASE="$(date -u +%Y%m%d%H%M%S)-${GITHUB_SHA::12}"
+          TARGET="$SENTINEL_USER@$SENTINEL_HOST"
+          SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=15"
+          ssh $SSH_OPTS "$TARGET" "sudo install -d -m 755 -o '$SENTINEL_USER' -g '$SENTINEL_USER' /var/www/tcm-admin/releases/$RELEASE"
+          rsync -az --delete --delay-updates -e "ssh $SSH_OPTS" admin-dashboard/dist/ "$TARGET:/var/www/tcm-admin/releases/$RELEASE/"
+          scp $SSH_OPTS deploy/sentinel/admin.Caddyfile "$TARGET:/tmp/tcm-admin-Caddyfile"
+          ssh $SSH_OPTS "$TARGET" "RELEASE='$RELEASE' sudo -E bash -s" <<'REMOTE'
+          set -euo pipefail
+          test -s "/var/www/tcm-admin/releases/$RELEASE/index.html"
+          install -d -m 755 /etc/caddy/conf.d
+          install -m 644 /tmp/tcm-admin-Caddyfile /etc/caddy/conf.d/tcm-admin.Caddyfile
+          caddy fmt --overwrite /etc/caddy/conf.d/tcm-admin.Caddyfile
+          caddy validate --config /etc/caddy/Caddyfile
+          ln -sfn "/var/www/tcm-admin/releases/$RELEASE" /var/www/tcm-admin/current
+          systemctl reload caddy
+          systemctl is-active --quiet caddy
+          test "$(readlink -f /var/www/tcm-admin/current)" = "/var/www/tcm-admin/releases/$RELEASE"
+          grep -qi '<div id="root">' /var/www/tcm-admin/current/index.html
+          curl -fsS --max-time 15 https://api.thecodemunk.in/api/health | grep -q '"ok":true'
+          find /var/www/tcm-admin/releases -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -rn | awk 'NR > 5 {print $2}' | xargs -r rm -rf
+          REMOTE
