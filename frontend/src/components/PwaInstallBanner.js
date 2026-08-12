@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { Feather, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { fonts } from "../constants/fonts";
 
@@ -45,7 +44,7 @@ export default function PwaInstallBanner() {
       setVisible(false);
     } else {
       // Fallback instructions for browsers that don't support beforeinstallprompt (e.g. iOS Safari)
-      alert("To install TCM Web App on your home screen:\n\n1. Tap the Share button in Safari / Chrome\n2. Select 'Add to Home Screen' 📱");
+      alert("To install TCM Web App on your home screen:\n\n1. Tap the Share button in Safari / Chrome\n2. Select 'Add to Home Screen'");
       setVisible(false);
     }
   }
@@ -61,11 +60,8 @@ export default function PwaInstallBanner() {
         style={styles.bannerContent}
       >
         <View style={styles.leftCol}>
-          <View style={styles.appIconBadge}>
-            <Ionicons name="phone-portrait-outline" size={20} color="#FFFFFF" />
-          </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>Install TCM App 📱</Text>
+            <Text style={styles.bannerTitle}>Install TCM App</Text>
             <Text style={styles.bannerSub} numberOfLines={1}>
               Add to home screen for 1-tap access & push alerts
             </Text>
@@ -78,7 +74,7 @@ export default function PwaInstallBanner() {
           </Pressable>
 
           <Pressable onPress={() => setVisible(false)} style={styles.closeBtn} hitSlop={10}>
-            <Feather name="x" size={18} color="rgba(255, 255, 255, 0.8)" />
+            <Text style={styles.closeText}>✕</Text>
           </Pressable>
         </View>
       </LinearGradient>
@@ -153,5 +149,10 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     padding: 4
+  },
+  closeText: {
+    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 16,
+    fontFamily: fonts.bold
   }
 });

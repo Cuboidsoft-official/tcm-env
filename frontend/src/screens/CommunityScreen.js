@@ -1030,8 +1030,8 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                   {/* Post Metrics Actions */}
                   <View style={styles.metricsRow}>
                     <Pressable onPress={() => handleToggleLike(post.id)} style={styles.metricBtn}>
-                      <Feather name="heart" size={16} color={isLiked ? "#EF4444" : "#64748B"} />
-                      <Text style={[styles.metricText, isLiked && { color: "#EF4444", fontFamily: fonts.bold }]}>
+                      <Feather name="heart" size={16} color={isLiked ? "#EAB308" : "#64748B"} />
+                      <Text style={[styles.metricText, isLiked && { color: "#EAB308", fontFamily: fonts.bold }]}>
                         {post.metrics?.likes || 0}
                       </Text>
                     </Pressable>

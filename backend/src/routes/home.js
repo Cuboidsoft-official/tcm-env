@@ -3894,3 +3894,82 @@ homeRouter.get("/knowledge-base/search", requireAuth, async (req, res) => {
     return res.status(500).json({ message: err.message });
   }
 });
+
+// 10. GET /home/share/preview/:type/:id - Serve OpenGraph metadata preview HTML for social crawlers (WhatsApp, FB, etc.)
+homeRouter.get("/share/preview/:type/:id", async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    let title = "TCM Academy - Learning & Tech Community";
+    let description = "Check out this update on TCM Academy!";
+    let image = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80";
+    let video = "";
+
+    if (id) {
+      let post = null;
+      if (mongoose.connection.readyState === 1) {
+        post = await CommunityPost.findById(id).catch(() => null);
+      }
+      if (!post && req.app?.locals?.memoryStore?.communityPosts) {
+        post = req.app.locals.memoryStore.communityPosts.find((p) => String(p.id || p._id) === String(id));
+      }
+
+      if (post) {
+        title = post.title || post.content?.slice(0, 70) || "TCM Post";
+        description = post.content || post.title || "Shared from TCM Academy App";
+        if (post.imageUrl) image = post.imageUrl;
+        if (post.videoUrl) video = post.videoUrl;
+      }
+    }
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="${video ? "video.other" : "article"}">
+  <meta property="og:url" content="https://app.thecodemunk.in/${type || "post"}/${id}">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:image" content="${escapeHtml(image)}">
+  ${video ? `<meta property="og:video" content="${escapeHtml(video)}">` : ""}
+  <!-- Twitter -->
+  <meta name="twitter:card" content="${video ? "player" : "summary_large_image"}">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
+  <meta name="twitter:image" content="${escapeHtml(image)}">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0F172A; color: #F8FAFC; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
+    .card { background: #1E263B; padding: 24px; border-radius: 16px; max-width: 480px; width: 100%; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+    img { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin: 16px 0; }
+    a.btn { display: inline-block; background: #0A6836; color: #FFF; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 10px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>${escapeHtml(title)}</h2>
+    <p>${escapeHtml(description)}</p>
+    ${image ? `<img src="${escapeHtml(image)}" alt="Preview" />` : ""}
+    <br/>
+    <a href="https://app.thecodemunk.in/${type || "post"}/${id}" class="btn">Open in TCM App</a>
+  </div>
+</body>
+</html>`;
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.send(html);
+  } catch (err) {
+    return res.status(500).send("Error generating preview");
+  }
+});
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}

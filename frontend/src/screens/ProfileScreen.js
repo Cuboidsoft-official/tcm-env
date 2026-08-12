@@ -616,8 +616,8 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                 <View style={styles.cardFooter}>
                   <View style={styles.metricRow}>
                     <View style={styles.metricItem}>
-                      <Ionicons name={post.isLiked ? "heart" : "heart-outline"} size={15} color={post.isLiked ? "#FF465F" : "#7C7C9A"} />
-                      <Text style={[styles.metricCount, post.isLiked && { color: "#FF465F", fontFamily: fonts.bold }]}>{post.likes}</Text>
+                      <Ionicons name={post.isLiked ? "heart" : "heart-outline"} size={15} color={post.isLiked ? "#EAB308" : "#7C7C9A"} />
+                      <Text style={[styles.metricCount, post.isLiked && { color: "#EAB308", fontFamily: fonts.bold }]}>{post.likes}</Text>
                     </View>
                     <View style={styles.metricItem}>
                       <Ionicons name="chatbubble-outline" size={13} color="#7C7C9A" />

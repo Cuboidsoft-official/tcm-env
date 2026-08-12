@@ -2231,16 +2231,24 @@ function PostActions({ post, session, metrics = {}, onComment }) {
   }
 
   const postText = post?.content || post?.title || "Check out this post on TCM Academy!";
-  const shareType = post?.isJob ? "job" : (post?.isDocument || post?.mediaType === "document") ? "document" : "post";
+  const isVideo = Boolean(post?.videoUrl || post?.mediaType === "video" || post?.kind === "video");
+  const isDoc = Boolean(post?.isDocument || post?.mediaType === "document" || post?.documentUrl);
+  const isJob = Boolean(post?.isJob);
+  const shareType = isJob ? "job" : isDoc ? "document" : isVideo ? "video" : "post";
   const shareUrl = `https://app.thecodemunk.in/${shareType}/${post?.id || "p1"}`;
+
+  const shareKindLabel = isJob ? "Job Opportunity" : isDoc ? "Document" : isVideo ? "Video" : "Post";
+  const shareTitleText = post?.title || post?.content?.slice(0, 80) || "TCM Update";
+  const formattedShareMsg = `*${shareKindLabel}: ${shareTitleText}*\nBy ${post?.authorName || "TCM Member"} on TCM Academy\n\n📌 Read / Preview on TCM: ${shareUrl}`;
 
   async function handleNativeShare() {
     setShareModalOpen(false);
     setSharesCount((prev) => prev + 1);
     try {
       await Share.share({
-        title: post?.title || "TCM Post",
-        message: `${postText}\n\nJoin conversation on TCM Academy: ${shareUrl}`
+        title: `${shareKindLabel}: ${shareTitleText}`,
+        message: formattedShareMsg,
+        url: shareUrl
       });
       if (session?.token && post?.id) {
         sharePost(session.token, post.id).catch(() => {});
@@ -2251,7 +2259,7 @@ function PostActions({ post, session, metrics = {}, onComment }) {
   function handleShareWhatsApp() {
     setShareModalOpen(false);
     setSharesCount((prev) => prev + 1);
-    const text = encodeURIComponent(`*${post?.authorName || "TCM Member"}* on TCM Academy:\n"${postText}"\n\nRead more: ${shareUrl}`);
+    const text = encodeURIComponent(formattedShareMsg);
     Linking.openURL(`https://api.whatsapp.com/send?text=${text}`).catch(() => {
       Alert.alert("App Not Found", "WhatsApp is not installed on this device.");
     });
@@ -2260,35 +2268,37 @@ function PostActions({ post, session, metrics = {}, onComment }) {
   function handleShareFacebook() {
     setShareModalOpen(false);
     setSharesCount((prev) => prev + 1);
-    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareTitleText)}`;
     Linking.openURL(fbUrl).catch(() => {});
   }
 
   function handleCopyLink() {
     setShareModalOpen(false);
-    Alert.alert("Link Copied 🔗", "Post URL copied to clipboard!");
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(formattedShareMsg);
+    }
+    Alert.alert("Link & Preview Copied 🔗", "Post preview and link copied to clipboard!");
   }
 
   function handleDirectShare(platform) {
     setShareModalOpen(false);
-    const shareType = post?.isJob ? "job" : (post?.isDocument || post?.mediaType === "document") ? "document" : "post";
-    const postUrl = `https://app.thecodemunk.in/${shareType}/${post?.id || "1"}`;
-    const textMsg = `Check out this ${shareType} on TCM: "${post?.title?.slice(0, 60) || post?.caption?.slice(0, 60) || "Code & Tech update"}..."`;
-
     if (platform === "whatsapp") {
-      Linking.openURL(`https://api.whatsapp.com/send?text=${encodeURIComponent(textMsg + " " + postUrl)}`).catch(() => {
+      Linking.openURL(`https://api.whatsapp.com/send?text=${encodeURIComponent(formattedShareMsg)}`).catch(() => {
         Alert.alert("App Not Found", "WhatsApp is not installed on this device.");
       });
     } else if (platform === "telegram") {
-      Linking.openURL(`https://t.me/share/url?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(textMsg)}`).catch(() => {
+      Linking.openURL(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(formattedShareMsg)}`).catch(() => {
         Alert.alert("App Not Found", "Telegram is not installed on this device.");
       });
     } else if (platform === "linkedin") {
-      Linking.openURL(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`).catch(() => {});
+      Linking.openURL(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`).catch(() => {});
     } else if (platform === "copy") {
-      Alert.alert("Link Copied 🔗", "Post URL copied to clipboard!");
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        navigator.clipboard.writeText(formattedShareMsg);
+      }
+      Alert.alert("Link & Preview Copied 🔗", "Post preview text and link copied to clipboard!");
     } else {
-      Share.share({ message: `${textMsg} ${postUrl}`, url: postUrl });
+      Share.share({ message: formattedShareMsg, url: shareUrl });
     }
   }
 
@@ -2305,10 +2315,10 @@ function PostActions({ post, session, metrics = {}, onComment }) {
           <MaterialCommunityIcons
             name={liked ? "hand-clap" : "hand-clap"}
             size={24}
-            color={liked ? theme.primary : theme.subtext}
+            color={liked ? "#EAB308" : theme.subtext}
           />
         </Animated.View>
-        <Text style={[styles.metricText, { color: theme.subtext }, liked && { color: theme.primary, fontFamily: fonts.bold }]}>{likesCount} Claps</Text>
+        <Text style={[styles.metricText, { color: theme.subtext }, liked && { color: "#EAB308", fontFamily: fonts.bold }]}>{likesCount} Claps</Text>
       </Pressable>
 
       {/* 2. Comments Button */}
@@ -2334,12 +2344,63 @@ function PostActions({ post, session, metrics = {}, onComment }) {
           <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
             <View style={styles.sheetHandle} />
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <Text style={{ fontFamily: fonts.bold, fontSize: 16, color: theme.text }}>Share Post</Text>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 16, color: theme.text }}>Share Content</Text>
               <Pressable onPress={() => setShareModalOpen(false)}>
                 <Feather name="x" size={18} color={theme.subtext} />
               </Pressable>
             </View>
-            <Text style={{ fontSize: 12, color: theme.subtext, marginBottom: 16 }}>Share this post across social media networks</Text>
+            <Text style={{ fontSize: 12, color: theme.subtext, marginBottom: 8 }}>Preview & share across social platforms</Text>
+
+            {/* Rich Preview Card inside Share Sheet */}
+            <View style={{
+              backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC",
+              borderRadius: 14,
+              padding: 12,
+              marginVertical: 10,
+              borderWidth: 1,
+              borderColor: theme.border
+            }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <View style={{ backgroundColor: theme.primary + "20", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                  <Text style={{ fontSize: 10.5, fontFamily: fonts.bold, color: theme.primary }}>
+                    {isJob ? "💼 JOB OPPORTUNITY" : isDoc ? "📄 DOCUMENT PREVIEW" : isVideo ? "📹 VIDEO PREVIEW" : "📝 POST PREVIEW"}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.subtext }}>
+                  by {post?.authorName || "TCM Member"}
+                </Text>
+              </View>
+
+              <Text numberOfLines={2} style={{ fontSize: 13, fontFamily: fonts.bold, color: theme.text, marginBottom: 6 }}>
+                {post?.title || post?.content || "TCM Community Post"}
+              </Text>
+
+              {isVideo ? (
+                <View style={{ height: 95, borderRadius: 10, backgroundColor: "#0F172A", justifyContent: "center", alignItems: "center", marginVertical: 4, overflow: "hidden" }}>
+                  {post?.imageUrl ? <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%", opacity: 0.6, position: "absolute" }} /> : null}
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.65)", justifyContent: "center", alignItems: "center" }}>
+                    <Ionicons name="play" size={18} color="#FFFFFF" />
+                  </View>
+                  <Text style={{ color: "#FFFFFF", fontSize: 10, fontFamily: fonts.bold, marginTop: 4 }}>Video Preview</Text>
+                </View>
+              ) : isDoc ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 10, backgroundColor: theme.isDark ? "#0F172A" : "#EFF6FF" }}>
+                  <Ionicons name="document-text" size={24} color="#0284C7" />
+                  <View style={{ flex: 1 }}>
+                    <Text numberOfLines={1} style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text }}>
+                      {post?.documentName || "Shared_Document.pdf"}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: theme.subtext }}>PDF Document • TCM Share</Text>
+                  </View>
+                </View>
+              ) : post?.imageUrl ? (
+                <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: 85, borderRadius: 8, marginVertical: 4, resizeMode: "cover" }} />
+              ) : null}
+
+              <Text numberOfLines={1} style={{ fontSize: 10.5, color: theme.subtext, marginTop: 6 }}>
+                🔗 {shareUrl}
+              </Text>
+            </View>
 
             <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 12 }}>
               <TouchableOpacity onPress={handleShareWhatsApp} activeOpacity={0.8} style={{ alignItems: "center", gap: 6 }}>
@@ -2371,7 +2432,7 @@ function PostActions({ post, session, metrics = {}, onComment }) {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity onPress={() => setShareModalOpen(false)} style={{ marginTop: 12, backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderRadius: 12, paddingVertical: 12, alignItems: "center" }}>
+            <TouchableOpacity onPress={() => setShareModalOpen(false)} style={{ marginTop: 10, backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderRadius: 12, paddingVertical: 12, alignItems: "center" }}>
               <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: theme.subtext }}>Close</Text>
             </TouchableOpacity>
           </Pressable>
@@ -2930,7 +2991,7 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
                             </View>
                           </View>
                           <Pressable hitSlop={8} onPress={() => handleToggleCommentLike(commentId)} style={styles.commentLike}>
-                            <Ionicons name={comment.isLiked ? "heart" : "heart-outline"} size={16} color={comment.isLiked ? "#FF304D" : theme.subtext} />
+                            <Ionicons name={comment.isLiked ? "heart" : "heart-outline"} size={16} color={comment.isLiked ? "#EAB308" : theme.subtext} />
                           </Pressable>
                         </View>
 
@@ -3914,7 +3975,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     alignItems: "center",
-    paddingBottom: 4
+    paddingBottom: 110
   },
   page: {
     alignSelf: "center",
@@ -6075,9 +6136,15 @@ const styles = StyleSheet.create({
     fontSize: 12
   },
   bottomDock: {
+    position: "absolute",
+    bottom: 12,
+    left: 0,
+    right: 0,
+    zIndex: 999,
     paddingHorizontal: 16,
-    paddingBottom: 4,
+    paddingBottom: 0,
     paddingTop: 0,
+    backgroundColor: "transparent",
     pointerEvents: "box-none"
   },
   actionMenu: {
@@ -6134,15 +6201,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-around",
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
+    borderRadius: 28,
     borderWidth: 1,
     borderColor: "#F0EEF8",
     paddingVertical: 8,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    maxWidth: 540,
+    alignSelf: "center",
+    width: "100%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
     shadowRadius: 16,
-    elevation: 6
+    elevation: 8
   },
   tabItem: {
     alignItems: "center",
