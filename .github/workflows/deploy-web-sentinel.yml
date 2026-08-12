@@ -8,6 +8,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - "deploy/sentinel/**"
+      - "admin-dashboard/**"
       - ".github/workflows/deploy-web-sentinel.yml"
   workflow_dispatch:
 

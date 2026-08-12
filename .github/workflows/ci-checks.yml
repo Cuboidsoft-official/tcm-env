@@ -105,3 +105,28 @@ jobs:
         run: |
           test -s web-dist-check/index.html
           find web-dist-check/_expo/static/js/web -type f -name '*.js' -size +100k -print -quit | grep -q .
+
+  admin-dashboard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin-dashboard
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin-dashboard/package-lock.json
+
+      - name: Install dashboard dependencies
+        run: npm ci
+
+      - name: Build dashboard
+        run: npm run build
+
+      - name: Verify dashboard output
+        run: test -s dist/index.html

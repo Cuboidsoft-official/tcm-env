@@ -1,0 +1,11 @@
+admin.thecodemunk.in {
+    root * /var/www/tcm-admin/current
+    encode zstd gzip
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+    try_files {path} /index.html
+    file_server
+}

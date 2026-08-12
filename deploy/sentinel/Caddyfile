@@ -22,3 +22,5 @@ app.thecodemunk.in {
     try_files {path} /index.html
     file_server
 }
+
+import /etc/caddy/conf.d/*
