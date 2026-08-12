@@ -201,7 +201,8 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* 1. Main Section Header (No Duplicate App Header) */}
+      <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center", flex: 1 }}>
+        {/* 1. Main Section Header (No Duplicate App Header) */}
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>All Chats</Text>
         <Pressable onPress={() => fetchConversations()} style={[styles.compactRefreshBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F0EDFF" }]}>
@@ -444,6 +445,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
           )}
         </ScrollView>
       )}
+      </View>
 
       {/* Ask Doubt Modal */}
       <Modal visible={showDoubtModal} transparent animationType="slide" onRequestClose={() => setShowDoubtModal(false)}>

@@ -316,8 +316,9 @@ export default function WalletScreen({ session, user = {}, onBack }) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* 2. Total Balance Purple Gradient Card */}
-        <View style={styles.balanceCard}>
+        <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}>
+          {/* 2. Total Balance Purple Gradient Card */}
+          <View style={styles.balanceCard}>
           <View style={styles.balanceCardTop}>
             <View style={styles.balanceInfoCol}>
               <View style={styles.balanceLabelRow}>
@@ -532,7 +533,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
                   <Text style={styles.refDateText}>{ref.date || "Recently"}</Text>
                 </View>
                 <View style={styles.refBadgeCol}>
-                  <View style={[styles.refBadgePill, ref.status === "Converted" ? { backgroundColor: "#F0EDFF" } : { backgroundColor: "#ECFDF5" }]}>
+                  <View style={[styles.refBadgePill, ref.status === "Converted" ? { backgroundColor: "#E8F5E9" } : { backgroundColor: "#ECFDF5" }]}>
                     <Text style={[styles.refBadgeText, ref.status === "Converted" ? { color: "#0A6836" } : { color: "#10B981" }]}>
                       {ref.status === "Converted" ? "Converted (+₹500)" : "Joined (+10 Coins)"}
                     </Text>
@@ -622,7 +623,8 @@ export default function WalletScreen({ session, user = {}, onBack }) {
             <Text style={styles.stepSubText}>Convert coins to cash and withdraw</Text>
           </View>
         </View>
-      </ScrollView>
+      </View>
+    </ScrollView>
 
       {/* Withdraw Funds Modal */}
       <Modal visible={withdrawModalOpen} transparent animationType="slide" onRequestClose={() => setWithdrawModalOpen(false)}>
@@ -754,9 +756,9 @@ const styles = StyleSheet.create({
     paddingBottom: 120
   },
 
-  // Purple Balance Card
+  // Nature Green Balance Card
   balanceCard: {
-    backgroundColor: "#4323D3",
+    backgroundColor: "#0A6836",
     borderRadius: 24,
     padding: 20,
     marginBottom: 16,
@@ -857,7 +859,7 @@ const styles = StyleSheet.create({
   withdrawBtnText: {
     fontFamily: fonts.bold,
     fontSize: 13,
-    color: "#4B2BE3"
+    color: "#0A6836"
   },
   addMoneyBtn: {
     flex: 1,
@@ -975,12 +977,12 @@ const styles = StyleSheet.create({
 
   // Referral Card
   referralCard: {
-    backgroundColor: "#F5F3FF",
+    backgroundColor: "#F0FDFA",
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#EBE5FF",
+    borderColor: "#CCFBF1",
     position: "relative"
   },
   referralCardTitle: {
@@ -1326,12 +1328,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold
   },
   claimBonusBtn: {
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#DDD6FE"
+    borderColor: "#C8E6C9"
   },
   claimBonusText: {
     fontSize: 10,
@@ -1391,14 +1393,14 @@ const styles = StyleSheet.create({
     marginTop: 6
   },
   modalInput: {
-    backgroundColor: "#F8F7FF",
+    backgroundColor: "#F8FAFC",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 13,
     color: "#181725",
     borderWidth: 1,
-    borderColor: "#EBEAFA",
+    borderColor: "#E2E8F0",
     marginBottom: 10
   },
   quickPillsRow: {
@@ -1407,12 +1409,12 @@ const styles = StyleSheet.create({
     marginBottom: 14
   },
   quickPill: {
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E0D7FF"
+    borderColor: "#C8E6C9"
   },
   quickPillText: {
     fontFamily: fonts.bold,

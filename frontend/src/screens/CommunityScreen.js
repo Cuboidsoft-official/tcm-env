@@ -1396,29 +1396,82 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
         <View style={styles.readerOverlay}>
           <View style={styles.readerModalContent}>
             <View style={styles.readerHeader}>
-              <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 10 }}>
                 <MaterialCommunityIcons name="file-pdf-box" size={24} color="#DC2626" style={{ marginRight: 8 }} />
                 <Text style={styles.readerTitle} numberOfLines={1}>{readerPdfTitle}</Text>
               </View>
+
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginRight: 8 }}>
+                {/* Open With Button */}
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(readerPdfUrl || "https://drive.google.com").catch(() => {})}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "#0A6836",
+                    paddingVertical: 6,
+                    paddingHorizontal: 12,
+                    borderRadius: 14
+                  }}
+                >
+                  <Feather name="external-link" size={13} color="#FFFFFF" style={{ marginRight: 5 }} />
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFFFFF" }}>Open With</Text>
+                </TouchableOpacity>
+
+                {/* Optional Share Button */}
+                <TouchableOpacity
+                  onPress={() => Share.share({ url: readerPdfUrl, message: `Document: ${readerPdfTitle || "Study File"}` }).catch(() => {})}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "rgba(255, 255, 255, 0.15)",
+                    paddingVertical: 6,
+                    paddingHorizontal: 10,
+                    borderRadius: 14
+                  }}
+                >
+                  <Feather name="share-2" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#FFFFFF" }}>Share</Text>
+                </TouchableOpacity>
+              </View>
+
               <Pressable onPress={() => setDocReaderOpen(false)} style={styles.closeBtn}>
                 <Feather name="x" size={18} color="#FFFFFF" />
               </Pressable>
             </View>
 
-            <View style={{ flex: 1, padding: 20, justifyContent: "center", alignItems: "center" }}>
-              <MaterialCommunityIcons name="file-pdf-box" size={48} color="#DC2626" style={{ marginBottom: 12 }} />
-              <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A", marginBottom: 6 }}>{readerPdfTitle}</Text>
-              <Text style={{ fontSize: 12, color: "#64748B", fontFamily: fonts.regular, textAlign: "center", marginBottom: 20 }}>
-                Uploaded by Verified Mentor • Official Study Material
-              </Text>
+            <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+              {Platform.OS === "web" && readerPdfUrl ? (
+                <iframe
+                  src={
+                    readerPdfUrl.includes("drive.google.com/file/d/")
+                      ? readerPdfUrl.replace(/\/view(\?.*)?$/, "/preview").replace(/\/view\?usp=sharing/, "/preview")
+                      : readerPdfUrl.includes(".doc") || readerPdfUrl.includes(".docx")
+                      ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(readerPdfUrl)}`
+                      : readerPdfUrl.startsWith("http://") || readerPdfUrl.startsWith("https://")
+                      ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(readerPdfUrl)}`
+                      : readerPdfUrl
+                  }
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                  title={readerPdfTitle || "Document Viewer"}
+                />
+              ) : (
+                <View style={{ flex: 1, padding: 20, justifyContent: "center", alignItems: "center" }}>
+                  <MaterialCommunityIcons name="file-pdf-box" size={48} color="#DC2626" style={{ marginBottom: 12 }} />
+                  <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A", marginBottom: 6 }}>{readerPdfTitle}</Text>
+                  <Text style={{ fontSize: 12, color: "#64748B", fontFamily: fonts.regular, textAlign: "center", marginBottom: 20 }}>
+                    Uploaded by Verified Mentor • Official Study Material
+                  </Text>
 
-              <Pressable
-                onPress={() => Linking.openURL(readerPdfUrl || "https://drive.google.com").catch(() => {})}
-                style={styles.readerOpenBtn}
-              >
-                <Feather name="external-link" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.readerOpenBtnText}>Open PDF Link</Text>
-              </Pressable>
+                  <Pressable
+                    onPress={() => Linking.openURL(readerPdfUrl || "https://drive.google.com").catch(() => {})}
+                    style={styles.readerOpenBtn}
+                  >
+                    <Feather name="external-link" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.readerOpenBtnText}>Open Document</Text>
+                  </Pressable>
+                </View>
+              )}
             </View>
           </View>
         </View>

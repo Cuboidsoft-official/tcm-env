@@ -272,7 +272,7 @@ async function buildLearnPayload(user, mentors, learn = {}, memoryStore = null, 
   };
 }
 
-function mapPost(post, globalPostComments = {}) {
+function mapPost(post, globalPostComments = {}, userId = null) {
   const isMentor = Boolean(
     post.isMentor ||
     post.authorRole?.toLowerCase().includes("mentor") ||
@@ -287,6 +287,9 @@ function mapPost(post, globalPostComments = {}) {
   const listCommentsCount = Array.isArray(post.commentsList) ? post.commentsList.length : 0;
   const metricCommentsCount = post.metrics?.comments || 0;
   const totalComments = Math.max(metricCommentsCount, listCommentsCount, memCommentsCount);
+
+  const likedByArr = post.likedBy || [];
+  const isLiked = userId ? likedByArr.some((id) => String(id) === String(userId)) : Boolean(post.isLiked);
 
   return {
     id: post._id || post.id,
@@ -306,14 +309,16 @@ function mapPost(post, globalPostComments = {}) {
     text: post.text,
     media: post.media,
     metrics: {
-      likes: post.metrics?.likes || 0,
+      likes: post.metrics?.likes || likedByArr.length || 0,
       comments: totalComments,
       shares: post.metrics?.shares || 0
     },
+    isLiked,
     tags: post.tags,
     timeLabel: getTimeLabel(post.publishedAt)
   };
 }
+
 
 function getTimeLabel(date) {
   const diffMs = Date.now() - new Date(date).getTime();
@@ -825,9 +830,8 @@ homeRouter.delete("/posts/:postId", requireAuth, async (req, res) => {
   }
 });
 
-homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
+homeRouter.get("/post/:postId", async (req, res) => {
   const { postId } = req.params;
-  const userId = String(req.user._id);
   const memoryStore = req.app.locals.memoryStore;
 
   let post = null;
@@ -835,8 +839,66 @@ homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
     post = await CommunityPost.findById(postId);
   } catch (e) {}
 
+  if (!post) {
+    try {
+      const { JobPost } = await import("../models/JobPost.js");
+      post = await JobPost.findById(postId);
+    } catch (e) {}
+  }
+
   if (!post && memoryStore) {
     post = memoryStore.posts?.find((p) => String(p.id || p._id) === String(postId));
+    if (!post) {
+      const job = memoryStore.jobs?.find((j) => String(j.id || j._id) === String(postId));
+      if (job) {
+        post = {
+          id: String(job.id),
+          authorName: job.mentorName || "Mentor",
+          authorAvatarUrl: job.mentorAvatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+          authorRole: job.mentorRole || "Senior Mentor",
+          publishedAt: job.createdAt || new Date().toISOString(),
+          category: "💼 Jobs & Hiring",
+          postType: "job_news",
+          text: job.description || `${job.title} at ${job.company}`,
+          isMentor: true,
+          jobData: job,
+          metrics: { likes: 12, comments: (job.applicants || []).length, reposts: 3 }
+        };
+      }
+    }
+  }
+
+  if (!post) {
+    return res.status(404).json({ message: "Post not found" });
+  }
+
+  const globalComments = req.app.locals.globalPostComments || {};
+  const formattedPost = post.postType === "job_news" ? post : mapPost(post, globalComments);
+  return res.json({ success: true, post: formattedPost });
+});
+
+homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
+  const { postId } = req.params;
+  const userId = String(req.user._id || req.user.id);
+  const memoryStore = req.app.locals.memoryStore;
+
+  let post = null;
+  try {
+    post = await CommunityPost.findById(postId);
+  } catch (e) {}
+
+  if (!post) {
+    try {
+      const { JobPost } = await import("../models/JobPost.js");
+      post = await JobPost.findById(postId);
+    } catch (e) {}
+  }
+
+  if (!post && memoryStore) {
+    post = memoryStore.posts?.find((p) => String(p.id || p._id) === String(postId));
+    if (!post) {
+      post = memoryStore.jobs?.find((j) => String(j.id || j._id) === String(postId));
+    }
   }
 
   if (!post) {

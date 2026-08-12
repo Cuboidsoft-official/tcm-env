@@ -494,8 +494,9 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       style={[styles.container, { backgroundColor: theme.bg }]}
     >
-      {/* 1. Redesigned Responsive Header Bar */}
-      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+      <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center", flex: 1 }}>
+        {/* 1. Redesigned Responsive Header Bar */}
+        <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
         <Pressable onPress={onClose || (() => navigation?.goBack())} style={[styles.backBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}>
           <Feather name="chevron-left" size={24} color={theme.primary} />
         </Pressable>
@@ -862,6 +863,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           </Pressable>
         </View>
       )}
+      </View>
 
       {/* 4. Attachment Options Modal */}
       <Modal visible={showAttachModal} transparent animationType="slide" onRequestClose={() => setShowAttachModal(false)}>

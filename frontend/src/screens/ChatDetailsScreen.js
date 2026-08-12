@@ -133,7 +133,8 @@ export default function ChatDetailsScreen({
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* 1. Header Bar */}
+      <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center", flex: 1 }}>
+        {/* 1. Header Bar */}
       <View style={[styles.headerBar, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
         <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.badgeBg }]}>
           <Feather name="arrow-left" size={22} color={theme.text} />
@@ -529,6 +530,7 @@ export default function ChatDetailsScreen({
           ) : null}
         </View>
       </ScrollView>
+      </View>
     </View>
   );
 }

@@ -2478,9 +2478,9 @@ function MediaPreviewModal({ item, onClose }) {
     <Modal animationType="slide" visible={Boolean(item)} onRequestClose={onClose} statusBarTranslucent={true}>
       {isDocument ? (
         <SafeAreaView style={styles.documentViewer}>
-          <View style={[styles.viewerHeader, { paddingTop: safeTopPadding }]}>
+          <View style={styles.viewerHeader}>
             <View style={styles.viewerFileIcon}>
-              <MaterialCommunityIcons name="file-pdf-box" size={27} color="#FF465F" />
+              <MaterialCommunityIcons name="file-pdf-box" size={22} color="#FF465F" />
             </View>
             <View style={styles.previewTitleWrap}>
               <Text numberOfLines={1} style={styles.previewTitle}>{item.title}</Text>
@@ -2488,20 +2488,38 @@ function MediaPreviewModal({ item, onClose }) {
                 {item.fileSize || "Document"} | {item.authorName || "TCM"}
               </Text>
             </View>
-            <Pressable hitSlop={14} onPress={onClose} style={styles.previewClose}>
-              <Feather name="x" size={24} color={colors.ink} />
+            <Pressable hitSlop={10} onPress={onClose} style={styles.previewClose}>
+              <Feather name="x" size={20} color={colors.ink} />
             </Pressable>
           </View>
 
           <View style={styles.documentToolbar}>
             <View style={styles.documentPreviewPill}>
-              <Feather name="eye" size={16} color={colors.primary} />
-              <Text style={styles.documentPreviewText}>In-App Document Viewer</Text>
+              <Feather name="eye" size={13} color={colors.primary} />
+              <Text style={styles.documentPreviewText}>In-App Viewer</Text>
             </View>
-            <Pressable onPress={() => handleOpenDocument(item)} style={({ pressed }) => [styles.documentButton, pressed && styles.pressed]}>
-              {downloading ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Feather name={downloaded ? "check" : "download"} size={18} color="#FFFFFF" />}
-              <Text style={styles.documentButtonText}>{downloaded ? "Opened" : "Open / View"}</Text>
-            </Pressable>
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              {/* Open With Option */}
+              <TouchableOpacity
+                onPress={() => handleOpenDocument(item)}
+                activeOpacity={0.8}
+                style={[styles.documentButton, { backgroundColor: colors.primary, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 10 }]}
+              >
+                <Feather name="external-link" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+                <Text style={[styles.documentButtonText, { fontSize: 11.5 }]}>Open With</Text>
+              </TouchableOpacity>
+
+              {/* Optional Share Option */}
+              <TouchableOpacity
+                onPress={() => Share.share({ url: docUri, message: `Document: ${item.title || "File Attachment"}` }).catch(() => {})}
+                activeOpacity={0.8}
+                style={[styles.documentButton, { backgroundColor: "rgba(100, 116, 139, 0.12)", borderWidth: 1, borderColor: "rgba(100, 116, 139, 0.25)", paddingVertical: 5, paddingHorizontal: 8, borderRadius: 10 }]}
+              >
+                <Feather name="share-2" size={13} color={colors.ink} style={{ marginRight: 3 }} />
+                <Text style={[styles.documentButtonText, { color: colors.ink, fontSize: 11.5 }]}>Share</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.documentCanvas}>
@@ -2511,8 +2529,12 @@ function MediaPreviewModal({ item, onClose }) {
               ) : Platform.OS === "web" && docUri ? (
                 <iframe
                   src={
-                    docUri.includes(".doc") || docUri.includes(".docx") || item.mimeType?.includes("word") || item.title?.toLowerCase().includes(".doc")
+                    docUri.includes("drive.google.com/file/d/")
+                      ? docUri.replace(/\/view(\?.*)?$/, "/preview").replace(/\/view\?usp=sharing/, "/preview")
+                      : docUri.includes(".doc") || docUri.includes(".docx") || item.mimeType?.includes("word") || item.title?.toLowerCase().includes(".doc")
                       ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(docUri)}`
+                      : docUri.startsWith("blob:") || docUri.startsWith("data:") || docUri.endsWith(".pdf")
+                      ? docUri
                       : `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(docUri)}`
                   }
                   style={{ width: "100%", height: "100%", border: "none" }}
@@ -2529,7 +2551,7 @@ function MediaPreviewModal({ item, onClose }) {
                       {item.fileSize || "File Attachment"} {item.mimeType ? `| ${item.mimeType}` : ""}
                     </Text>
 
-                    <View style={{ marginTop: 18, width: "100%", gap: 10 }}>
+                    <View style={{ marginTop: 18, width: "100%" }}>
                       <TouchableOpacity
                         onPress={() => handleOpenDocument(item)}
                         style={{
@@ -2543,25 +2565,7 @@ function MediaPreviewModal({ item, onClose }) {
                         }}
                       >
                         <Feather name="book-open" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: 15, fontWeight: "700", color: "#FFFFFF" }}>Open Document 📄</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        onPress={() => Share.share({ url: docUri, message: `Document: ${item.title}` }).catch(() => {})}
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor: "#F1F5F9",
-                          borderWidth: 1,
-                          borderColor: "#CBD5E1",
-                          paddingVertical: 12,
-                          paddingHorizontal: 18,
-                          borderRadius: 14
-                        }}
-                      >
-                        <Feather name="share-2" size={17} color="#334155" style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: 14, fontWeight: "600", color: "#334155" }}>Share / Save File 📤</Text>
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "#FFFFFF" }}>Open Document</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -4756,10 +4760,10 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: "row",
-    minHeight: Platform.OS === "ios" ? 95 : 70,
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 52 : (StatusBar.currentHeight || 28) + 8,
-    paddingBottom: 12,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    paddingTop: Platform.OS === "ios" ? 12 : Platform.OS === "android" ? (StatusBar.currentHeight || 20) : 8,
+    paddingBottom: 8,
     zIndex: 100
   },
   viewerFileIcon: {

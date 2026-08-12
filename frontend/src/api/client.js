@@ -597,6 +597,10 @@ export function getWebinars(token) {
   });
 }
 
+export function getPostById(postId) {
+  return request(`/home/post/${postId}`);
+}
+
 export function togglePostLike(token, postId) {
   return request(`/home/post/${postId}/like`, {
     method: "POST",
