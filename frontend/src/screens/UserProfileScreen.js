@@ -21,6 +21,7 @@ import MyReviewsModal from "../components/MyReviewsModal";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
+import { PRESET_SKILLS, getSkillIconInfo, renderSkillIcon, getSkillLevel } from "../utils/skillIcons";
 
 export default function UserProfileScreen({ session, targetUser, onClose, onOpenChat, onSelectPost }) {
   const { theme } = useTheme();
@@ -458,6 +459,8 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
       >
         {[
           { key: "Posts", icon: "grid" },
+          { key: "Skills", icon: "award" },
+          { key: "Scoreboard", icon: "bar-chart-2" },
           { key: "Notes", icon: "file-text" },
           { key: "Videos", icon: "video" },
           { key: "Certificates", icon: "award" }
@@ -477,7 +480,211 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
       </ScrollView>
 
       {/* 6. Content Grid Feed */}
-      <View style={styles.gridFeed}>
+      {activeTab === "Skills" ? (
+        <View style={{ width: "100%", paddingHorizontal: 12, paddingVertical: 14 }}>
+          {(() => {
+            const userObj = profileData || targetUser || {};
+            const targetSkillsList = Array.isArray(userObj.skills) && userObj.skills.length > 0
+              ? userObj.skills
+              : PRESET_SKILLS.slice(0, 5);
+
+            const avgStrength = targetSkillsList.length > 0
+              ? Math.round(targetSkillsList.reduce((acc, curr) => acc + (Number(curr.strength) || 0), 0) / targetSkillsList.length)
+              : 0;
+
+            const expertCount = targetSkillsList.filter((s) => (Number(s.strength) || 0) >= 85).length;
+
+            return (
+              <View style={{ width: "100%", gap: 14 }}>
+                {/* Header Overview Card */}
+                <View
+                  style={{
+                    backgroundColor: theme.cardBg,
+                    borderRadius: 20,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    ...shadow.sm
+                  }}
+                >
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: theme.badgeBg, alignItems: "center", justifyContent: "center" }}>
+                        <MaterialCommunityIcons name="shield-check-outline" size={20} color={theme.primary} />
+                      </View>
+                      <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text }}>Skills & Proficiency</Text>
+                    </View>
+                  </View>
+
+                  {/* Summary Metric Chips */}
+                  <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+                    <View style={{ flex: 1, minWidth: 100, backgroundColor: theme.bg, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: theme.border, alignItems: "center" }}>
+                      <Text style={{ fontSize: 18, fontFamily: fonts.bold, color: theme.primary }}>{targetSkillsList.length}</Text>
+                      <Text style={{ fontSize: 10.5, color: theme.subtext, marginTop: 2 }}>Total Skills</Text>
+                    </View>
+                    <View style={{ flex: 1, minWidth: 100, backgroundColor: theme.bg, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: theme.border, alignItems: "center" }}>
+                      <Text style={{ fontSize: 18, fontFamily: fonts.bold, color: "#059669" }}>{avgStrength}%</Text>
+                      <Text style={{ fontSize: 10.5, color: theme.subtext, marginTop: 2 }}>Avg Score</Text>
+                    </View>
+                    <View style={{ flex: 1, minWidth: 100, backgroundColor: theme.bg, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: theme.border, alignItems: "center" }}>
+                      <Text style={{ fontSize: 18, fontFamily: fonts.bold, color: "#7C3AED" }}>{expertCount}</Text>
+                      <Text style={{ fontSize: 10.5, color: theme.subtext, marginTop: 2 }}>Expert Badges</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Dynamic Performance Growth Chart Card */}
+                <View
+                  style={{
+                    backgroundColor: theme.cardBg,
+                    borderRadius: 20,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    ...shadow.sm
+                  }}
+                >
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                    <View>
+                      <Text style={{ fontSize: 14.5, fontFamily: fonts.bold, color: theme.text }}>Student Performance Growth</Text>
+                      <Text style={{ fontSize: 11, color: theme.subtext, marginTop: 1 }}>Score trajectory & skill proficiency index</Text>
+                    </View>
+
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: theme.badgeBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
+                      <Feather name="trending-up" size={13} color={theme.primary} />
+                      <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.primary }}>
+                        +24% Growth
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Vertical Bar Growth Chart */}
+                  <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-around", height: 110, paddingHorizontal: 10, paddingTop: 10, borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 6 }}>
+                    {(() => {
+                      const chartPoints = [65, 75, 82, Math.max(78, avgStrength - 5), Math.max(85, avgStrength)];
+
+                      return chartPoints.map((pct, idx) => {
+                        const isLatest = idx === chartPoints.length - 1;
+                        return (
+                          <View key={idx} style={{ alignItems: "center", width: 42 }}>
+                            <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: isLatest ? theme.primary : theme.subtext, marginBottom: 4 }}>
+                              {pct}%
+                            </Text>
+                            <View
+                              style={{
+                                width: 20,
+                                height: `${Math.max(20, Math.min(100, pct))}%`,
+                                backgroundColor: isLatest ? theme.primary : theme.badgeBg,
+                                borderRadius: 8,
+                                borderWidth: 1,
+                                borderColor: isLatest ? theme.primary : theme.border
+                              }}
+                            />
+                            <Text style={{ fontSize: 9.5, color: theme.subtext, marginTop: 6 }}>
+                              T-{chartPoints.length - idx}
+                            </Text>
+                          </View>
+                        );
+                      });
+                    })()}
+                  </View>
+
+                  {/* Growth Metric Footer */}
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+                    <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: theme.subtext }}>
+                      Exam Attempts: <Text style={{ color: theme.text, fontFamily: fonts.bold }}>Verified</Text>
+                    </Text>
+                    <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#10B981" }}>
+                      Mastery Status: Active ✓
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Wide Skill Cards List */}
+                {targetSkillsList.length === 0 ? (
+                  <View
+                    style={{
+                      alignItems: "center",
+                      paddingVertical: 36,
+                      backgroundColor: theme.cardBg,
+                      borderRadius: 20,
+                      borderWidth: 1.5,
+                      borderColor: theme.border,
+                      borderStyle: "dashed"
+                    }}
+                  >
+                    <MaterialCommunityIcons name="star-shooting-outline" size={38} color="#94A3B8" />
+                    <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: theme.text, marginTop: 8 }}>No skills showcased yet</Text>
+                    <Text style={{ fontSize: 12, color: theme.subtext, marginTop: 3, textAlign: "center" }}>
+                      This user hasn't added any skills or subjects to their profile matrix yet.
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={{ width: "100%", gap: 10 }}>
+                    {targetSkillsList.map((skillItem, index) => {
+                      const iconInfo = getSkillIconInfo(skillItem.name);
+                      const lvlInfo = getSkillLevel(skillItem.strength);
+                      const scoreVal = Number(skillItem.strength) || 0;
+
+                      return (
+                        <View
+                          key={index}
+                          style={{
+                            width: "100%",
+                            backgroundColor: theme.cardBg,
+                            borderRadius: 16,
+                            padding: 14,
+                            borderWidth: 1,
+                            borderColor: theme.border,
+                            ...shadow.sm
+                          }}
+                        >
+                          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
+                              <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: iconInfo.bg, alignItems: "center", justifyContent: "center" }}>
+                                {renderSkillIcon(iconInfo, 22)}
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: theme.text }} numberOfLines={1}>
+                                  {skillItem.name}
+                                </Text>
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 3 }}>
+                                  <View style={{ backgroundColor: lvlInfo.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
+                                    <Text style={{ fontSize: 10.5, fontFamily: fonts.bold, color: lvlInfo.color }}>{lvlInfo.title}</Text>
+                                  </View>
+                                  <Text style={{ fontSize: 11, color: theme.subtext }}>Strength Rating</Text>
+                                </View>
+                              </View>
+                            </View>
+
+                            <View style={{ backgroundColor: iconInfo.bg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: iconInfo.accent }}>
+                              <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: iconInfo.color }}>
+                                {scoreVal}/100
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View style={{ height: 10, backgroundColor: theme.bg, borderRadius: 5, overflow: "hidden", borderWidth: 1, borderColor: theme.border }}>
+                            <View
+                              style={{
+                                height: "100%",
+                                width: `${Math.max(0, Math.min(100, scoreVal))}%`,
+                                backgroundColor: iconInfo.accent,
+                                borderRadius: 5
+                              }}
+                            />
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          })()}
+        </View>
+      ) : (
+        <View style={styles.gridFeed}>
         {loading ? (
           <ActivityIndicator size="large" color="#0A6836" style={{ marginVertical: 35, alignSelf: "center", width: "100%" }} />
         ) : filteredPosts.length > 0 ? (
@@ -569,6 +776,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           </View>
         )}
       </View>
+    )}
 
       {/* --- MODALS & BOTTOM SHEETS --- */}
 

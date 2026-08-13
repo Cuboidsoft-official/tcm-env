@@ -154,6 +154,16 @@ const userSchema = new mongoose.Schema(
       type: Array,
       default: ["System Architecture", "AI & Machine Learning", "Student Mentorship"]
     },
+    skills: {
+      type: Array,
+      default: [
+        { name: "JavaScript", strength: 88 },
+        { name: "React", strength: 92 },
+        { name: "Python", strength: 78 },
+        { name: "Node.js", strength: 84 },
+        { name: "C++", strength: 75 }
+      ]
+    },
     savedPosts: [{ type: String }],
     stats: {
       postsCount: { type: Number, default: 0 },

@@ -14,7 +14,8 @@ import {
 import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import ViewAllMentorsModal from "../components/ViewAllMentorsModal";
 import AiRoadmapPlannerModal from "../components/AiRoadmapPlannerModal";
-import { getContinueLearningDetails } from "../api/client";
+import TcmAiExamModal from "../components/TcmAiExamModal";
+import { getContinueLearningDetails, saveExamResult } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
@@ -160,9 +161,21 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
   const initialPopular = Array.isArray(safeLearn.popularCourses) ? safeLearn.popularCourses : defaultPopularCourses;
 
   const [popularCourses, setPopularCourses] = useState(initialPopular);
+  const [aiExamModalVisible, setAiExamModalVisible] = useState(false);
   const [continueLearningList, setContinueLearningList] = useState(
     safeLearn.continueLearning?.length ? safeLearn.continueLearning : defaultContinueLearning
   );
+
+  async function handleSaveExamResult(resultData) {
+    try {
+      const token = session?.token || user?.token;
+      if (token) {
+        await saveExamResult(token, resultData);
+      }
+    } catch (e) {
+      console.error("Could not save exam result:", e);
+    }
+  }
 
   useEffect(() => {
     if (Array.isArray(learn?.popularCourses)) {
@@ -512,6 +525,69 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       </Pressable>
 
+      {/* TCM AI EXAMINATIONS & ADAPTIVE SKILL TESTS CARD */}
+      <View style={styles.sectionHeaderRow}>
+        <Text style={[styles.sectionTitleText, { color: theme.text }]}>TCM AI Examinations</Text>
+        <Pressable onPress={() => setAiExamModalVisible(true)}>
+          <Text style={[styles.viewAllText, { color: theme.primary }]}>Take Exam →</Text>
+        </Pressable>
+      </View>
+
+      <Pressable
+        onPress={() => setAiExamModalVisible(true)}
+        style={({ pressed }) => [
+          {
+            backgroundColor: theme.cardBg,
+            borderRadius: 18,
+            padding: 16,
+            borderWidth: 1,
+            borderColor: theme.border,
+            marginBottom: 20,
+            ...shadow.sm
+          },
+          pressed && { opacity: 0.92 }
+        ]}
+      >
+        {/* Top Badge */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: theme.badgeBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
+            <MaterialCommunityIcons name="brain" size={14} color={theme.primary} />
+            <Text style={{ color: theme.primary, fontFamily: fonts.bold, fontSize: 10.5, letterSpacing: 0.5 }}>
+              AI ADAPTIVE EVALUATION
+            </Text>
+          </View>
+
+          <View style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
+            <Text style={{ color: theme.primary, fontFamily: fonts.bold, fontSize: 10 }}>ON-DEMAND</Text>
+          </View>
+        </View>
+
+        {/* Content Info */}
+        <View style={{ marginBottom: 14 }}>
+          <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: theme.text, marginBottom: 4 }}>
+            TCM AI Skill Examinations & Scorecards
+          </Text>
+          <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: theme.subtext, lineHeight: 18 }}>
+            Take personalized assessments tailored to your NEET, JEE, Govt Exams, Coding or Business skills with real-time AI hints & instant verified certificates.
+          </Text>
+        </View>
+
+        {/* Action Row */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: theme.bg, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: theme.border }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Feather name="clock" size={14} color={theme.primary} />
+            <Text style={{ fontSize: 12, fontFamily: fonts.semiBold, color: theme.text }}>
+              6 Mins • 10 MCQs • AI Hints
+            </Text>
+          </View>
+
+          <View style={{ backgroundColor: theme.primary, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#FFFFFF" }}>Start Exam</Text>
+            <Feather name="arrow-right" size={13} color="#FFFFFF" />
+          </View>
+        </View>
+      </Pressable>
+
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionTitleText, { color: theme.text }]}>Popular Courses</Text>
         <Pressable onPress={() => (onOpenPopularCourses ? onOpenPopularCourses() : Alert.alert("Popular Courses", "Showing all popular featured courses."))}>
@@ -656,6 +732,13 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         course={selectedPaymentCourse}
         onClose={() => setShowPaymentModal(false)}
         onPaymentComplete={handlePaymentComplete}
+      />
+
+      <TcmAiExamModal
+        visible={aiExamModalVisible}
+        onClose={() => setAiExamModalVisible(false)}
+        user={user}
+        onSaveResult={handleSaveExamResult}
       />
 
       {topCategories.length > 0 ? (

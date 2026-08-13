@@ -24,6 +24,7 @@ import { useTheme } from "../context/ThemeContext";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import WalletScreen from "./WalletScreen";
+import { DOMAIN_CATEGORIES, PRESET_SKILLS, getSkillIconInfo, renderSkillIcon, getSkillLevel, getSkillsAutocompleteSuggestions } from "../utils/skillIcons";
 
 const themesList = [
   {
@@ -122,6 +123,99 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
   const [themeModalOpen, setThemeModalOpen] = useState(false);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [myReviewsModalOpen, setMyReviewsModalOpen] = useState(false);
+  const [skillsModalOpen, setSkillsModalOpen] = useState(false);
+
+  // Skills Matrix State
+  const [userSkills, setUserSkills] = useState(
+    Array.isArray(initialUser?.skills) ? initialUser.skills : PRESET_SKILLS.slice(0, 5)
+  );
+  const [skillNameInput, setSkillNameInput] = useState("");
+  const [skillStrengthInput, setSkillStrengthInput] = useState(80);
+  const [editingSkillIndex, setEditingSkillIndex] = useState(null);
+  const [selectedDomainTab, setSelectedDomainTab] = useState("All");
+  const [savingSkills, setSavingSkills] = useState(false);
+
+  useEffect(() => {
+    if (Array.isArray(user.skills)) {
+      setUserSkills(user.skills);
+    }
+  }, [user.skills]);
+
+  function openSkillsModal() {
+    setUserSkills(Array.isArray(user.skills) && user.skills.length > 0 ? [...user.skills] : PRESET_SKILLS.slice(0, 5));
+    setSkillNameInput("");
+    setSkillStrengthInput(80);
+    setEditingSkillIndex(null);
+    setSkillsModalOpen(true);
+  }
+
+  function handleAddOrUpdateSkill() {
+    if (!skillNameInput.trim()) {
+      Alert.alert("Skill Required", "Please enter a skill name (e.g. React, Python, C++).");
+      return;
+    }
+    const cleanName = skillNameInput.trim();
+    const strengthVal = Math.max(0, Math.min(100, Number(skillStrengthInput) || 50));
+
+    setUserSkills((prev) => {
+      const updated = [...prev];
+      if (editingSkillIndex !== null && editingSkillIndex >= 0 && editingSkillIndex < updated.length) {
+        updated[editingSkillIndex] = { name: cleanName, strength: strengthVal };
+      } else {
+        const existingIdx = updated.findIndex((s) => s.name.toLowerCase() === cleanName.toLowerCase());
+        if (existingIdx >= 0) {
+          updated[existingIdx] = { name: cleanName, strength: strengthVal };
+        } else {
+          updated.push({ name: cleanName, strength: strengthVal });
+        }
+      }
+      return updated;
+    });
+
+    setSkillNameInput("");
+    setSkillStrengthInput(80);
+    setEditingSkillIndex(null);
+  }
+
+  function handleEditSkill(index) {
+    const item = userSkills[index];
+    if (!item) return;
+    setSkillNameInput(item.name);
+    setSkillStrengthInput(item.strength);
+    setEditingSkillIndex(index);
+  }
+
+  function handleRemoveSkill(index) {
+    setUserSkills((prev) => prev.filter((_, idx) => idx !== index));
+    if (editingSkillIndex === index) {
+      setEditingSkillIndex(null);
+      setSkillNameInput("");
+      setSkillStrengthInput(80);
+    }
+  }
+
+  async function handleSaveSkills() {
+    setSavingSkills(true);
+    try {
+      const payload = { skills: userSkills };
+      if (session?.token) {
+        const res = await updateProfile(session.token, payload);
+        if (res?.user) {
+          setUser(res.user);
+          if (onUserUpdate) onUserUpdate(res.user);
+        }
+      } else {
+        setUser((prev) => ({ ...prev, skills: userSkills }));
+        if (onUserUpdate) onUserUpdate({ ...user, skills: userSkills });
+      }
+      setSkillsModalOpen(false);
+      Alert.alert("Skills Saved! 🚀", "Your skills matrix & proficiency levels have been updated on your profile!");
+    } catch (err) {
+      Alert.alert("Error", err.message || "Failed to update skills.");
+    } finally {
+      setSavingSkills(false);
+    }
+  }
 
   // Help & Support Modal State
   const [supportModalOpen, setSupportModalOpen] = useState(false);
@@ -515,6 +609,26 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             </View>
           </View>
           <Feather name="chevron-right" size={18} color="#8A879F" />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={openSkillsModal} activeOpacity={0.7} style={[styles.settingRow, settingRowStyle]}>
+          <View style={styles.rowLeft}>
+            <View style={[styles.iconWrap, { backgroundColor: "#EEF2FF" }]}>
+              <MaterialCommunityIcons name="code-tags-check" size={20} color="#4F46E5" />
+            </View>
+            <View>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>Skills & Proficiency Matrix</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>LeetCode style skills • Strength out of 100 & auto icons</Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <View style={[styles.infoPillBadge, { backgroundColor: "#EEF2FF" }]}>
+              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#4F46E5" }}>
+                {(user.skills || userSkills).length} Skills
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color="#8A879F" />
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => setChangePasswordModalOpen(true)} activeOpacity={0.7} style={[styles.settingRow, settingRowStyle]}>
@@ -1153,6 +1267,321 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* 5. SKILLS MATRIX BOTTOM SHEET MODAL (LEETCODE STYLE) */}
+      <Modal visible={skillsModalOpen} animationType="slide" transparent onRequestClose={() => setSkillsModalOpen(false)}>
+        <View style={styles.modalBg}>
+          <Pressable onPress={() => setSkillsModalOpen(false)} style={StyleSheet.absoluteFill} />
+          <View style={[styles.modalCard, { maxHeight: "88%", paddingBottom: 20 }]}>
+            <View style={[styles.sheetHandleBar, { backgroundColor: activeAppTheme.border }]} />
+            
+            {/* Modal Header */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" }}>
+                  <MaterialCommunityIcons name="code-tags-check" size={22} color="#4F46E5" />
+                </View>
+                <View>
+                  <Text style={[styles.modalTitle, { color: activeAppTheme.text, marginBottom: 0 }]}>Manage Skills & Strength</Text>
+                  <Text style={{ fontSize: 11, color: activeAppTheme.subtext }}>LeetCode style skill matrix • Score out of 100</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setSkillsModalOpen(false)} style={{ padding: 6 }}>
+                <Feather name="x" size={20} color={activeAppTheme.subtext} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+              style={{ flexShrink: 1, maxHeight: 520 }}
+              contentContainerStyle={{ paddingBottom: 16 }}
+            >
+              {/* Domain Category Filter Tabs */}
+              <View style={{ marginBottom: 8 }}>
+                <Text style={{ fontSize: 11, fontWeight: "700", color: activeAppTheme.subtext, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Select Domain / Category:
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                  {DOMAIN_CATEGORIES.map((cat) => {
+                    const active = selectedDomainTab === cat.id;
+                    return (
+                      <TouchableOpacity
+                        key={cat.id}
+                        onPress={() => setSelectedDomainTab(cat.id)}
+                        style={{
+                          backgroundColor: active ? activeAppTheme.primary : activeAppTheme.cardBg,
+                          paddingHorizontal: 12,
+                          paddingVertical: 5,
+                          borderRadius: 14,
+                          borderWidth: 1,
+                          borderColor: active ? activeAppTheme.primary : activeAppTheme.border
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: active ? "#FFFFFF" : activeAppTheme.text }}>
+                          {cat.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
+              {/* Quick Preset Skills Chips for selected domain */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 14 }}>
+                {PRESET_SKILLS.filter((s) => selectedDomainTab === "All" || s.category === selectedDomainTab).map((preset) => {
+                  const isAdded = userSkills.some((s) => s.name.toLowerCase() === preset.name.toLowerCase());
+                  const iconInfo = getSkillIconInfo(preset.name);
+                  return (
+                    <TouchableOpacity
+                      key={preset.name}
+                      onPress={() => {
+                        setSkillNameInput(preset.name);
+                        setSkillStrengthInput(preset.strength);
+                      }}
+                      style={{
+                        backgroundColor: isAdded ? iconInfo.bg : activeAppTheme.cardBg,
+                        borderColor: isAdded ? iconInfo.accent : activeAppTheme.border,
+                        borderWidth: 1,
+                        borderRadius: 20,
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6
+                      }}
+                    >
+                      {renderSkillIcon(iconInfo, 14)}
+                      <Text style={{ fontSize: 12, fontWeight: "600", color: isAdded ? iconInfo.color : activeAppTheme.text }}>
+                        {preset.name}
+                      </Text>
+                      <Text style={{ fontSize: 10, fontWeight: "700", color: isAdded ? iconInfo.accent : activeAppTheme.subtext }}>
+                        {preset.strength}%
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Add / Edit Skill Card */}
+              <View style={{ backgroundColor: activeAppTheme.badgeBg, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: activeAppTheme.border, marginBottom: 16 }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: activeAppTheme.text, marginBottom: 10 }}>
+                  {editingSkillIndex !== null ? "Edit Skill Strength" : "Add Skill or Subject"}
+                </Text>
+
+                {/* Skill Name Input & Auto Icon Preview */}
+                <View style={{ marginBottom: 12 }}>
+                  <Text style={{ fontSize: 11, fontWeight: "600", color: activeAppTheme.subtext, marginBottom: 4 }}>
+                    Skill / Subject Name (NEET, JEE, Govt, Coding, etc.)
+                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: activeAppTheme.cardBg, borderWidth: 1, borderColor: activeAppTheme.border, borderRadius: 12, paddingHorizontal: 12 }}>
+                    {skillNameInput.trim() ? (
+                      renderSkillIcon(getSkillIconInfo(skillNameInput), 18, { marginRight: 8 })
+                    ) : (
+                      <Feather name="book-open" size={18} color={activeAppTheme.subtext} style={{ marginRight: 8 }} />
+                    )}
+                    <TextInput
+                      value={skillNameInput}
+                      onChangeText={setSkillNameInput}
+                      placeholder="e.g. Biology, Organic Chemistry, Reasoning, React..."
+                      placeholderTextColor={activeAppTheme.subtext}
+                      style={{ flex: 1, height: 42, fontSize: 13, color: activeAppTheme.text }}
+                    />
+                  </View>
+
+                  {/* Autocomplete Dropdown Suggestions */}
+                  {skillNameInput.trim().length > 0 && (
+                    <View style={{ marginTop: 6, backgroundColor: activeAppTheme.cardBg, borderRadius: 10, borderWidth: 1, borderColor: activeAppTheme.border, overflow: "hidden" }}>
+                      {getSkillsAutocompleteSuggestions(skillNameInput).map((sug) => {
+                        const sugIcon = getSkillIconInfo(sug.name);
+                        return (
+                          <TouchableOpacity
+                            key={sug.name}
+                            onPress={() => {
+                              setSkillNameInput(sug.name);
+                              setSkillStrengthInput(sug.strength);
+                            }}
+                            style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: activeAppTheme.border }}
+                          >
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                              {renderSkillIcon(sugIcon, 14)}
+                              <Text style={{ fontSize: 12, fontWeight: "600", color: activeAppTheme.text }}>{sug.name}</Text>
+                            </View>
+                            <Text style={{ fontSize: 11, fontWeight: "700", color: activeAppTheme.primary }}>{sug.strength}%</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+
+                {/* Strength Score (0 - 100) */}
+                <View style={{ marginBottom: 12 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: activeAppTheme.subtext }}>Strength Score (Out of 100)</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <View style={{ backgroundColor: getSkillLevel(skillStrengthInput).bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+                        <Text style={{ fontSize: 10, fontWeight: "700", color: getSkillLevel(skillStrengthInput).color }}>
+                          {getSkillLevel(skillStrengthInput).title}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 14, fontWeight: "800", color: activeAppTheme.primary }}>
+                        {skillStrengthInput}/100
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Preset Strength Buttons */}
+                  <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
+                    {[35, 60, 80, 95].map((lvl) => (
+                      <TouchableOpacity
+                        key={lvl}
+                        onPress={() => setSkillStrengthInput(lvl)}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 6,
+                          backgroundColor: Number(skillStrengthInput) === lvl ? activeAppTheme.primary : activeAppTheme.cardBg,
+                          borderRadius: 8,
+                          alignItems: "center",
+                          borderWidth: 1,
+                          borderColor: Number(skillStrengthInput) === lvl ? activeAppTheme.primary : activeAppTheme.border
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: Number(skillStrengthInput) === lvl ? "#FFFFFF" : activeAppTheme.text }}>
+                          {lvl}%
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Visual Strength Progress Bar Preview */}
+                  <View style={{ height: 10, backgroundColor: activeAppTheme.border, borderRadius: 5, overflow: "hidden" }}>
+                    <View
+                      style={{
+                        height: "100%",
+                        width: `${Math.max(0, Math.min(100, Number(skillStrengthInput) || 0))}%`,
+                        backgroundColor: getSkillIconInfo(skillNameInput).accent || activeAppTheme.primary,
+                        borderRadius: 5
+                      }}
+                    />
+                  </View>
+                </View>
+
+                {/* Add / Update Button */}
+                <TouchableOpacity
+                  onPress={handleAddOrUpdateSkill}
+                  style={{
+                    backgroundColor: activeAppTheme.primary,
+                    borderRadius: 12,
+                    paddingVertical: 10,
+                    alignItems: "center",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    gap: 6
+                  }}
+                >
+                  <Feather name={editingSkillIndex !== null ? "check" : "plus"} size={16} color="#FFFFFF" />
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 13 }}>
+                    {editingSkillIndex !== null ? "Update Skill" : "Add to Skills Matrix"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Added Skills Matrix List */}
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: activeAppTheme.text }}>
+                  Current Skills Matrix ({userSkills.length})
+                </Text>
+                {userSkills.length > 0 && (
+                  <Text style={{ fontSize: 11, color: activeAppTheme.subtext }}>
+                    Avg Strength: {Math.round(userSkills.reduce((a, b) => a + (Number(b.strength) || 0), 0) / userSkills.length)}%
+                  </Text>
+                )}
+              </View>
+
+              {userSkills.length === 0 ? (
+                <View style={{ alignItems: "center", paddingVertical: 24, backgroundColor: activeAppTheme.cardBg, borderRadius: 14, borderWidth: 1, borderColor: activeAppTheme.border }}>
+                  <MaterialCommunityIcons name="code-json" size={32} color="#94A3B8" />
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: activeAppTheme.text, marginTop: 6 }}>No skills added yet</Text>
+                  <Text style={{ fontSize: 11, color: activeAppTheme.subtext, marginTop: 2 }}>Use quick add above or type a custom skill name.</Text>
+                </View>
+              ) : (
+                <View style={{ gap: 10 }}>
+                  {userSkills.map((item, index) => {
+                    const iconInfo = getSkillIconInfo(item.name);
+                    const lvlInfo = getSkillLevel(item.strength);
+                    return (
+                      <View
+                        key={index}
+                        style={{
+                          backgroundColor: activeAppTheme.cardBg,
+                          borderRadius: 14,
+                          padding: 12,
+                          borderWidth: 1,
+                          borderColor: activeAppTheme.border
+                        }}
+                      >
+                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                            <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: iconInfo.bg, alignItems: "center", justifyContent: "center" }}>
+                              {renderSkillIcon(iconInfo, 18)}
+                            </View>
+                            <View>
+                              <Text style={{ fontSize: 13, fontWeight: "700", color: activeAppTheme.text }}>{item.name}</Text>
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+                                <View style={{ backgroundColor: lvlInfo.bg, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6 }}>
+                                  <Text style={{ fontSize: 9.5, fontWeight: "700", color: lvlInfo.color }}>{lvlInfo.title}</Text>
+                                </View>
+                                <Text style={{ fontSize: 11, fontWeight: "600", color: activeAppTheme.subtext }}>{item.strength}/100</Text>
+                              </View>
+                            </View>
+                          </View>
+
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                            <TouchableOpacity onPress={() => handleEditSkill(index)} style={{ padding: 6 }}>
+                              <Feather name="edit-2" size={14} color={activeAppTheme.primary} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleRemoveSkill(index)} style={{ padding: 6 }}>
+                              <Feather name="trash-2" size={14} color="#EF4444" />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+
+                        {/* Progress bar */}
+                        <View style={{ height: 6, backgroundColor: activeAppTheme.border, borderRadius: 3, overflow: "hidden" }}>
+                          <View
+                            style={{
+                              height: "100%",
+                              width: `${Math.max(0, Math.min(100, Number(item.strength) || 0))}%`,
+                              backgroundColor: iconInfo.accent,
+                              borderRadius: 3
+                            }}
+                          />
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Save Skills Button */}
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+              <TouchableOpacity onPress={() => setSkillsModalOpen(false)} style={[styles.cancelModalBtn, subtleButtonStyle, { flex: 1 }]}>
+                <Text style={[styles.cancelModalBtnText, { color: activeAppTheme.subtext }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveSkills} disabled={savingSkills} style={[styles.saveModalBtn, { flex: 2, backgroundColor: activeAppTheme.primary }]}>
+                {savingSkills ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.saveModalBtnText}>Save Skills to Profile</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -1536,7 +1965,7 @@ const styles = StyleSheet.create({
   },
   saveModalBtn: {
     flex: 1,
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#0A6836",
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center"

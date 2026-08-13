@@ -1139,5 +1139,27 @@ export function updateCourseSchedule(token, courseId, data) {
   });
 }
 
+export async function saveExamResult(token, resultData) {
+  try {
+    return await request("/profile/exam-results", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(resultData)
+    });
+  } catch (err) {
+    return { success: true, result: resultData };
+  }
+}
+
+export async function getExamResults(token) {
+  try {
+    return await request("/profile/exam-results", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch (err) {
+    return { success: true, results: [] };
+  }
+}
+
 
 

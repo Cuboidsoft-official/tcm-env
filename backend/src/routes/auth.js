@@ -64,6 +64,13 @@ export function publicUser(user) {
     ],
     certifications: user.certifications || ["Certified Technical Instructor", "Full Stack Systems Architect"],
     interests: user.interests || ["System Architecture", "AI & Machine Learning", "Student Mentorship"],
+    skills: user.skills || [
+      { name: "JavaScript", strength: 88 },
+      { name: "React", strength: 92 },
+      { name: "Python", strength: 78 },
+      { name: "Node.js", strength: 84 },
+      { name: "C++", strength: 75 }
+    ],
     bio: user.bio || "",
     location: user.location || "Bilaspur, Chhattisgarh",
     city: user.city || (user.location || "Bilaspur").split(",")[0].trim(),

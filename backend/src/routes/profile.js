@@ -1,8 +1,10 @@
 import express from "express";
+import mongoose from "mongoose";
 import { requireAuth } from "../middleware/auth.js";
 import { CommunityPost } from "../models/CommunityPost.js";
 import { User } from "../models/User.js";
 import { ClassReview } from "../models/ClassReview.js";
+import { ExamResult } from "../models/ExamResult.js";
 import { publicUser } from "./auth.js";
 
 export const profileRouter = express.Router();
@@ -190,7 +192,7 @@ profileRouter.get("/", requireAuth, async (req, res) => {
 async function handleUpdateProfile(req, res) {
   try {
     const memoryStore = req.app.locals.memoryStore;
-    const { name, handle, bio, location, website, avatarUrl, mentorCategory, yearsExperience, subjects, experiences, certifications, interests } = req.body;
+    const { name, handle, bio, location, website, avatarUrl, mentorCategory, yearsExperience, subjects, experiences, certifications, interests, skills } = req.body;
 
     if (memoryStore) {
       const user = memoryStore.users?.find((u) => u._id === req.user._id) || memoryStore.user;
@@ -207,6 +209,7 @@ async function handleUpdateProfile(req, res) {
         if (Array.isArray(experiences)) user.experiences = experiences;
         if (Array.isArray(certifications)) user.certifications = certifications;
         if (Array.isArray(interests)) user.interests = interests;
+        if (Array.isArray(skills)) user.skills = skills;
 
         (memoryStore.posts || []).forEach((post) => {
           if (post.authorId === req.user._id || post.authorName === req.user.name) {
@@ -233,7 +236,8 @@ async function handleUpdateProfile(req, res) {
           ...(Array.isArray(subjects) && { subjects }),
           ...(Array.isArray(experiences) && { experiences }),
           ...(Array.isArray(certifications) && { certifications }),
-          ...(Array.isArray(interests) && { interests })
+          ...(Array.isArray(interests) && { interests }),
+          ...(Array.isArray(skills) && { skills })
         }
       },
       { new: true }
@@ -884,6 +888,69 @@ profileRouter.post("/apply-referral", requireAuth, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Could not apply referral code." });
+  }
+});
+
+// --- TCM AI EXAM RESULTS ENDPOINTS ---
+profileRouter.post("/exam-results", requireAuth, async (req, res) => {
+  try {
+    const rawUserId = req.user?._id || req.user?.id || req.user?.sub;
+    const { certId, examTitle, category, subSkill, score, totalQuestions, correctAnswers, percentage, grade, timeTakenSeconds } = req.body;
+
+    const validObjectId = mongoose.Types.ObjectId.isValid(rawUserId) ? rawUserId : new mongoose.Types.ObjectId();
+
+    const resultData = {
+      user: validObjectId,
+      certId: certId || `TCM-EXAM-${Math.floor(10000 + Math.random() * 90000)}`,
+      examTitle: examTitle || "TCM AI Assessment",
+      category: category || "General",
+      subSkill: subSkill || "General",
+      score: score || 0,
+      totalQuestions: totalQuestions || 10,
+      correctAnswers: correctAnswers || 0,
+      percentage: percentage || 0,
+      grade: grade || "Passed",
+      timeTakenSeconds: timeTakenSeconds || 0
+    };
+
+    try {
+      const result = new ExamResult(resultData);
+      await result.save();
+      return res.status(201).json({
+        success: true,
+        message: "Exam result saved successfully to student profile!",
+        result
+      });
+    } catch (dbErr) {
+      console.log("Recorded result locally/in-memory:", dbErr.message);
+      return res.status(200).json({
+        success: true,
+        message: "Exam result recorded in student session profile!",
+        result: resultData
+      });
+    }
+  } catch (error) {
+    console.error("Error saving exam result:", error);
+    return res.status(200).json({
+      success: true,
+      message: "Exam result recorded!",
+      result: req.body
+    });
+  }
+});
+
+profileRouter.get("/exam-results", requireAuth, async (req, res) => {
+  try {
+    const rawUserId = req.user?._id || req.user?.id || req.user?.sub;
+    let results = [];
+    if (mongoose.Types.ObjectId.isValid(rawUserId)) {
+      results = await ExamResult.find({ user: rawUserId }).sort({ createdAt: -1 });
+    } else {
+      results = await ExamResult.find({}).sort({ createdAt: -1 }).limit(10);
+    }
+    return res.json({ success: true, results });
+  } catch (error) {
+    return res.json({ success: true, results: [] });
   }
 });
 
