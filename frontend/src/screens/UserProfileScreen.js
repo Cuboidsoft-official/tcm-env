@@ -46,6 +46,24 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
 
   async function handleDeletePostFromSheet() {
     if (!selectedPostForSheet) return;
+    const currentUserIdStr = String(session?.user?.id || session?.user?._id || "").trim();
+    const postAuthorIdStr = String(selectedPostForSheet.authorId || selectedPostForSheet.userId || selectedPostForSheet.author_id || "").trim();
+    const currentUserName = (session?.user?.name || "").toLowerCase().trim();
+    const postAuthorName = (selectedPostForSheet.authorName || "").toLowerCase().trim();
+
+    const isMyPost = Boolean(
+      session?.user &&
+      ((currentUserIdStr && postAuthorIdStr === currentUserIdStr) ||
+       (currentUserName && postAuthorName === currentUserName) ||
+       session?.user?.role === "admin")
+    );
+
+    if (!isMyPost) {
+      Alert.alert("Permission Denied", "You can only delete your own posts.");
+      setPostSheetOpen(false);
+      return;
+    }
+
     const postId = selectedPostForSheet.id || selectedPostForSheet._id;
     try {
       if (session?.token) {
@@ -55,7 +73,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
     setUserPosts((prev) => prev.filter((p) => String(p.id || p._id) !== String(postId)));
     setPostSheetOpen(false);
     setSelectedPostForSheet(null);
-    Alert.alert("Post Deleted 🗑️", "Post has been deleted successfully.");
+    Alert.alert("Post Deleted", "Post has been deleted successfully.");
   }
 
   const targetId = targetUser?.id || targetUser?._id || targetUser?.authorId || "user-rohit";
@@ -561,29 +579,59 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 30 }]}>
             <View style={styles.sheetHandleBar} />
             <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E293B", textAlign: "center", marginTop: 8 }}>
-              Post Options ⚙️
+              Post Options
             </Text>
             <Text numberOfLines={1} style={{ fontSize: 13, color: "#64748B", textAlign: "center", marginBottom: 20 }}>
               {selectedPostForSheet?.title || selectedPostForSheet?.content || selectedPostForSheet?.text || "Selected Post"}
             </Text>
 
-            <TouchableOpacity
-              onPress={handleDeletePostFromSheet}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#FEF2F2",
-                borderWidth: 1,
-                borderColor: "#FCA5A5",
-                paddingVertical: 14,
-                borderRadius: 14,
-                marginBottom: 10
-              }}
-            >
-              <Feather name="trash-2" size={18} color="#EF4444" style={{ marginRight: 8 }} />
-              <Text style={{ fontSize: 15, fontWeight: "700", color: "#EF4444" }}>Delete Post 🗑️</Text>
-            </TouchableOpacity>
+            {Boolean(
+              session?.user &&
+              ((String(session.user.id || session.user._id || "").trim() &&
+                String(selectedPostForSheet?.authorId || selectedPostForSheet?.userId || selectedPostForSheet?.author_id || "").trim() === String(session.user.id || session.user._id || "").trim()) ||
+               ((session.user.name || "").toLowerCase().trim() &&
+                (selectedPostForSheet?.authorName || "").toLowerCase().trim() === (session.user.name || "").toLowerCase().trim()) ||
+               session.user.role === "admin")
+            ) ? (
+              <TouchableOpacity
+                onPress={handleDeletePostFromSheet}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#FEF2F2",
+                  borderWidth: 1,
+                  borderColor: "#FCA5A5",
+                  paddingVertical: 14,
+                  borderRadius: 14,
+                  marginBottom: 10
+                }}
+              >
+                <Feather name="trash-2" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 15, fontWeight: "700", color: "#EF4444" }}>Delete Post</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  setPostSheetOpen(false);
+                  Alert.alert("Report Received", "Thank you. This post has been reported to moderators.");
+                }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#FFFBEB",
+                  borderWidth: 1,
+                  borderColor: "#FDE68A",
+                  paddingVertical: 14,
+                  borderRadius: 14,
+                  marginBottom: 10
+                }}
+              >
+                <Feather name="flag" size={18} color="#D97706" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 15, fontWeight: "600", color: "#D97706" }}>Report Post</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               onPress={() => {
@@ -601,7 +649,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
               }}
             >
               <Feather name="share-2" size={18} color="#475569" style={{ marginRight: 8 }} />
-              <Text style={{ fontSize: 15, fontWeight: "600", color: "#475569" }}>Share Post Link 🔗</Text>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: "#475569" }}>Share Post</Text>
             </TouchableOpacity>
 
             <TouchableOpacity

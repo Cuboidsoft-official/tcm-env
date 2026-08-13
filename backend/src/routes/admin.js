@@ -8,6 +8,7 @@ import { Job } from "../models/Job.js";
 import { Webinar } from "../models/Webinar.js";
 import { CommunityPost } from "../models/CommunityPost.js";
 import { publicUser } from "./auth.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export const adminRouter = express.Router();
 
@@ -899,5 +900,162 @@ adminRouter.get("/enrollments", requireAdmin, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Could not fetch enrollments", error: error.message });
+  }
+});
+
+// POST /admin/allocate-course - Allocate course to a student
+adminRouter.post("/allocate-course", requireAuth, async (req, res) => {
+  try {
+    const { studentEmail, studentId, courseId, courseTitle, coursePrice } = req.body;
+    if (!studentEmail && !studentId) {
+      return res.status(400).json({ message: "Student Email or Student ID is required." });
+    }
+
+    const memoryStore = req.app.locals.memoryStore;
+    let student = null;
+
+    if (memoryStore && Array.isArray(memoryStore.users)) {
+      student = memoryStore.users.find(
+        (u) =>
+          (studentId && String(u._id || u.id) === String(studentId)) ||
+          (studentEmail && u.email?.toLowerCase() === studentEmail.toLowerCase().trim())
+      );
+    }
+
+    if (!student) {
+      if (studentId) {
+        student = await User.findById(studentId);
+      } else if (studentEmail) {
+        student = await User.findOne({ email: studentEmail.toLowerCase().trim() });
+      }
+    }
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found with provided Email or ID." });
+    }
+
+    if (!Array.isArray(student.enrolledCourses)) {
+      student.enrolledCourses = [];
+    }
+
+    const targetCourseId = courseId || `c-${Date.now()}`;
+    const targetCourseTitle = courseTitle || "Full Stack Web Development Masterclass";
+    const targetCoursePrice = coursePrice || "₹4,999";
+
+    const alreadyEnrolled = student.enrolledCourses.some(
+      (c) => String(c.id || c.courseId) === String(targetCourseId) || c.courseTitle === targetCourseTitle
+    );
+
+    if (!alreadyEnrolled) {
+      student.enrolledCourses.push({
+        id: targetCourseId,
+        courseId: targetCourseId,
+        courseTitle: targetCourseTitle,
+        coursePrice: targetCoursePrice,
+        enrolledDate: new Date().toISOString(),
+        progressPercent: 0,
+        completedModules: "0 / 20 Modules",
+        status: "In Progress"
+      });
+
+      if (typeof student.save === "function") {
+        try { await student.save(); } catch (e) {}
+      }
+
+      // Add Notification for student
+      if (memoryStore && Array.isArray(memoryStore.notifications)) {
+        memoryStore.notifications.unshift({
+          id: `notif_${Date.now()}`,
+          userId: String(student._id || student.id),
+          title: "Course Allocated 🎉",
+          subtitle: `Admin granted you access to: ${targetCourseTitle}`,
+          message: `Admin granted you access to: ${targetCourseTitle}`,
+          unread: true,
+          type: "course_enrolled",
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Course "${targetCourseTitle}" allocated successfully to ${student.name || student.email}!`,
+      student: {
+        id: String(student._id || student.id),
+        name: student.name,
+        email: student.email,
+        enrolledCoursesCount: student.enrolledCourses.length
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Could not allocate course", error: error.message });
+  }
+});
+
+// PATCH /admin/courses/:id/schedule - Manage course status & shift class dates (aage/piche)
+adminRouter.patch("/courses/:id/schedule", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, nextClassDate, nextClassTime, shiftDays, scheduleNote } = req.body;
+
+    const memoryStore = req.app.locals.memoryStore;
+    let course = null;
+
+    if (memoryStore && Array.isArray(memoryStore.courses)) {
+      course = memoryStore.courses.find((c) => String(c.id || c._id) === String(id));
+    }
+
+    if (!course) {
+      try { course = await Course.findById(id); } catch (e) {}
+    }
+
+    if (!course) {
+      course = {
+        id,
+        title: "Full Stack Web Development Masterclass",
+        status: "Active",
+        nextClassDate: "Tomorrow",
+        nextClassTime: "10:00 AM"
+      };
+      if (memoryStore) {
+        if (!Array.isArray(memoryStore.courses)) memoryStore.courses = [];
+        memoryStore.courses.push(course);
+      }
+    }
+
+    if (status) course.status = status;
+    if (nextClassDate) course.nextClassDate = nextClassDate;
+    if (nextClassTime) course.nextClassTime = nextClassTime;
+    if (scheduleNote) course.scheduleNote = scheduleNote;
+
+    if (shiftDays && typeof shiftDays === "number") {
+      course.shiftedDays = (course.shiftedDays || 0) + shiftDays;
+      course.scheduleNote = `Class shifted ${shiftDays > 0 ? `+${shiftDays}` : shiftDays} day(s) ${shiftDays > 0 ? "forward" : "backward"}. ${scheduleNote || ""}`.trim();
+    }
+
+    if (typeof course.save === "function") {
+      try { await course.save(); } catch (e) {}
+    }
+
+    // Send broadcast notification to all enrolled users
+    if (memoryStore && Array.isArray(memoryStore.notifications)) {
+      memoryStore.notifications.unshift({
+        id: `notif_sched_${Date.now()}`,
+        title: "Class Schedule Update 📅",
+        subtitle: `${course.title || "Course"} status: ${course.status}. Next class: ${course.nextClassDate || nextClassDate || "Updated"} ${course.nextClassTime || nextClassTime || ""}`,
+        message: course.scheduleNote || "Live class schedule updated by Admin.",
+        unread: true,
+        type: "class_rescheduled",
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Course schedule & status updated successfully!`,
+      course
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Could not update course schedule", error: error.message });
   }
 });

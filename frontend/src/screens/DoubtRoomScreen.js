@@ -770,9 +770,15 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
           <View style={styles.headerTextWrap}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Text style={[styles.headerName, { color: theme.text }]} numberOfLines={1}>{room?.title || "Doubt Room"}</Text>
-              {room?.isPremium ? (
-                <MaterialCommunityIcons name="check-decagram" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
-              ) : null}
+              {room?.isPrivate ? (
+                <View style={{ backgroundColor: "#FEE2E2", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6, marginLeft: 6 }}>
+                  <Text style={{ fontSize: 10, fontWeight: "700", color: "#DC2626" }}>🔒 Private</Text>
+                </View>
+              ) : (
+                <View style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6, marginLeft: 6 }}>
+                  <Text style={{ fontSize: 10, fontWeight: "700", color: theme.primary }}>🌐 Public</Text>
+                </View>
+              )}
             </View>
 
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>

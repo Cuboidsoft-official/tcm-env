@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -17,7 +18,7 @@ import {
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { applyReferralCode, getProfile, updateProfile } from "../api/client";
+import { applyReferralCode, askSupportAi, getProfile, updateProfile } from "../api/client";
 import MyReviewsModal from "../components/MyReviewsModal";
 import { useTheme } from "../context/ThemeContext";
 import { colors, shadow } from "../constants/theme";
@@ -115,16 +116,91 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
   const [activityStatus, setActivityStatus] = useState(true);
   const [wifiOnlyDownloads, setWifiOnlyDownloads] = useState(false);
 
-  // Language State
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
-
   // Modals State
   const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
-  const [languageModalOpen, setLanguageModalOpen] = useState(false);
   const [themeModalOpen, setThemeModalOpen] = useState(false);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [myReviewsModalOpen, setMyReviewsModalOpen] = useState(false);
+
+  // Help & Support Modal State
+  const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [supportQueryInput, setSupportQueryInput] = useState("");
+  const [askingSupportAi, setAskingSupportAi] = useState(false);
+  const [supportMessages, setSupportMessages] = useState([
+    {
+      id: "welcome_1",
+      sender: "ai",
+      text: "Hello! I am your TCM AI Support Specialist 🤖. How can I help you today? Ask about course access, doubt rooms, wallet/coins, or mentor bookings."
+    }
+  ]);
+
+  async function handleSendSupportQuery(queryText) {
+    const textToSend = queryText || supportQueryInput;
+    if (!textToSend || !textToSend.trim()) return;
+
+    const userMsg = {
+      id: `usr_${Date.now()}`,
+      sender: "user",
+      text: textToSend.trim()
+    };
+
+    setSupportMessages((prev) => [...prev, userMsg]);
+    setSupportQueryInput("");
+    setAskingSupportAi(true);
+
+    try {
+      const res = await askSupportAi(session?.token, textToSend.trim());
+      const aiReplyText = res?.answer || "Thank you for reaching out! Your query has been logged. If your issue is still unresolved, please email our support team directly at support@cuboidsoft.in.";
+      
+      setSupportMessages((prev) => [
+        ...prev,
+        {
+          id: `ai_${Date.now()}`,
+          sender: "ai",
+          text: aiReplyText
+        }
+      ]);
+    } catch (err) {
+      setSupportMessages((prev) => [
+        ...prev,
+        {
+          id: `ai_${Date.now()}`,
+          sender: "ai",
+          text: "Here are recommended steps:\n\n1. Ensure you have active internet connectivity.\n2. If your issue is still unresolved, please send an email directly to support@cuboidsoft.in and our technical team will assist you within 24 hours."
+        }
+      ]);
+    } finally {
+      setAskingSupportAi(false);
+    }
+  }
+
+  function handleSendEmailSupport() {
+    const subject = encodeURIComponent("TCM App Technical Support & Feedback");
+    const body = encodeURIComponent(
+      `Hello TCM Support Team,\n\nI need help with my TCM app account.\n\nUser ID: ${user.id || session?.user?.id || "N/A"}\nUser Name: ${user.name || "TCM Learner"}\n\nDescription of my issue:\n`
+    );
+    const mailtoUrl = `mailto:support@cuboidsoft.in?subject=${subject}&body=${body}`;
+
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined") {
+        window.open(mailtoUrl, "_blank");
+      }
+      return;
+    }
+
+    Linking.canOpenURL(mailtoUrl)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(mailtoUrl);
+        } else {
+          Alert.alert("Email Support ✉️", "Please send an email to: support@cuboidsoft.in");
+        }
+      })
+      .catch(() => {
+        Alert.alert("Email Support ✉️", "Please send an email to: support@cuboidsoft.in");
+      });
+  }
 
   // Edit Form State
   const [form, setForm] = useState({
@@ -487,42 +563,25 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
         </View>
       </View>
 
-      {/* 4. Appearance & Themes (NEW FEATURES) */}
+      {/* 4. Appearance & Themes */}
       <View style={[styles.sectionCard, sectionCardStyle]}>
         <Text style={[styles.sectionHeader, sectionHeaderStyle]}>APPEARANCE & THEMES</Text>
 
-        {/* Theme Selector Row */}
-        <TouchableOpacity onPress={() => setThemeModalOpen(true)} activeOpacity={0.7} style={[styles.settingRow, settingRowStyle]}>
+        {/* Theme Switching Row */}
+        <TouchableOpacity onPress={() => setThemeModalOpen(true)} activeOpacity={0.7} style={styles.settingRowNoBorder}>
           <View style={styles.rowLeft}>
             <View style={[styles.iconWrap, { backgroundColor: activeAppTheme.badgeBg }]}>
-              <Feather name={activeAppTheme.icon} size={18} color={activeAppTheme.primary} />
+              <Feather name="moon" size={18} color={activeAppTheme.primary} />
             </View>
             <View>
-              <Text style={[styles.rowTitle, rowTitleStyle]}>App Theme</Text>
-              <Text style={styles.rowSub}>{activeAppTheme.name} Mode • {activeAppTheme.subtitle}</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>App Theme & Appearance</Text>
+              <Text style={[styles.rowSub, rowSubStyle]}>{activeAppTheme.name} Mode • Custom Accents</Text>
             </View>
           </View>
           <View style={[styles.themeBadgePill, { backgroundColor: activeAppTheme.badgeBg, borderColor: activeAppTheme.primary }]}>
             <Text style={[styles.themeBadgePillText, { color: activeAppTheme.primary }]}>
               {activeAppTheme.name} Mode
             </Text>
-            <Feather name="chevron-right" size={14} color={activeAppTheme.primary} />
-          </View>
-        </TouchableOpacity>
-
-        {/* Language Row */}
-        <TouchableOpacity onPress={() => setLanguageModalOpen(true)} activeOpacity={0.7} style={styles.settingRowNoBorder}>
-          <View style={styles.rowLeft}>
-            <View style={[styles.iconWrap, { backgroundColor: "#EAF5FF" }]}>
-              <Feather name="globe" size={18} color="#2F79B9" />
-            </View>
-            <View>
-              <Text style={[styles.rowTitle, rowTitleStyle]}>App Language</Text>
-              <Text style={[styles.rowSub, rowSubStyle]}>{selectedLanguage}</Text>
-            </View>
-          </View>
-          <View style={[styles.badgePill, { backgroundColor: activeAppTheme.badgeBg }]}>
-            <Text style={[styles.badgePillText, { color: activeAppTheme.primary }]}>{selectedLanguage}</Text>
             <Feather name="chevron-right" size={14} color={activeAppTheme.primary} />
           </View>
         </TouchableOpacity>
@@ -726,7 +785,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       <View style={[styles.sectionCard, sectionCardStyle]}>
         <Text style={[styles.sectionHeader, sectionHeaderStyle]}>SUPPORT & LEGAL</Text>
 
-        <TouchableOpacity onPress={() => Alert.alert("Help Center", "Opening TCM Help Center & FAQ...")} style={[styles.settingRow, settingRowStyle]}>
+        <TouchableOpacity onPress={() => setSupportModalOpen(true)} style={[styles.settingRow, settingRowStyle]}>
           <View style={styles.rowLeft}>
             <View style={[styles.iconWrap, { backgroundColor: "#F0EDFF" }]}>
               <Feather name="help-circle" size={18} color="#5B3CF5" />
@@ -933,30 +992,6 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
         </Pressable>
       </Modal>
 
-      {/* 4. Language Selector Modal */}
-      <Modal visible={languageModalOpen} animationType="slide" transparent onRequestClose={() => setLanguageModalOpen(false)}>
-        <Pressable onPress={() => setLanguageModalOpen(false)} style={styles.modalBg}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, modalCardStyle]}>
-            <View style={[styles.sheetHandleBar, { backgroundColor: activeAppTheme.border }]} />
-            <Text style={[styles.modalTitle, { color: activeAppTheme.text }]}>Select App Language</Text>
-
-            {["English", "Hindi (हिंदी)", "Hinglish"].map((lang) => (
-              <TouchableOpacity
-                key={lang}
-                onPress={() => {
-                  setSelectedLanguage(lang.split(" ")[0]);
-                  setLanguageModalOpen(false);
-                }}
-                style={[styles.langOptionRow, { borderBottomColor: activeAppTheme.border }]}
-              >
-                <Text style={[styles.langOptionText, { color: activeAppTheme.text }]}>{lang}</Text>
-                {selectedLanguage === lang.split(" ")[0] && <Feather name="check" size={18} color={activeAppTheme.primary} />}
-              </TouchableOpacity>
-            ))}
-          </Pressable>
-        </Pressable>
-      </Modal>
-
       {/* 5. Transactions & Wallet History Full Screen Modal */}
       <Modal visible={walletModalOpen} animationType="slide" onRequestClose={() => setWalletModalOpen(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
@@ -970,6 +1005,154 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
         user={user}
         onClose={() => setMyReviewsModalOpen(false)}
       />
+
+      {/* HELP & SUPPORT AI BOTTOM SHEET MODAL */}
+      <Modal visible={supportModalOpen} animationType="slide" transparent onRequestClose={() => setSupportModalOpen(false)}>
+        <Pressable onPress={() => setSupportModalOpen(false)} style={styles.modalBg}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { maxHeight: "88%", paddingBottom: 20 }]}>
+            <View style={[styles.sheetHandleBar, { backgroundColor: activeAppTheme.border }]} />
+            
+            {/* Header */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: activeAppTheme.badgeBg, alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+                  <MaterialCommunityIcons name="bot" size={20} color={activeAppTheme.primary} />
+                </View>
+                <View>
+                  <Text style={[styles.modalTitle, { color: activeAppTheme.text, marginBottom: 0 }]}>Help & AI Support 🤖</Text>
+                  <Text style={{ fontSize: 11, color: activeAppTheme.subtext }}>Instant AI Assistant & Customer Care</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity onPress={() => setSupportModalOpen(false)} style={{ padding: 4 }}>
+                <Feather name="x" size={20} color={activeAppTheme.subtext} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Quick Topic Chips */}
+            <Text style={{ fontSize: 11, fontWeight: "700", color: activeAppTheme.subtext, marginBottom: 6 }}>Quick Assistance Topics:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 10 }}>
+              {[
+                "Doubt Room Access",
+                "Wallet & Coins",
+                "Course Enrollment",
+                "Mentor Booking",
+                "App Bug Report"
+              ].map((topic) => (
+                <TouchableOpacity
+                  key={topic}
+                  onPress={() => handleSendSupportQuery(`Help me with ${topic}`)}
+                  style={{
+                    backgroundColor: activeAppTheme.badgeBg,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: activeAppTheme.border
+                  }}
+                >
+                  <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: activeAppTheme.primary }}>
+                    💡 {topic}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Chat Messages Log */}
+            <ScrollView style={{ maxHeight: 220, marginVertical: 8, backgroundColor: activeAppTheme.isDark ? "#1E263B" : "#F8FAFC", borderRadius: 14, padding: 10, borderWidth: 1, borderColor: activeAppTheme.border }}>
+              {supportMessages.map((msg) => (
+                <View
+                  key={msg.id}
+                  style={{
+                    alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
+                    backgroundColor: msg.sender === "user" ? activeAppTheme.primary : (activeAppTheme.isDark ? "#334155" : "#FFFFFF"),
+                    borderRadius: 12,
+                    padding: 10,
+                    marginBottom: 8,
+                    maxWidth: "85%",
+                    borderWidth: msg.sender === "user" ? 0 : 1,
+                    borderColor: activeAppTheme.border
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: msg.sender === "user" ? "#FFFFFF" : activeAppTheme.text, lineHeight: 17 }}>
+                    {msg.text}
+                  </Text>
+                </View>
+              ))}
+              {askingSupportAi ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4 }}>
+                  <ActivityIndicator size="small" color={activeAppTheme.primary} />
+                  <Text style={{ fontSize: 11.5, color: activeAppTheme.subtext, fontStyle: "italic" }}>TCM AI Support is typing answer...</Text>
+                </View>
+              ) : null}
+            </ScrollView>
+
+            {/* AI Input Field */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4, marginBottom: 12 }}>
+              <TextInput
+                value={supportQueryInput}
+                onChangeText={setSupportQueryInput}
+                placeholder="Describe your issue or ask a question..."
+                placeholderTextColor={activeAppTheme.subtext}
+                style={{
+                  flex: 1,
+                  backgroundColor: activeAppTheme.isDark ? "#1E293B" : "#FFFFFF",
+                  borderWidth: 1,
+                  borderColor: activeAppTheme.border,
+                  borderRadius: 12,
+                  paddingHorizontal: 12,
+                  paddingVertical: 9,
+                  fontSize: 12.5,
+                  color: activeAppTheme.text
+                }}
+              />
+              <TouchableOpacity
+                onPress={() => handleSendSupportQuery()}
+                disabled={askingSupportAi || !supportQueryInput.trim()}
+                style={{
+                  backgroundColor: activeAppTheme.primary,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  opacity: askingSupportAi || !supportQueryInput.trim() ? 0.6 : 1
+                }}
+              >
+                <Feather name="send" size={16} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Email Support Fallback (support@cuboidsoft.in) */}
+            <View style={{ backgroundColor: activeAppTheme.isDark ? "#1E293B" : "#FFF8F8", borderRadius: 14, padding: 12, borderWidth: 1, borderColor: "#FECDD3", marginTop: 4 }}>
+              <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#991B1B", marginBottom: 2 }}>
+                Issue Still Not Resolved? ✉️
+              </Text>
+              <Text style={{ fontSize: 11, color: activeAppTheme.subtext, marginBottom: 8 }}>
+                If our AI Assistant couldn't solve your issue, send feedback or email us directly at support@cuboidsoft.in.
+              </Text>
+
+              <TouchableOpacity
+                onPress={handleSendEmailSupport}
+                style={{
+                  backgroundColor: "#DC2626",
+                  paddingVertical: 9,
+                  paddingHorizontal: 14,
+                  borderRadius: 10,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6
+                }}
+              >
+                <Feather name="mail" size={15} color="#FFFFFF" />
+                <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>
+                  Send Email to support@cuboidsoft.in
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }

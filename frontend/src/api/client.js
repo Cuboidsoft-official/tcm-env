@@ -182,7 +182,7 @@ export async function getHome(token) {
       authorRole: j.mentorRole || "Senior Mentor",
       publishedAt: j.createdAt || new Date().toISOString(),
       isMentor: true,
-      isPinned: Boolean(j.isPinned || j.pinned || j.isPinnedPost),
+      isPinned: false,
       postType: "job_news",
       category: "💼 Jobs & Hiring",
       text: `HIRING DRIVE: ${j.title} at ${j.company || "TCM Partner"}. Salary: ₹${j.minSalary} - ₹${j.maxSalary} ${j.salaryPeriod || "LPA"}. Deadline: ${j.deadline || "Open"}.\n\n${j.description}`,
@@ -210,10 +210,16 @@ export async function getHome(token) {
       (p) => p.postType !== "job_news" && !p.jobData && !jobPostCards.some((j) => j.id === p.id || j.id === String(p.id).replace(/^post-/, ""))
     );
 
+    const mergedPosts = [...nonJobPosts, ...jobPostCards].sort((a, b) => {
+      const timeA = new Date(a.publishedAt || a.createdAt || 0).getTime() || 0;
+      const timeB = new Date(b.publishedAt || b.createdAt || 0).getTime() || 0;
+      return timeB - timeA;
+    });
+
     return {
       ...homeData,
       categories: existingCategories,
-      posts: [...jobPostCards, ...nonJobPosts]
+      posts: mergedPosts
     };
   }
 
@@ -668,6 +674,14 @@ export function askAiDoubt(token, roomId, data) {
   });
 }
 
+export function askSupportAi(token, query) {
+  return request("/home/support/ask-ai", {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: JSON.stringify({ query })
+  });
+}
+
 export function createDoubtRoomPoll(token, roomId, data) {
   return request(`/home/doubt-rooms/${roomId}/polls`, {
     method: "POST",
@@ -1107,6 +1121,22 @@ export async function getPublicPartners() {
     if (res?.partners) return res.partners;
   } catch (e) {}
   return [];
+}
+
+export function allocateCourseToStudent(token, data) {
+  return request("/admin/allocate-course", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
+}
+
+export function updateCourseSchedule(token, courseId, data) {
+  return request(`/admin/courses/${courseId}/schedule`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
 }
 
 

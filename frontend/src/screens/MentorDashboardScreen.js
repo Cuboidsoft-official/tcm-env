@@ -13,7 +13,7 @@ import {
   View
 } from "react-native";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { getMentorCourses, scheduleLiveClassLink, createJobPost, getJobPosts, getMentorJobPosts, updateJobPost, updateJobApplicantStatus, deleteJobPost } from "../api/client";
+import { getMentorCourses, scheduleLiveClassLink, createJobPost, getJobPosts, getMentorJobPosts, updateJobPost, updateJobApplicantStatus, deleteJobPost, allocateCourseToStudent, updateCourseSchedule } from "../api/client";
 import MentorReviewsModal from "../components/MentorReviewsModal";
 import CreateJobModal from "../components/CreateJobModal";
 import JobApplicantsModal from "../components/JobApplicantsModal";
@@ -37,6 +37,80 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   const [jobToEdit, setJobToEdit] = useState(null);
   const [selectedJobForApplicants, setSelectedJobForApplicants] = useState(null);
   const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
+
+  // 1. Allocate Course State & Handler
+  const [allocateModalOpen, setAllocateModalOpen] = useState(false);
+  const [studentEmailInput, setStudentEmailInput] = useState("");
+  const [selectedCourseForAllocation, setSelectedCourseForAllocation] = useState(null);
+  const [allocating, setAllocating] = useState(false);
+
+  async function handleAllocateCourse() {
+    if (!studentEmailInput || !studentEmailInput.trim()) {
+      Alert.alert("Input Required ⚠️", "Please enter the student's email address or student ID.");
+      return;
+    }
+    const targetCourse = selectedCourseForAllocation || defaultMentorCourses[0];
+    setAllocating(true);
+    try {
+      const res = await allocateCourseToStudent(session?.token, {
+        studentEmail: studentEmailInput.trim(),
+        courseId: targetCourse.id,
+        courseTitle: targetCourse.title,
+        coursePrice: targetCourse.price || "₹4,999"
+      });
+      if (res?.success) {
+        Alert.alert("Course Allocated 🎉", res.message || `Granted ${targetCourse.title} to student.`);
+        setAllocateModalOpen(false);
+        setStudentEmailInput("");
+      } else {
+        Alert.alert("Allocation Failed", res?.message || "Could not allocate course.");
+      }
+    } catch (e) {
+      Alert.alert("Error", e?.message || "Could not allocate course to student.");
+    } finally {
+      setAllocating(false);
+    }
+  }
+
+  // 2. Manage Class Schedule & Date Shift State & Handler
+  const [manageScheduleModalOpen, setManageScheduleModalOpen] = useState(false);
+  const [selectedCourseForSchedule, setSelectedCourseForSchedule] = useState(null);
+  const [courseStatus, setCourseStatus] = useState("Active");
+  const [nextClassDate, setNextClassDate] = useState("Tomorrow");
+  const [nextClassTime, setNextClassTime] = useState("10:00 AM – 11:30 AM");
+  const [scheduleNote, setScheduleNote] = useState("");
+  const [updatingSchedule, setUpdatingSchedule] = useState(false);
+
+  function handleShiftDays(days) {
+    const today = new Date();
+    today.setDate(today.getDate() + days);
+    const dateStr = today.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    setNextClassDate(dateStr);
+    setScheduleNote(`Shifted class by ${days > 0 ? `+${days}` : days} day(s).`);
+  }
+
+  async function handleSaveScheduleUpdate() {
+    const targetCourse = selectedCourseForSchedule || defaultMentorCourses[0];
+    setUpdatingSchedule(true);
+    try {
+      const res = await updateCourseSchedule(session?.token, targetCourse.id, {
+        status: courseStatus,
+        nextClassDate,
+        nextClassTime,
+        scheduleNote
+      });
+      if (res?.success) {
+        Alert.alert("Schedule Updated 📅", `Updated class schedule & status for ${targetCourse.title}. Enrolled students have been notified!`);
+        setManageScheduleModalOpen(false);
+      } else {
+        Alert.alert("Update Failed", res?.message || "Could not update schedule.");
+      }
+    } catch (e) {
+      Alert.alert("Error", e?.message || "Could not update schedule.");
+    } finally {
+      setUpdatingSchedule(false);
+    }
+  }
 
   // Weekly Engagement Activity Chart Data (Mon - Sun)
   const weeklyData = [
@@ -121,21 +195,36 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   }
 
   async function handleDeleteJob(jobId) {
-    Alert.alert("Delete Job Post 🗑️", "Are you sure you want to remove this job posting? It will be permanently removed.", [
+    const cleanId = String(jobId).replace(/^post-/, "");
+    const performDelete = async () => {
+      try {
+        await deleteJobPost(session?.token, jobId);
+        setJobPosts((prev) =>
+          prev.filter((j) => {
+            const jId = String(j.id || j._id);
+            return jId !== String(jobId) && jId !== cleanId;
+          })
+        );
+        Alert.alert("Job Deleted", "The job posting has been deleted.");
+        loadJobs();
+      } catch (e) {
+        Alert.alert("Error", "Failed to delete job.");
+      }
+    };
+
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm("Are you sure you want to remove this job posting?")) {
+        performDelete();
+      }
+      return;
+    }
+
+    Alert.alert("Delete Job Post", "Are you sure you want to remove this job posting? It will be permanently removed.", [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Delete Permanent",
+        text: "Delete",
         style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteJobPost(session?.token, jobId);
-            setJobPosts((prev) => prev.filter((j) => j.id !== jobId && j.id !== String(jobId).replace(/^post-/, "")));
-            await loadJobs();
-            Alert.alert("Job Deleted 🗑️", "The job posting has been deleted.");
-          } catch (e) {
-            Alert.alert("Error", "Failed to delete job.");
-          }
-        }
+        onPress: performDelete
       }
     ]);
   }
@@ -236,7 +325,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Sleek Modern Header */}
-      <View style={styles.topHeader}>
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
         <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <Feather name="chevron-left" size={24} color={theme.text} />
         </Pressable>
@@ -253,7 +342,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
         {/* ============================================================ */}
         {/* 2. HERO OVERVIEW GRADIENT CARD */}
         {/* ============================================================ */}
-        <View style={styles.heroCard}>
+        <View style={[styles.heroCard, { backgroundColor: theme.primary }]}>
           {/* Decorative Background Circles */}
           <View style={styles.heroDecoCircle1} />
           <View style={styles.heroDecoCircle2} />
@@ -284,7 +373,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
               onPress={() => handleCardPress("Payouts", "Manage your monthly earnings & bank transfer payouts.")}
               style={styles.payoutNavBtn}
             >
-              <Text style={styles.payoutNavBtnText}>Payouts →</Text>
+              <Text style={[styles.payoutNavBtnText, { color: theme.primary }]}>Payouts →</Text>
             </Pressable>
           </View>
         </View>
@@ -487,19 +576,38 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           {/* Activity 5: Schedule Daily Live Class Link (Session-Wise) */}
           <Pressable
             onPress={() => setScheduleModalOpen(true)}
-            style={({ pressed }) => [styles.activityTouchCard, { borderColor: "#0A6836", backgroundColor: "#E8F5E9" }, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.activityTouchCard, { borderColor: theme.primary, backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }, pressed && styles.pressed]}
           >
-            <View style={[styles.activityIconBox, { backgroundColor: "#0A6836" }]}>
+            <View style={[styles.activityIconBox, { backgroundColor: theme.primary }]}>
               <Feather name="video" size={20} color="#FFFFFF" />
             </View>
 
             <View style={styles.activityCopy}>
-              <Text style={[styles.activityTitle, { color: "#0A6836" }]}>Schedule Daily Class Links</Text>
-              <Text style={styles.activitySub}>Send session-wise live class links to enrolled students</Text>
+              <Text style={[styles.activityTitle, { color: theme.primary }]}>Schedule Daily Class Links</Text>
+              <Text style={[styles.activitySub, { color: theme.subtext }]}>Send session-wise live class links to enrolled students</Text>
             </View>
 
-            <View style={[styles.arrowCircle, { backgroundColor: "#0A6836" }]}>
+            <View style={[styles.arrowCircle, { backgroundColor: theme.primary }]}>
               <Feather name="plus" size={16} color="#FFFFFF" />
+            </View>
+          </Pressable>
+
+          {/* Activity 6: Allocate Course to Student (Admin / Mentor) */}
+          <Pressable
+            onPress={() => setAllocateModalOpen(true)}
+            style={({ pressed }) => [styles.activityTouchCard, { borderColor: "#10B981", backgroundColor: theme.isDark ? "#064E3B" : "#ECFDF5" }, pressed && styles.pressed]}
+          >
+            <View style={[styles.activityIconBox, { backgroundColor: "#10B981" }]}>
+              <Feather name="user-check" size={20} color="#FFFFFF" />
+            </View>
+
+            <View style={styles.activityCopy}>
+              <Text style={[styles.activityTitle, { color: "#10B981" }]}>Allocate Course to Student</Text>
+              <Text style={[styles.activitySub, { color: theme.subtext }]}>Grant direct course access to any student email or ID</Text>
+            </View>
+
+            <View style={[styles.arrowCircle, { backgroundColor: "#10B981" }]}>
+              <Feather name="arrow-right" size={16} color="#FFFFFF" />
             </View>
           </Pressable>
         </View>
@@ -508,15 +616,15 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
         {/* ALL CREATED COURSES & EDIT OPTIONS */}
         {/* ============================================================ */}
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 24, marginBottom: 12 }}>
-          <Text style={{ fontSize: 16, fontWeight: "700", color: "#0F172A" }}>My Created Courses ({activeCourseList.length})</Text>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: theme.text }}>My Created Courses ({activeCourseList.length})</Text>
           <TouchableOpacity
             onPress={() => {
               if (onNavigateActivity) onNavigateActivity("Add Courses");
             }}
             style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
           >
-            <Feather name="plus-circle" size={15} color="#0A6836" />
-            <Text style={{ fontSize: 13, fontWeight: "700", color: "#0A6836" }}>Create New</Text>
+            <Feather name="plus-circle" size={15} color={theme.primary} />
+            <Text style={{ fontSize: 13, fontWeight: "700", color: theme.primary }}>Create New</Text>
           </TouchableOpacity>
         </View>
 
@@ -525,49 +633,79 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
             <View
               key={course.id}
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: theme.cardBg,
                 borderRadius: 16,
                 padding: 16,
                 marginBottom: 12,
                 borderWidth: 1,
-                borderColor: "#E2E8F0",
+                borderColor: theme.border,
                 ...shadow.sm
               }}
             >
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <View style={{ flex: 1, paddingRight: 10 }}>
-                  <View style={{ backgroundColor: "#E8F5E9", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginBottom: 6 }}>
-                    <Text style={{ fontSize: 10, fontWeight: "700", color: "#0A6836" }}>{course.category || "Web Development"}</Text>
+                  <View style={{ backgroundColor: theme.badgeBg, alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginBottom: 6 }}>
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: theme.primary }}>{course.category || "Web Development"}</Text>
                   </View>
-                  <Text style={{ fontSize: 15, fontWeight: "700", color: "#0F172A" }}>{course.title}</Text>
-                  <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: theme.text }}>{course.title}</Text>
+                  <Text style={{ fontSize: 12, color: theme.subtext, marginTop: 2 }}>
                     {course.modules?.length || 5} Day-by-Day Syllabus Modules • {course.duration || "20 Days"}
                   </Text>
                 </View>
 
-                {/* EDIT COURSE BUTTON */}
-                <TouchableOpacity
-                  onPress={() => {
-                    if (onEditCourse) {
-                      onEditCourse(course);
-                    } else if (onNavigateActivity) {
-                      onNavigateActivity("Add Courses");
-                    } else {
-                      Alert.alert("Edit Course", `Opening edit editor for "${course.title}".`);
-                    }
-                  }}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: "#0A6836",
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    borderRadius: 10
-                  }}
-                >
-                  <Feather name="edit-2" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
-                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 12 }}>Edit Course</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  {/* MANAGE SCHEDULE & SHIFT DATES BUTTON */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedCourseForSchedule(course);
+                      setCourseStatus(course.status || "Active");
+                      setNextClassDate(course.nextClassDate || "Tomorrow");
+                      setNextClassTime(course.nextClassTime || "10:00 AM – 11:30 AM");
+                      setManageScheduleModalOpen(true);
+                    }}
+                    style={{
+                      backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF",
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: theme.primary,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4
+                    }}
+                  >
+                    <Feather name="calendar" size={13} color={theme.primary} />
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: theme.primary }}>Schedule</Text>
+                  </TouchableOpacity>
+
+                  {/* EDIT COURSE BUTTON */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (onEditCourse) {
+                        onEditCourse(course);
+                      } else if (onNavigateActivity) {
+                        onNavigateActivity("Add Courses");
+                      } else {
+                        Alert.alert("Edit Course", `Opening edit editor for "${course.title}".`);
+                      }
+                    }}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                      backgroundColor: theme.badgeBg,
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: theme.border
+                    }}
+                  >
+                    <Feather name="edit-3" size={13} color={theme.primary} />
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: theme.primary }}>Edit</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           ))}
@@ -766,8 +904,8 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
         {/* ============================================================ */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 24, marginBottom: 12 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Ionicons name="briefcase" size={18} color="#0A6836" />
-            <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A" }}>My Posted Jobs & Hiring Drives</Text>
+            <Ionicons name="briefcase" size={18} color={theme.primary} />
+            <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: theme.text }}>My Posted Jobs & Hiring Drives</Text>
           </View>
 
           <TouchableOpacity
@@ -776,22 +914,22 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
               setCreateJobModalOpen(true);
             }}
             activeOpacity={0.8}
-            style={{ backgroundColor: "#0A6836", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
+            style={{ backgroundColor: theme.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
           >
             <Text style={{ color: "#FFFFFF", fontSize: 11.5, fontFamily: fonts.bold }}>+ Post Job</Text>
           </TouchableOpacity>
         </View>
 
         {jobPosts.length === 0 ? (
-          <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#E2E8F0", padding: 20, alignItems: "center", marginBottom: 20 }}>
-            <Ionicons name="briefcase-outline" size={32} color="#CBD5E1" />
-            <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: "#334155", marginTop: 8 }}>No Jobs Posted Yet</Text>
-            <Text style={{ fontSize: 11.5, color: "#64748B", textAlign: "center", marginTop: 2 }}>
+          <View style={{ backgroundColor: theme.cardBg, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 20, alignItems: "center", marginBottom: 20 }}>
+            <Ionicons name="briefcase-outline" size={32} color={theme.subtext} />
+            <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: theme.text, marginTop: 8 }}>No Jobs Posted Yet</Text>
+            <Text style={{ fontSize: 11.5, color: theme.subtext, textAlign: "center", marginTop: 2 }}>
               Post job openings to receive candidate applications & resumes directly on your dashboard.
             </Text>
             <TouchableOpacity
               onPress={() => setCreateJobModalOpen(true)}
-              style={{ backgroundColor: "#0A6836", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, marginTop: 12 }}
+              style={{ backgroundColor: theme.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, marginTop: 12 }}
             >
               <Text style={{ color: "#FFFFFF", fontSize: 12, fontFamily: fonts.bold }}>+ Create First Job Posting</Text>
             </TouchableOpacity>
@@ -807,49 +945,49 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
               <View
                 key={job.id}
                 style={{
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: theme.cardBg,
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: "#E2E8F0",
+                  borderColor: theme.border,
                   padding: 14,
                   marginBottom: 12
                 }}
               >
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                   <View style={{ flex: 1, marginRight: 8 }}>
-                    <Text style={{ fontSize: 14.5, fontFamily: fonts.bold, color: "#0F172A" }}>{job.title}</Text>
-                    <Text style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                    <Text style={{ fontSize: 14.5, fontFamily: fonts.bold, color: theme.text }}>{job.title}</Text>
+                    <Text style={{ fontSize: 11, color: theme.subtext, marginTop: 2 }}>
                       ₹{job.minSalary} – ₹{job.maxSalary} {job.salaryPeriod} • Deadline: {job.deadline}
                     </Text>
                   </View>
 
-                  <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: isFilled ? "#FEE2E2" : "#DCFCE7" }}>
-                    <Text style={{ fontSize: 10, fontWeight: "700", color: isFilled ? "#991B1B" : "#166534" }}>
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: isFilled ? "#FEE2E2" : theme.badgeBg }}>
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: isFilled ? "#991B1B" : theme.primary }}>
                       {isFilled ? "FILLED" : "ACTIVE"}
                     </Text>
                   </View>
                 </View>
 
                 {/* AI Candidate Progress Tracker */}
-                <View style={{ marginTop: 10, backgroundColor: "#F8FAFC", padding: 8, borderRadius: 8, borderWidth: 1, borderColor: "#F1F5F9" }}>
+                <View style={{ marginTop: 10, backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", padding: 8, borderRadius: 8, borderWidth: 1, borderColor: theme.border }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    <Text style={{ fontSize: 10.5, fontFamily: fonts.bold, color: "#475569" }}>AI Candidate Limit Tracker</Text>
-                    <Text style={{ fontSize: 10.5, fontWeight: "700", color: "#0A6836" }}>{selectedCount} / {reqCount} Candidates Selected</Text>
+                    <Text style={{ fontSize: 10.5, fontFamily: fonts.bold, color: theme.subtext }}>AI Candidate Limit Tracker</Text>
+                    <Text style={{ fontSize: 10.5, fontWeight: "700", color: theme.primary }}>{selectedCount} / {reqCount} Candidates Selected</Text>
                   </View>
-                  <View style={{ height: 5, width: "100%", backgroundColor: "#E2E8F0", borderRadius: 3, marginTop: 4, overflow: "hidden" }}>
-                    <View style={{ height: "100%", width: `${fillPercent}%`, backgroundColor: isFilled ? "#EF4444" : "#0A6836", borderRadius: 3 }} />
+                  <View style={{ height: 5, width: "100%", backgroundColor: theme.border, borderRadius: 3, marginTop: 4, overflow: "hidden" }}>
+                    <View style={{ height: "100%", width: `${fillPercent}%`, backgroundColor: isFilled ? "#EF4444" : theme.primary, borderRadius: 3 }} />
                   </View>
                 </View>
 
                 {/* Action Buttons: View Resumes, Edit, Delete */}
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.border }}>
                   <TouchableOpacity
                     onPress={() => setSelectedJobForApplicants(job)}
                     activeOpacity={0.8}
-                    style={{ backgroundColor: "#E8F5E9", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: "row", alignItems: "center" }}
+                    style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: "row", alignItems: "center" }}
                   >
-                    <Ionicons name="people" size={13} color="#0A6836" style={{ marginRight: 4 }} />
-                    <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#0A6836" }}>
+                    <Ionicons name="people" size={13} color={theme.primary} style={{ marginRight: 4 }} />
+                    <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: theme.primary }}>
                       View Applicants & Resumes ({job.applicants?.length || 0})
                     </Text>
                   </TouchableOpacity>
@@ -920,6 +1058,231 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
         onClose={() => setSelectedJobForApplicants(null)}
         onUpdateApplicantStatus={handleUpdateApplicantStatus}
       />
+
+      {/* MODAL 1: ALLOCATE COURSE TO STUDENT */}
+      <Modal visible={allocateModalOpen} transparent animationType="slide" onRequestClose={() => setAllocateModalOpen(false)}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: "rgba(15,23,42,0.6)", justifyContent: "center", padding: 20 }} activeOpacity={1} onPress={() => setAllocateModalOpen(false)}>
+          <TouchableOpacity activeOpacity={1} style={{ width: "100%", backgroundColor: theme.cardBg, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: theme.border }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center" }}>
+                  <Feather name="user-check" size={20} color="#10B981" />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: theme.text }}>Allocate Course to Student 🎓</Text>
+                  <Text style={{ fontSize: 11, color: theme.subtext }}>Grant direct course enrollment access</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setAllocateModalOpen(false)}>
+                <Feather name="x" size={20} color={theme.subtext} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text, marginBottom: 6 }}>1. Student Email or Student ID</Text>
+            <TextInput
+              value={studentEmailInput}
+              onChangeText={setStudentEmailInput}
+              placeholder="e.g. student@gmail.com or usr_123"
+              placeholderTextColor={theme.subtext}
+              style={{
+                backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC",
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 10,
+                padding: 11,
+                fontSize: 13,
+                color: theme.text,
+                marginBottom: 14
+              }}
+            />
+
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text, marginBottom: 6 }}>2. Select Course to Allocate</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 14 }}>
+              {(activeCourseList || defaultMentorCourses).map((c) => {
+                const isSel = (selectedCourseForAllocation?.id || defaultMentorCourses[0].id) === c.id;
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    onPress={() => setSelectedCourseForAllocation(c)}
+                    style={{
+                      backgroundColor: isSel ? theme.primary : theme.badgeBg,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: isSel ? theme.primary : theme.border
+                    }}
+                  >
+                    <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: isSel ? "#FFFFFF" : theme.primary }}>
+                      {c.title}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              onPress={handleAllocateCourse}
+              disabled={allocating}
+              style={{
+                backgroundColor: "#10B981",
+                borderRadius: 12,
+                paddingVertical: 12,
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: allocating ? 0.7 : 1,
+                marginTop: 4
+              }}
+            >
+              <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 14 }}>
+                {allocating ? "Allocating Access..." : "Grant Course Access Now 🎉"}
+              </Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* MODAL 2: MANAGE CLASS SCHEDULE & SHIFT DATES (Class Aage/Piche) */}
+      <Modal visible={manageScheduleModalOpen} transparent animationType="slide" onRequestClose={() => setManageScheduleModalOpen(false)}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: "rgba(15,23,42,0.6)", justifyContent: "center", padding: 20 }} activeOpacity={1} onPress={() => setManageScheduleModalOpen(false)}>
+          <TouchableOpacity activeOpacity={1} style={{ width: "100%", backgroundColor: theme.cardBg, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: theme.border }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.badgeBg, alignItems: "center", justifyContent: "center" }}>
+                  <Feather name="calendar" size={20} color={theme.primary} />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: theme.text }}>Class Schedule & Date Shift 📅</Text>
+                  <Text style={{ fontSize: 11, color: theme.subtext }}>{selectedCourseForSchedule?.title || "Course Schedule"}</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setManageScheduleModalOpen(false)}>
+                <Feather name="x" size={20} color={theme.subtext} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text, marginBottom: 6 }}>1. Course Status</Text>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
+              {["Active", "Rescheduled", "Upcoming", "Completed"].map((st) => (
+                <TouchableOpacity
+                  key={st}
+                  onPress={() => setCourseStatus(st)}
+                  style={{
+                    backgroundColor: courseStatus === st ? theme.primary : theme.badgeBg,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: courseStatus === st ? theme.primary : theme.border
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: courseStatus === st ? "#FFFFFF" : theme.primary }}>
+                    {st}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text, marginBottom: 6 }}>2. Quick Date Shift (Class Aage / Piche)</Text>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
+              {[
+                { label: "+1 Day", days: 1 },
+                { label: "+2 Days", days: 2 },
+                { label: "-1 Day", days: -1 },
+                { label: "-2 Days", days: -2 }
+              ].map((shift) => (
+                <TouchableOpacity
+                  key={shift.label}
+                  onPress={() => handleShiftDays(shift.days)}
+                  style={{
+                    backgroundColor: theme.isDark ? "#334155" : "#F1F5F9",
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: theme.border
+                  }}
+                >
+                  <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: theme.text }}>
+                    {shift.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text, marginBottom: 6 }}>3. Next Class Date & Time</Text>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
+              <TextInput
+                value={nextClassDate}
+                onChangeText={setNextClassDate}
+                placeholder="Date (e.g. Tomorrow, Mon 18 Aug)"
+                placeholderTextColor={theme.subtext}
+                style={{
+                  flex: 1,
+                  backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC",
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  borderRadius: 10,
+                  padding: 10,
+                  fontSize: 12,
+                  color: theme.text
+                }}
+              />
+              <TextInput
+                value={nextClassTime}
+                onChangeText={setNextClassTime}
+                placeholder="Time (e.g. 10:00 AM)"
+                placeholderTextColor={theme.subtext}
+                style={{
+                  flex: 1,
+                  backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC",
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  borderRadius: 10,
+                  padding: 10,
+                  fontSize: 12,
+                  color: theme.text
+                }}
+              />
+            </View>
+
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text, marginBottom: 6 }}>4. Schedule Note for Enrolled Students</Text>
+            <TextInput
+              value={scheduleNote}
+              onChangeText={setScheduleNote}
+              placeholder="e.g. Live session shifted due to holiday / mentor update."
+              placeholderTextColor={theme.subtext}
+              style={{
+                backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC",
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 10,
+                padding: 10,
+                fontSize: 12,
+                color: theme.text,
+                marginBottom: 14
+              }}
+            />
+
+            <TouchableOpacity
+              onPress={handleSaveScheduleUpdate}
+              disabled={updatingSchedule}
+              style={{
+                backgroundColor: theme.primary,
+                borderRadius: 12,
+                paddingVertical: 12,
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: updatingSchedule ? 0.7 : 1
+              }}
+            >
+              <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 14 }}>
+                {updatingSchedule ? "Saving Schedule..." : "Save & Notify Enrolled Students 📢"}
+              </Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* MODAL: JOB DETAILS VIEW */}
       <JobDetailsModal

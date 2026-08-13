@@ -33,7 +33,7 @@ import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { addPostComment, deletePostComment, createCommunityPost, deleteCommunityPost, getHome, getNotifications, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost, applyJobPost, deleteJobPost } from "../api/client";
-import { sanitizeImageUri } from "../utils/imageUtils";
+import { sanitizeImageUri, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUtils";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import ApplyJobModal from "../components/ApplyJobModal";
@@ -49,7 +49,7 @@ import SearchScreen from "./SearchScreen";
 import MentorProfileScreen from "./MentorProfileScreen";
 import ChatScreen from "./ChatScreen";
 import NotificationsScreen from "./NotificationsScreen";
-import { setupPushNotifications, setupNotificationListeners } from "../services/notificationService";
+import { setupPushNotifications, setupNotificationListeners, sendLocalNotification } from "../services/notificationService";
 import NotificationToast from "../components/NotificationToast";
 import ExploreTcmCategoryScreen from "./ExploreTcmCategoryScreen";
 import WalletScreen from "./WalletScreen";
@@ -324,6 +324,11 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
             if (!knownNotifIds.current.has(notifKey)) {
               knownNotifIds.current.add(notifKey);
               setActiveToast(n);
+              sendLocalNotification({
+                title: n.title || "TCM Notification 🔔",
+                body: n.subtitle || n.message || "You have a new update on TCM Mobile",
+                data: n
+              });
               break;
             }
           }
@@ -550,34 +555,43 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   }
 
   async function handleDeletePost(postId) {
+    const cleanId = String(postId).replace(/^post-/, "");
+    const performDelete = async () => {
+      try {
+        if (session?.token) {
+          await deleteCommunityPost(session.token, postId).catch(() => {});
+          await deleteJobPost(session.token, cleanId).catch(() => {});
+        }
+      } catch (err) {}
+
+      deleteJobPost(session?.token, cleanId).catch(() => {});
+
+      setHome((current) => ({
+        ...current,
+        posts: (current?.posts || []).filter((p) => {
+          const pId = String(p.id || p._id);
+          return pId !== String(postId) && pId !== cleanId && p.jobData?.id !== cleanId;
+        })
+      }));
+      Alert.alert("Deleted", "Item removed successfully.");
+    };
+
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm("Are you sure you want to delete this item?")) {
+        performDelete();
+      }
+      return;
+    }
+
     Alert.alert(
-      "Delete Post / Job Drive 🗑️",
+      "Delete Item",
       "Are you sure you want to delete this item? It will be permanently removed.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Delete Permanent",
+          text: "Delete",
           style: "destructive",
-          onPress: async () => {
-            const cleanId = String(postId).replace(/^post-/, "");
-            try {
-              if (session?.token) {
-                await deleteCommunityPost(session.token, postId).catch(() => {});
-                await deleteJobPost(session.token, cleanId).catch(() => {});
-              }
-            } catch (err) {}
-
-            deleteJobPost(session?.token, cleanId).catch(() => {});
-
-            setHome((current) => ({
-              ...current,
-              posts: (current?.posts || []).filter((p) => {
-                const pId = String(p.id || p._id);
-                return pId !== String(postId) && pId !== cleanId && p.jobData?.id !== cleanId;
-              })
-            }));
-            Alert.alert("Deleted 🗑️", "Item removed successfully.");
-          }
+          onPress: performDelete
         }
       ]
     );
@@ -689,8 +703,26 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
     });
 
     return [...filtered].sort((a, b) => {
-      const timeA = new Date(a.publishedAt || a.createdAt || 0).getTime() || (typeof a.id === "number" ? a.id : 0);
-      const timeB = new Date(b.publishedAt || b.createdAt || 0).getTime() || (typeof b.id === "number" ? b.id : 0);
+      const parseTime = (item) => {
+        if (!item) return 0;
+        if (item.publishedAt) {
+          const t = new Date(item.publishedAt).getTime();
+          if (!isNaN(t) && t > 0) return t;
+        }
+        if (item.createdAt) {
+          const t = new Date(item.createdAt).getTime();
+          if (!isNaN(t) && t > 0) return t;
+        }
+        if (typeof item.id === "number") return item.id;
+        if (typeof item.id === "string" && item.id.includes("-")) {
+          const parts = item.id.split("-");
+          const num = Number(parts[parts.length - 1]);
+          if (!isNaN(num) && num > 0) return num;
+        }
+        return 0;
+      };
+      const timeA = parseTime(a);
+      const timeB = parseTime(b);
       return timeB - timeA;
     });
   }, [activeCategory, posts, search]);
@@ -1489,7 +1521,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
   const { theme } = useTheme();
   const metrics = post.metrics || {};
   const media = post.media || {};
-  const isPinnedCard = Boolean(post.isPinned || post.pinned || post.jobData?.isPinned || post.jobData?.pinned);
+  const isPinnedCard = Boolean(post.isPinned || post.pinned);
 
   const isJob = post.postType === "job_news" || Boolean(post.jobData);
   const job = post.jobData || {
@@ -1555,7 +1587,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
           >
             <Ionicons name="pushpin" size={15} color="#D97706" />
             <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#D97706", letterSpacing: 0.3 }}>
-              📌 PINNED JOB DRIVE
+              PINNED JOB DRIVE
             </Text>
           </View>
         )}
@@ -1594,13 +1626,19 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
 
           <Pressable
             onPress={() => {
+              if (Platform.OS === "web") {
+                if (typeof window !== "undefined" && window.confirm(`Delete job posting "${job.title}"?`)) {
+                  onDeletePost && onDeletePost(job.id);
+                }
+                return;
+              }
               Alert.alert(
-                "Job Drive Options ⚙️",
+                "Job Drive Options",
                 `Options for "${job.title}":`,
                 [
                   { text: "Cancel", style: "cancel" },
                   {
-                    text: "Delete Job Posting 🗑️",
+                    text: "Delete Job Posting",
                     style: "destructive",
                     onPress: () => onDeletePost && onDeletePost(job.id)
                   }
@@ -1856,13 +1894,19 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
             );
 
             if (isSelfPost) {
+              if (Platform.OS === "web") {
+                if (typeof window !== "undefined" && window.confirm("Delete this post?")) {
+                  onDeletePost && onDeletePost(post.id);
+                }
+                return;
+              }
               Alert.alert(
-                "Post Options ⚙️",
+                "Post Options",
                 "Choose an action for your post:",
                 [
                   { text: "Cancel", style: "cancel" },
                   {
-                    text: "Delete Post 🗑️",
+                    text: "Delete Post",
                     style: "destructive",
                     onPress: () => onDeletePost && onDeletePost(post.id)
                   }
@@ -1870,11 +1914,11 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
               );
             } else {
               Alert.alert(
-                "Post Options ⚙️",
+                "Post Options",
                 "Choose an action:",
                 [
                   { text: "Cancel", style: "cancel" },
-                  { text: "Report Post 🚩", onPress: () => Alert.alert("Reported 🚩", "Thank you. Post reported for review.") }
+                  { text: "Report Post", onPress: () => Alert.alert("Reported", "Thank you. Post reported for review.") }
                 ]
               );
             }
@@ -3371,7 +3415,8 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
         allowsMultipleSelection: uploadType === "photo",
         selectionLimit: 10,
         mediaTypes: uploadType === "video" ? ["videos"] : ["images"],
-        quality: 0.85,
+        quality: 0.7,
+        base64: true,
         videoMaxDuration: 30
       });
 
@@ -4010,9 +4055,14 @@ function DrawerFeatureModal({ feature, onClose, user }) {
                 onPress={async () => {
                   const success = await setupPushNotifications(session?.token, true);
                   if (success) {
-                    Alert.alert("Push Notifications 🔔", "Notification permissions are active and configured successfully!");
+                    sendLocalNotification({
+                      title: "TCM Push Notifications Active 🔔",
+                      body: "System notifications are active! You will receive live updates even when outside the app.",
+                      data: { test: true }
+                    });
+                    Alert.alert("Push Notifications 🔔", "Notification permissions are active! A test system push notification has been sent to your device.");
                   } else {
-                    Alert.alert("Permission Required ⚠️", "Notifications are currently blocked. Please allow notification access in your browser or device permissions dialog.");
+                    Alert.alert("Permission Required ⚠️", "Notifications are currently blocked. Please click the lock icon in your browser address bar or check device permissions to allow notifications.");
                   }
                 }}
                 style={[styles.settingsRow, modalSurface]}
@@ -4029,13 +4079,6 @@ function DrawerFeatureModal({ feature, onClose, user }) {
                   <Text style={[styles.settingsText, { color: theme.text }]}>Privacy & Security</Text>
                 </View>
                 <Feather name="chevron-right" size={18} color={theme.subtext} />
-              </View>
-              <View style={[styles.settingsRow, modalSurface]}>
-                <View style={styles.settingsLeft}>
-                  <Feather name="globe" size={20} color={theme.primary} />
-                  <Text style={[styles.settingsText, { color: theme.text }]}>App Language</Text>
-                </View>
-                <Text style={[styles.settingStateText, { color: theme.isDark ? "#C7D2FE" : theme.primary }]}>English</Text>
               </View>
             </View>
           ) : feature === "Notifications" ? (
@@ -4543,7 +4586,7 @@ const styles = StyleSheet.create({
   videoMedia: {
     alignSelf: "stretch",
     aspectRatio: 0.8,
-    backgroundColor: "#121022",
+    backgroundColor: "#F1F5F9",
     borderRadius: 14,
     marginTop: 14,
     overflow: "hidden",

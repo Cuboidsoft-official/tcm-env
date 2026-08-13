@@ -142,20 +142,33 @@ export async function setupPushNotifications(sessionToken, force = false) {
 export async function sendLocalNotification({ title, body, data }) {
   try {
     if (Platform.OS === "web") {
-      if (typeof window !== "undefined" && "Notification" in window && window.Notification.permission === "granted") {
-        new window.Notification(title, {
-          body: body || "",
-          data: data || {},
-          icon: "/favicon.ico",
-        });
+      if (typeof window !== "undefined" && "Notification" in window) {
+        let perm = window.Notification.permission;
+        if (perm === "default") {
+          try {
+            perm = await window.Notification.requestPermission();
+          } catch (e) {}
+        }
+        if (perm === "granted") {
+          const notif = new window.Notification(title || "TCM Alert 🔔", {
+            body: body || "You have a new update on TCM Mobile",
+            data: data || {},
+            icon: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=128&q=80",
+            badge: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=128&q=80"
+          });
+          notif.onclick = function () {
+            if (window.focus) window.focus();
+            notif.close();
+          };
+        }
       }
     } else {
       let Notifications = require("expo-notifications");
       if (Notifications && Notifications.scheduleNotificationAsync) {
         await Notifications.scheduleNotificationAsync({
           content: {
-            title,
-            body,
+            title: title || "TCM Alert 🔔",
+            body: body || "You have a new update on TCM Mobile",
             data: data || {},
             sound: "default",
           },

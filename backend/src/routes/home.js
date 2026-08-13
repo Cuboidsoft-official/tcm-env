@@ -3424,6 +3424,7 @@ function getInMemoryDoubtRoom(req, roomId) {
 // 1. GET /home/doubt-rooms - List all active Doubt Rooms & Knowledge Base highlights
 homeRouter.get("/doubt-rooms", requireAuth, async (req, res) => {
   try {
+    const currentUserId = String(req.user._id || req.user.id);
     let rooms = [];
     let kbItems = [];
     try {
@@ -3440,7 +3441,21 @@ homeRouter.get("/doubt-rooms", requireAuth, async (req, res) => {
       rooms = Object.values(req.app.locals.inMemoryDoubtRooms || {});
     }
 
-    return res.json({ success: true, rooms, knowledgeBase: kbItems });
+    // Private Room Access Control: Only visible if public OR user is creator, mentor, member, or in allowedUsers
+    const visibleRooms = rooms.filter((r) => {
+      if (!r.isPrivate) return true; // Public rooms visible to all
+
+      const creatorMatch = String(r.creatorId || "") === currentUserId;
+      const mentorMatch = String(r.assignedMentor?.id || "") === currentUserId;
+      const membersList = (r.members || []).map((m) => String(m.id || m.userId || m));
+      const allowedList = (r.allowedUsers || []).map((u) => String(u.id || u.userId || u));
+      const inMembers = membersList.includes(currentUserId);
+      const inAllowed = allowedList.includes(currentUserId);
+
+      return creatorMatch || mentorMatch || inMembers || inAllowed;
+    });
+
+    return res.json({ success: true, rooms: visibleRooms, knowledgeBase: kbItems });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -3449,7 +3464,7 @@ homeRouter.get("/doubt-rooms", requireAuth, async (req, res) => {
 // 2. POST /home/doubt-rooms - Create a new Doubt Room
 homeRouter.post("/doubt-rooms", requireAuth, async (req, res) => {
   try {
-    const { title, category = "NEET", isPrivate = false, description = "" } = req.body;
+    const { title, category = "NEET", isPrivate = false, description = "", allowedUsers = [] } = req.body;
     if (!title || !title.trim()) {
       return res.status(400).json({ message: "Room title is required." });
     }
@@ -3457,6 +3472,9 @@ homeRouter.post("/doubt-rooms", requireAuth, async (req, res) => {
     const userRole = (req.user?.role || "").toLowerCase().includes("mentor") || req.user?.isMentor ? "mentor" : "student";
     const currentUserId = String(req.user._id || req.user.id);
     const newRoomId = `${category.toUpperCase().replace(/\s+/g, "")}-DOUBT-${Math.floor(100 + Math.random() * 900)}`;
+
+    const formattedAllowedUsers = (allowedUsers || []).map((u) => String(u.id || u.userId || u)).filter(Boolean);
+    const membersList = Array.from(new Set([currentUserId, ...formattedAllowedUsers]));
 
     const newRoomData = {
       roomId: newRoomId,
@@ -3467,7 +3485,8 @@ homeRouter.post("/doubt-rooms", requireAuth, async (req, res) => {
       creatorId: currentUserId,
       creatorRole: userRole,
       admins: [currentUserId],
-      members: [currentUserId],
+      allowedUsers: formattedAllowedUsers,
+      members: membersList,
       assignedMentor: userRole === "mentor" ? {
         id: currentUserId,
         name: req.user?.name || "Mentor",
@@ -3475,10 +3494,10 @@ homeRouter.post("/doubt-rooms", requireAuth, async (req, res) => {
         avatarUrl: req.user?.avatarUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
         online: true
       } : null,
-      membersCount: 1,
+      membersCount: membersList.length,
       onlineCount: 1,
       pinnedAnnouncement: {
-        text: `Welcome to ${title.trim()}! Keep discussions on-topic and respectful.`,
+        text: `Welcome to ${title.trim()}! ${isPrivate ? "🔒 Private Room - Only invited members can view discussions." : "🌐 Public Room"}`,
         authorName: req.user?.name || "Room Admin"
       },
       isSolved: false,
@@ -3489,7 +3508,7 @@ homeRouter.post("/doubt-rooms", requireAuth, async (req, res) => {
           authorRole: "Admin",
           authorAvatar: req.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
           time: "Just now",
-          text: `Welcome to ${title.trim()}! ${isPrivate ? "🔒 (Private Room)" : "🌐 (Public Room)"}`,
+          text: `Welcome to ${title.trim()}! ${isPrivate ? "🔒 (Private Room - Only invited members have access)" : "🌐 (Public Room)"}`,
           type: "text"
         }
       ]
@@ -3560,18 +3579,37 @@ homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, async (req, res) => 
     const isAdmin = (room.admins || []).includes(currentUserId) || room.creatorId === currentUserId;
 
     if (action === "delete_group" || action === "delete_room") {
-      if (!isAdmin) {
-        return res.status(403).json({ message: "Only room admins can delete this group." });
+      if (isAdmin) {
+        try { await DoubtRoom.deleteOne({ roomId }); } catch (e) {}
+        if (req.app.locals.inMemoryDoubtRooms) delete req.app.locals.inMemoryDoubtRooms[roomId];
+        return res.json({ success: true, deleted: true, message: "Group room deleted permanently for everyone." });
+      } else {
+        if (!room.members) room.members = [];
+        if (!room.allowedUsers) room.allowedUsers = [];
+
+        room.members = room.members.filter((m) => String(m.id || m.userId || m) !== currentUserId);
+        room.allowedUsers = room.allowedUsers.filter((u) => String(u.id || u.userId || u) !== currentUserId);
+        room.membersCount = Math.max(0, (room.membersCount || 1) - 1);
+
+        if (typeof room.save === "function") try { await room.save(); } catch (e) {}
+        return res.json({ success: true, room, deletedForUser: true, message: "Group room removed for you." });
       }
-      try { await DoubtRoom.deleteOne({ roomId }); } catch (e) {}
-      if (req.app.locals.inMemoryDoubtRooms) delete req.app.locals.inMemoryDoubtRooms[roomId];
-      return res.json({ success: true, deleted: true, message: "Group room deleted successfully." });
     }
 
     if (action === "leave_room") {
+      if (isAdmin && (room.members || []).length <= 1) {
+        try { await DoubtRoom.deleteOne({ roomId }); } catch (e) {}
+        if (req.app.locals.inMemoryDoubtRooms) delete req.app.locals.inMemoryDoubtRooms[roomId];
+        return res.json({ success: true, deleted: true, message: "Group room deleted." });
+      }
+
       if (!room.members) room.members = [];
-      room.members = room.members.filter((m) => String(m) !== currentUserId);
+      if (!room.allowedUsers) room.allowedUsers = [];
+
+      room.members = room.members.filter((m) => String(m.id || m.userId || m) !== currentUserId);
+      room.allowedUsers = room.allowedUsers.filter((u) => String(u.id || u.userId || u) !== currentUserId);
       room.membersCount = Math.max(0, (room.membersCount || 1) - 1);
+
       if (typeof room.save === "function") try { await room.save(); } catch (e) {}
       return res.json({ success: true, room, left: true, message: "Left group room successfully." });
     }
@@ -3591,6 +3629,19 @@ homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, async (req, res) => 
       }
     } else if (action === "decline_request" && targetUserId) {
       room.joinRequests = room.joinRequests.filter((r) => String(r.userId) !== String(targetUserId));
+    } else if ((action === "add_member" || action === "invite_members") && targetUserId) {
+      const targets = Array.isArray(targetUserId) ? targetUserId : [targetUserId];
+      targets.forEach((tId) => {
+        const cleanTId = String(tId);
+        if (!room.members.includes(cleanTId)) {
+          room.members.push(cleanTId);
+          room.membersCount = (room.membersCount || 0) + 1;
+        }
+        if (!room.allowedUsers) room.allowedUsers = [];
+        if (!room.allowedUsers.includes(cleanTId)) {
+          room.allowedUsers.push(cleanTId);
+        }
+      });
     } else if (action === "promote_admin" && targetUserId) {
       if (!room.admins) room.admins = [room.creatorId];
       if (!room.admins.includes(targetUserId)) {
@@ -3767,6 +3818,35 @@ homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => 
       canRequestMentorHelp: true
     };
     return res.json({ success: true, aiMessage: fallbackAiMsg, room: null });
+  }
+});
+
+// 5.1 POST /home/support/ask-ai - Help & Support AI Assistant
+homeRouter.post("/support/ask-ai", requireAuth, async (req, res) => {
+  try {
+    const { query } = req.body;
+    if (!query || !query.trim()) {
+      return res.status(400).json({ message: "Query text is required." });
+    }
+
+    const questionToAsk = query.trim();
+    const systemInstruction = `You are TCM AI Support Specialist, an intelligent and polite customer support AI assistant for the TCM App (Talent & Career Mission). Help the user resolve app issues, doubt rooms access, course subscriptions, mentor bookings, wallet withdrawals, profile settings, or technical bugs. Provide step-by-step guidance. If the issue requires human intervention, remind the user they can email support@cuboidsoft.in. Keep answers concise, clear, and encouraging.`;
+
+    let geminiResponse = null;
+    try {
+      geminiResponse = await askGeminiAi(questionToAsk, systemInstruction);
+    } catch (e) {}
+
+    const aiAnswerText = (geminiResponse && geminiResponse.trim())
+      ? geminiResponse.trim()
+      : `Here are the recommended steps for your query:\n\n1. Ensure you have active network connectivity and the latest version of the app.\n2. If you are experiencing account, wallet, or course access issues, check your profile settings.\n3. If your issue is still unresolved, please email our support team directly at support@cuboidsoft.in and we will assist you within 24 hours.`;
+
+    return res.json({ success: true, answer: aiAnswerText });
+  } catch (err) {
+    return res.json({
+      success: true,
+      answer: `Here are the recommended steps for your query:\n\n1. Ensure you have active network connectivity and the latest version of the app.\n2. If your issue is still unresolved, please email our support team directly at support@cuboidsoft.in and we will assist you within 24 hours.`
+    });
   }
 });
 

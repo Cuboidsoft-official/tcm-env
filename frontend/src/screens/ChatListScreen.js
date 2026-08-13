@@ -42,6 +42,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
   const [roomCategory, setRoomCategory] = useState("NEET");
   const [roomDescription, setRoomDescription] = useState("");
   const [isRoomPrivate, setIsRoomPrivate] = useState(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState([]);
   const [creatingRoom, setCreatingRoom] = useState(false);
 
   // Knowledge Base Modal State
@@ -83,6 +84,34 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
     }
   }
 
+  function handleSelectRoom(roomItem) {
+    const currentUserId = String(session?.user?.id || session?.user?._id || "");
+    if (roomItem.isPrivate) {
+      const creatorId = String(roomItem.creatorId || "");
+      const mentorId = String(roomItem.assignedMentor?.id || "");
+      const membersList = (roomItem.members || []).map((m) => String(m.id || m.userId || m));
+      const allowedList = (roomItem.allowedUsers || []).map((u) => String(u.id || u.userId || u));
+
+      const isAllowed =
+        currentUserId === creatorId ||
+        currentUserId === mentorId ||
+        membersList.includes(currentUserId) ||
+        allowedList.includes(currentUserId);
+
+      if (!isAllowed) {
+        Alert.alert(
+          "Private Doubt Room 🔒",
+          "This room is private. Only students and mentors invited to this room can view or enter."
+        );
+        return;
+      }
+    }
+
+    if (onSelectDoubtRoom) {
+      onSelectDoubtRoom(roomItem);
+    }
+  }
+
   async function handleCreateRoom() {
     if (!roomTitle.trim()) {
       Alert.alert("Room Title Required", "Please enter a title for your room.");
@@ -94,7 +123,8 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
         title: roomTitle,
         category: roomCategory,
         isPrivate: isRoomPrivate,
-        description: roomDescription
+        description: roomDescription,
+        allowedUsers: selectedMemberIds
       });
       if (res && res.room) {
         Alert.alert("Success 🎉", `Created Doubt Room: ${res.room.title}`);
@@ -102,6 +132,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
         setRoomTitle("");
         setRoomDescription("");
         setIsRoomPrivate(false);
+        setSelectedMemberIds([]);
         fetchDoubtsAndRooms();
         if (onSelectDoubtRoom) {
           onSelectDoubtRoom(res.room);
@@ -205,9 +236,27 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
         {/* 1. Main Section Header (No Duplicate App Header) */}
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>All Chats</Text>
-        <Pressable onPress={() => fetchConversations()} style={[styles.compactRefreshBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F0EDFF" }]}>
-          <Feather name="refresh-cw" size={14} color={theme.primary} />
-        </Pressable>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Pressable
+            onPress={() => setShowRoomModal(true)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: theme.primary,
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderRadius: 20,
+              gap: 4
+            }}
+          >
+            <Feather name="plus-circle" size={14} color="#FFFFFF" />
+            <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>Create Room</Text>
+          </Pressable>
+
+          <Pressable onPress={() => fetchConversations()} style={[styles.compactRefreshBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F0EDFF" }]}>
+            <Feather name="refresh-cw" size={14} color={theme.primary} />
+          </Pressable>
+        </View>
       </View>
 
       {/* 2. Compact Search Bar */}
@@ -331,21 +380,6 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
         </ScrollView>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          {/* Action Row: Create Doubt Room */}
-          <View style={styles.actionBtnRow}>
-            <Pressable onPress={() => setShowRoomModal(true)} style={[styles.askDoubtCtaBtn, { flex: 1 }]}>
-              <LinearGradient
-                colors={[theme.primary, theme.primaryDark || "#7F65FF"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.askDoubtGradient}
-              >
-                <Feather name="plus-circle" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.askDoubtCtaText}>+ Create Doubt Room</Text>
-              </LinearGradient>
-            </Pressable>
-          </View>
-
           {/* COLLABORATIVE DOUBT ROOMS SECTION */}
           <View style={styles.sectionHeaderRow}>
             <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Collaborative Doubt Rooms 💬</Text>
@@ -357,7 +391,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
           {doubtRooms.map((roomItem) => (
             <Pressable
               key={roomItem.roomId}
-              onPress={() => onSelectDoubtRoom && onSelectDoubtRoom(roomItem)}
+              onPress={() => handleSelectRoom(roomItem)}
               style={[styles.doubtRoomCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             >
               <View style={styles.roomAvatarWrap}>
@@ -368,8 +402,11 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               <View style={styles.roomMainCol}>
                 <View style={styles.roomTitleRow}>
                   <Text style={[styles.roomTitleText, { color: theme.text }]} numberOfLines={1}>{roomItem.title}</Text>
-                  <View style={[styles.roomIdTag, { backgroundColor: theme.badgeBg }]}>
-                    <Text style={[styles.roomIdTagText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>{roomItem.roomId}</Text>
+                  
+                  <View style={[styles.roomIdTag, { backgroundColor: roomItem.isPrivate ? (theme.isDark ? "#7F1D1D" : "#FEE2E2") : theme.badgeBg }]}>
+                    <Text style={[styles.roomIdTagText, { color: roomItem.isPrivate ? "#DC2626" : (theme.isDark ? "#C7D2FE" : "#5B3CF5") }]}>
+                      {roomItem.isPrivate ? "🔒 Private" : roomItem.roomId}
+                    </Text>
                   </View>
                 </View>
 
@@ -551,7 +588,10 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
             <Text style={[styles.inputLabelText, { marginTop: 10 }]}>Privacy Type:</Text>
             <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
               <Pressable
-                onPress={() => setIsRoomPrivate(false)}
+                onPress={() => {
+                  setIsRoomPrivate(false);
+                  setSelectedMemberIds([]);
+                }}
                 style={[styles.subjectChip, !isRoomPrivate && styles.subjectChipActive]}
               >
                 <Text style={[styles.subjectChipText, !isRoomPrivate && styles.subjectChipTextActive]}>🌐 Public Room</Text>
@@ -564,10 +604,52 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               </Pressable>
             </View>
 
+            {isRoomPrivate && (
+              <View style={{ marginTop: 12 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <Text style={styles.inputLabelText}>Select Students / Members to Invite (🔒):</Text>
+                  <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.primary }}>
+                    {selectedMemberIds.length} Selected
+                  </Text>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                  {(conversations || []).length === 0 ? (
+                    <Text style={{ fontSize: 11, color: theme.subtext, fontStyle: "italic", paddingVertical: 4 }}>
+                      No members loaded yet. Room creator has full access.
+                    </Text>
+                  ) : (
+                    (conversations || []).map((m) => {
+                      const mId = String(m.id || m.userId || m._id);
+                      const isSelected = selectedMemberIds.includes(mId);
+
+                      return (
+                        <Pressable
+                          key={mId}
+                          onPress={() => {
+                            setSelectedMemberIds((prev) =>
+                              isSelected ? prev.filter((id) => id !== mId) : [...prev, mId]
+                            );
+                          }}
+                          style={[
+                            styles.subjectChip,
+                            isSelected && { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF", borderColor: theme.primary }
+                          ]}
+                        >
+                          <Text style={[styles.subjectChipText, isSelected && { color: theme.primary, fontFamily: fonts.bold }]}>
+                            {isSelected ? "✓ " : "+ "}{m.name || "Student"}
+                          </Text>
+                        </Pressable>
+                      );
+                    })
+                  )}
+                </ScrollView>
+              </View>
+            )}
+
             <Pressable
               onPress={handleCreateRoom}
               disabled={creatingRoom}
-              style={[styles.submitDoubtBtn, { backgroundColor: "#5B3CF5", marginTop: 16 }]}
+              style={[styles.submitDoubtBtn, { backgroundColor: theme.primary, marginTop: 16 }]}
             >
               {creatingRoom ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
@@ -586,8 +668,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
-    paddingHorizontal: 16,
-    paddingTop: 12
+    paddingHorizontal: 8,
+    paddingTop: 10
   },
 
   // 1. Main Section Header
@@ -616,11 +698,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    height: 40,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 44,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#EBE8FF",
+    borderColor: "#E2E8F0",
     marginBottom: 12,
     ...shadow.soft
   },

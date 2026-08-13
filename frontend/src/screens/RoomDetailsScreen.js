@@ -377,56 +377,88 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
   }
 
   async function handleDeleteGroup() {
+    const isCreator = String(room?.creatorId || "") === String(session?.user?.id || session?.user?._id || "") ||
+                      String(room?.assignedMentor?.id || "") === String(session?.user?.id || session?.user?._id || "") ||
+                      isAdmin;
+
+    const performDelete = async () => {
+      try {
+        setUpdating(true);
+        const res = await manageDoubtRoom(session?.token, room.roomId, { action: "delete_group" });
+        if (res && (res.success || res.deleted || res.deletedForUser)) {
+          Alert.alert(
+            isCreator ? "Group Deleted" : "Group Removed",
+            isCreator ? "This doubt room has been deleted permanently." : "This doubt room has been removed for you."
+          );
+          if (onRoomUpdated) onRoomUpdated(null);
+          if (onClose) onClose();
+        }
+      } catch (e) {
+        Alert.alert("Error", e.message || "Failed to delete group room.");
+      } finally {
+        setUpdating(false);
+      }
+    };
+
+    const confirmMsg = isCreator
+      ? "Are you sure you want to permanently delete this Doubt Room? It will be removed for all members."
+      : "Are you sure you want to remove this Doubt Room? It will be removed from your room list.";
+
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm(confirmMsg)) {
+        performDelete();
+      }
+      return;
+    }
+
     Alert.alert(
-      "Delete Group Room",
-      "Are you sure you want to permanently delete this Doubt Room? All messages, files and member permissions will be removed.",
+      isCreator ? "Delete Group Room" : "Remove Group Room",
+      confirmMsg,
       [
         { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete Group",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setUpdating(true);
-              const res = await manageDoubtRoom(session?.token, room.roomId, { action: "delete_group" });
-              if (res && (res.success || res.deleted)) {
-                Alert.alert("Group Deleted", "This doubt room has been deleted permanently.");
-                if (onRoomUpdated) onRoomUpdated(null);
-                if (onClose) onClose();
-              }
-            } catch (e) {
-              Alert.alert("Error", e.message || "Failed to delete group room.");
-            } finally {
-              setUpdating(false);
-            }
-          }
-        }
+        { text: isCreator ? "Delete Group" : "Remove", style: "destructive", onPress: performDelete }
       ]
     );
   }
 
   async function handleLeaveGroup() {
+    const isCreator = String(room?.creatorId || "") === String(session?.user?.id || session?.user?._id || "") ||
+                      String(room?.assignedMentor?.id || "") === String(session?.user?.id || session?.user?._id || "") ||
+                      isAdmin;
+
+    const performLeave = async () => {
+      try {
+        setUpdating(true);
+        const res = await manageDoubtRoom(session?.token, room.roomId, { action: "leave_room" });
+        if (res && (res.success || res.left || res.deleted)) {
+          Alert.alert("Left Room", isCreator ? "You deleted/left this doubt room." : "You have left this doubt room.");
+          if (onRoomUpdated) onRoomUpdated(null);
+          if (onClose) onClose();
+        }
+      } catch (e) {
+        if (onClose) onClose();
+      } finally {
+        setUpdating(false);
+      }
+    };
+
+    const confirmMsg = isCreator
+      ? "As creator, leaving will delete this Doubt Room for all members. Continue?"
+      : "Are you sure you want to leave this room?";
+
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm(confirmMsg)) {
+        performLeave();
+      }
+      return;
+    }
+
     Alert.alert(
       "Leave Group Room",
-      "Are you sure you want to leave this room?",
+      confirmMsg,
       [
         { text: "Cancel", style: "cancel" },
-        {
-          text: "Leave",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setUpdating(true);
-              await manageDoubtRoom(session?.token, room.roomId, { action: "leave_room" });
-              Alert.alert("Left Room", "You have left this doubt room.");
-              if (onClose) onClose();
-            } catch (e) {
-              if (onClose) onClose();
-            } finally {
-              setUpdating(false);
-            }
-          }
-        }
+        { text: "Leave", style: "destructive", onPress: performLeave }
       ]
     );
   }
@@ -699,15 +731,15 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
 
         {/* DANGER ZONE */}
         <View style={[styles.actionsCard, themedSurface, { marginTop: 16 }]}>
-          {isAdmin ? (
-            <Pressable onPress={handleDeleteGroup} style={styles.actionRow}>
-              <View style={styles.actionLeft}>
-                <Feather name="trash-2" size={18} color="#EF4444" style={{ marginRight: 12 }} />
-                <Text style={[styles.actionLabel, { color: "#EF4444", fontWeight: "700" }]}>Delete Group Room</Text>
-              </View>
-              <Feather name="chevron-right" size={18} color="#FCA5A5" />
-            </Pressable>
-          ) : null}
+          <Pressable onPress={handleDeleteGroup} style={styles.actionRow}>
+            <View style={styles.actionLeft}>
+              <Feather name="trash-2" size={18} color="#EF4444" style={{ marginRight: 12 }} />
+              <Text style={[styles.actionLabel, { color: "#EF4444", fontWeight: "700" }]}>
+                {isAdmin ? "Delete Group Room" : "Remove Group Room"}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color="#FCA5A5" />
+          </Pressable>
 
           <Pressable onPress={handleLeaveGroup} style={[styles.actionRow, { borderBottomWidth: 0 }]}>
             <View style={styles.actionLeft}>

@@ -1,35 +1,46 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Animated, Dimensions, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { fonts } from "../constants/fonts";
 
 const { width } = Dimensions.get("window");
 
+function stripEmojis(text = "") {
+  if (!text || typeof text !== "string") return "";
+  return text
+    .replace(
+      /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E6}-\u{1F1FF}]|💼|🔥|✨|👥|🗑️|⚙️|🔗|📌/gu,
+      ""
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export default function NotificationToast({ toast, onDismiss, onPress }) {
   const { theme } = useTheme();
-  const translateY = useRef(new Animated.Value(-120)).current;
+  const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (toast) {
       Animated.parallel([
         Animated.spring(translateY, {
-          toValue: 12,
-          friction: 6,
-          tension: 80,
+          toValue: 10,
+          friction: 8,
+          tension: 90,
           useNativeDriver: true
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 200,
+          duration: 180,
           useNativeDriver: true
         })
       ]).start();
 
       const timer = setTimeout(() => {
         handleClose();
-      }, 5000);
+      }, 4500);
 
       return () => clearTimeout(timer);
     }
@@ -38,13 +49,13 @@ export default function NotificationToast({ toast, onDismiss, onPress }) {
   function handleClose() {
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: -120,
-        duration: 220,
+        toValue: -100,
+        duration: 200,
         useNativeDriver: true
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 180,
+        duration: 150,
         useNativeDriver: true
       })
     ]).start(() => {
@@ -85,6 +96,11 @@ export default function NotificationToast({ toast, onDismiss, onPress }) {
     iconBg = "#FDF2F8";
   }
 
+  const rawTitle = toast.title || "Notification";
+  const rawSub = toast.subtitle || toast.body || toast.text || "Tap to view update.";
+  const title = stripEmojis(rawTitle) || "Notification";
+  const subtitle = stripEmojis(rawSub) || "Tap to view update.";
+
   return (
     <Animated.View
       style={[
@@ -105,21 +121,21 @@ export default function NotificationToast({ toast, onDismiss, onPress }) {
         style={styles.toastContent}
       >
         <View style={[styles.iconContainer, { backgroundColor: iconBg }]}>
-          <Ionicons name={iconName} size={20} color={iconColor} />
+          <Ionicons name={iconName} size={16} color={iconColor} />
         </View>
         <View style={styles.textContainer}>
           <View style={styles.headerRow}>
             <Text numberOfLines={1} style={[styles.title, { color: theme.text }]}>
-              {toast.title || "Notification"}
+              {title}
             </Text>
             <Text style={[styles.badge, { color: iconColor, backgroundColor: iconBg }]}>NEW</Text>
           </View>
-          <Text numberOfLines={2} style={[styles.subtitle, { color: theme.subtext }]}>
-            {toast.subtitle || toast.body || toast.text || "Tap to view update."}
+          <Text numberOfLines={1} style={[styles.subtitle, { color: theme.subtext }]}>
+            {subtitle}
           </Text>
         </View>
-        <Pressable onPress={handleClose} hitSlop={10} style={styles.closeBtn}>
-          <Ionicons name="close" size={18} color={theme.subtext} />
+        <Pressable onPress={handleClose} hitSlop={8} style={styles.closeBtn}>
+          <Ionicons name="close" size={16} color={theme.subtext} />
         </Pressable>
       </Pressable>
     </Animated.View>
@@ -129,61 +145,64 @@ export default function NotificationToast({ toast, onDismiss, onPress }) {
 const styles = StyleSheet.create({
   toastWrapper: {
     position: "absolute",
-    top: 44,
-    left: 14,
-    right: 14,
+    top: Platform.OS === "web" ? 12 : 24,
+    left: 16,
+    right: 16,
+    maxWidth: 420,
+    alignSelf: "center",
     zIndex: 99999,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 10
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 6
   },
   toastContent: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12
+    paddingVertical: 7,
+    paddingHorizontal: 10
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 10
+    marginRight: 8
   },
   textContainer: {
     flex: 1,
-    marginRight: 8
+    marginRight: 6
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 2
+    justifyContent: "space-between"
   },
   title: {
-    fontSize: 13.5,
+    fontSize: 12.5,
     fontFamily: fonts.bold,
     flex: 1,
-    marginRight: 6
+    marginRight: 4
   },
   badge: {
-    fontSize: 9,
+    fontSize: 8.5,
     fontFamily: fonts.bold,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 0.5,
+    borderRadius: 4,
     overflow: "hidden"
   },
   subtitle: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontFamily: fonts.regular,
-    lineHeight: 15
+    lineHeight: 14,
+    marginTop: 1
   },
   closeBtn: {
-    padding: 4
+    padding: 2
   }
 });

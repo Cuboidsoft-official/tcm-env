@@ -102,7 +102,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
     setSavedPostsList((prev) => prev.filter((p) => String(p.id || p._id) !== String(postId)));
     setPostSheetOpen(false);
     setSelectedPostForSheet(null);
-    Alert.alert("Post Deleted 🗑️", "Your post has been deleted successfully.");
+    Alert.alert("Post Deleted", "Your post has been deleted successfully.");
   }
 
   // Edit form state
@@ -449,7 +449,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
           {profileUser.role === "mentor" || profileUser.isMentor || profileUser.memberBadge?.toLowerCase().includes("mentor") ? (
             <Pressable
               onPress={onOpenMentorDashboard || (() => Alert.alert("Dashboard", "Opening Dashboard..."))}
-              style={styles.mentorDashboardBtn}
+              style={[styles.mentorDashboardBtn, { backgroundColor: theme.primary }]}
             >
               <MaterialCommunityIcons name="view-dashboard-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
               <Text style={styles.mentorDashboardBtnText}>Dashboard</Text>
@@ -675,7 +675,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
           <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 30 }]}>
             <View style={styles.sheetHandleBar} />
             <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E293B", textAlign: "center", marginTop: 8 }}>
-              Post Options ⚙️
+              Post Options
             </Text>
             <Text numberOfLines={1} style={{ fontSize: 13, color: "#64748B", textAlign: "center", marginBottom: 20 }}>
               {selectedPostForSheet?.title || selectedPostForSheet?.content || selectedPostForSheet?.text || "Selected Post"}
@@ -696,7 +696,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               }}
             >
               <Feather name="trash-2" size={18} color="#EF4444" style={{ marginRight: 8 }} />
-              <Text style={{ fontSize: 15, fontWeight: "700", color: "#EF4444" }}>Delete Post 🗑️</Text>
+              <Text style={{ fontSize: 15, fontWeight: "700", color: "#EF4444" }}>Delete Post</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -715,7 +715,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               }}
             >
               <Feather name="share-2" size={18} color="#475569" style={{ marginRight: 8 }} />
-              <Text style={{ fontSize: 15, fontWeight: "600", color: "#475569" }}>Share Post Link 🔗</Text>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: "#475569" }}>Share Post</Text>
             </TouchableOpacity>
 
             <TouchableOpacity

@@ -142,8 +142,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
         base64: true
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        return asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        return asset.uri;
       }
     } catch (e) {
       console.warn("Device image picker error:", e);
@@ -322,23 +321,32 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   }
 
   async function handleDeletePost(postId) {
+    const performDelete = async () => {
+      try {
+        if (session?.token) {
+          await deleteCommunityPost(session.token, postId);
+        }
+      } catch (e) {}
+      setPosts((prev) => prev.filter((p) => String(p.id || p._id) !== String(postId)));
+      Alert.alert("Post Deleted", "Your post has been deleted successfully.");
+    };
+
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm("Are you sure you want to delete this post?")) {
+        performDelete();
+      }
+      return;
+    }
+
     Alert.alert(
-      "Delete Post 🗑️",
+      "Delete Post",
       "Are you sure you want to delete this post? This action cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
-          onPress: async () => {
-            try {
-              if (session?.token) {
-                await deleteCommunityPost(session.token, postId);
-              }
-            } catch (e) {}
-            setPosts((prev) => prev.filter((p) => String(p.id || p._id) !== String(postId)));
-            Alert.alert("Post Deleted 🗑️", "Your post has been deleted successfully.");
-          }
+          onPress: performDelete
         }
       ]
     );
@@ -493,15 +501,25 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   }
 
   async function handleDeleteJob(jobId) {
+    const cleanId = String(jobId).replace(/^post-/, "");
+    const performDelete = async () => {
+      await deleteJobPost(session?.token, jobId);
+      setJobPosts((prev) => prev.filter((j) => String(j.id || j._id) !== String(jobId) && String(j.id || j._id) !== cleanId));
+    };
+
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm("Are you sure you want to remove this job posting?")) {
+        performDelete();
+      }
+      return;
+    }
+
     Alert.alert("Delete Job Posting", "Are you sure you want to remove this job posting?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
-        onPress: async () => {
-          await deleteJobPost(session?.token, jobId);
-          setJobPosts((prev) => prev.filter((j) => j.id !== jobId));
-        }
+        onPress: performDelete
       }
     ]);
   }
@@ -733,63 +751,71 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                       </View>
                     ) : null}
 
-                    {/* Action Bar: Apply, View Applicants, Edit & Delete */}
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
-                      <TouchableOpacity onPress={() => setSelectedJobForDetails(job)} activeOpacity={0.8}>
-                        <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#5B3CF5", textDecorationLine: "underline" }}>
-                          View Full Spec & JD →
-                        </Text>
-                      </TouchableOpacity>
 
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                        {isMentor ? (
-                          <>
-                            <TouchableOpacity
-                              onPress={() => setSelectedJobForApplicants(job)}
-                              style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#F0EDFF" }}
-                            >
-                              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#5B3CF5" }}>
-                                Applicants ({job.applicants?.length || 0})
-                              </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                              onPress={() => {
-                                setJobToEdit(job);
-                                setCreateJobModalOpen(true);
-                              }}
-                              style={{ padding: 6, borderRadius: 8, backgroundColor: "#F1F5F9" }}
-                            >
-                              <Feather name="edit-2" size={13} color="#475569" />
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                              onPress={() => handleDeleteJob(job.id)}
-                              style={{ padding: 6, borderRadius: 8, backgroundColor: "#FEE2E2" }}
-                            >
-                              <Feather name="trash-2" size={13} color="#DC2626" />
-                            </TouchableOpacity>
-                          </>
-                        ) : null}
-
-                        <TouchableOpacity
-                          onPress={() => setSelectedJobForApply(job)}
-                          disabled={isFilled}
-                          activeOpacity={0.8}
-                          style={{
-                            backgroundColor: isFilled ? "#94A3B8" : "#5B3CF5",
-                            paddingHorizontal: 14,
-                            paddingVertical: 7,
-                            borderRadius: 10,
-                            flexDirection: "row",
-                            alignItems: "center"
-                          }}
-                        >
-                          <Text style={{ color: "#FFFFFF", fontSize: 12, fontFamily: fonts.bold }}>
-                            {isFilled ? "Hiring Closed" : "Apply Now →"}
-                          </Text>
-                        </TouchableOpacity>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <View style={{ flex: 1, marginRight: 8 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: theme.text }}>{job.title}</Text>
+                          <View style={{ backgroundColor: "#DCFCE7", paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
+                            <Text style={{ color: "#166534", fontSize: 10, fontFamily: fonts.bold }}>{job.type || "Full-Time"}</Text>
+                          </View>
+                        </View>
+                        <Text style={{ fontSize: 12.5, fontFamily: fonts.semiBold, color: theme.primary, marginTop: 2 }}>{job.company}</Text>
                       </View>
+
+                      {isMentor ? (
+                        <TouchableOpacity
+                          onPress={() => handleDeleteJob(jId, job.title)}
+                          style={{ padding: 6, borderRadius: 8, backgroundColor: "#FEE2E2" }}
+                        >
+                          <Feather name="trash-2" size={14} color="#DC2626" />
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 10, marginBottom: 12 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Feather name="map-pin" size={12} color={theme.subtext} />
+                        <Text style={{ fontSize: 11.5, color: theme.subtext }}>{job.location || "Remote"}</Text>
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Feather name="dollar-sign" size={12} color={theme.subtext} />
+                        <Text style={{ fontSize: 11.5, color: theme.subtext }}>{job.stipend || "Competitive"}</Text>
+                      </View>
+
+                      {job.applicantsCount !== undefined ? (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                          <Feather name="users" size={12} color={theme.subtext} />
+                          <Text style={{ fontSize: 11.5, color: theme.subtext }}>{job.applicantsCount} Applicants</Text>
+                        </View>
+                      ) : null}
+                    </View>
+
+                    {job.description ? (
+                      <Text numberOfLines={2} style={{ fontSize: 12, color: theme.subtext, lineHeight: 17, marginBottom: 12 }}>
+                        {job.description}
+                      </Text>
+                    ) : null}
+
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.border }}>
+                      <Text style={{ fontSize: 10.5, color: theme.subtext }}>Posted by {job.postedBy || "TCM Team"}</Text>
+                      <TouchableOpacity
+                        onPress={() => openApplyJobModal(job)}
+                        disabled={isApplying}
+                        activeOpacity={0.85}
+                        style={{
+                          backgroundColor: "#5B3CF5",
+                          paddingHorizontal: 16,
+                          paddingVertical: 8,
+                          borderRadius: 10
+                        }}
+                      >
+                        {isApplying ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>Apply Now</Text>
+                        )}
+                      </TouchableOpacity>
                     </View>
                   </View>
                 );
@@ -799,10 +825,10 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
         ) : (
           /* OFFICIAL CHANNELS LIST */
           <>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 14, marginBottom: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 10, marginTop: 14, marginBottom: 12 }}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Feather name="award" size={16} color="#5B3CF5" style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#0F172A" }}>Official Channels</Text>
+                <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: theme.text }}>Official Channels</Text>
               </View>
 
               <TouchableOpacity
@@ -816,7 +842,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
             </View>
 
         {/* 5. Dynamic Channel List Cards */}
-        <View style={{ paddingHorizontal: 16, paddingBottom: 20, gap: 10 }}>
+        <View style={{ paddingHorizontal: 10, paddingBottom: 20, gap: 10 }}>
           {communities.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Feather name="users" size={36} color="#CBD5E1" />
@@ -837,7 +863,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                 key={ch.id}
                 activeOpacity={0.85}
                 onPress={() => openChannel(ch)}
-                style={styles.channelCardItem}
+                style={[styles.channelCardItem, { backgroundColor: theme.cardBg, borderColor: theme.border, padding: 10 }]}
               >
                 {/* Square Avatar Container */}
                 <Image
@@ -848,7 +874,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                 {/* Middle Details */}
                 <View style={{ flex: 1, marginLeft: 12, marginRight: 6 }}>
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: "#0F172A", marginRight: 4, flexShrink: 1 }} numberOfLines={1}>
+                    <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: theme.text, marginRight: 4, flexShrink: 1 }} numberOfLines={1}>
                       {ch.name}
                     </Text>
                     {ch.isPremium ? (
@@ -856,7 +882,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                     ) : null}
                   </View>
 
-                  <Text style={{ fontSize: 11.5, fontFamily: fonts.regular, color: "#64748B", marginTop: 2 }} numberOfLines={1}>
+                  <Text style={{ fontSize: 11.5, fontFamily: fonts.regular, color: theme.subtext, marginTop: 2 }} numberOfLines={1}>
                     {ch.description || `Official broadcast channel by ${ch.creatorName}`}
                   </Text>
 
@@ -868,8 +894,8 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                       </Text>
                     </View>
 
-                    <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: "#E0F2FE" }}>
-                      <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: "#0369A1" }}>
+                    <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: theme.isDark ? "#1E293B" : "#E0F2FE" }}>
+                      <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: theme.isDark ? "#38BDF8" : "#0369A1" }}>
                         {ch.category || "General"}
                       </Text>
                     </View>
@@ -879,8 +905,8 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                 {/* Right Side Stats & Actions */}
                 <View style={{ alignItems: "flex-end", justifyContent: "center" }}>
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Feather name="users" size={11} color="#64748B" style={{ marginRight: 3 }} />
-                    <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#64748B" }}>{ch.membersCount || 1}</Text>
+                    <Feather name="users" size={11} color={theme.subtext} style={{ marginRight: 3 }} />
+                    <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.subtext }}>{ch.membersCount || 1}</Text>
                   </View>
 
                   <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 6 }}>
@@ -895,7 +921,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                         <Feather name="trash-2" size={12} color="#DC2626" />
                       </Pressable>
                     ) : null}
-                    <Feather name="chevron-right" size={16} color="#CBD5E1" />
+                    <Feather name="chevron-right" size={16} color={theme.subtext} />
                   </View>
                 </View>
               </TouchableOpacity>

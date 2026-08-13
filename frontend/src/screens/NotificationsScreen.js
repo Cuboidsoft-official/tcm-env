@@ -645,11 +645,11 @@ const styles = StyleSheet.create({
 
   // Permission Banner
   permBanner: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-    padding: 12,
-    borderRadius: 14,
+    marginHorizontal: 4,
+    marginTop: 10,
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
