@@ -311,6 +311,17 @@ function sanitizePostMedia(media) {
     return { ...media, imageUrl, carouselImages };
   }
 
+  if (media.kind === "video") {
+    const videoUrl = typeof media.videoUrl === "string" && /^https?:\/\//i.test(media.videoUrl.trim())
+      ? media.videoUrl
+      : "";
+    const imageUrl = isValidImageUri(media.imageUrl) ? media.imageUrl : "";
+    if (!videoUrl && !imageUrl) {
+      return { kind: "none" };
+    }
+    return { ...media, videoUrl, imageUrl };
+  }
+
   return media;
 }
 
