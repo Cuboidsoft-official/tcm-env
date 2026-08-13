@@ -289,12 +289,28 @@ async function buildLearnPayload(user, mentors, learn = {}, memoryStore = null, 
   };
 }
 
+function isValidImageUri(uri) {
+  return typeof uri === "string" && /^(https?:\/\/|data:image\/)/i.test(uri.trim());
+}
+
 function sanitizePostMedia(media) {
-  if (!media || media.kind !== "photo" || !media.imageUrl) return media || { kind: "none" };
-  const uri = String(media.imageUrl).trim();
-  if (/^(blob:|file:|content:|ph:\/\/)/i.test(uri)) {
-    return { kind: "none" };
+  if (!media) return { kind: "none" };
+
+  if (media.kind === "photo") {
+    return isValidImageUri(media.imageUrl) ? media : { kind: "none" };
   }
+
+  if (media.kind === "showcase") {
+    const carouselImages = Array.isArray(media.carouselImages)
+      ? media.carouselImages.filter(isValidImageUri)
+      : [];
+    const imageUrl = isValidImageUri(media.imageUrl) ? media.imageUrl : (carouselImages[0] || "");
+    if (!imageUrl && carouselImages.length === 0) {
+      return { kind: "none" };
+    }
+    return { ...media, imageUrl, carouselImages };
+  }
+
   return media;
 }
 
