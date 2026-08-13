@@ -22,7 +22,12 @@ const MIME_MAP = {
   "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
   "application/vnd.ms-excel": "xls",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
-  "text/plain": "txt"
+  "text/plain": "txt",
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
+  "video/x-m4v": "m4v",
+  "video/3gpp": "3gp",
+  "video/webm": "webm"
 };
 
 function guessMime(buf) {
@@ -62,6 +67,13 @@ uploadsRouter.post("/file", requireAuth, (req, res) => {
     }
     if (parsed.mime === "application/pdf" && parsed.buf.toString("ascii", 0, 5) !== "%PDF-") {
       return res.status(400).json({ message: "Invalid PDF content" });
+    }
+    if (parsed.mime.startsWith("video/")) {
+      const isMp4Like = parsed.buf.length > 8 && parsed.buf.toString("ascii", 4, 8) === "ftyp";
+      const isWebm = parsed.buf.length > 4 && parsed.buf[0] === 0x1a && parsed.buf[1] === 0x45 && parsed.buf[2] === 0xdf && parsed.buf[3] === 0xa3;
+      if (!isMp4Like && !isWebm) {
+        return res.status(400).json({ message: "Invalid video content" });
+      }
     }
     if (parsed.buf.length > MAX_BYTES) {
       return res.status(400).json({ message: "File too large (max 20MB)" });
