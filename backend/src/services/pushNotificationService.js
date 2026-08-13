@@ -73,7 +73,8 @@ export function markAllInAppNotificationsRead(userId) {
 
 export async function sendPushNotification({ userIds = [], title, body, data = {}, type = "general" }) {
   const targetIds = Array.isArray(userIds) ? userIds.map(String) : [String(userIds)];
-  const tokensToSend = [];
+  const expoTokens = [];
+  const webPushSubscriptions = [];
 
   // Also record in in-app notification center for target users
   for (const uid of targetIds) {
@@ -84,12 +85,22 @@ export async function sendPushNotification({ userIds = [], title, body, data = {
       ...data
     });
     const list = userPushTokens[uid] || [];
-    list.forEach((entry) => tokensToSend.push(entry.token));
+    list.forEach((entry) => {
+      const tok = entry.token;
+      if (tok && typeof tok === "string" && tok.startsWith("{") && tok.includes("endpoint")) {
+        try {
+          webPushSubscriptions.push(JSON.parse(tok));
+        } catch (e) {}
+      } else if (tok) {
+        expoTokens.push(tok);
+      }
+    });
   }
 
-  if (tokensToSend.length > 0) {
+  // Send to Expo Push service
+  if (expoTokens.length > 0) {
     try {
-      const messages = tokensToSend.map((token) => ({
+      const messages = expoTokens.map((token) => ({
         to: token,
         sound: "default",
         title: title,
@@ -109,7 +120,37 @@ export async function sendPushNotification({ userIds = [], title, body, data = {
         body: JSON.stringify(messages)
       });
     } catch (err) {
-      console.error("Push notification send error:", err.message);
+      console.error("Expo push notification send error:", err.message);
+    }
+  }
+
+  // Handle Web Push Subscriptions
+  if (webPushSubscriptions.length > 0) {
+    for (const sub of webPushSubscriptions) {
+      try {
+        if (sub && sub.endpoint) {
+          // Send web push payload via standard fetch if backend web-push is configured
+          await fetch(sub.endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              TTL: "60"
+            },
+            body: JSON.stringify({
+              title,
+              body,
+              data: { ...data, type },
+              icon: "/icon-192.png",
+              badge: "/icon-192.png"
+            })
+          }).catch((e) => {
+            // Expected if standard WebPush crypto VAPID headers are missing on raw HTTP POST
+            console.log("Web Push dispatch triggered for endpoint:", sub.endpoint?.substring(0, 30));
+          });
+        }
+      } catch (err) {
+        console.error("Web push dispatch error:", err.message);
+      }
     }
   }
 

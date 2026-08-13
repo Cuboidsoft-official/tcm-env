@@ -296,9 +296,40 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   const [activeToast, setActiveToast] = useState(null);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const knownNotifIds = useRef(new Set());
+  const isInitialNotifFetch = useRef(true);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
   const { theme } = useTheme();
 
   const user = home?.user || session?.user || {};
+
+  // PWA Install Prompt Listener (Android Chrome / Web)
+  useEffect(() => {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      const handleBeforeInstallPrompt = (e) => {
+        e.preventDefault();
+        setDeferredInstallPrompt(e);
+        setShowInstallBanner(true);
+      };
+      window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+      return () => {
+        window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      };
+    }
+  }, []);
+
+  async function handleInstallPwa() {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if (outcome === "accepted") {
+        console.log("User accepted PWA install prompt");
+      }
+      setDeferredInstallPrompt(null);
+      setShowInstallBanner(false);
+    }
+  }
 
   // 1. Automatic Push Notification Token Registration on Launch
   useEffect(() => {
@@ -319,17 +350,28 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
         if (res && Array.isArray(res.notifications)) {
           setUnreadNotifCount(res.unreadCount || 0);
           const unreadList = res.notifications.filter((n) => n.unread);
-          for (const n of unreadList) {
-            const notifKey = n.id || `${n.type}_${n.title}`;
-            if (!knownNotifIds.current.has(notifKey)) {
+
+          if (isInitialNotifFetch.current) {
+            // On initial fetch upon app launch, register existing unread notification IDs as known WITHOUT triggering popups
+            unreadList.forEach((n) => {
+              const notifKey = n.id || `${n.type}_${n.title}`;
               knownNotifIds.current.add(notifKey);
-              setActiveToast(n);
-              sendLocalNotification({
-                title: n.title || "TCM Notification 🔔",
-                body: n.subtitle || n.message || "You have a new update on TCM Mobile",
-                data: n
-              });
-              break;
+            });
+            isInitialNotifFetch.current = false;
+          } else {
+            // On subsequent polls during active session, trigger popup ONLY for brand-new notifications
+            for (const n of unreadList) {
+              const notifKey = n.id || `${n.type}_${n.title}`;
+              if (!knownNotifIds.current.has(notifKey)) {
+                knownNotifIds.current.add(notifKey);
+                setActiveToast(n);
+                sendLocalNotification({
+                  title: n.title || "TCM Notification 🔔",
+                  body: n.subtitle || n.message || "You have a new update on TCM Mobile",
+                  data: n
+                });
+                break;
+              }
             }
           }
         }

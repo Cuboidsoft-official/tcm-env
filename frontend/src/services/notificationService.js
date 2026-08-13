@@ -25,6 +25,21 @@ export async function checkNotificationPermissionStatus() {
   return "unsupported";
 }
 
+function urlBase64ToUint8Array(base64String) {
+  try {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function setupPushNotifications(sessionToken, force = false) {
   if ((isRegistered && !force) || !sessionToken) return isRegistered;
 
@@ -42,8 +57,37 @@ export async function setupPushNotifications(sessionToken, force = false) {
         }
 
         if (permission === "granted") {
-          const webToken = `web_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-          await registerPushTokenApi(sessionToken, webToken, "web");
+          let pushTokenStr = `web_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          let platformType = "web";
+
+          if ("serviceWorker" in navigator && "PushManager" in window) {
+            try {
+              let reg = await navigator.serviceWorker.getRegistration();
+              if (!reg) {
+                reg = await navigator.serviceWorker.register("/sw.js");
+              }
+              if (reg && reg.pushManager) {
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                  const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+                  if (applicationServerKey) {
+                    sub = await reg.pushManager.subscribe({
+                      userVisibleOnly: true,
+                      applicationServerKey
+                    });
+                  }
+                }
+                if (sub) {
+                  pushTokenStr = JSON.stringify(sub);
+                  platformType = "web_push";
+                }
+              }
+            } catch (swErr) {
+              console.log("Service Worker Web Push subscription note:", swErr.message);
+            }
+          }
+
+          await registerPushTokenApi(sessionToken, pushTokenStr, platformType);
           isRegistered = true;
           console.log("Web push notification permission granted and registered successfully.");
           return true;

@@ -549,17 +549,43 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
       ) : activeTab === "Skills" ? (
         <View style={{ width: "100%", paddingHorizontal: 12, paddingVertical: 14 }}>
           {(() => {
-            const userSkillsList = Array.isArray(profileUser.skills) && profileUser.skills.length > 0
+            const rawSkills = Array.isArray(profileUser.skills) && profileUser.skills.length > 0
               ? profileUser.skills
               : Array.isArray(session?.user?.skills) && session.user.skills.length > 0
               ? session.user.skills
-              : PRESET_SKILLS.slice(0, 6);
+              : [];
+
+            const isLegacyDummy = Array.isArray(rawSkills) && rawSkills.length === 5 && rawSkills[0]?.name === "JavaScript" && Number(rawSkills[0]?.strength) === 88;
+            const userSkillsList = isLegacyDummy ? [] : rawSkills;
 
             const avgStrength = userSkillsList.length > 0
               ? Math.round(userSkillsList.reduce((acc, curr) => acc + (Number(curr.strength) || 0), 0) / userSkillsList.length)
               : 0;
 
             const expertCount = userSkillsList.filter((s) => (Number(s.strength) || 0) >= 85).length;
+
+            if (userSkillsList.length === 0) {
+              return (
+                <TouchableOpacity
+                  onPress={onOpenSettings}
+                  style={{
+                    alignItems: "center",
+                    paddingVertical: 36,
+                    backgroundColor: theme.cardBg,
+                    borderRadius: 20,
+                    borderWidth: 1.5,
+                    borderColor: theme.border,
+                    borderStyle: "dashed"
+                  }}
+                >
+                  <MaterialCommunityIcons name="star-shooting-outline" size={38} color="#94A3B8" />
+                  <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: theme.text, marginTop: 8 }}>No skills showcased yet</Text>
+                  <Text style={{ fontSize: 12, color: theme.subtext, marginTop: 3, textAlign: "center" }}>
+                    Tap to open Settings & add NEET, JEE, Govt Exams, Coding or Business skills!
+                  </Text>
+                </TouchableOpacity>
+              );
+            }
 
             return (
               <View style={{ width: "100%", gap: 14 }}>
@@ -620,96 +646,75 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                 </View>
 
                 {/* Dynamic Performance Growth Chart Card */}
-                <View
-                  style={{
-                    backgroundColor: theme.cardBg,
-                    borderRadius: 20,
-                    padding: 16,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    ...shadow.sm
-                  }}
-                >
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <View>
-                      <Text style={{ fontSize: 14.5, fontFamily: fonts.bold, color: theme.text }}>Student Performance Growth</Text>
-                      <Text style={{ fontSize: 11, color: theme.subtext, marginTop: 1 }}>Score trajectory & skill proficiency index</Text>
+                {examResults.length > 0 && (
+                  <View
+                    style={{
+                      backgroundColor: theme.cardBg,
+                      borderRadius: 20,
+                      padding: 16,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      ...shadow.sm
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                      <View>
+                        <Text style={{ fontSize: 14.5, fontFamily: fonts.bold, color: theme.text }}>Student Performance Growth</Text>
+                        <Text style={{ fontSize: 11, color: theme.subtext, marginTop: 1 }}>Score trajectory & skill proficiency index</Text>
+                      </View>
+
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: theme.badgeBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
+                        <Feather name="trending-up" size={13} color={theme.primary} />
+                        <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.primary }}>
+                          +{Math.min(35, 12 + examResults.length * 5)}% Growth
+                        </Text>
+                      </View>
                     </View>
 
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: theme.badgeBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
-                      <Feather name="trending-up" size={13} color={theme.primary} />
-                      <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.primary }}>
-                        +{examResults.length > 0 ? Math.min(35, 12 + examResults.length * 5) : 18}% Growth
+                    {/* Vertical Bar Growth Chart */}
+                    <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-around", height: 110, paddingHorizontal: 10, paddingTop: 10, borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 6 }}>
+                      {(() => {
+                        const chartPoints = examResults.slice(0, 5).reverse().map((r) => r.percentage);
+                        return chartPoints.map((pct, idx) => {
+                          const isLatest = idx === chartPoints.length - 1;
+                          return (
+                            <View key={idx} style={{ alignItems: "center", width: 42 }}>
+                              <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: isLatest ? theme.primary : theme.subtext, marginBottom: 4 }}>
+                                {pct}%
+                              </Text>
+                              <View
+                                style={{
+                                  width: 20,
+                                  height: `${Math.max(20, Math.min(100, pct))}%`,
+                                  backgroundColor: isLatest ? theme.primary : theme.badgeBg,
+                                  borderRadius: 8,
+                                  borderWidth: 1,
+                                  borderColor: isLatest ? theme.primary : theme.border
+                                }}
+                              />
+                              <Text style={{ fontSize: 9.5, color: theme.subtext, marginTop: 6 }}>
+                                T-{chartPoints.length - idx}
+                              </Text>
+                            </View>
+                          );
+                        });
+                      })()}
+                    </View>
+
+                    {/* Growth Metric Footer */}
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+                      <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: theme.subtext }}>
+                        Exam Attempts: <Text style={{ color: theme.text, fontFamily: fonts.bold }}>{examResults.length}</Text>
+                      </Text>
+                      <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#10B981" }}>
+                        Mastery Status: Active ✓
                       </Text>
                     </View>
                   </View>
-
-                  {/* Vertical Bar Growth Chart */}
-                  <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-around", height: 110, paddingHorizontal: 10, paddingTop: 10, borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 6 }}>
-                    {(() => {
-                      const chartPoints = examResults.length >= 5
-                        ? examResults.slice(0, 5).reverse().map((r) => r.percentage)
-                        : [60, 72, 85, Math.max(75, avgStrength - 5), Math.max(80, avgStrength)];
-
-                      return chartPoints.map((pct, idx) => {
-                        const isLatest = idx === chartPoints.length - 1;
-                        return (
-                          <View key={idx} style={{ alignItems: "center", width: 42 }}>
-                            <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: isLatest ? theme.primary : theme.subtext, marginBottom: 4 }}>
-                              {pct}%
-                            </Text>
-                            <View
-                              style={{
-                                width: 20,
-                                height: `${Math.max(20, Math.min(100, pct))}%`,
-                                backgroundColor: isLatest ? theme.primary : theme.badgeBg,
-                                borderRadius: 8,
-                                borderWidth: 1,
-                                borderColor: isLatest ? theme.primary : theme.border
-                              }}
-                            />
-                            <Text style={{ fontSize: 9.5, color: theme.subtext, marginTop: 6 }}>
-                              T-{chartPoints.length - idx}
-                            </Text>
-                          </View>
-                        );
-                      });
-                    })()}
-                  </View>
-
-                  {/* Growth Metric Footer */}
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
-                    <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: theme.subtext }}>
-                      Exam Attempts: <Text style={{ color: theme.text, fontFamily: fonts.bold }}>{examResults.length > 0 ? examResults.length : "Verified"}</Text>
-                    </Text>
-                    <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#10B981" }}>
-                      Mastery Status: Active ✓
-                    </Text>
-                  </View>
-                </View>
+                )}
 
                 {/* Wide Skill Cards List */}
-                {userSkillsList.length === 0 ? (
-                  <TouchableOpacity
-                    onPress={onOpenSettings}
-                    style={{
-                      alignItems: "center",
-                      paddingVertical: 36,
-                      backgroundColor: theme.cardBg,
-                      borderRadius: 20,
-                      borderWidth: 1.5,
-                      borderColor: theme.border,
-                      borderStyle: "dashed"
-                    }}
-                  >
-                    <MaterialCommunityIcons name="star-shooting-outline" size={38} color="#94A3B8" />
-                    <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: theme.text, marginTop: 8 }}>No skills showcased yet</Text>
-                    <Text style={{ fontSize: 12, color: theme.subtext, marginTop: 3, textAlign: "center" }}>
-                      Tap to open Settings & add NEET, JEE, Govt Exams, Coding or Business skills!
-                    </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={{ width: "100%", gap: 10 }}>
+                <View style={{ width: "100%", gap: 10 }}>
                     {userSkillsList.map((skillItem, index) => {
                       const iconInfo = getSkillIconInfo(skillItem.name);
                       const lvlInfo = getSkillLevel(skillItem.strength);
@@ -767,7 +772,6 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                       );
                     })}
                   </View>
-                )}
               </View>
             );
           })()}

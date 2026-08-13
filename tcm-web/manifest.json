@@ -1,0 +1,26 @@
+{
+  "name": "TCM - The Code Munk",
+  "short_name": "TCM",
+  "description": "Learning, Careers, Mentorship & Tech Community Platform",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#261B94",
+  "theme_color": "#5B3CF5",
+  "categories": ["education", "social", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

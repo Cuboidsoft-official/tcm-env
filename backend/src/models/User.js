@@ -156,13 +156,7 @@ const userSchema = new mongoose.Schema(
     },
     skills: {
       type: Array,
-      default: [
-        { name: "JavaScript", strength: 88 },
-        { name: "React", strength: 92 },
-        { name: "Python", strength: 78 },
-        { name: "Node.js", strength: 84 },
-        { name: "C++", strength: 75 }
-      ]
+      default: []
     },
     savedPosts: [{ type: String }],
     stats: {

@@ -125,10 +125,16 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
   const [myReviewsModalOpen, setMyReviewsModalOpen] = useState(false);
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
 
+  function sanitizeSkills(skList) {
+    if (!Array.isArray(skList)) return [];
+    if (skList.length === 5 && skList[0]?.name === "JavaScript" && Number(skList[0]?.strength) === 88) {
+      return [];
+    }
+    return skList;
+  }
+
   // Skills Matrix State
-  const [userSkills, setUserSkills] = useState(
-    Array.isArray(initialUser?.skills) ? initialUser.skills : PRESET_SKILLS.slice(0, 5)
-  );
+  const [userSkills, setUserSkills] = useState(sanitizeSkills(initialUser?.skills));
   const [skillNameInput, setSkillNameInput] = useState("");
   const [skillStrengthInput, setSkillStrengthInput] = useState(80);
   const [editingSkillIndex, setEditingSkillIndex] = useState(null);
@@ -137,12 +143,12 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
 
   useEffect(() => {
     if (Array.isArray(user.skills)) {
-      setUserSkills(user.skills);
+      setUserSkills(sanitizeSkills(user.skills));
     }
   }, [user.skills]);
 
   function openSkillsModal() {
-    setUserSkills(Array.isArray(user.skills) && user.skills.length > 0 ? [...user.skills] : PRESET_SKILLS.slice(0, 5));
+    setUserSkills(sanitizeSkills(user.skills));
     setSkillNameInput("");
     setSkillStrengthInput(80);
     setEditingSkillIndex(null);
