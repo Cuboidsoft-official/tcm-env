@@ -1124,7 +1124,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                   <Text style={styles.postText}>{post.text}</Text>
 
                   {/* Photo Attachment View */}
-                  {post.media?.imageUrl ? (
+                  {post.media?.imageUrl && /^(https?:\/\/|data:image\/)/i.test(post.media.imageUrl) ? (
                     <Image source={{ uri: sanitizeImageUri(post.media.imageUrl) }} style={styles.postImage} resizeMode="cover" />
                   ) : null}
 

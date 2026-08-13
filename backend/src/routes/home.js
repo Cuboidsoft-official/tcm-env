@@ -289,6 +289,15 @@ async function buildLearnPayload(user, mentors, learn = {}, memoryStore = null, 
   };
 }
 
+function sanitizePostMedia(media) {
+  if (!media || media.kind !== "photo" || !media.imageUrl) return media || { kind: "none" };
+  const uri = String(media.imageUrl).trim();
+  if (/^(blob:|file:|content:|ph:\/\/)/i.test(uri)) {
+    return { kind: "none" };
+  }
+  return media;
+}
+
 function mapPost(post, globalPostComments = {}, userId = null) {
   const isMentor = Boolean(
     post.isMentor ||
@@ -327,7 +336,7 @@ function mapPost(post, globalPostComments = {}, userId = null) {
     documentName: post.documentName || null,
     documentSize: post.documentSize || "4.2 MB",
     text: post.text,
-    media: post.media,
+    media: sanitizePostMedia(post.media),
     metrics: {
       likes: post.metrics?.likes || likedByArr.length || 0,
       comments: totalComments,
