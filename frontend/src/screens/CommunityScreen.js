@@ -19,9 +19,11 @@ import {
 } from "react-native";
 import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 import { sanitizeImageUri } from "../utils/imageUtils";
+import { fileToDataUri, formatFileSize } from "../utils/fileUtils";
 import CreateJobModal from "../components/CreateJobModal";
 import ApplyJobModal from "../components/ApplyJobModal";
 import JobDetailsModal from "../components/JobDetailsModal";
@@ -43,7 +45,7 @@ import {
   applyJobPost,
   updateJobApplicantStatus,
   deleteJobPost,
-  uploadPostImage
+  uploadFile
 } from "../api/client";
 
 export default function CommunityScreen({ navigation, route, session, onChannelStateChange, onOpenChannelChat }) {
@@ -124,6 +126,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   const [docUrl, setDocUrl] = useState("");
   const [docName, setDocName] = useState("");
   const [docSize, setDocSize] = useState("4.2 MB");
+  const [docUploading, setDocUploading] = useState(false);
   const [posting, setPosting] = useState(false);
 
   // Document Reader Modal State
@@ -171,8 +174,41 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
 
   async function uploadPhotoToServer(dataUri) {
     if (!dataUri) return "";
-    const res = await uploadPostImage(session?.token, dataUri);
+    const res = await uploadFile(session?.token, dataUri);
     return res?.url || "";
+  }
+
+  async function pickDocumentFromDevice() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"],
+        copyToCacheDirectory: true,
+        multiple: false
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const asset = result.assets[0];
+      setDocUploading(true);
+      try {
+        const dataUri = await fileToDataUri(asset);
+        if (!dataUri) {
+          Alert.alert("Upload Failed", "Could not read the selected document.");
+          return;
+        }
+        const res = await uploadFile(session?.token, dataUri);
+        if (!res?.url) {
+          Alert.alert("Upload Failed", "Could not upload the document. Please try again.");
+          return;
+        }
+        setDocUrl(res.url);
+        setDocName(asset.name || "Study Material.pdf");
+        setDocSize(formatFileSize(asset.size) || docSize);
+      } finally {
+        setDocUploading(false);
+      }
+    } catch (e) {
+      console.warn("Document picker error:", e);
+    }
   }
 
   useEffect(() => {
@@ -1333,7 +1369,32 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
               ) : null}
 
               {/* Optional PDF Document Link */}
-              <Text style={styles.fieldLabel}>5. PDF Document Link (Optional)</Text>
+              <Text style={styles.fieldLabel}>5. PDF / Study Document (Optional)</Text>
+
+              <TouchableOpacity
+                onPress={pickDocumentFromDevice}
+                disabled={docUploading || posting}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#F1F5F9",
+                  borderColor: "#CBD5E1",
+                  borderWidth: 1,
+                  borderStyle: "dashed",
+                  borderRadius: 12,
+                  paddingVertical: 12,
+                  marginBottom: 12,
+                  opacity: docUploading ? 0.7 : 1
+                }}
+              >
+                <Feather name="upload" size={16} color="#5B3CF5" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 12.5, fontFamily: fonts.bold, color: "#5B3CF5" }}>
+                  {docUploading ? "Uploading Document... ⏳" : docUrl && !docUrl.startsWith("https://drive.google.com") ? "Document Attached ✓ (Tap to Replace)" : "Upload PDF / Study Document from Device 📄"}
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.fieldLabel}>Or paste a document link (Optional)</Text>
               <TextInput
                 value={docUrl}
                 onChangeText={setDocUrl}

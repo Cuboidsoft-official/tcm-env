@@ -264,8 +264,8 @@ export function createCommunityPost(token, payload) {
   });
 }
 
-export function uploadPostImage(token, dataUri) {
-  return request("/uploads/image", {
+export function uploadFile(token, dataUri) {
+  return request("/uploads/file", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`
