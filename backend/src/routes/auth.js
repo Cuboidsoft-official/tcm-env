@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
 import { Mentor } from "../models/Mentor.js";
 import { sendOtpEmail } from "../services/emailService.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export const authRouter = express.Router();
 
@@ -498,5 +499,40 @@ authRouter.get("/partners", async (req, res) => {
     res.json({ partners: partners.map(publicUser) });
   } catch (error) {
     res.status(500).json({ message: "Could not fetch partners", error: error.message });
+  }
+});
+
+// Student Account Deletion Endpoint
+authRouter.delete("/delete-account", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?._id;
+    const role = req.user?.role;
+
+    if (role && role !== "student") {
+      return res.status(403).json({
+        message: "Account deletion via Profile Settings is only available for Student accounts. Mentors and Institute Partners must contact support."
+      });
+    }
+
+    const memoryStore = req.app.locals.memoryStore;
+    if (memoryStore) {
+      if (Array.isArray(memoryStore.users)) {
+        memoryStore.users = memoryStore.users.filter((u) => String(u._id || u.id) !== String(userId));
+      }
+      if (memoryStore.user && String(memoryStore.user._id || memoryStore.user.id) === String(userId)) {
+        memoryStore.user = null;
+      }
+    }
+
+    try {
+      await User.findByIdAndDelete(userId);
+    } catch (e) {}
+
+    res.json({
+      success: true,
+      message: "Your account has been deleted permanently."
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Could not delete account", error: error.message });
   }
 });

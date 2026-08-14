@@ -18,7 +18,7 @@ import {
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { applyReferralCode, askSupportAi, getProfile, updateProfile } from "../api/client";
+import { applyReferralCode, askSupportAi, deleteAccount, getProfile, updateProfile } from "../api/client";
 import MyReviewsModal from "../components/MyReviewsModal";
 import { useTheme } from "../context/ThemeContext";
 import { colors, shadow } from "../constants/theme";
@@ -516,6 +516,42 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
     ]);
   }
 
+  function handleDeleteAccountPress() {
+    if (isMentorUser || user.role === "partner") {
+      Alert.alert("Account Deletion Restricted", "Account deletion via Profile Settings is only available for Student accounts.");
+      return;
+    }
+
+    Alert.alert(
+      "Delete Account Permanently?",
+      "Are you sure you want to delete your student account? All your posts, progress, comments, and profile data will be permanently removed. This action CANNOT be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Permanently",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setUpdating(true);
+              const token = session?.token || user.token;
+              await deleteAccount(token);
+              Alert.alert("Account Deleted", "Your student account has been deleted permanently.");
+              if (onLogout) {
+                onLogout();
+              } else if (session?.onLogout) {
+                session.onLogout();
+              }
+            } catch (err) {
+              Alert.alert("Error", err.message || "Failed to delete account. Please try again.");
+            } finally {
+              setUpdating(false);
+            }
+          }
+        }
+      ]
+    );
+  }
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: activeAppTheme.bg }]} showsVerticalScrollIndicator={false}>
       {/* Top Inline Header Row */}
@@ -931,6 +967,28 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
         <Feather name="log-out" size={18} color="#FF465F" />
         <Text style={styles.logoutBtnText}>Logout Account</Text>
       </TouchableOpacity>
+
+      {/* 9. Delete Account Button (Students Only) */}
+      {!isMentorUser && user.role !== "partner" ? (
+        <TouchableOpacity
+          onPress={handleDeleteAccountPress}
+          activeOpacity={0.8}
+          disabled={updating}
+          style={[
+            styles.logoutBtn,
+            {
+              backgroundColor: activeAppTheme.isDark ? "#3A1B1F" : "#FFF5F5",
+              borderColor: activeAppTheme.isDark ? "#5A242B" : "#FED7D7",
+              marginTop: 10
+            }
+          ]}
+        >
+          <Feather name="trash-2" size={18} color="#EF4444" />
+          <Text style={[styles.logoutBtnText, { color: "#EF4444" }]}>
+            {updating ? "Deleting Account..." : "Delete Account (Students Only)"}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
 
       <Text style={[styles.appVersionText, { color: activeAppTheme.subtext }]}>TCM Mobile App v2.4.0 • Built for Curious Minds</Text>
 

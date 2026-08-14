@@ -125,6 +125,15 @@ export async function register(payload) {
   }
 }
 
+export function deleteAccount(token) {
+  return request("/auth/delete-account", {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
 export async function getHome(token) {
   let homeData = null;
   try {
