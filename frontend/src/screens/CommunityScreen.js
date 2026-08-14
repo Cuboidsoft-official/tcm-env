@@ -22,7 +22,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
-import { sanitizeImageUri } from "../utils/imageUtils";
+import { sanitizeImageUri, isValidImageUri } from "../utils/imageUtils";
 import { fileToDataUri, formatFileSize } from "../utils/fileUtils";
 import CreateJobModal from "../components/CreateJobModal";
 import ApplyJobModal from "../components/ApplyJobModal";
@@ -174,8 +174,13 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
 
   async function uploadPhotoToServer(dataUri) {
     if (!dataUri) return "";
-    const res = await uploadFile(session?.token, dataUri);
-    return res?.url || "";
+    try {
+      const res = await uploadFile(session?.token, dataUri);
+      if (res?.url) return res.url;
+    } catch (e) {
+      console.warn("Photo upload server fallback:", e);
+    }
+    return dataUri;
   }
 
   async function pickDocumentFromDevice() {
@@ -1146,7 +1151,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                   <Text style={styles.postText}>{post.text}</Text>
 
                   {/* Photo Attachment View */}
-                  {post.media?.imageUrl && /^(https?:\/\/|data:image\/)/i.test(post.media.imageUrl) ? (
+                  {post.media?.imageUrl && (isValidImageUri(post.media.imageUrl) || post.media?.kind === "photo" || post.media?.kind === "showcase") ? (
                     <Image source={{ uri: sanitizeImageUri(post.media.imageUrl) }} style={styles.postImage} resizeMode="cover" />
                   ) : null}
 

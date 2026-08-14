@@ -290,7 +290,9 @@ async function buildLearnPayload(user, mentors, learn = {}, memoryStore = null, 
 }
 
 function isValidImageUri(uri) {
-  return typeof uri === "string" && /^(https?:\/\/|data:image\/)/i.test(uri.trim());
+  if (typeof uri !== "string") return false;
+  const trimmed = uri.trim();
+  return /^(https?:\/\/|data:image\/|blob:|file:|content:|ph:\/\/|\/uploads\/)/i.test(trimmed);
 }
 
 function sanitizePostMedia(media) {
@@ -312,14 +314,18 @@ function sanitizePostMedia(media) {
   }
 
   if (media.kind === "video") {
-    const videoUrl = typeof media.videoUrl === "string" && /^https?:\/\//i.test(media.videoUrl.trim())
-      ? media.videoUrl
-      : "";
-    const imageUrl = isValidImageUri(media.imageUrl) ? media.imageUrl : "";
+    const videoUrl = typeof media.videoUrl === "string" && (
+      /^https?:\/\//i.test(media.videoUrl.trim()) ||
+      /^data:video\//i.test(media.videoUrl.trim()) ||
+      /^blob:/i.test(media.videoUrl.trim()) ||
+      /^file:/i.test(media.videoUrl.trim()) ||
+      /^\/uploads\//i.test(media.videoUrl.trim())
+    ) ? media.videoUrl : (media.fileUri || "");
+    const imageUrl = isValidImageUri(media.imageUrl) ? media.imageUrl : (isValidImageUri(media.thumbnailUrl) ? media.thumbnailUrl : "");
     if (!videoUrl && !imageUrl) {
       return { kind: "none" };
     }
-    return { ...media, videoUrl, imageUrl };
+    return { ...media, videoUrl, imageUrl, thumbnailUrl: media.thumbnailUrl || imageUrl };
   }
 
   return media;

@@ -165,9 +165,9 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
     if (!mediaUrl && !fileUri && carouselImages.length === 0) return config.media;
 
     const videoSrc = fileUri || mediaUrl || carouselImages[0] || "";
-    const thumbnailSrc = (mediaUrl && mediaUrl !== fileUri)
+    const thumbnailSrc = (mediaUrl && mediaUrl !== videoSrc)
       ? mediaUrl
-      : "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80";
+      : videoSrc;
 
     return {
       kind: "video",
@@ -229,13 +229,17 @@ async function uploadLocalMedia(token, uri, mimeType) {
   if (/^https?:\/\//i.test(uri)) return uri;
   const dataUri = await uriToDataUri(uri, mimeType);
   if (!dataUri) return "";
-  const res = await uploadFile(token, dataUri);
-  return res?.url || "";
+  try {
+    const res = await uploadFile(token, dataUri);
+    if (res?.url) return res.url;
+  } catch (e) {
+    console.warn("Upload endpoint fallback:", e);
+  }
+  return dataUri;
 }
 
 async function normalizeDraftMedia(token, draft) {
   const mimeType = draft.mimeType || "";
-  const local = /^(blob:|file:|content:|ph:\/\/|data:)/i;
   const cache = new Map();
   const resolve = async (uri) => {
     if (!uri) return "";
@@ -246,18 +250,20 @@ async function normalizeDraftMedia(token, draft) {
   };
 
   const fileUri = await resolve(draft.fileUri);
-  if (local.test(draft.fileUri || "") && !fileUri) return null;
-
   const mediaUrl = await resolve(draft.mediaUrl);
-  if (local.test(draft.mediaUrl || "") && !mediaUrl) return null;
 
   let carouselImages = [];
   if (Array.isArray(draft.carouselImages) && draft.carouselImages.length > 0) {
     carouselImages = await Promise.all(draft.carouselImages.map((u) => resolve(u)));
-    if (carouselImages.some((u) => !u)) return null;
+    carouselImages = carouselImages.filter(Boolean);
   }
 
-  return { ...draft, mediaUrl, carouselImages, fileUri };
+  return {
+    ...draft,
+    mediaUrl: mediaUrl || draft.mediaUrl,
+    carouselImages: carouselImages.length > 0 ? carouselImages : (mediaUrl ? [mediaUrl] : draft.carouselImages),
+    fileUri: fileUri || draft.fileUri
+  };
 }
 
 function SwipeBackWrapper({ children, onBack, enabled = true }) {
@@ -691,7 +697,15 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
 
     setPosting(true);
     try {
-      const media = buildMediaPayload(config, draft, uploadType, mediaFrameKey);
+      let normalizedDraft = draft;
+      try {
+        const norm = await normalizeDraftMedia(session?.token, draft);
+        if (norm) normalizedDraft = norm;
+      } catch (err) {
+        console.warn("Normalize draft error:", err);
+      }
+
+      const media = buildMediaPayload(config, normalizedDraft, uploadType, mediaFrameKey);
       let newPost = null;
 
       if (session?.token) {
@@ -2278,7 +2292,7 @@ function PostMedia({ post, onPreview }) {
     );
   }
 
-  if (media.kind === "showcase") {
+  if (media.kind === "showcase" || media.kind === "photo" || (media.imageUrl && media.kind !== "video" && media.kind !== "notes")) {
     const carouselImages = (media.carouselImages && media.carouselImages.length > 0)
       ? media.carouselImages
       : [media.imageUrl].filter(Boolean);
@@ -2395,25 +2409,40 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
     videoPlayer.muted = true;
   });
 
+  // Autoplay on mount when player is initialized
+  useEffect(() => {
+    if (player && sourceUri) {
+      try {
+        player.play();
+        setPlaying(true);
+      } catch (e) {}
+    }
+  }, [player, sourceUri]);
+
   useEffect(() => {
     return () => {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     };
   }, []);
 
-  // Web IntersectionObserver: Auto-pauses video when it is half off-screen (less than 45% visible)
+  // Web IntersectionObserver: Autoplay when in view (>= 30%), pause when off-screen
   useEffect(() => {
     if (Platform.OS === "web" && containerRef.current && typeof IntersectionObserver !== "undefined") {
       const observer = new IntersectionObserver(
         ([entry]) => {
-          if (!entry.isIntersecting || entry.intersectionRatio < 0.45) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
+            try {
+              player?.play();
+              setPlaying(true);
+            } catch (e) {}
+          } else {
             try {
               player?.pause();
+              setPlaying(false);
             } catch (e) {}
-            setPlaying(false);
           }
         },
-        { threshold: [0, 0.45, 0.9] }
+        { threshold: [0, 0.3, 0.8] }
       );
 
       observer.observe(containerRef.current);
@@ -2421,30 +2450,34 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
     }
   }, [player]);
 
-  // Native / Cross-Platform Viewport Scroll Check while playing
+  // Native / Cross-Platform Viewport Scroll Check: Autoplay when in viewport
   useEffect(() => {
     let checkInterval;
-    if (playing) {
+    if (containerRef.current) {
       checkInterval = setInterval(() => {
         if (containerRef.current && containerRef.current.measureInWindow) {
           containerRef.current.measureInWindow((x, y, width, height) => {
             const windowHeight = Dimensions.get("window").height;
-            // If top of video card is below screen bottom or bottom of card is above screen top (or half off-screen)
-            const isOutOfView = y + height * 0.5 < 0 || y + height * 0.45 > windowHeight;
-            if (isOutOfView) {
+            const isVisible = y + height * 0.4 >= 0 && y + height * 0.3 <= windowHeight;
+            if (isVisible) {
+              try {
+                player?.play();
+                setPlaying(true);
+              } catch (e) {}
+            } else {
               try {
                 player?.pause();
+                setPlaying(false);
               } catch (e) {}
-              setPlaying(false);
             }
           });
         }
-      }, 350);
+      }, 400);
     }
     return () => {
       if (checkInterval) clearInterval(checkInterval);
     };
-  }, [playing, player]);
+  }, [player]);
 
   function togglePlay() {
     if (!sourceUri) return;
@@ -2456,7 +2489,6 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
     }
     setPlaying(nextPlaying);
 
-    // Flash play/pause icon on single tap, then auto-hide after 900ms!
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     controlsTimeoutRef.current = setTimeout(() => {
@@ -2486,7 +2518,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
       ) : posterUri ? (
         <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoThumbImage} />
       ) : null}
-      {!playing && posterUri ? <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoPosterImage} /> : null}
+      {!playing && posterUri && posterUri !== sourceUri ? <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoPosterImage} /> : null}
       <LinearGradient colors={["rgba(8,7,28,0.04)", "rgba(8,7,28,0.78)"]} style={styles.videoShade} />
       <Pressable onPress={togglePlay} style={styles.videoTapLayer} />
       <View style={styles.videoCopy}>
@@ -3627,12 +3659,12 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
           : selectedUris;
         return {
           ...current,
-          mediaUrl: combined[0] || previewUri,
+          mediaUrl: uploadType === "video" ? (previewUri || firstAsset.uri) : (combined[0] || previewUri),
           carouselImages: combined,
           fileName: firstAsset.fileName || current.fileName,
           fileSize: formatFileSize(firstAsset.fileSize) || current.fileSize,
           fileUri: uploadType === "video" ? firstAsset.uri : "",
-          mimeType: firstAsset.mimeType || ""
+          mimeType: firstAsset.mimeType || (uploadType === "video" ? "video/mp4" : "image/jpeg")
         };
       });
     } catch (error) {
