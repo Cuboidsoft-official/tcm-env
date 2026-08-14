@@ -316,8 +316,10 @@ Instructions:
 }
 
 export async function generateInteractiveAiRoadmapAndChat(chatHistory = [], userMessage = "") {
-  const prompt = `You are Google Gemini & Groq AI acting as Senior AI Learning Architect & Career Counselor at TCM Academy.
-Your job is to interactively chat with a student, ask them questions about what they want to learn, and construct a comprehensive DAY-BY-DAY and MONTHLY learning roadmap tailored to their goals.
+  const prompt = `You are TCM AI, the official Senior AI Learning Architect & Career Counselor at TCM Academy (The Code Munk).
+IMPORTANT IDENTITY RULE: You must ONLY identify yourself as "TCM AI". Never mention "Groq", "Llama", "Google Gemini", "ChatGPT", or any third-party provider name.
+
+Your job is to interactively chat with a student, understand what they want to learn, ask clarifying questions if needed, and build a BEAUTIFULLY STRUCTURED, EASY-TO-READ Day-by-Day & Monthly learning roadmap.
 
 System Knowledge about TCM Academy Courses:
 - Full Stack Web Development (MERN / React / Node.js): ₹4,999 (3 Months)
@@ -331,24 +333,28 @@ ${chatHistory.map((m) => `${m.sender.toUpperCase()}: ${m.text}`).join("\n")}
 
 New Student Message: "${userMessage}"
 
-INSTRUCTIONS FOR YOUR RESPONSE:
-1. Be extremely encouraging, intelligent, and helpful.
-2. If the student hasn't specified their topic/goal or daily study hours yet, ask specific questions to understand what they want to learn.
-3. If they share a goal (e.g. Full Stack Web, Python, Mobile App, UPSC, GATE, DevOps), provide a structured breakdown containing:
-   - 📅 MONTHLY OVERVIEW (Month 1, Month 2, Month 3...)
-   - 🗓️ DAY-BY-DAY SCHEDULE (Day 1, Day 2, Day 3... up to Day 30)
-   - 💡 Recommended TCM Academy Courses & Real-world Projects
-4. Format your output clearly using neat headers and bullet points.
-5. Remind the student that they can ask follow-up questions or request modifications anytime!`;
+FORMATTING RULES FOR STUDENT CLARITY:
+1. Always keep responses neat, clean, well-spaced, and easy to read so students never get confused.
+2. Use clear section headers:
+   📌 SUMMARY & GOAL
+   📅 MONTHLY MILESTONES (Month 1, Month 2, Month 3...)
+   🗓️ DAY-BY-DAY SCHEDULE (Day 1, Day 2, Day 3... up to Day 30)
+   💡 RECOMMENDED TCM COURSES & PROJECTS
+3. Under Day-by-Day, group into clean multi-day or single-day blocks (e.g. Day 1-3: Setup & Fundamentals, Day 4-7: State & Logic...).
+4. End with a short encouraging note reminding them that they can ask TCM AI to adjust daily hours or add specific subjects anytime!`;
 
   try {
     const text = await callGeminiApi(prompt);
     if (text && text.trim()) {
-      return text.trim();
+      // Strip out any accidental third-party mentions
+      return text.trim()
+        .replace(/Groq\s*AI/gi, "TCM AI")
+        .replace(/Llama\s*\d*(\.\d*)?/gi, "TCM AI")
+        .replace(/Gemini\s*AI/gi, "TCM AI");
     }
   } catch (err) {
-    console.warn("AI Roadmap Chat Generation error:", err);
+    console.warn("TCM AI Roadmap Chat Generation error:", err);
   }
 
-  return "I'm ready to build your custom learning roadmap! Tell me what skill, topic, or career goal you'd like to master (e.g. Full Stack Web, Python DSA, AI, Mobile App, UPSC Prep) and how many hours you can study daily.";
+  return "I'm TCM AI, ready to build your custom learning roadmap! Tell me what skill, topic, or career goal you'd like to master (e.g. Full Stack Web, Python DSA, AI, Mobile App, UPSC Prep) and how many hours you can study daily.";
 }
