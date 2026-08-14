@@ -94,7 +94,7 @@ export default function FeedbackModal({ visible, onClose, user = {} }) {
               </View>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
                 <Feather name="thumbs-up" size={13} color="#D97706" />
-                <Text style={styles.ratingReflectionText}>
+                <Text style={[styles.ratingReflectionText, { color: theme.isDark ? "#FBBF24" : "#D97706" }]}>
                   {rating === 5 ? "Outstanding Experience" : rating === 4 ? "Great Experience" : rating === 3 ? "Good, can improve" : "Needs Improvement"}
                 </Text>
               </View>

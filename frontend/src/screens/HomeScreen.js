@@ -23,7 +23,7 @@ import {
   useWindowDimensions,
   View
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as DocumentPicker from "expo-document-picker";
@@ -322,6 +322,9 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   const [draft, setDraft] = useState({ text: "", tags: "", title: "", mentions: "", mediaUrl: "", fileName: "", fileSize: "", fileUri: "", mimeType: "", frameKey: "none", carouselImages: [], location: "" });
   const [uploadType, setUploadType] = useState("photo");
   const [posting, setPosting] = useState(false);
+  const [isUploadingPost, setIsUploadingPost] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [showPushPermissionBanner, setShowPushPermissionBanner] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeDrawerItem, setActiveDrawerItem] = useState("Home");
   const [drawerFeatureModal, setDrawerFeatureModal] = useState(null);
@@ -424,6 +427,12 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
         }
       }
     );
+
+    if (Platform.OS === "web" && typeof window !== "undefined" && "Notification" in window) {
+      if (window.Notification.permission === "default") {
+        setShowPushPermissionBanner(true);
+      }
+    }
 
     return () => {
       isMounted = false;
@@ -599,19 +608,11 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
     setSearch("");
 
     const postIdStr = String(post.id || post._id || "");
-    setHome((prev) => {
-      const existingPosts = prev?.posts || [];
-      const exists = existingPosts.some((p) => String(p.id || p._id || "") === postIdStr);
-      if (!exists) {
-        return { ...prev, posts: [post, ...existingPosts] };
-      }
-      const otherPosts = existingPosts.filter((p) => String(p.id || p._id || "") !== postIdStr);
-      return { ...prev, posts: [post, ...otherPosts] };
-    });
+    const existingPost = home?.posts?.find((p) => String(p.id || p._id || "") === postIdStr);
 
     setActiveTab("Home");
     setActiveDrawerItem("Home");
-    setCommentsPost(post);
+    setCommentsPost(existingPost || post);
   }
 
   function openComposer(mode) {
@@ -672,12 +673,24 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
       : (draft.carouselImages?.length > 1 ? "📷 Shared Carousel Post" : "📷 Shared Photo");
     const postText = draft.text.trim() || defaultMediaText;
     const mediaFrameKey = uploadType === "video" && draft.frameKey === "none" ? "portrait" : draft.frameKey;
+    const draftSnapshot = { ...draft };
 
+    // Immediately redirect to Feed & close composer
+    setComposerMode("");
+    setActiveTab("Home");
+    setActiveCategory("For You");
     setPosting(true);
+    setIsUploadingPost(true);
+    setUploadProgress(15);
+
+    const progressTimer = setInterval(() => {
+      setUploadProgress((prev) => (prev < 85 ? prev + 15 : prev));
+    }, 350);
+
     try {
-      let normalizedDraft = draft;
+      let normalizedDraft = draftSnapshot;
       try {
-        const norm = await normalizeDraftMedia(session?.token, draft);
+        const norm = await normalizeDraftMedia(session?.token, draftSnapshot);
         if (norm) normalizedDraft = norm;
       } catch (err) {
         console.warn("Normalize draft error:", err);
@@ -689,12 +702,13 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
         normalizedDraft.fileUri,
         ...(Array.isArray(normalizedDraft.carouselImages) ? normalizedDraft.carouselImages : [])
       ].filter((uri) => uri && !isRemote(uri));
+
       if (pendingLocal.length > 0) {
-        setPosting(false);
         Alert.alert("Media upload failed", "Your file could not be uploaded (max 80MB, supported formats only). Please try again.");
         return;
       }
 
+      setUploadProgress(70);
       const media = buildMediaPayload(config, normalizedDraft, uploadType, mediaFrameKey);
       let newPost = null;
 
@@ -705,8 +719,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
             content: postText,
             caption: postText,
             category: config.category,
-            location: draft.location?.trim() || undefined,
-            tags: [...(draft.tags || "").split(/[,\s]+/), ...(draft.mentions || "").split(/[,\s]+/)].filter(Boolean),
+            location: draftSnapshot.location?.trim() || undefined,
+            tags: [...(draftSnapshot.tags || "").split(/[,\s]+/), ...(draftSnapshot.mentions || "").split(/[,\s]+/)].filter(Boolean),
             media
           });
           if (result && (result.post || result.id)) {
@@ -729,7 +743,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
           isMentor: Boolean(user?.role?.toLowerCase?.().includes("mentor")),
           isPremium: true,
           category: config.category || "For You",
-          location: draft.location?.trim() || undefined,
+          location: draftSnapshot.location?.trim() || undefined,
           text: postText,
           likesCount: 0,
           commentsCount: 0,
@@ -740,18 +754,21 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
         };
       }
 
+      setUploadProgress(100);
       setHome((current) => ({
         ...current,
         posts: [newPost, ...(current?.posts || [])]
       }));
-      setComposerMode("");
       setDraft({ text: "", tags: "", title: "", mentions: "", mediaUrl: "", fileName: "", fileSize: "", fileUri: "", mimeType: "", frameKey: "none", carouselImages: [], location: "" });
-      setActiveTab("Home");
-      setActiveCategory("For You");
     } catch (nextError) {
-      setComposerMode("");
+      console.warn("Post creation error:", nextError);
     } finally {
+      clearInterval(progressTimer);
       setPosting(false);
+      setTimeout(() => {
+        setIsUploadingPost(false);
+        setUploadProgress(0);
+      }, 700);
     }
   }
 
@@ -924,13 +941,50 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
 
   return (
     <SwipeBackWrapper onBack={activeBackAction} enabled={Boolean(activeBackAction)}>
-      <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
-      <PwaInstallBottomSheet
-        visible={isPwaInstallModalOpen}
-        onClose={() => setIsPwaInstallModalOpen(false)}
-        onShowToast={setActiveToast}
-      />
-      <View style={[styles.appShell, { backgroundColor: theme.bg }]}>
+      <SafeAreaView edges={["top", "left", "right"]} style={[styles.safe, { backgroundColor: theme.bg }]}>
+        {isUploadingPost ? (
+          <View style={styles.topUploadProgressTrack}>
+            <LinearGradient
+              colors={["#5B3CF5", "#9D4EDD", "#00F2FE", "#FF007F"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.topUploadProgressBar, { width: `${Math.max(12, uploadProgress)}%` }]}
+            />
+          </View>
+        ) : null}
+
+        {showPushPermissionBanner ? (
+          <View style={styles.pushPermissionBanner}>
+            <Feather name="bell" size={15} color="#5B3CF5" />
+            <Text numberOfLines={1} style={styles.pushPermissionText}>
+              Turn on push notifications to receive instant student alerts
+            </Text>
+            <TouchableOpacity
+              onPress={async () => {
+                const ok = await setupPushNotifications(session?.token, true);
+                if (ok) {
+                  setShowPushPermissionBanner(false);
+                  if (setActiveToast) {
+                    setActiveToast({ type: "success", title: "Notifications Allowed 🎉", message: "You will now get alerts when app is closed." });
+                  }
+                }
+              }}
+              style={styles.pushPermissionBtn}
+            >
+              <Text style={styles.pushPermissionBtnText}>Allow</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowPushPermissionBanner(false)} style={{ padding: 4 }}>
+              <Feather name="x" size={14} color="#7C7C9A" />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        <PwaInstallBottomSheet
+          visible={isPwaInstallModalOpen}
+          onClose={() => setIsPwaInstallModalOpen(false)}
+          onShowToast={setActiveToast}
+        />
+        <View style={[styles.appShell, { backgroundColor: theme.bg }]}>
         {isFullScreenView ? (
           <View style={[styles.page, { width: isFullWidthView ? "100%" : contentWidth, flex: 1, paddingBottom: 0, paddingHorizontal: isFullWidthView ? 0 : undefined }]}>
             {activeDoubtRoom ? (
@@ -1458,6 +1512,83 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   );
 }
 
+function ZigZagFlowTcmOneLogo({ fontSize = 19 }) {
+  const { theme } = useTheme();
+
+  const letters = [
+    { char: "T", color: "#FF9933" },
+    { char: "C", color: theme.isDark ? "#F8FAFC" : "#000080" },
+    { char: "M", color: "#138808" },
+    { char: " ", color: theme.text },
+    { char: "O", color: "#FF9933" },
+    { char: "n", color: theme.isDark ? "#F8FAFC" : theme.primary },
+    { char: "e", color: "#138808" }
+  ];
+
+  const animValues = useRef(letters.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    const animations = animValues.map((anim, index) => {
+      const moveDistance = index % 2 === 0 ? -6 : -4;
+      return Animated.sequence([
+        Animated.timing(anim, {
+          toValue: moveDistance,
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true
+        }),
+        Animated.timing(anim, {
+          toValue: 2,
+          duration: 200,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 180,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true
+        })
+      ]);
+    });
+
+    const waveLoop = Animated.loop(
+      Animated.sequence([
+        Animated.stagger(80, animations),
+        Animated.delay(600)
+      ])
+    );
+
+    waveLoop.start();
+
+    return () => waveLoop.stop();
+  }, [theme.isDark]);
+
+  return (
+    <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+      {letters.map((item, idx) => {
+        if (item.char === " ") {
+          return <Text key={idx} style={{ fontSize }}> </Text>;
+        }
+        return (
+          <Animated.Text
+            key={idx}
+            style={{
+              fontFamily: fonts.bold,
+              fontSize,
+              color: item.color,
+              letterSpacing: 0.2,
+              transform: [{ translateY: animValues[idx] }]
+            }}
+          >
+            {item.char}
+          </Animated.Text>
+        );
+      })}
+    </View>
+  );
+}
+
 function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings, isSelfProfile, onNotifications, showBack, backLabel, onBack, onOpenWallet }) {
   const { theme } = useTheme();
   const iconColor = theme.isDark ? "#81C784" : colors.primary;
@@ -1472,7 +1603,7 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
             <Feather name="chevron-left" size={26} color={iconColor} />
           </Pressable>
           <View style={styles.brandWrap}>
-            <Text style={[styles.brand, { color: brandColor }]}>TCM One</Text>
+            <ZigZagFlowTcmOneLogo />
             <Text style={[styles.brandSub, { color: subtextColor }]}>{backLabel || "Talent & Career Mission"}</Text>
           </View>
         </View>
@@ -1518,7 +1649,7 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
           <Feather name="menu" size={25} color={iconColor} />
         </Pressable>
         <View style={styles.brandWrap}>
-          <Text style={[styles.brand, { color: brandColor }]}>TCM One</Text>
+          <ZigZagFlowTcmOneLogo />
           <Text style={[styles.brandSub, { color: subtextColor }]}>Talent & Career Mission</Text>
         </View>
       </View>
@@ -2017,7 +2148,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
             ) : null}
           </View>
           <Text numberOfLines={1} style={[styles.authorRole, { color: theme.subtext }]}>
-            {post.authorRole}{post.location ? ` • 📍 ${post.location}` : ""}
+            {post.authorRole}{post.location ? ` • ${post.location}` : ""}
           </Text>
         </View>
         <Pressable
@@ -2405,28 +2536,28 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
     };
   }, []);
 
-  // Web IntersectionObserver: Autoplay when in view (>= 30%), pause when off-screen
+  // Web IntersectionObserver: Autoplay when in view (>= 40%), pause when off-screen
   useEffect(() => {
     if (Platform.OS === "web" && containerRef.current && typeof IntersectionObserver !== "undefined") {
       const observer = new IntersectionObserver(
         ([entry]) => {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
-            if (!userPausedRef.current) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.4) {
+            if (!userPausedRef.current && player) {
               try {
-                player?.play();
+                player.play();
                 setPlaying(true);
               } catch (e) {}
             }
           } else {
-            try {
-              player?.pause();
-              setPlaying(false);
-              userPausedRef.current = false;
-              setUserPaused(false);
-            } catch (e) {}
+            if (player) {
+              try {
+                player.pause();
+                setPlaying(false);
+              } catch (e) {}
+            }
           }
         },
-        { threshold: [0, 0.3, 0.8] }
+        { threshold: [0, 0.4, 0.8] }
       );
 
       observer.observe(containerRef.current);
@@ -2434,10 +2565,10 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
     }
   }, [player]);
 
-  // Native / Cross-Platform Viewport Scroll Check: Autoplay when in viewport
+  // Native Viewport Scroll Check: Autoplay when in viewport (Native OS ONLY)
   useEffect(() => {
     let checkInterval;
-    if (containerRef.current) {
+    if (Platform.OS !== "web" && containerRef.current) {
       checkInterval = setInterval(() => {
         if (containerRef.current && containerRef.current.measureInWindow) {
           containerRef.current.measureInWindow((x, y, width, height) => {
@@ -2451,12 +2582,12 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
                 } catch (e) {}
               }
             } else {
-              try {
-                player?.pause();
-                setPlaying(false);
-                userPausedRef.current = false;
-                setUserPaused(false);
-              } catch (e) {}
+              if (player) {
+                try {
+                  player.pause();
+                  setPlaying(false);
+                } catch (e) {}
+              }
             }
           });
         }
@@ -3274,6 +3405,36 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
     setCommentText("");
     setReplyingTo(null);
 
+    const tempId = `c_temp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const optimisticComment = {
+      id: tempId,
+      name: session?.user?.name || "You",
+      avatarUrl: session?.user?.avatarUrl,
+      text: textToSend,
+      time: "Just now",
+      likes: 0,
+      replies: []
+    };
+
+    // Optimistic UI Update: add comment instantly
+    if (currentReplyTarget) {
+      setComments((prev) =>
+        prev.map((c) => {
+          const cId = String(c.id || c._id);
+          const rId = String(currentReplyTarget.id || currentReplyTarget._id);
+          if (cId === rId) {
+            return {
+              ...c,
+              replies: [...(c.replies || []), optimisticComment]
+            };
+          }
+          return c;
+        })
+      );
+    } else {
+      setComments((prev) => [optimisticComment, ...prev]);
+    }
+
     if (post) {
       const curCount = post?.metrics?.comments !== undefined ? post.metrics.comments : (post?.commentsList ? post.commentsList.length : 0);
       if (!post.metrics) post.metrics = { likes: 0, comments: 0, shares: 0 };
@@ -3285,63 +3446,24 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
         const parentId = currentReplyTarget ? (currentReplyTarget.id || currentReplyTarget._id) : undefined;
         const res = await addPostComment(session.token, targetPostId, textToSend, parentId);
 
-        const newComment = res?.comment || {
-          id: `c-${Date.now()}`,
-          name: session?.user?.name || "You",
-          avatarUrl: session?.user?.avatarUrl,
-          text: textToSend,
-          time: "Just now",
-          likes: 0,
-          replies: []
-        };
-
-        if (currentReplyTarget) {
+        if (res?.comment && (res.comment.id || res.comment._id)) {
+          const realComment = res.comment;
           setComments((prev) =>
             prev.map((c) => {
-              const cId = String(c.id || c._id);
-              const rId = String(currentReplyTarget.id || currentReplyTarget._id);
-              if (cId === rId) {
+              if (c.id === tempId) return realComment;
+              if (Array.isArray(c.replies)) {
                 return {
                   ...c,
-                  replies: [...(c.replies || []), newComment]
+                  replies: c.replies.map((r) => (r.id === tempId ? realComment : r))
                 };
               }
               return c;
             })
           );
-        } else {
-          setComments((prev) => [newComment, ...prev]);
         }
-      } else if (currentReplyTarget) {
-        const newReply = {
-          id: `r-${Date.now()}`,
-          name: session?.user?.name || "You",
-          avatarUrl: session?.user?.avatarUrl,
-          text: textToSend,
-          time: "Just now",
-          likes: 0
-        };
-        setComments((prev) =>
-          prev.map((c) => {
-            const cId = String(c.id || c._id);
-            const rId = String(currentReplyTarget.id || currentReplyTarget._id);
-            if (cId === rId) {
-              return {
-                ...c,
-                replies: [...(c.replies || []), newReply]
-              };
-            }
-            return c;
-          })
-        );
-      } else {
-        setComments((prev) => [
-          { id: `c-${Date.now()}`, name: session?.user?.name || "You", avatarUrl: session?.user?.avatarUrl, text: textToSend, time: "Just now", likes: 0, replies: [] },
-          ...prev
-        ]);
       }
     } catch (err) {
-      Alert.alert("Comment Error", "Could not submit comment.");
+      console.warn("Failed to sync comment with backend:", err);
     } finally {
       setSubmittingComment(false);
     }
@@ -3557,6 +3679,7 @@ function LearnDashboard({ learn, user, onSelectUser }) {
 }
 
 function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadType, setDraft, onClose, onSubmit, onPreviewMedia }) {
+  const { theme } = useTheme();
   const textLength = draft.text.length;
   const canSubmit = (Boolean(draft.text.trim()) || Boolean(draft.mediaUrl?.trim?.()) || (draft.carouselImages && draft.carouselImages.length > 0) || Boolean(draft.fileUri?.trim?.())) && !posting;
   const imagesList = (draft.carouselImages && draft.carouselImages.length > 0)
@@ -3567,9 +3690,11 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
   const hasMediaPreview = uploadType === "video" ? Boolean(draft.fileUri?.trim?.() || previewImage) : uploadType === "photo" && imagesList.length > 0;
   const previewCount = uploadType === "photo" ? imagesList.length : Number(Boolean(hasMediaPreview || hasDocumentPreview));
   const selectedFrameKey = uploadType === "video" && draft.frameKey === "none" ? "portrait" : draft.frameKey || "none";
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+
   const mediaOptions = [
-    { key: "photo", icon: "image", label: "Photo", color: colors.primary },
-    { key: "document", icon: "file-document-outline", label: "Document", color: "#00A86B" },
+    { key: "photo", icon: "image", label: "Photo", color: theme.primary },
+    { key: "document", icon: "file-document-outline", label: "Document", color: "#10B981" },
     { key: "video", icon: "play-box-outline", label: "Video", color: "#F04F7A" }
   ];
   const frameOptions = [
@@ -3583,6 +3708,75 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
   ];
   const uploadLabel = uploadType === "document" ? "Upload Doc" : uploadType === "video" ? "Upload Video" : "Upload Image";
   const [framePreview, setFramePreview] = useState(null);
+
+  async function fetchCurrentLocation() {
+    setIsFetchingLocation(true);
+    try {
+      if (typeof navigator !== "undefined" && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const { latitude, longitude } = position.coords;
+            try {
+              const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+              const data = await res.json();
+              if (data && data.address) {
+                const city = data.address.city || data.address.town || data.address.village || data.address.county || data.address.state_district || "";
+                const country = data.address.country || "India";
+                const locStr = city ? `${city}, ${country}` : country;
+                setDraft((curr) => ({ ...curr, location: locStr, title: locStr }));
+                Alert.alert("Location Detected", `Your current location: ${locStr}`);
+              } else {
+                const coordStr = `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`;
+                setDraft((curr) => ({ ...curr, location: coordStr, title: coordStr }));
+              }
+            } catch (e) {
+              setDraft((curr) => ({ ...curr, location: "Current Location", title: "Current Location" }));
+            } finally {
+              setIsFetchingLocation(false);
+            }
+          },
+          (err) => {
+            setIsFetchingLocation(false);
+            promptManualLocation();
+          },
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      } else {
+        setIsFetchingLocation(false);
+        promptManualLocation();
+      }
+    } catch (err) {
+      setIsFetchingLocation(false);
+      promptManualLocation();
+    }
+  }
+
+  function promptManualLocation() {
+    const presetLocations = ["Delhi, India", "Mumbai, India", "Bengaluru, India", "Hyderabad, India", "Remote / Online"];
+    if (Platform.OS === "web") {
+      const choice = typeof window !== "undefined" && window.prompt(
+        "Enter or select location:\n(Options: Delhi, India / Mumbai, India / Bengaluru, India / Remote / Online)",
+        draft.location || "Delhi, India"
+      );
+      if (choice !== null && choice !== undefined) {
+        setDraft((curr) => ({ ...curr, location: choice.trim(), title: choice.trim() }));
+      }
+    } else {
+      Alert.alert(
+        "Select Location",
+        "Choose location for your post:",
+        [
+          { text: "Detect Live Location", onPress: fetchCurrentLocation },
+          ...presetLocations.map((loc) => ({
+            text: loc,
+            onPress: () => setDraft((curr) => ({ ...curr, location: loc, title: loc }))
+          })),
+          { text: "Clear Location", style: "destructive", onPress: () => setDraft((curr) => ({ ...curr, location: "", title: "" })) },
+          { text: "Cancel", style: "cancel" }
+        ]
+      );
+    }
+  }
 
   async function attachSelectedMedia() {
     try {
@@ -3697,16 +3891,16 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.createScreen}>
-        <View style={styles.createHeader}>
-          <Pressable hitSlop={10} onPress={onClose} style={styles.createIconButton}>
-            <Feather name="x" size={28} color={colors.ink} />
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
+      <View style={[styles.createScreen, { backgroundColor: theme.bg }]}>
+        <View style={[styles.createHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+          <Pressable hitSlop={10} onPress={onClose} style={[styles.createIconButton, { backgroundColor: theme.isDark ? "#1E263B" : "#F3F4F8" }]}>
+            <Feather name="x" size={20} color={theme.text} />
           </Pressable>
           <View style={styles.createHeaderCopy}>
-            <Text style={styles.createTitle}>Create Post</Text>
+            <Text style={[styles.createTitle, { color: theme.text }]}>New Post</Text>
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <TouchableOpacity
               onPress={() => {
                 if (!hasMediaPreview && !hasDocumentPreview && !draft.text.trim()) {
@@ -3724,113 +3918,102 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
                   fileName: draft.fileName
                 });
               }}
-              style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.badgeBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: theme.badgeBg || colors.badgeBg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}
             >
-              <Feather name="eye" size={15} color={colors.primary} />
-              <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Preview</Text>
+              <Feather name="eye" size={13} color={theme.primary} />
+              <Text style={{ fontSize: 11, fontWeight: "700", color: theme.primary }}>Preview</Text>
             </TouchableOpacity>
             <TouchableOpacity
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={!canSubmit || posting}
               onPress={onSubmit}
-              style={[styles.createPublish, (!canSubmit || posting) && styles.createPublishDisabled]}
+              style={[styles.createPublish, { backgroundColor: theme.primary }, (!canSubmit || posting) && styles.createPublishDisabled]}
             >
-              <Text style={styles.createPublishText}>{posting ? "Posting..." : "Post"}</Text>
+              <Text style={styles.createPublishText}>{posting ? "..." : "Post"}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.createScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={styles.createComposerCard}>
+          <View style={[styles.createComposerCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.createUserRow}>
-              <Avatar name={user?.name} uri={user?.avatarUrl} size={58} />
+              <Avatar name={user?.name} uri={user?.avatarUrl} size={42} />
               <View style={styles.createUserCopy}>
-                <Text numberOfLines={1} style={styles.createUserName}>{user?.name || "TCM Learner"}</Text>
+                <Text numberOfLines={1} style={[styles.createUserName, { color: theme.text }]}>{user?.name || "TCM Learner"}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
-                  <View style={styles.audiencePill}>
-                    <Feather name="globe" size={12} color={colors.primary} />
-                    <Text style={styles.audienceText}>Public</Text>
+                  <View style={[styles.audiencePill, { backgroundColor: theme.isDark ? "#1E263B" : "#F1EDFF" }]}>
+                    <Feather name="globe" size={11} color={theme.primary} />
+                    <Text style={[styles.audienceText, { color: theme.primary }]}>Public</Text>
                   </View>
 
                   <TouchableOpacity
-                    onPress={() => {
-                      const presetLocations = ["Delhi, India", "Mumbai, India", "Bengaluru, India", "Hyderabad, India", "Remote / Online"];
-                      if (Platform.OS === "web") {
-                        const choice = typeof window !== "undefined" && window.prompt(
-                          "Enter or select location:\n(Options: Delhi, India / Mumbai, India / Bengaluru, India / Remote / Online)",
-                          draft.location || "Delhi, India"
-                        );
-                        if (choice !== null && choice !== undefined) {
-                          setDraft((curr) => ({ ...curr, location: choice.trim() }));
-                        }
-                      } else {
-                        Alert.alert(
-                          "📍 Select Location",
-                          "Choose location for your post:",
-                          [
-                            ...presetLocations.map((loc) => ({
-                              text: loc,
-                              onPress: () => setDraft((curr) => ({ ...curr, location: loc }))
-                            })),
-                            { text: "Clear Location", style: "destructive", onPress: () => setDraft((curr) => ({ ...curr, location: "" })) },
-                            { text: "Cancel", style: "cancel" }
-                          ]
-                        );
-                      }
-                    }}
+                    onPress={fetchCurrentLocation}
+                    disabled={isFetchingLocation}
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
                       gap: 4,
-                      backgroundColor: draft.location ? "#EEF2FF" : "#F4F3FA",
+                      backgroundColor: theme.isDark ? "#1E263B" : (draft.location ? "#EEF2FF" : "#F4F3FA"),
                       paddingHorizontal: 8,
                       paddingVertical: 3,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       borderWidth: 1,
-                      borderColor: draft.location ? "#C7D2FE" : "#E2E8F0"
+                      borderColor: theme.border
                     }}
                   >
-                    <Ionicons name="location-sharp" size={12} color={draft.location ? colors.primary : "#64748B"} />
-                    <Text style={{ fontSize: 11, fontWeight: "600", color: draft.location ? colors.primary : "#64748B" }}>
-                      {draft.location || "Location"}
+                    {isFetchingLocation ? (
+                      <ActivityIndicator size="small" color={theme.primary} />
+                    ) : (
+                      <Ionicons name="location-sharp" size={12} color={draft.location ? theme.primary : theme.subtext} />
+                    )}
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: draft.location ? theme.primary : theme.subtext }}>
+                      {isFetchingLocation ? "Fetching..." : (draft.location || "Add Location")}
                     </Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
 
-            <View style={styles.createTextBox}>
+            <View style={[styles.createTextBox, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F9FAFE"), borderColor: theme.border }]}>
               <TextInput
                 multiline
                 maxLength={2200}
-                placeholder="What's on your mind?"
-                placeholderTextColor="#9695AA"
-                style={styles.createTextArea}
+                placeholder="Write a caption..."
+                placeholderTextColor={theme.subtext || "#94A3B8"}
+                style={[styles.createTextArea, { color: theme.text }]}
                 value={draft.text}
                 onChangeText={(text) => setDraft((current) => ({ ...current, text }))}
               />
-              <Text style={styles.charCount}>{textLength}/2200</Text>
+              <Text style={[styles.charCount, { color: theme.subtext }]}>{textLength}/2200</Text>
             </View>
 
-            <View style={styles.mediaModeRow}>
+            <View style={[styles.mediaModeRow, { borderTopColor: theme.border }]}>
               {mediaOptions.map((item) => {
                 const active = uploadType === item.key;
                 return (
-                  <Pressable key={item.key} onPress={() => setUploadType(item.key)} style={[styles.mediaModeButton, active && styles.mediaModeActive]}>
+                  <Pressable
+                    key={item.key}
+                    onPress={() => setUploadType(item.key)}
+                    style={[
+                      styles.mediaModeButton,
+                      { backgroundColor: theme.isDark ? "#131927" : "#F9FAFE", borderColor: theme.border },
+                      active && { backgroundColor: theme.isDark ? "#064E3B" : "#F0ECFF", borderColor: theme.primary }
+                    ]}
+                  >
                     <View style={[styles.mediaModeIcon, { backgroundColor: `${item.color}18` }]}>
-                      <MaterialCommunityIcons name={item.icon} size={22} color={item.color} />
+                      <MaterialCommunityIcons name={item.icon} size={18} color={active ? theme.primary : item.color} />
                     </View>
-                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.mediaModeText, active && styles.mediaModeTextActive]}>{item.label}</Text>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.mediaModeText, { color: theme.subtext }, active && { color: theme.primary }]}>{item.label}</Text>
                   </Pressable>
                 );
               })}
             </View>
           </View>
 
-          <View style={styles.createPanel}>
+          <View style={[styles.createPanel, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.panelTitleRow}>
-              <Text style={styles.createSectionTitle}>Media Preview</Text>
-              <Text style={styles.panelCounter}>{previewCount}/10</Text>
+              <Text style={[styles.createSectionTitle, { color: theme.text }]}>Media Preview</Text>
+              <Text style={[styles.panelCounter, { color: theme.subtext }]}>{previewCount}/10</Text>
             </View>
             <ScrollView horizontal contentContainerStyle={styles.previewPickerRow} showsHorizontalScrollIndicator={false}>
               {uploadType === "photo" && imagesList.length > 0 ? (
@@ -3889,16 +4072,16 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
                   }}
                 />
               ) : null}
-              <Pressable onPress={attachSelectedMedia} style={styles.addMoreCard}>
-                <Feather name="plus" size={26} color={colors.primary} />
-                <Text numberOfLines={2} style={styles.addMoreText}>{previewCount ? "+ Add More" : uploadLabel}</Text>
+              <Pressable onPress={attachSelectedMedia} style={[styles.addMoreCard, { backgroundColor: theme.isDark ? "#131927" : "#FFFFFF", borderColor: theme.border }]}>
+                <Feather name="plus" size={22} color={theme.primary} />
+                <Text numberOfLines={2} style={[styles.addMoreText, { color: theme.primary }]}>{previewCount ? "+ Add" : uploadLabel}</Text>
               </Pressable>
             </ScrollView>
           </View>
 
           {uploadType === "photo" || uploadType === "video" ? (
-            <View style={styles.createPanel}>
-              <Text style={styles.createSectionTitle}>{uploadType === "video" ? "Frame (Videos)" : "Crop & Frame (Images)"}</Text>
+            <View style={[styles.createPanel, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <Text style={[styles.createSectionTitle, { color: theme.text }]}>{uploadType === "video" ? "Frame (Videos)" : "Crop & Frame (Images)"}</Text>
               {hasMediaPreview ? (
                 <ScrollView horizontal contentContainerStyle={styles.frameRow} showsHorizontalScrollIndicator={false}>
                   {frameOptions.map((item) => {
@@ -3912,26 +4095,26 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
                         }}
                         style={[styles.frameOption, active && styles.frameOptionActive]}
                       >
-                        <View style={[styles.frameThumb, item.key === "none" && styles.frameThumbNone, active && styles.frameThumbActive]}>
+                        <View style={[styles.frameThumb, { backgroundColor: theme.isDark ? "#131927" : "#F5F4FA", borderColor: theme.border }, active && { borderColor: theme.primary, borderWidth: 1.5 }]}>
                           {item.icon ? (
-                            <Feather name={item.icon} size={25} color={colors.primary} />
+                            <Feather name={item.icon} size={22} color={theme.primary} />
                           ) : uploadType === "video" && !previewImage ? (
                             <View style={styles.frameVideoThumb}>
-                              <FontAwesome name="play" size={16} color={colors.primary} />
+                              <FontAwesome name="play" size={14} color={theme.primary} />
                             </View>
                           ) : (
                             <Image source={{ uri: previewImage }} style={styles.frameImage} />
                           )}
                         </View>
-                        <Text numberOfLines={1} style={styles.frameLabel}>{item.label}</Text>
+                        <Text numberOfLines={1} style={[styles.frameLabel, { color: theme.subtext }]}>{item.label}</Text>
                       </Pressable>
                     );
                   })}
                 </ScrollView>
               ) : (
-                <View style={styles.emptyFrameState}>
-                  <Feather name={uploadType === "video" ? "video" : "image"} size={23} color={colors.primary} />
-                  <Text style={styles.emptyFrameText}>
+                <View style={[styles.emptyFrameState, { backgroundColor: theme.isDark ? "#131927" : "#F8F7FC", borderColor: theme.border }]}>
+                  <Feather name={uploadType === "video" ? "video" : "image"} size={20} color={theme.primary} />
+                  <Text style={[styles.emptyFrameText, { color: theme.subtext }]}>
                     {uploadType === "video"
                       ? "Frame options for your video will appear here after uploading."
                       : "Frame options for your image will appear here after uploading."}
@@ -3941,24 +4124,40 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
             </View>
           ) : null}
 
-          <View style={styles.createPanel}>
-            <Text style={styles.createSectionTitle}>Add Details</Text>
-            <DetailInputRow icon="map-pin" label="Location" placeholder="Add location" value={draft.title} onChangeText={(title) => setDraft((current) => ({ ...current, title }))} />
+          <View style={[styles.createPanel, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <Text style={[styles.createSectionTitle, { color: theme.text }]}>Add Details</Text>
+              <TouchableOpacity
+                onPress={fetchCurrentLocation}
+                disabled={isFetchingLocation}
+                style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: theme.isDark ? "#1E263B" : "#EEF2FF", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}
+              >
+                {isFetchingLocation ? (
+                  <ActivityIndicator size="small" color={theme.primary} />
+                ) : (
+                  <Ionicons name="location-sharp" size={14} color={theme.primary} />
+                )}
+                <Text style={{ fontSize: 11, fontWeight: "700", color: theme.primary }}>
+                  {isFetchingLocation ? "Locating..." : "Detect Location"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <DetailInputRow icon="map-pin" label="Location" placeholder="Add location" value={draft.title} onChangeText={(title) => setDraft((current) => ({ ...current, title, location: title }))} />
             <DetailInputRow icon="hash" label="Hashtags" placeholder="Add hashtags" value={draft.tags} onChangeText={(tags) => setDraft((current) => ({ ...current, tags }))} autoCapitalize="none" />
             <DetailInputRow icon="users" label="Audience" placeholder="Everyone" value={draft.mentions} onChangeText={(mentions) => setDraft((current) => ({ ...current, mentions }))} autoCapitalize="none" />
             {uploadType === "document" ? (
               <View style={styles.documentMetaRow}>
                 <TextInput
                   placeholder="File name"
-                  placeholderTextColor="#86839B"
-                  style={[styles.createInput, styles.inlineInput]}
+                  placeholderTextColor={theme.subtext || "#86839B"}
+                  style={[styles.createInput, styles.inlineInput, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F8F7FC"), color: theme.text, borderColor: theme.border }]}
                   value={draft.fileName}
                   onChangeText={(fileName) => setDraft((current) => ({ ...current, fileName }))}
                 />
                 <TextInput
                   placeholder="Size"
-                  placeholderTextColor="#86839B"
-                  style={[styles.createInput, styles.inlineInput]}
+                  placeholderTextColor={theme.subtext || "#86839B"}
+                  style={[styles.createInput, styles.inlineInput, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F8F7FC"), color: theme.text, borderColor: theme.border }]}
                   value={draft.fileSize}
                   onChangeText={(fileSize) => setDraft((current) => ({ ...current, fileSize }))}
                 />
@@ -3966,15 +4165,15 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
             ) : null}
           </View>
 
-          <Pressable style={styles.guidelinesCard}>
-            <View style={styles.guidelineIcon}>
-              <Feather name="shield" size={24} color={colors.primary} />
+          <Pressable style={[styles.guidelinesCard, { backgroundColor: theme.isDark ? "#1E263B" : "#F0EDFF", borderColor: theme.border }]}>
+            <View style={[styles.guidelineIcon, { backgroundColor: theme.isDark ? "#064E3B" : "#E2D9FF" }]}>
+              <Feather name="shield" size={20} color={theme.primary} />
             </View>
             <View style={styles.guidelineCopy}>
-              <Text style={styles.guidelineTitle}>Community Guidelines</Text>
-              <Text style={styles.guidelineText}>Be respectful and follow TCM community guidelines.</Text>
+              <Text style={[styles.guidelineTitle, { color: theme.text }]}>Community Guidelines</Text>
+              <Text style={[styles.guidelineText, { color: theme.subtext }]}>Be respectful and follow TCM community guidelines.</Text>
             </View>
-            <Feather name="chevron-right" size={22} color={colors.ink} />
+            <Feather name="chevron-right" size={20} color={theme.subtext} />
           </Pressable>
         </ScrollView>
         <FramePreviewModal
@@ -4125,9 +4324,9 @@ function VideoPreviewSurface({ videoUri, imageUrl }) {
 function DetailInputRow({ icon, label, placeholder, value, onChangeText, autoCapitalize }) {
   const { theme } = useTheme();
   return (
-    <View style={styles.detailRow}>
-      <View style={[styles.detailIcon, { backgroundColor: theme.badgeBg || "#E8F5E9" }]}>
-        <Feather name={icon} size={18} color={theme.primary} />
+    <View style={[styles.detailRow, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F9FAFE"), borderColor: theme.border }]}>
+      <View style={[styles.detailIcon, { backgroundColor: theme.isDark ? "#1E263B" : "#F0ECFF" }]}>
+        <Feather name={icon} size={16} color={theme.primary} />
       </View>
       <Text style={[styles.detailLabel, { color: theme.text }]}>{label}</Text>
       <TextInput
@@ -4144,8 +4343,11 @@ function DetailInputRow({ icon, label, placeholder, value, onChangeText, autoCap
 
 function ActionDock({ open, setOpen, onAction, tabs, activeTab, setActiveTab }) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const safeBottom = Math.max(8, insets?.bottom || 0);
+
   return (
-    <View style={styles.bottomDock}>
+    <View style={[styles.bottomDock, { bottom: safeBottom }]}>
       <View style={styles.fabRow}>
         <Pressable onPress={() => onAction("post")} style={({ pressed }) => [styles.fab, pressed && styles.pressed]}>
           <LinearGradient colors={[theme.fabBg || theme.primary, theme.primaryDark || "#044324"]} style={styles.fabGradient}>
@@ -4451,7 +4653,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     alignItems: "center",
-    paddingBottom: 110
+    paddingBottom: 88
   },
   page: {
     alignSelf: "center",
@@ -5924,71 +6126,87 @@ const styles = StyleSheet.create({
     marginTop: 2
   },
   createScreen: {
-    backgroundColor: "#FBFAFF",
+    backgroundColor: "#F8F9FE",
     flex: 1
   },
   createHeader: {
     alignItems: "center",
-    backgroundColor: "#FBFAFF",
+    backgroundColor: "#FFFFFF",
+    borderBottomColor: "#EFEFF8",
+    borderBottomWidth: 1,
     flexDirection: "row",
-    minHeight: 76,
+    minHeight: 48,
     justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingTop: 6
+    paddingHorizontal: 12,
+    paddingTop: 2,
+    paddingBottom: 2
   },
   createIconButton: {
     alignItems: "center",
-    height: 44,
+    backgroundColor: "#F3F4F8",
+    borderRadius: 16,
+    height: 32,
     justifyContent: "center",
-    width: 36
+    width: 32
   },
   createHeaderCopy: {
     flex: 1,
-    marginHorizontal: 10,
+    marginHorizontal: 8,
     minWidth: 0
   },
   createTitle: {
-    color: colors.ink,
+    color: "#18172B",
     fontFamily: fonts.bold,
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20
   },
   createSubtitle: {
     color: "#66637F",
     fontFamily: fonts.medium,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 14,
     marginTop: 1
   },
   createPublish: {
     alignItems: "center",
     backgroundColor: colors.primary,
-    borderRadius: 10,
-    height: 48,
+    borderRadius: 16,
+    height: 32,
     justifyContent: "center",
-    minWidth: 76,
-    paddingHorizontal: 14
+    minWidth: 58,
+    paddingHorizontal: 12,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2
   },
   createPublishDisabled: {
-    opacity: 0.45
+    opacity: 0.4,
+    shadowOpacity: 0,
+    elevation: 0
   },
   createPublishText: {
     color: "#FFFFFF",
     fontFamily: fonts.bold,
-    fontSize: 16
+    fontSize: 13
   },
   createScroll: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     paddingTop: 8,
-    paddingBottom: 40
+    paddingBottom: 30
   },
   createComposerCard: {
-    ...shadow,
     backgroundColor: "#FFFFFF",
-    borderColor: colors.border,
+    borderColor: "#ECEEF8",
     borderRadius: 14,
     borderWidth: 1,
-    padding: 14
+    padding: 12,
+    shadowColor: "#5B3CF5",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1
   },
   createUserRow: {
     alignItems: "center",
@@ -6022,12 +6240,13 @@ const styles = StyleSheet.create({
     fontSize: 12
   },
   createTextBox: {
-    borderColor: "#E6E3F0",
-    borderRadius: 12,
+    backgroundColor: "#F9FAFE",
+    borderColor: "#E5E7F5",
+    borderRadius: 14,
     borderWidth: 1,
-    marginTop: 15,
-    minHeight: 142,
-    padding: 13
+    marginTop: 14,
+    minHeight: 145,
+    padding: 14
   },
   uploadTabs: {
     flexDirection: "row",
@@ -6098,45 +6317,46 @@ const styles = StyleSheet.create({
   },
   charCount: {
     alignSelf: "flex-end",
-    color: "#8A879F",
-    fontFamily: fonts.medium,
-    fontSize: 11
+    color: "#9E9EB2",
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    marginTop: 4
   },
   mediaModeRow: {
-    borderTopColor: "#F0EEF7",
+    borderTopColor: "#F1F2F9",
     borderTopWidth: 1,
     flexDirection: "row",
     gap: 8,
-    marginTop: 15,
+    marginTop: 14,
     paddingTop: 14
   },
   mediaModeButton: {
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#E8E5F1",
-    borderRadius: 999,
+    backgroundColor: "#F9FAFE",
+    borderColor: "#E5E7F5",
+    borderRadius: 12,
     borderWidth: 1,
     flex: 1,
     flexDirection: "row",
-    gap: 4,
-    height: 48,
+    gap: 6,
+    height: 44,
     justifyContent: "center",
     minWidth: 0,
-    paddingHorizontal: 8
+    paddingHorizontal: 10
   },
   mediaModeActive: {
-    backgroundColor: "#F5F2FF",
-    borderColor: "#E5DFFF"
+    backgroundColor: "#F0ECFF",
+    borderColor: colors.primary
   },
   mediaModeIcon: {
     alignItems: "center",
-    borderRadius: 7,
-    height: 26,
+    borderRadius: 8,
+    height: 28,
     justifyContent: "center",
-    width: 26
+    width: 28
   },
   mediaModeText: {
-    color: colors.ink,
+    color: "#475569",
     flexShrink: 1,
     fontFamily: fonts.bold,
     fontSize: 12
@@ -6145,13 +6365,17 @@ const styles = StyleSheet.create({
     color: colors.primary
   },
   createPanel: {
-    ...shadow,
     backgroundColor: "#FFFFFF",
-    borderColor: colors.border,
-    borderRadius: 14,
+    borderColor: "#ECEEF8",
+    borderRadius: 18,
     borderWidth: 1,
     marginTop: 14,
-    padding: 14
+    padding: 16,
+    shadowColor: "#5B3CF5",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1
   },
   panelTitleRow: {
     alignItems: "center",
@@ -6362,37 +6586,38 @@ const styles = StyleSheet.create({
   },
   detailRow: {
     alignItems: "center",
-    borderColor: "#ECE8F4",
-    borderRadius: 10,
+    backgroundColor: "transparent",
+    borderColor: "#E5E7F5",
+    borderRadius: 14,
     borderWidth: 1,
     flexDirection: "row",
-    minHeight: 54,
-    marginTop: 11,
-    paddingHorizontal: 10
+    minHeight: 50,
+    marginTop: 10,
+    paddingHorizontal: 12
   },
   detailIcon: {
     alignItems: "center",
-    backgroundColor: "#F4F1FF",
-    borderRadius: 9,
-    height: 34,
+    backgroundColor: "#F0ECFF",
+    borderRadius: 10,
+    height: 32,
     justifyContent: "center",
     marginRight: 10,
-    width: 34
+    width: 32
   },
   detailLabel: {
-    color: colors.ink,
+    color: "#18172B",
     fontFamily: fonts.bold,
-    fontSize: 12,
-    lineHeight: 15,
+    fontSize: 13,
+    lineHeight: 16,
     marginRight: 8,
-    width: 90
+    width: 85
   },
   detailInput: {
     color: colors.ink,
     flex: 1,
     fontFamily: fonts.medium,
-    fontSize: 12,
-    height: 38,
+    fontSize: 13,
+    height: 40,
     minWidth: 0,
     paddingVertical: 0
   },
@@ -6532,21 +6757,23 @@ const styles = StyleSheet.create({
   },
   guidelinesCard: {
     alignItems: "center",
-    backgroundColor: "#E8F5E9",
-    borderRadius: 12,
+    backgroundColor: "#F0EDFF",
+    borderColor: "#D8CCFF",
+    borderRadius: 16,
+    borderWidth: 1,
     flexDirection: "row",
     gap: 12,
     marginTop: 16,
-    minHeight: 76,
+    minHeight: 72,
     paddingHorizontal: 16
   },
   guidelineIcon: {
     alignItems: "center",
-    backgroundColor: "#C8E6C9",
+    backgroundColor: "#E2D9FF",
     borderRadius: 14,
-    height: 48,
+    height: 44,
     justifyContent: "center",
-    width: 48
+    width: 44
   },
   guidelineCopy: {
     flex: 1,
@@ -7148,5 +7375,51 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 20
+  },
+  topUploadProgressTrack: {
+    height: 4,
+    width: "100%",
+    backgroundColor: "rgba(91, 60, 245, 0.12)",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 9999,
+    overflow: "hidden"
+  },
+  topUploadProgressBar: {
+    height: "100%",
+    borderRadius: 2
+  },
+  pushPermissionBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F1EDFF",
+    borderColor: "#D8CCFF",
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    gap: 10,
+    marginHorizontal: 12,
+    marginTop: 8,
+    borderRadius: 10,
+    zIndex: 9998
+  },
+  pushPermissionText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: "#2D1B69"
+  },
+  pushPermissionBtn: {
+    backgroundColor: "#5B3CF5",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 7
+  },
+  pushPermissionBtnText: {
+    color: "#FFFFFF",
+    fontFamily: fonts.bold,
+    fontSize: 11
   }
 });

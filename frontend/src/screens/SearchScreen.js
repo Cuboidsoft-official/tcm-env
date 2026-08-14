@@ -15,6 +15,7 @@ import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons
 import { searchGlobal } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const defaultRecentSearches = [
   "React Native",
@@ -34,6 +35,7 @@ const defaultTrendingTags = [
 ];
 
 export default function SearchScreen({ session, user = {}, onBack, onSelectPost, onSelectCourse, onSelectUser }) {
+  const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [recentSearches, setRecentSearches] = useState(defaultRecentSearches);
@@ -97,34 +99,34 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
   const totalCount = postsList.length + coursesList.length + mentorsList.length + usersList.length;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Search Bar Header */}
-      <View style={styles.headerRow}>
-        <Pressable onPress={onBack} style={styles.backBtn}>
-          <Feather name="arrow-left" size={20} color="#181725" />
+      <View style={[styles.headerRow, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+        <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.badgeBg }]}>
+          <Feather name="arrow-left" size={20} color={theme.text} />
         </Pressable>
 
-        <View style={styles.searchBox}>
-          <Feather name="search" size={16} color="#8A879F" style={{ marginRight: 8 }} />
+        <View style={[styles.searchBox, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F4F3FA"), borderColor: theme.border }]}>
+          <Feather name="search" size={16} color={theme.subtext} style={{ marginRight: 8 }} />
           <TextInput
             ref={inputRef}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search users, posts, courses, mentors..."
-            placeholderTextColor="#8A879F"
-            style={styles.searchInput}
+            placeholderTextColor={theme.subtext}
+            style={[styles.searchInput, { color: theme.text }]}
             autoCapitalize="none"
             returnKeyType="search"
           />
           {searchQuery ? (
             <Pressable onPress={() => setSearchQuery("")} style={styles.clearBtn}>
-              <Feather name="x" size={14} color="#8A879F" />
+              <Feather name="x" size={14} color={theme.subtext} />
             </Pressable>
           ) : null}
         </View>
 
-        <Pressable onPress={() => Alert.alert("Filter", "Filter by Date, Category & Type")} style={styles.filterBtn}>
-          <MaterialCommunityIcons name="tune-variant" size={18} color="#181725" />
+        <Pressable onPress={() => Alert.alert("Filter", "Filter by Date, Category & Type")} style={[styles.filterBtn, { backgroundColor: theme.badgeBg }]}>
+          <MaterialCommunityIcons name="tune-variant" size={18} color={theme.primary} />
         </Pressable>
       </View>
 
@@ -134,25 +136,25 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
           <>
             {/* Recent Searches */}
             {recentSearches.length > 0 ? (
-              <View style={styles.sectionContainer}>
+              <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                 <View style={styles.sectionHeaderRow}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Feather name="clock" size={14} color="#5B3CF5" />
-                    <Text style={styles.sectionTitle}>Recent Searches</Text>
+                    <Feather name="clock" size={14} color={theme.primary} />
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent Searches</Text>
                   </View>
                   <Pressable onPress={handleClearAllRecent}>
-                    <Text style={styles.clearAllText}>Clear All</Text>
+                    <Text style={[styles.clearAllText, { color: theme.primary }]}>Clear All</Text>
                   </Pressable>
                 </View>
 
                 {recentSearches.map((item) => (
-                  <View key={item} style={styles.recentItemRow}>
+                  <View key={item} style={[styles.recentItemRow, { borderBottomColor: theme.border }]}>
                     <Pressable onPress={() => handleSelectRecent(item)} style={styles.recentLeft}>
-                      <Feather name="clock" size={14} color="#8A879F" style={{ marginRight: 10 }} />
-                      <Text style={styles.recentText}>{item}</Text>
+                      <Feather name="clock" size={14} color={theme.subtext} style={{ marginRight: 10 }} />
+                      <Text style={[styles.recentText, { color: theme.text }]}>{item}</Text>
                     </Pressable>
                     <Pressable onPress={() => handleRemoveRecent(item)} style={styles.recentRemoveBtn}>
-                      <Feather name="x" size={14} color="#8A879F" />
+                      <Feather name="x" size={14} color={theme.subtext} />
                     </Pressable>
                   </View>
                 ))}
@@ -160,19 +162,19 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
             ) : null}
 
             {/* Trending Tags */}
-            <View style={styles.sectionContainer}>
+            <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
                 <Feather name="trending-up" size={14} color="#FF6B00" />
-                <Text style={styles.sectionTitle}>Trending Topics</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Trending Topics</Text>
               </View>
               <View style={styles.tagsFlexWrap}>
                 {defaultTrendingTags.map((tag) => (
                   <Pressable
                     key={tag}
                     onPress={() => setSearchQuery(tag.replace("#", ""))}
-                    style={styles.tagPill}
+                    style={[styles.tagPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}
                   >
-                    <Text style={styles.tagPillText}>{tag}</Text>
+                    <Text style={[styles.tagPillText, { color: theme.primary }]}>{tag}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -196,9 +198,15 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
                     <Pressable
                       key={tab.id}
                       onPress={() => setActiveTab(tab.id)}
-                      style={[styles.tabItem, isActive && styles.tabItemActive]}
+                      style={[
+                        styles.tabItem,
+                        {
+                          backgroundColor: isActive ? theme.primary : theme.cardBg,
+                          borderColor: isActive ? theme.primary : theme.border
+                        }
+                      ]}
                     >
-                      <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.label}</Text>
+                      <Text style={[styles.tabText, { color: isActive ? "#FFFFFF" : theme.text }]}>{tab.label}</Text>
                     </Pressable>
                   );
                 })}
@@ -207,19 +215,19 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
 
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#5B3CF5" />
-                <Text style={styles.loadingText}>Searching workspace...</Text>
+                <ActivityIndicator size="small" color={theme.primary} />
+                <Text style={[styles.loadingText, { color: theme.subtext }]}>Searching workspace...</Text>
               </View>
             ) : totalCount === 0 ? (
               /* Empty Search State */
-              <View style={styles.emptyCard}>
-                <MaterialCommunityIcons name="magnify-remove-outline" size={38} color="#7C7C9A" />
-                <Text style={styles.emptyTitle}>No results found for "{searchQuery}"</Text>
-                <Text style={styles.emptySub}>
+              <View style={[styles.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                <MaterialCommunityIcons name="magnify-remove-outline" size={38} color={theme.subtext} />
+                <Text style={[styles.emptyTitle, { color: theme.text }]}>No results found for "{searchQuery}"</Text>
+                <Text style={[styles.emptySub, { color: theme.subtext }]}>
                   Try checking for typos or searching with different keywords like 'Python', 'Web Dev', or 'DSA'.
                 </Text>
-                <Pressable onPress={() => setSearchQuery("")} style={styles.resetBtn}>
-                  <Text style={styles.resetBtnText}>Clear Search</Text>
+                <Pressable onPress={() => setSearchQuery("")} style={[styles.resetBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+                  <Text style={[styles.resetBtnText, { color: theme.primary }]}>Clear Search</Text>
                 </Pressable>
               </View>
             ) : (
@@ -230,37 +238,37 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
                   <View style={styles.resultGroup}>
                     {activeTab === "all" ? (
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                        <Feather name="users" size={14} color="#5B3CF5" />
-                        <Text style={styles.groupTitle}>People & Learners ({usersList.length})</Text>
+                        <Feather name="users" size={14} color={theme.primary} />
+                        <Text style={[styles.groupTitle, { color: theme.text }]}>People & Learners ({usersList.length})</Text>
                       </View>
                     ) : null}
                     {usersList.map((u) => (
                       <Pressable
                         key={u.id}
                         onPress={() => onSelectUser ? onSelectUser(u) : Alert.alert(u.name)}
-                        style={styles.mentorResultCard}
+                        style={[styles.mentorResultCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
                       >
                         <Image source={{ uri: u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" }} style={styles.mentorAvatar} />
                         <View style={styles.mentorContentCol}>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                            <Text style={styles.mentorName}>{u.name}</Text>
+                            <Text style={[styles.mentorName, { color: theme.text }]}>{u.name}</Text>
                             {u.role?.toLowerCase().includes("mentor") || u.isMentor ? (
-                              <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                                <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                              <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                                <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
                               </View>
                             ) : (
-                              <View style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                                <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#475569" }}>Student</Text>
+                              <View style={{ backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                                <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.subtext }}>Student</Text>
                               </View>
                             )}
                             {u.isPremium ? (
-                              <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                              <MaterialCommunityIcons name="check-decagram" size={13} color={theme.primary} style={{ marginLeft: 2 }} />
                             ) : null}
                           </View>
-                          <Text style={styles.mentorTitle}>@{u.handle || u.name?.toLowerCase().replace(/\s+/g, "")} • {u.role || "student"}</Text>
+                          <Text style={[styles.mentorTitle, { color: theme.subtext }]}>@{u.handle || u.name?.toLowerCase().replace(/\s+/g, "")} • {u.role || "student"}</Text>
                         </View>
-                        <View style={{ backgroundColor: "#F0EFFF", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
-                          <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: "#5B3CF5" }}>View Profile</Text>
+                        <View style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                          <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: theme.primary }}>View Profile</Text>
                         </View>
                       </Pressable>
                     ))}
@@ -272,24 +280,24 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
                   <View style={styles.resultGroup}>
                     {activeTab === "all" ? (
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                        <Feather name="book-open" size={14} color="#5B3CF5" />
-                        <Text style={styles.groupTitle}>Courses ({coursesList.length})</Text>
+                        <Feather name="book-open" size={14} color={theme.primary} />
+                        <Text style={[styles.groupTitle, { color: theme.text }]}>Courses ({coursesList.length})</Text>
                       </View>
                     ) : null}
                     {coursesList.map((course) => (
                       <Pressable
                         key={course.id}
                         onPress={() => onSelectCourse ? onSelectCourse(course.id) : Alert.alert(course.title)}
-                        style={styles.courseResultCard}
+                        style={[styles.courseResultCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
                       >
                         <Image source={{ uri: course.image }} style={styles.courseImg} />
                         <View style={styles.courseContentCol}>
-                          <Text style={styles.courseTitle} numberOfLines={1}>{course.title}</Text>
-                          <Text style={styles.courseSub} numberOfLines={1}>{course.subtitle || course.tags}</Text>
+                          <Text style={[styles.courseTitle, { color: theme.text }]} numberOfLines={1}>{course.title}</Text>
+                          <Text style={[styles.courseSub, { color: theme.subtext }]} numberOfLines={1}>{course.subtitle || course.tags}</Text>
                           <View style={styles.courseMetaRow}>
                             <FontAwesome name="star" size={11} color="#FFB800" />
-                            <Text style={styles.courseRating}>{course.rating}</Text>
-                            <Text style={styles.coursePrice}>{course.price || "₹699"}</Text>
+                            <Text style={[styles.courseRating, { color: theme.text }]}>{course.rating}</Text>
+                            <Text style={[styles.coursePrice, { color: theme.primary }]}>{course.price || "₹699"}</Text>
                           </View>
                         </View>
                       </Pressable>
@@ -302,32 +310,32 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
                   <View style={styles.resultGroup}>
                     {activeTab === "all" ? (
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                        <Feather name="award" size={14} color="#5B3CF5" />
-                        <Text style={styles.groupTitle}>Mentors ({mentorsList.length})</Text>
+                        <Feather name="award" size={14} color={theme.primary} />
+                        <Text style={[styles.groupTitle, { color: theme.text }]}>Mentors ({mentorsList.length})</Text>
                       </View>
                     ) : null}
                     {mentorsList.map((mentor) => (
                       <Pressable
                         key={mentor.id}
                         onPress={() => onSelectUser ? onSelectUser(mentor) : Alert.alert(mentor.name)}
-                        style={styles.mentorResultCard}
+                        style={[styles.mentorResultCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
                       >
                         <Image source={{ uri: mentor.avatarUrl }} style={styles.mentorAvatar} />
                         <View style={styles.mentorContentCol}>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                            <Text style={styles.mentorName}>{mentor.name}</Text>
-                            <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                              <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                            <Text style={[styles.mentorName, { color: theme.text }]}>{mentor.name}</Text>
+                            <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                              <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
                             </View>
                             {mentor.isPremium ? (
-                              <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                              <MaterialCommunityIcons name="check-decagram" size={13} color={theme.primary} style={{ marginLeft: 2 }} />
                             ) : null}
                           </View>
-                          <Text style={styles.mentorTitle}>{mentor.title}</Text>
+                          <Text style={[styles.mentorTitle, { color: theme.subtext }]}>{mentor.title}</Text>
                         </View>
-                        <View style={styles.mentorRatingBadge}>
+                        <View style={[styles.mentorRatingBadge, { backgroundColor: theme.isDark ? "#1E263B" : "#FFFBEB" }]}>
                           <FontAwesome name="star" size={11} color="#FFB800" />
-                          <Text style={styles.mentorRatingText}>{mentor.rating}</Text>
+                          <Text style={[styles.mentorRatingText, { color: theme.text }]}>{mentor.rating}</Text>
                         </View>
                       </Pressable>
                     ))}
@@ -339,25 +347,25 @@ export default function SearchScreen({ session, user = {}, onBack, onSelectPost,
                   <View style={styles.resultGroup}>
                     {activeTab === "all" ? (
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                        <Feather name="file-text" size={14} color="#5B3CF5" />
-                        <Text style={styles.groupTitle}>Posts & Notes ({postsList.length})</Text>
+                        <Feather name="file-text" size={14} color={theme.primary} />
+                        <Text style={[styles.groupTitle, { color: theme.text }]}>Posts & Notes ({postsList.length})</Text>
                       </View>
                     ) : null}
                     {postsList.map((post) => (
                       <Pressable
                         key={post.id}
                         onPress={() => onSelectPost ? onSelectPost(post) : Alert.alert(post.authorName, post.text)}
-                        style={styles.postResultCard}
+                        style={[styles.postResultCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
                       >
                         <View style={styles.postTopRow}>
                           <Image source={{ uri: post.authorAvatarUrl }} style={styles.postAvatar} />
                           <View style={styles.postAuthorWrap}>
-                            <Text style={styles.postAuthorName}>{post.authorName}</Text>
-                            <Text style={styles.postCategoryPill}>{post.category || "General"}</Text>
+                            <Text style={[styles.postAuthorName, { color: theme.text }]}>{post.authorName}</Text>
+                            <Text style={[styles.postCategoryPill, { backgroundColor: theme.badgeBg, color: theme.primary }]}>{post.category || "General"}</Text>
                           </View>
-                          <Text style={styles.postTimeLabel}>{post.timeLabel || "Just now"}</Text>
+                          <Text style={[styles.postTimeLabel, { color: theme.subtext }]}>{post.timeLabel || "Just now"}</Text>
                         </View>
-                        <Text style={styles.postSnippetText} numberOfLines={2}>{post.text}</Text>
+                        <Text style={[styles.postSnippetText, { color: theme.subtext }]} numberOfLines={2}>{post.text}</Text>
                       </Pressable>
                     ))}
                   </View>

@@ -13,51 +13,7 @@ function getChatKey(u1, u2) {
   return [u1, u2].sort().join("::");
 }
 
-const defaultConversations = {
-  m1: {
-    targetUser: {
-      id: "m1",
-      name: "Rahul Sharma",
-      role: "Full Stack Developer & Mentor",
-      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-      verified: true,
-      online: true,
-      statusText: "Active Now"
-    },
-    messages: [
-      {
-        id: "c1",
-        senderId: "m1",
-        senderName: "Rahul Sharma",
-        senderAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-        text: "Hey Ayushman! 👋 Welcome to TCM Mentorship. How can I help you with your Full Stack Development journey today?",
-        time: "10:30 AM",
-        timestamp: Date.now() - 3600000,
-        isMentor: true
-      },
-      {
-        id: "c2",
-        senderId: "seed-user",
-        senderName: "Ayushman Chaurasiya",
-        senderAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-        text: "Hi Rahul Sir! I have a doubt in React Native State Management and API integration.",
-        time: "10:32 AM",
-        timestamp: Date.now() - 3400000,
-        isMentor: false
-      },
-      {
-        id: "c3",
-        senderId: "m1",
-        senderName: "Rahul Sharma",
-        senderAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-        text: "That's a great topic! In React Native, always keep your global UI state separated from async fetch requests. Are you using Context API or Redux Toolkit?",
-        time: "10:35 AM",
-        timestamp: Date.now() - 3200000,
-        isMentor: true
-      }
-    ]
-  }
-};
+const defaultConversations = {};
 
 const mentorAutoReplies = [
   "Awesome question! I recommend modularizing your API calls using clean helper services.",
@@ -188,16 +144,7 @@ chatRouter.get("/conversations", requireAuth, async (req, res) => {
       });
     }
 
-    // 1. Always include lead mentor (Rahul Sharma / m1)
-    if (defaultConversations.m1) {
-      const m1User = defaultConversations.m1.targetUser;
-      const m1Key = getChatKey(currentUserId, m1User.id);
-      const m1Data = store[m1Key] || defaultConversations.m1;
-      const lastM1 = m1Data.messages?.[m1Data.messages.length - 1];
-      addConv(m1User, lastM1);
-    }
-
-    // 2. Scan active chat store keys for ANY messages sent/received by current user
+    // 1. Scan active chat store keys for ANY messages sent/received by current user
     Object.keys(store).forEach((key) => {
       if (key.includes(currentUserId) || (currentUserHandle && key.includes(currentUserHandle))) {
         const convData = store[key];

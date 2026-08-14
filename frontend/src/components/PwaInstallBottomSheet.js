@@ -52,7 +52,9 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
     };
 
     window.onPwaPromptCaptured = handlePromptCaptured;
-    window.addEventListener("beforeinstallprompt", handlePromptCaptured);
+    if (typeof window.addEventListener === "function") {
+      window.addEventListener("beforeinstallprompt", handlePromptCaptured);
+    }
 
     // Auto show after 2.5s if not dismissed in last 24h
     async function checkAutoShow() {
@@ -75,7 +77,9 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
     checkAutoShow();
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handlePromptCaptured);
+      if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
+        window.removeEventListener("beforeinstallprompt", handlePromptCaptured);
+      }
     };
   }, []);
 

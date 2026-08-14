@@ -318,7 +318,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               <Text style={[styles.loadingText, { color: theme.subtext }]}>Fetching real conversations from database...</Text>
             </View>
           ) : filteredConversations.length === 0 ? (
-            <View style={styles.emptyBox}>
+            <View style={[styles.emptyBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <View style={[styles.emptyIconCircle, { backgroundColor: theme.badgeBg }]}>
                 <Feather name="message-square" size={24} color={theme.primary} />
               </View>
@@ -430,50 +430,50 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               <Text style={styles.loadingText}>Loading Q&A doubts & rooms...</Text>
             </View>
           ) : doubts.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <View style={styles.emptyIconCircle}>
-                <Feather name="help-circle" size={24} color="#5B3CF5" />
+            <View style={[styles.emptyBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <View style={[styles.emptyIconCircle, { backgroundColor: theme.badgeBg }]}>
+                <Feather name="help-circle" size={24} color={theme.primary} />
               </View>
-              <Text style={styles.emptyTitle}>No Doubts Posted Yet</Text>
-              <Text style={styles.emptySub}>Ask a doubt and get instant help from mentors & peers!</Text>
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>No Doubts Posted Yet</Text>
+              <Text style={[styles.emptySub, { color: theme.subtext }]}>Ask a doubt and get instant help from mentors & peers!</Text>
             </View>
           ) : (
             doubts.map((doubt) => {
-              let statusBg = "#FFF3E0";
-              let statusColor = "#EF6C00";
+              let statusBg = theme.isDark ? "#451A03" : "#FFF3E0";
+              let statusColor = theme.isDark ? "#FB923C" : "#EF6C00";
               if (doubt.status === "Resolved") {
-                statusBg = "#E8F5E9";
-                statusColor = "#2E7D32";
+                statusBg = theme.isDark ? "#064E3B" : "#E8F5E9";
+                statusColor = theme.isDark ? "#34D399" : "#2E7D32";
               } else if (doubt.status === "Answered") {
-                statusBg = "#F0EDFF";
-                statusColor = "#5B3CF5";
+                statusBg = theme.isDark ? "#1E1B4B" : "#F0EDFF";
+                statusColor = theme.isDark ? "#A78BFA" : "#5B3CF5";
               }
 
               return (
                 <Pressable
                   key={doubt.id}
                   onPress={() => Alert.alert("Doubt Details", `Question: ${doubt.title}\nStatus: ${doubt.status}`)}
-                  style={styles.doubtCard}
+                  style={[styles.doubtCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
                 >
                   <View style={styles.doubtTopRow}>
                     <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
                       <Text style={[styles.statusPillText, { color: statusColor }]}>{doubt.status}</Text>
                     </View>
-                    <Text style={styles.doubtSubjectText}>{doubt.subject}</Text>
+                    <Text style={[styles.doubtSubjectText, { color: theme.subtext }]}>{doubt.subject}</Text>
                   </View>
 
-                  <Text style={styles.doubtTitle}>{doubt.title}</Text>
+                  <Text style={[styles.doubtTitle, { color: theme.text }]}>{doubt.title}</Text>
 
                   <View style={styles.doubtFooterRow}>
                     <View style={styles.doubtAuthorRow}>
                       <Image source={{ uri: doubt.authorAvatar }} style={styles.doubtAuthorAvatar} />
-                      <Text style={styles.doubtAuthorName}>{doubt.authorName}</Text>
-                      <Text style={styles.doubtTimeAgo}>• {doubt.createdAt}</Text>
+                      <Text style={[styles.doubtAuthorName, { color: theme.text }]}>{doubt.authorName}</Text>
+                      <Text style={[styles.doubtTimeAgo, { color: theme.subtext }]}>• {doubt.createdAt}</Text>
                     </View>
 
-                    <View style={styles.repliesCountBadge}>
-                      <Feather name="message-square" size={11} color="#5B3CF5" style={{ marginRight: 4 }} />
-                      <Text style={styles.repliesCountText}>{doubt.repliesCount} Replies</Text>
+                    <View style={[styles.repliesCountBadge, { backgroundColor: theme.badgeBg }]}>
+                      <Feather name="message-square" size={11} color={theme.primary} style={{ marginRight: 4 }} />
+                      <Text style={[styles.repliesCountText, { color: theme.primary }]}>{doubt.repliesCount} Replies</Text>
                     </View>
                   </View>
                 </Pressable>
@@ -485,39 +485,43 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
       </View>
 
       {/* Ask Doubt Modal */}
+      {/* Ask Doubt Modal */}
       <Modal visible={showDoubtModal} transparent animationType="slide" onRequestClose={() => setShowDoubtModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.modalHeaderRow}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Feather name="help-circle" size={18} color="#5B3CF5" style={{ marginRight: 6 }} />
-                <Text style={styles.modalTitle}>Post New Doubt ❓</Text>
+                <Feather name="help-circle" size={18} color={theme.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Post New Doubt ❓</Text>
               </View>
-              <Pressable onPress={() => setShowDoubtModal(false)} style={styles.modalCloseBtn}>
-                <Feather name="x" size={18} color="#686780" />
+              <Pressable onPress={() => setShowDoubtModal(false)} style={[styles.modalCloseBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+                <Feather name="x" size={18} color={theme.text} />
               </Pressable>
             </View>
 
-            <Text style={styles.inputLabelText}>Doubt Title / Question Description:</Text>
+            <Text style={[styles.inputLabelText, { color: theme.subtext }]}>Doubt Title / Question Description:</Text>
             <TextInput
               value={doubtTitle}
               onChangeText={setDoubtTitle}
               placeholder="e.g. How to handle state updates in React Native flatlist?"
-              placeholderTextColor="#8A879F"
+              placeholderTextColor={theme.subtext}
               multiline
               numberOfLines={3}
-              style={[styles.modalInput, { height: 75, textAlignVertical: "top" }]}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F8FAFC"), color: theme.text, borderColor: theme.border, height: 75, textAlignVertical: "top" }]}
             />
 
-            <Text style={[styles.inputLabelText, { marginTop: 10 }]}>Select Subject:</Text>
+            <Text style={[styles.inputLabelText, { color: theme.subtext, marginTop: 10 }]}>Select Subject:</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
               {["Full Stack Web & Mobile", "Frontend Architecture", "Database Systems", "Python & AI", "System Design"].map((sub, idx) => (
                 <Pressable
                   key={idx}
                   onPress={() => setDoubtSubject(sub)}
-                  style={[styles.subjectChip, doubtSubject === sub && styles.subjectChipActive]}
+                  style={[
+                    styles.subjectChip,
+                    { backgroundColor: doubtSubject === sub ? theme.primary : theme.badgeBg, borderColor: theme.border }
+                  ]}
                 >
-                  <Text style={[styles.subjectChipText, doubtSubject === sub && styles.subjectChipTextActive]}>{sub}</Text>
+                  <Text style={[styles.subjectChipText, { color: doubtSubject === sub ? "#FFFFFF" : theme.primary }]}>{sub}</Text>
                 </Pressable>
               ))}
             </ScrollView>
@@ -525,7 +529,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
             <Pressable
               onPress={handleCreateDoubtSubmit}
               disabled={creatingDoubt}
-              style={styles.submitDoubtBtn}
+              style={[styles.submitDoubtBtn, { backgroundColor: theme.primary }]}
             >
               {creatingDoubt ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
@@ -543,46 +547,49 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
       {/* CREATE DOUBT ROOM MODAL */}
       <Modal visible={showRoomModal} transparent animationType="slide" onRequestClose={() => setShowRoomModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.modalHeaderRow}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons name="forum" size={18} color="#5B3CF5" style={{ marginRight: 6 }} />
-                <Text style={styles.modalTitle}>Create Doubt Room 💬</Text>
+                <MaterialCommunityIcons name="forum" size={18} color={theme.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Create Doubt Room 💬</Text>
               </View>
-              <Pressable onPress={() => setShowRoomModal(false)} style={styles.modalCloseBtn}>
-                <Feather name="x" size={18} color="#686780" />
+              <Pressable onPress={() => setShowRoomModal(false)} style={[styles.modalCloseBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+                <Feather name="x" size={18} color={theme.text} />
               </Pressable>
             </View>
 
-            <Text style={styles.inputLabelText}>Room Title:</Text>
+            <Text style={[styles.inputLabelText, { color: theme.subtext }]}>Room Title:</Text>
             <TextInput
               value={roomTitle}
               onChangeText={setRoomTitle}
               placeholder="e.g. NEET Biology & Chemistry Doubt Space"
-              placeholderTextColor="#8A879F"
-              style={styles.modalInput}
+              placeholderTextColor={theme.subtext}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F8FAFC"), color: theme.text, borderColor: theme.border }]}
             />
 
-            <Text style={[styles.inputLabelText, { marginTop: 10 }]}>Category / Stream:</Text>
+            <Text style={[styles.inputLabelText, { color: theme.subtext, marginTop: 10 }]}>Category / Stream:</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
               {["NEET", "JEE", "Full Stack", "Python & AI", "General"].map((cat, idx) => (
                 <Pressable
                   key={idx}
                   onPress={() => setRoomCategory(cat)}
-                  style={[styles.subjectChip, roomCategory === cat && styles.subjectChipActive]}
+                  style={[
+                    styles.subjectChip,
+                    { backgroundColor: roomCategory === cat ? theme.primary : theme.badgeBg, borderColor: theme.border }
+                  ]}
                 >
-                  <Text style={[styles.subjectChipText, roomCategory === cat && styles.subjectChipTextActive]}>{cat}</Text>
+                  <Text style={[styles.subjectChipText, { color: roomCategory === cat ? "#FFFFFF" : theme.primary }]}>{cat}</Text>
                 </Pressable>
               ))}
             </ScrollView>
 
-            <Text style={[styles.inputLabelText, { marginTop: 10 }]}>Room Description (Optional):</Text>
+            <Text style={[styles.inputLabelText, { color: theme.subtext, marginTop: 10 }]}>Room Description (Optional):</Text>
             <TextInput
               value={roomDescription}
               onChangeText={setRoomDescription}
               placeholder="e.g. Dedicated room for Organic Chemistry derivations"
-              placeholderTextColor="#8A879F"
-              style={styles.modalInput}
+              placeholderTextColor={theme.subtext}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F8FAFC"), color: theme.text, borderColor: theme.border }]}
             />
 
             <Text style={[styles.inputLabelText, { marginTop: 10 }]}>Privacy Type:</Text>

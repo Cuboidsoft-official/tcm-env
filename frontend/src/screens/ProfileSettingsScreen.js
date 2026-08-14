@@ -1129,7 +1129,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       {/* HELP & SUPPORT AI BOTTOM SHEET MODAL */}
       <Modal visible={supportModalOpen} animationType="slide" transparent onRequestClose={() => setSupportModalOpen(false)}>
         <Pressable onPress={() => setSupportModalOpen(false)} style={styles.modalBg}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { maxHeight: "88%", paddingBottom: 20 }]}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, modalCardStyle, { maxHeight: "88%", paddingBottom: 20 }]}>
             <View style={[styles.sheetHandleBar, { backgroundColor: activeAppTheme.border }]} />
             
             {/* Header */}
@@ -1278,13 +1278,13 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       <Modal visible={skillsModalOpen} animationType="slide" transparent onRequestClose={() => setSkillsModalOpen(false)}>
         <View style={styles.modalBg}>
           <Pressable onPress={() => setSkillsModalOpen(false)} style={StyleSheet.absoluteFill} />
-          <View style={[styles.modalCard, { maxHeight: "88%", paddingBottom: 20 }]}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, modalCardStyle, { maxHeight: "88%", paddingBottom: 20 }]}>
             <View style={[styles.sheetHandleBar, { backgroundColor: activeAppTheme.border }]} />
             
             {/* Modal Header */}
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: activeAppTheme.isDark ? "#1E1B4B" : "#EEF2FF", alignItems: "center", justifyContent: "center" }}>
                   <MaterialCommunityIcons name="code-tags-check" size={22} color="#4F46E5" />
                 </View>
                 <View>
@@ -1585,7 +1585,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                 )}
               </TouchableOpacity>
             </View>
-          </View>
+          </Pressable>
         </View>
       </Modal>
     </ScrollView>

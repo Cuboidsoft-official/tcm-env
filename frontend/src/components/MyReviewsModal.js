@@ -15,10 +15,12 @@ import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/ve
 import { getUserClassReviews } from "../api/client";
 import { fonts } from "../constants/fonts";
 import { colors, shadow } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
 export default function MyReviewsModal({ visible, session, userId, user = {}, onClose }) {
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState("mentor_feedback"); // "mentor_feedback" | "my_reflections"
   const [loading, setLoading] = useState(true);
   const [reviewsData, setReviewsData] = useState({
@@ -131,25 +133,25 @@ export default function MyReviewsModal({ visible, session, userId, user = {}, on
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable onPress={onClose} style={styles.overlay}>
-        <Pressable onPress={(e) => e.stopPropagation()} style={styles.sheetBox}>
+        <Pressable onPress={(e) => e.stopPropagation()} style={[styles.sheetBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Handle bar */}
-          <View style={styles.handleBar} />
+          <View style={[styles.handleBar, { backgroundColor: theme.isDark ? "#334155" : "#CBD5E1" }]} />
 
           {/* Header */}
-          <View style={styles.headerRow}>
+          <View style={[styles.headerRow, { borderBottomColor: theme.border }]}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <FontAwesome name="star" size={18} color="#E7A900" style={{ marginRight: 8 }} />
-              <Text style={styles.headerTitle}>Class Reviews & Performance</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>Class Reviews & Performance</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={20} color="#64748B" />
+            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+              <Feather name="x" size={20} color={theme.text} />
             </TouchableOpacity>
           </View>
 
           {/* Performance Hero Card */}
-          <View style={styles.heroRatingCard}>
+          <View style={[styles.heroRatingCard, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F8FAFC"), borderColor: theme.border }]}>
             <View style={{ alignItems: "center" }}>
-              <Text style={styles.avgRatingNum}>{reviewsData.averageRating}</Text>
+              <Text style={[styles.avgRatingNum, { color: theme.text }]}>{reviewsData.averageRating}</Text>
               <View style={{ flexDirection: "row", gap: 3, marginVertical: 4 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <FontAwesome
@@ -160,27 +162,27 @@ export default function MyReviewsModal({ visible, session, userId, user = {}, on
                   />
                 ))}
               </View>
-              <Text style={styles.ratingSub}>Overall Performance Score</Text>
+              <Text style={[styles.ratingSub, { color: theme.subtext }]}>Overall Performance Score</Text>
             </View>
 
-            <View style={styles.heroDivider} />
+            <View style={[styles.heroDivider, { backgroundColor: theme.border }]} />
 
             <View style={{ flex: 1, paddingLeft: 12 }}>
               <View style={styles.heroStatItem}>
-                <Feather name="award" size={14} color="#5B3CF5" style={{ marginRight: 6 }} />
-                <Text style={styles.heroStatText}>
-                  <Text style={styles.boldText}>{reviewsData.totalReviews}</Text> Mentor Feedbacks
+                <Feather name="award" size={14} color={theme.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.heroStatText, { color: theme.subtext }]}>
+                  <Text style={[styles.boldText, { color: theme.text }]}>{reviewsData.totalReviews}</Text> Mentor Feedbacks
                 </Text>
               </View>
               <View style={[styles.heroStatItem, { marginTop: 6 }]}>
                 <Feather name="check-circle" size={14} color="#10B981" style={{ marginRight: 6 }} />
-                <Text style={styles.heroStatText}>
+                <Text style={[styles.heroStatText, { color: theme.subtext }]}>
                   High Class Participation
                 </Text>
               </View>
               <View style={[styles.heroStatItem, { marginTop: 6 }]}>
                 <Feather name="help-circle" size={14} color="#3B82F6" style={{ marginRight: 6 }} />
-                <Text style={styles.heroStatText}>
+                <Text style={[styles.heroStatText, { color: theme.subtext }]}>
                   Active Doubt Resolver
                 </Text>
               </View>
@@ -188,21 +190,21 @@ export default function MyReviewsModal({ visible, session, userId, user = {}, on
           </View>
 
           {/* Sub Navigation Tabs */}
-          <View style={styles.tabsRow}>
+          <View style={[styles.tabsRow, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}>
             <TouchableOpacity
               onPress={() => setActiveTab("mentor_feedback")}
-              style={[styles.tabBtn, activeTab === "mentor_feedback" && styles.tabBtnActive]}
+              style={[styles.tabBtn, activeTab === "mentor_feedback" && [styles.tabBtnActive, { backgroundColor: theme.cardBg }]]}
             >
-              <Text style={[styles.tabBtnText, activeTab === "mentor_feedback" && styles.tabBtnTextActive]}>
+              <Text style={[styles.tabBtnText, { color: activeTab === "mentor_feedback" ? theme.primary : theme.subtext }]}>
                 Mentor Reviews ({mentorRevList.length})
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setActiveTab("my_reflections")}
-              style={[styles.tabBtn, activeTab === "my_reflections" && styles.tabBtnActive]}
+              style={[styles.tabBtn, activeTab === "my_reflections" && [styles.tabBtnActive, { backgroundColor: theme.cardBg }]]}
             >
-              <Text style={[styles.tabBtnText, activeTab === "my_reflections" && styles.tabBtnTextActive]}>
+              <Text style={[styles.tabBtnText, { color: activeTab === "my_reflections" ? theme.primary : theme.subtext }]}>
                 Class Reflections ({reflectionsList.length})
               </Text>
             </TouchableOpacity>
@@ -210,22 +212,22 @@ export default function MyReviewsModal({ visible, session, userId, user = {}, on
 
           {/* Content List */}
           {loading ? (
-            <ActivityIndicator size="medium" color="#5B3CF5" style={{ marginVertical: 30 }} />
+            <ActivityIndicator size="medium" color={theme.primary} style={{ marginVertical: 30 }} />
           ) : activeTab === "mentor_feedback" ? (
             <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
               {mentorRevList.length === 0 ? (
                 <View style={{ alignItems: "center", paddingVertical: 36 }}>
-                  <FontAwesome name="star-o" size={32} color="#CBD5E1" />
-                  <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: "#64748B", marginTop: 8 }}>
+                  <FontAwesome name="star-o" size={32} color={theme.subtext} />
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: theme.text, marginTop: 8 }}>
                     No mentor reviews received yet
                   </Text>
-                  <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: "#94A3B8", marginTop: 4, textAlign: "center", paddingHorizontal: 20 }}>
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: theme.subtext, marginTop: 4, textAlign: "center", paddingHorizontal: 20 }}>
                     Attend live classes and participate in doubt clearance sessions to receive performance feedback from mentors!
                   </Text>
                 </View>
               ) : (
                 mentorRevList.map((item, index) => (
-                  <View key={item.id || index} style={styles.reviewCard}>
+                  <View key={item.id || index} style={[styles.reviewCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                     {/* Mentor Header */}
                     <View style={styles.cardHeader}>
                       <Image
@@ -234,14 +236,14 @@ export default function MyReviewsModal({ visible, session, userId, user = {}, on
                       />
                       <View style={{ flex: 1, marginLeft: 10 }}>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
-                          <Text style={styles.mentorName}>{item.mentorName}</Text>
-                          <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" style={{ marginLeft: 4 }} />
+                          <Text style={[styles.mentorName, { color: theme.text }]}>{item.mentorName}</Text>
+                          <MaterialCommunityIcons name="check-decagram" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
                         </View>
-                        <Text style={styles.classNameText}>{item.className}</Text>
+                        <Text style={[styles.classNameText, { color: theme.subtext }]}>{item.className}</Text>
                       </View>
 
                       {/* Star Rating Badge */}
-                      <View style={styles.starBadge}>
+                      <View style={[styles.starBadge, { backgroundColor: theme.isDark ? "#1E263B" : "#FFF8EC" }]}>
                         <FontAwesome name="star" size={12} color="#E7A900" style={{ marginRight: 4 }} />
                         <Text style={styles.starBadgeText}>{item.rating}.0</Text>
                       </View>
@@ -249,23 +251,23 @@ export default function MyReviewsModal({ visible, session, userId, user = {}, on
 
                     {/* Attendance Performance Metrics Pills */}
                     <View style={styles.metricsPillsRow}>
-                      <View style={[styles.metricPill, { backgroundColor: item.answeredQuestions === "Yes" ? "#DCFCE7" : "#FEF3C7" }]}>
-                        <Feather name="message-square" size={11} color={item.answeredQuestions === "Yes" ? "#166534" : "#92400E"} />
-                        <Text style={[styles.metricPillText, { color: item.answeredQuestions === "Yes" ? "#166534" : "#92400E" }]}>
+                      <View style={[styles.metricPill, { backgroundColor: item.answeredQuestions === "Yes" ? (theme.isDark ? "#064E3B" : "#DCFCE7") : (theme.isDark ? "#451A03" : "#FEF3C7") }]}>
+                        <Feather name="message-square" size={11} color={item.answeredQuestions === "Yes" ? (theme.isDark ? "#34D399" : "#166534") : (theme.isDark ? "#FB923C" : "#92400E")} />
+                        <Text style={[styles.metricPillText, { color: item.answeredQuestions === "Yes" ? (theme.isDark ? "#34D399" : "#166534") : (theme.isDark ? "#FB923C" : "#92400E") }]}>
                           Answered: {item.answeredQuestions || "Yes"}
                         </Text>
                       </View>
 
-                      <View style={[styles.metricPill, { backgroundColor: "#E0F2FE" }]}>
-                        <Feather name="activity" size={11} color="#0369A1" />
-                        <Text style={[styles.metricPillText, { color: "#0369A1" }]}>
+                      <View style={[styles.metricPill, { backgroundColor: theme.isDark ? "#0C4A6E" : "#E0F2FE" }]}>
+                        <Feather name="activity" size={11} color={theme.isDark ? "#38BDF8" : "#0369A1"} />
+                        <Text style={[styles.metricPillText, { color: theme.isDark ? "#38BDF8" : "#0369A1" }]}>
                           Active: {item.activeStatus || "High"}
                         </Text>
                       </View>
 
-                      <View style={[styles.metricPill, { backgroundColor: "#F3E8FF" }]}>
-                        <Feather name="help-circle" size={11} color="#6B21A8" />
-                        <Text style={[styles.metricPillText, { color: "#6B21A8" }]}>
+                      <View style={[styles.metricPill, { backgroundColor: theme.isDark ? "#3B0764" : "#F3E8FF" }]}>
+                        <Feather name="help-circle" size={11} color={theme.isDark ? "#C084FC" : "#6B21A8"} />
+                        <Text style={[styles.metricPillText, { color: theme.isDark ? "#C084FC" : "#6B21A8" }]}>
                           Questions Asked: {item.askedQuestions || "Yes"}
                         </Text>
                       </View>
@@ -273,10 +275,10 @@ export default function MyReviewsModal({ visible, session, userId, user = {}, on
 
                     {/* Mentor Comments / Notes */}
                     {item.comment ? (
-                      <Text style={styles.commentText}>"{item.comment}"</Text>
+                      <Text style={[styles.commentText, { color: theme.text }]}>"{item.comment}"</Text>
                     ) : null}
 
-                    <Text style={styles.timeText}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Recently"}</Text>
+                    <Text style={[styles.timeText, { color: theme.subtext }]}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Recently"}</Text>
                   </View>
                 ))
               )}

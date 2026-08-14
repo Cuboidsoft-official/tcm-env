@@ -115,17 +115,17 @@ export default function RazorpayPaymentModal({ visible, course, onClose, onPayme
             </View>
 
             {/* Wallet Cash Course Purchase Banner */}
-            <View style={{ backgroundColor: "#E8F5E9", borderRadius: 16, padding: 12, borderWidth: 1, borderColor: "#C8E6C9", marginBottom: 12 }}>
+            <View style={{ backgroundColor: theme.isDark ? "#064E3B" : "#E8F5E9", borderRadius: 16, padding: 12, borderWidth: 1, borderColor: theme.isDark ? "#059669" : "#C8E6C9", marginBottom: 12 }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <MaterialCommunityIcons name="wallet-outline" size={18} color="#0A6836" />
-                  <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#0A6836" }}>Eligible for Wallet Course Purchase 🎓</Text>
+                  <MaterialCommunityIcons name="wallet-outline" size={18} color={theme.isDark ? "#34D399" : "#0A6836"} />
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: theme.isDark ? "#34D399" : "#0A6836" }}>Eligible for Wallet Course Purchase 🎓</Text>
                 </View>
-                <Text style={{ fontFamily: fonts.bold, fontSize: 11.5, color: "#0A6836", backgroundColor: "#C8E6C9", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 11.5, color: theme.isDark ? "#34D399" : "#0A6836", backgroundColor: theme.isDark ? "#047857" : "#C8E6C9", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
                   500 Coins = ₹100 Cash
                 </Text>
               </View>
-              <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: "#1E293B", lineHeight: 17 }}>
+              <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: theme.isDark ? "#E2E8F0" : "#1E293B", lineHeight: 17 }}>
                 Aap apne converted referral wallet balance (ya converted coins cash) se iss course ko direct purchase/discount kar sakte hain!
               </Text>
             </View>

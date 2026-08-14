@@ -18,8 +18,10 @@ import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/v
 import * as ImagePicker from "expo-image-picker";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 export default function CreateJobModal({ visible, user = {}, jobToEdit = null, onClose, onSubmitJob }) {
+  const { theme } = useTheme();
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState(user.company || "TCM One Hiring Partner");
   const [description, setDescription] = useState("");
@@ -151,25 +153,25 @@ export default function CreateJobModal({ visible, user = {}, jobToEdit = null, o
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Sheet Handle */}
           <View style={styles.sheetHandleWrap}>
-            <View style={styles.sheetHandleBar} />
+            <View style={[styles.sheetHandleBar, { backgroundColor: theme.isDark ? "#334155" : "#CBD5E1" }]} />
           </View>
 
           {/* Header */}
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <View style={styles.iconCircle}>
-                <Ionicons name="briefcase" size={20} color="#5B3CF5" />
+              <View style={[styles.iconCircle, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }]}>
+                <Ionicons name="briefcase" size={20} color={theme.primary} />
               </View>
               <View>
-                <Text style={styles.modalTitle}>{jobToEdit ? "Edit Job Posting ✏️" : "Post a Job / Hiring Drive"}</Text>
-                <Text style={styles.modalSub}>{jobToEdit ? "Update job opening details & requirements" : "Create a vacancy with automatic AI candidate limit tracking"}</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>{jobToEdit ? "Edit Job Posting ✏️" : "Post a Job / Hiring Drive"}</Text>
+                <Text style={[styles.modalSub, { color: theme.subtext }]}>{jobToEdit ? "Update job opening details & requirements" : "Create a vacancy with automatic AI candidate limit tracking"}</Text>
               </View>
             </View>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={20} color="#64748B" />
+            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+              <Feather name="x" size={20} color={theme.text} />
             </Pressable>
           </View>
 

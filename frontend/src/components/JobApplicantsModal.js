@@ -12,8 +12,10 @@ import {
 import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 export default function JobApplicantsModal({ visible, job, onClose, onOpenDocReader, onUpdateApplicantStatus }) {
+  const { theme } = useTheme();
   if (!job) return null;
 
   const applicants = job.applicants || [];
@@ -52,25 +54,25 @@ export default function JobApplicantsModal({ visible, job, onClose, onOpenDocRea
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Sheet Handle */}
           <View style={styles.sheetHandleWrap}>
-            <View style={styles.sheetHandleBar} />
+            <View style={[styles.sheetHandleBar, { backgroundColor: theme.isDark ? "#334155" : "#CBD5E1" }]} />
           </View>
 
           {/* Header */}
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
             <View style={{ flex: 1, marginRight: 10 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Ionicons name="people" size={20} color="#5B3CF5" />
-                <Text style={styles.modalTitle} numberOfLines={1}>Applicants for {job.title}</Text>
+                <Ionicons name="people" size={20} color={theme.primary} />
+                <Text style={[styles.modalTitle, { color: theme.text }]} numberOfLines={1}>Applicants for {job.title}</Text>
               </View>
-              <Text style={styles.modalSub}>
-                {applicants.length} Total Applicants • <Text style={{ fontFamily: fonts.bold, color: isFilled ? "#DC2626" : "#5B3CF5" }}>{selectedCount} / {requiredCount} Selected</Text>
+              <Text style={[styles.modalSub, { color: theme.subtext }]}>
+                {applicants.length} Total Applicants • <Text style={{ fontFamily: fonts.bold, color: isFilled ? "#DC2626" : theme.primary }}>{selectedCount} / {requiredCount} Selected</Text>
               </Text>
             </View>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={20} color="#64748B" />
+            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+              <Feather name="x" size={20} color={theme.text} />
             </Pressable>
           </View>
 

@@ -16,8 +16,10 @@ import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons
 import { getAllMentors } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 export default function ViewAllMentorsModal({ visible, session, onClose, onSelectMentor }) {
+  const { theme } = useTheme();
   const [mentors, setMentors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,31 +59,31 @@ export default function ViewAllMentorsModal({ visible, session, onClose, onSelec
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Header */}
-          <View style={styles.headerRow}>
+          <View style={[styles.headerRow, { borderBottomColor: theme.border }]}>
             <View>
-              <Text style={styles.headerTitle}>All Expert Mentors</Text>
-              <Text style={styles.headerSub}>{mentors.length} Verified Educators</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>All Expert Mentors</Text>
+              <Text style={[styles.headerSub, { color: theme.subtext }]}>{mentors.length} Verified Educators</Text>
             </View>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={22} color="#181725" />
+            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+              <Feather name="x" size={22} color={theme.text} />
             </Pressable>
           </View>
 
           {/* Search Input */}
-          <View style={styles.searchBox}>
-            <Feather name="search" size={16} color="#8A879F" style={{ marginRight: 8 }} />
+          <View style={[styles.searchBox, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F8FAFC"), borderColor: theme.border }]}>
+            <Feather name="search" size={16} color={theme.subtext} style={{ marginRight: 8 }} />
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search mentors by name or specialization..."
-              placeholderTextColor="#8A879F"
-              style={styles.searchInput}
+              placeholderTextColor={theme.subtext}
+              style={[styles.searchInput, { color: theme.text }]}
             />
             {searchQuery ? (
               <Pressable onPress={() => setSearchQuery("")}>
-                <Feather name="x" size={16} color="#8A879F" />
+                <Feather name="x" size={16} color={theme.subtext} />
               </Pressable>
             ) : null}
           </View>

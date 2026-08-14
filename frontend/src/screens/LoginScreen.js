@@ -9,6 +9,7 @@ import TcmLogo from "../components/TcmLogo";
 import { login, register, googleLogin, sendForgotPasswordOtp, verifyForgotPasswordOtp, resetPasswordWithOtp } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -42,7 +43,29 @@ const roleOptions = [
   }
 ];
 
+function TcmOneBrandHeader({ compact = false }) {
+  const { theme } = useTheme();
+  const fontSize = compact ? 28 : 34;
+  return (
+    <View style={{ alignItems: "center", marginBottom: compact ? 8 : 16 }}>
+      <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+        <Text style={{ fontFamily: fonts.bold, fontSize, color: "#FF9933", letterSpacing: 0.2 }}>T</Text>
+        <Text style={{ fontFamily: fonts.bold, fontSize, color: theme.isDark ? "#F8FAFC" : "#000080", letterSpacing: 0.2 }}>C</Text>
+        <Text style={{ fontFamily: fonts.bold, fontSize, color: "#138808", letterSpacing: 0.2 }}>M</Text>
+        <Text style={{ fontFamily: fonts.bold, fontSize, color: theme.text }}> </Text>
+        <Text style={{ fontFamily: fonts.bold, fontSize, color: "#FF9933", letterSpacing: 0.2 }}>O</Text>
+        <Text style={{ fontFamily: fonts.bold, fontSize, color: theme.isDark ? "#F8FAFC" : theme.primary, letterSpacing: 0.2 }}>n</Text>
+        <Text style={{ fontFamily: fonts.bold, fontSize, color: "#138808", letterSpacing: 0.2 }}>e</Text>
+      </View>
+      <Text style={{ fontFamily: fonts.semiBold, fontSize: compact ? 10 : 11, color: theme.subtext, letterSpacing: 1.5, textTransform: "uppercase", marginTop: 2 }}>
+        Talent & Career Mission
+      </Text>
+    </View>
+  );
+}
+
 export default function LoginScreen({ onLogin }) {
+  const { theme } = useTheme();
   const { width, height } = useWindowDimensions();
   const [mode, setMode] = useState("login");
   const [role, setRole] = useState("student");
@@ -369,7 +392,7 @@ export default function LoginScreen({ onLogin }) {
 
   if (mode !== "login") {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
         <ScrollView
           contentContainerStyle={[styles.authScroll, { minHeight: height + 1 }]}
           keyboardShouldPersistTaps="handled"
@@ -377,19 +400,19 @@ export default function LoginScreen({ onLogin }) {
         >
           <Decorations />
           <Pressable hitSlop={12} onPress={() => setMode("login")} style={styles.backButton}>
-            <Feather name="chevron-left" size={24} color={colors.ink} />
+            <Feather name="chevron-left" size={24} color={theme.text} />
           </Pressable>
 
-          <View style={[styles.signupWrap, { maxWidth: panelMaxWidth }]}>
-            <TcmLogo compact />
-            <Text style={styles.signupTitle}>{mode === "mentor" ? "Mentor Sign Up" : "Create Your Account"}</Text>
-            <Text style={styles.signupSub}>
+          <View style={[styles.signupWrap, { backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1, borderRadius: 20, padding: 18, maxWidth: panelMaxWidth }]}>
+            <TcmOneBrandHeader compact />
+            <Text style={[styles.signupTitle, { color: theme.text }]}>{mode === "mentor" ? "Mentor Sign Up" : "Create Your Account"}</Text>
+            <Text style={[styles.signupSub, { color: theme.subtext }]}>
               {mode === "mentor" ? "Join as a mentor and inspire the future" : "Join TCM One and start your learning journey"}
             </Text>
 
             {mode === "mentor" ? <MentorIntro /> : <RoleTabs role={role} setRole={setRole} setMode={setMode} />}
 
-            <Text style={styles.blockTitle}>{mode === "mentor" ? "Select Your Specialization Category:" : ""}</Text>
+            <Text style={[styles.blockTitle, { color: theme.text }]}>{mode === "mentor" ? "Select Your Specialization Category:" : ""}</Text>
             {mode === "mentor" ? (
               <View style={{ marginBottom: 14, marginTop: 4 }}>
                 {mentorCategoryOptions.map((cat) => {
@@ -400,17 +423,18 @@ export default function LoginScreen({ onLogin }) {
                       onPress={() => setMentorCategory(cat.key)}
                       style={[
                         styles.mentorCatChoiceCard,
-                        selected && { borderColor: cat.color, backgroundColor: "#F9F8FF" }
+                        { backgroundColor: theme.cardBg, borderColor: theme.border },
+                        selected && { borderColor: cat.color, backgroundColor: theme.badgeBg }
                       ]}
                     >
-                      <View style={[styles.mentorCatIconWrap, { backgroundColor: selected ? cat.color : "#F0EDFF" }]}>
+                      <View style={[styles.mentorCatIconWrap, { backgroundColor: selected ? cat.color : theme.badgeBg }]}>
                         <MaterialCommunityIcons name={cat.icon} size={18} color={selected ? "#FFFFFF" : cat.color} />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.mentorCatTitle, selected && { color: cat.color, fontFamily: fonts.bold }]}>
+                        <Text style={[styles.mentorCatTitle, { color: theme.text }, selected && { color: cat.color, fontFamily: fonts.bold }]}>
                           {cat.label}
                         </Text>
-                        <Text style={styles.mentorCatDesc}>{cat.desc}</Text>
+                        <Text style={[styles.mentorCatDesc, { color: theme.subtext }]}>{cat.desc}</Text>
                       </View>
                       {selected ? <Feather name="check-circle" size={16} color={cat.color} /> : null}
                     </Pressable>
@@ -463,21 +487,21 @@ export default function LoginScreen({ onLogin }) {
 
             {mode === "signup" ? (
               <View style={styles.termsRow}>
-                <Ionicons name="checkbox" size={17} color={colors.primary} />
-                <Text style={styles.termsText}>I agree to the Terms & Conditions and Privacy Policy</Text>
+                <Ionicons name="checkbox" size={17} color={theme.primary} />
+                <Text style={[styles.termsText, { color: theme.text }]}>I agree to the Terms & Conditions and Privacy Policy</Text>
               </View>
             ) : null}
 
-            <Pressable disabled={loading} onPress={submitSignup} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
+            <Pressable disabled={loading} onPress={submitSignup} style={({ pressed }) => [styles.primaryButton, { backgroundColor: theme.primary }, pressed && styles.pressed]}>
               <Text style={styles.primaryText}>{loading ? "Please wait..." : mode === "mentor" ? "Continue" : "Sign Up"}</Text>
             </Pressable>
 
             <Divider label="or sign up with" />
             <SocialRow onGooglePress={handleGoogleSignIn} />
 
-            <Text style={styles.switchText}>
+            <Text style={[styles.switchText, { color: theme.subtext }]}>
               Already have an account?{" "}
-              <Text onPress={() => setMode("login")} style={styles.link}>Login</Text>
+              <Text onPress={() => setMode("login")} style={[styles.link, { color: theme.primary }]}>Login</Text>
             </Text>
           </View>
           <View style={styles.footerWave} />
@@ -487,7 +511,7 @@ export default function LoginScreen({ onLogin }) {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
       <ScrollView
         contentContainerStyle={[styles.scroll, { minHeight: height + 1 }]}
         keyboardShouldPersistTaps="handled"
@@ -495,15 +519,15 @@ export default function LoginScreen({ onLogin }) {
       >
         <Decorations />
         <View style={[styles.hero, compact && styles.heroCompact]}>
-          <TcmLogo compact />
-          <Text style={styles.tagline}>
-            Learn. Grow. Achieve.{"\n"}Your <Text style={styles.future}>Future</Text> Starts Here.
+          <TcmOneBrandHeader compact />
+          <Text style={[styles.tagline, { color: theme.text }]}>
+            Learn. Grow. Achieve.{"\n"}Your <Text style={[styles.future, { color: theme.primary }]}>Future</Text> Starts Here.
           </Text>
         </View>
 
-        <View style={[styles.panel, { maxWidth: panelMaxWidth }]}>
-          <Text style={styles.heading}>Welcome Back!</Text>
-          <Text style={styles.subheading}>Login to continue your learning journey</Text>
+        <View style={[styles.panel, { backgroundColor: theme.cardBg, borderColor: theme.border, maxWidth: panelMaxWidth }]}>
+          <Text style={[styles.heading, { color: theme.text }]}>Welcome Back!</Text>
+          <Text style={[styles.subheading, { color: theme.subtext }]}>Login to continue your learning journey</Text>
 
           <Input
             autoCapitalize="none"
@@ -524,10 +548,10 @@ export default function LoginScreen({ onLogin }) {
           />
 
           <Pressable onPress={() => { setForgotModalOpen(true); setForgotStep(1); setForgotEmail(form.email || ""); }} style={styles.forgot}>
-            <Text style={styles.link}>Forgot Password?</Text>
+            <Text style={[styles.link, { color: theme.primary }]}>Forgot Password?</Text>
           </Pressable>
 
-          <Pressable disabled={loading} onPress={submitLogin} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
+          <Pressable disabled={loading} onPress={submitLogin} style={({ pressed }) => [styles.primaryButton, { backgroundColor: theme.primary }, pressed && styles.pressed]}>
             <Text style={styles.primaryText}>{loading ? "Logging in..." : "Login"}</Text>
           </Pressable>
 
@@ -542,37 +566,38 @@ export default function LoginScreen({ onLogin }) {
                 onPress={() => setRole(item.key)}
                 style={({ pressed }) => [
                   styles.roleCard,
-                  role === item.key && styles.roleCardActive,
+                  { backgroundColor: theme.cardBg, borderColor: theme.border },
+                  role === item.key && [styles.roleCardActive, { backgroundColor: theme.badgeBg, borderColor: theme.primary }],
                   pressed && styles.pressed
                 ]}
               >
                 <View style={[styles.roleIcon, { backgroundColor: `${item.color}18` }]}>
                   <Ionicons name={item.icon} size={26} color={item.color} />
                 </View>
-                <Text numberOfLines={1} style={styles.roleTitle}>{item.loginTitle}</Text>
-                <Text numberOfLines={2} style={styles.roleSubtitle}>{item.loginSubtitle}</Text>
-                <MaterialCommunityIcons name="chevron-right" size={18} color={colors.primaryDark} />
+                <Text numberOfLines={1} style={[styles.roleTitle, { color: theme.text }]}>{item.loginTitle}</Text>
+                <Text numberOfLines={2} style={[styles.roleSubtitle, { color: theme.subtext }]}>{item.loginSubtitle}</Text>
+                <MaterialCommunityIcons name="chevron-right" size={18} color={theme.primary} />
               </Pressable>
             ))}
           </View>
 
-          <Text style={styles.switchText}>
+          <Text style={[styles.switchText, { color: theme.subtext }]}>
             Don't have an account?{" "}
-            <Text onPress={() => openSignup(activeRole.key)} style={styles.link}>Sign Up</Text>
+            <Text onPress={() => openSignup(activeRole.key)} style={[styles.link, { color: theme.primary }]}>Sign Up</Text>
           </Text>
         </View>
 
         {/* PASSWORD RESET OTP MODAL */}
         <Modal visible={forgotModalOpen} transparent animationType="fade" onRequestClose={() => setForgotModalOpen(false)}>
           <View style={styles.otpOverlay}>
-            <View style={styles.otpModalBox}>
+            <View style={[styles.otpModalBox, { backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }]}>
               <View style={styles.otpHeaderRow}>
-                <View style={styles.otpIconBadge}>
-                  <Feather name="key" size={20} color="#5B3CF5" />
+                <View style={[styles.otpIconBadge, { backgroundColor: theme.badgeBg }]}>
+                  <Feather name="key" size={20} color={theme.primary} />
                 </View>
                 <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.otpModalTitle}>Reset Password</Text>
-                  <Text style={styles.otpModalSub}>
+                  <Text style={[styles.otpModalTitle, { color: theme.text }]}>Reset Password</Text>
+                  <Text style={[styles.otpModalSub, { color: theme.subtext }]}>
                     {forgotStep === 1
                       ? "Step 1 of 3: Enter registered email"
                       : forgotStep === 2
@@ -580,57 +605,60 @@ export default function LoginScreen({ onLogin }) {
                       : "Step 3 of 3: Set new password"}
                   </Text>
                 </View>
-                <Pressable onPress={() => setForgotModalOpen(false)} style={styles.otpCloseBtn}>
-                  <Feather name="x" size={18} color="#64748B" />
+                <Pressable onPress={() => setForgotModalOpen(false)} style={[styles.otpCloseBtn, { backgroundColor: theme.badgeBg }]}>
+                  <Feather name="x" size={18} color={theme.subtext} />
                 </Pressable>
               </View>
 
               {forgotStep === 1 ? (
                 <View style={{ marginTop: 14 }}>
-                  <Text style={styles.otpInputLabel}>Email Address</Text>
+                  <Text style={[styles.otpInputLabel, { color: theme.text }]}>Email Address</Text>
                   <TextInput
                     value={forgotEmail}
                     onChangeText={setForgotEmail}
                     placeholder="Enter your email"
+                    placeholderTextColor={theme.subtext}
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    style={styles.otpTextInput}
+                    style={[styles.otpTextInput, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
                   />
-                  <Pressable disabled={forgotLoading} onPress={handleSendOtp} style={styles.otpActionBtn}>
+                  <Pressable disabled={forgotLoading} onPress={handleSendOtp} style={[styles.otpActionBtn, { backgroundColor: theme.primary }]}>
                     <Text style={styles.otpActionBtnText}>{forgotLoading ? "Sending OTP..." : "Send Verification OTP →"}</Text>
                   </Pressable>
                 </View>
               ) : forgotStep === 2 ? (
                 <View style={{ marginTop: 14 }}>
-                  <Text style={styles.otpInputLabel}>Verification OTP Code</Text>
+                  <Text style={[styles.otpInputLabel, { color: theme.text }]}>Verification OTP Code</Text>
                   <TextInput
                     value={forgotOtp}
                     onChangeText={setForgotOtp}
                     placeholder="Enter 6-digit OTP (e.g. 123456)"
+                    placeholderTextColor={theme.subtext}
                     keyboardType="number-pad"
                     maxLength={6}
-                    style={styles.otpTextInput}
+                    style={[styles.otpTextInput, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
                   />
                   <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
-                    <Pressable onPress={() => setForgotStep(1)} style={[styles.otpSecondaryBtn, { flex: 1 }]}>
-                      <Text style={styles.otpSecondaryBtnText}>Back</Text>
+                    <Pressable onPress={() => setForgotStep(1)} style={[styles.otpSecondaryBtn, { backgroundColor: theme.badgeBg, flex: 1 }]}>
+                      <Text style={[styles.otpSecondaryBtnText, { color: theme.text }]}>Back</Text>
                     </Pressable>
-                    <Pressable disabled={forgotLoading} onPress={handleVerifyOtp} style={[styles.otpActionBtn, { flex: 2, marginTop: 0 }]}>
+                    <Pressable disabled={forgotLoading} onPress={handleVerifyOtp} style={[styles.otpActionBtn, { backgroundColor: theme.primary, flex: 2, marginTop: 0 }]}>
                       <Text style={styles.otpActionBtnText}>{forgotLoading ? "Verifying..." : "Verify OTP →"}</Text>
                     </Pressable>
                   </View>
                 </View>
               ) : (
                 <View style={{ marginTop: 14 }}>
-                  <Text style={styles.otpInputLabel}>New Password</Text>
+                  <Text style={[styles.otpInputLabel, { color: theme.text }]}>New Password</Text>
                   <TextInput
                     value={newPassword}
                     onChangeText={setNewPassword}
                     placeholder="Enter new password (min 6 chars)"
+                    placeholderTextColor={theme.subtext}
                     secureTextEntry
-                    style={styles.otpTextInput}
+                    style={[styles.otpTextInput, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
                   />
-                  <Pressable disabled={forgotLoading} onPress={handleResetPassword} style={styles.otpActionBtn}>
+                  <Pressable disabled={forgotLoading} onPress={handleResetPassword} style={[styles.otpActionBtn, { backgroundColor: theme.primary }]}>
                     <Text style={styles.otpActionBtnText}>{forgotLoading ? "Resetting..." : "Reset Password & Login →"}</Text>
                   </Pressable>
                 </View>
@@ -644,8 +672,9 @@ export default function LoginScreen({ onLogin }) {
 }
 
 function RoleTabs({ role, setRole, setMode }) {
+  const { theme } = useTheme();
   return (
-    <View style={styles.roleTabs}>
+    <View style={[styles.roleTabs, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
       {roleOptions.map((item) => {
         const active = role === item.key;
         return (
@@ -655,14 +684,14 @@ function RoleTabs({ role, setRole, setMode }) {
               setRole(item.key);
               setMode(item.key === "mentor" ? "mentor" : "signup");
             }}
-            style={[styles.roleTab, active && styles.roleTabActive]}
+            style={[styles.roleTab, active && [styles.roleTabActive, { backgroundColor: theme.badgeBg, borderColor: theme.primary }]]}
           >
             <View style={[styles.roleTabIcon, { backgroundColor: `${item.color}18` }]}>
               <Ionicons name={item.icon} size={21} color={item.color} />
             </View>
             <View style={styles.roleTabTextWrap}>
-              <Text numberOfLines={1} style={styles.roleTabTitle}>{item.title}</Text>
-              <Text numberOfLines={1} style={styles.roleTabSub}>{item.subtitle}</Text>
+              <Text numberOfLines={1} style={[styles.roleTabTitle, { color: theme.text }]}>{item.title}</Text>
+              <Text numberOfLines={1} style={[styles.roleTabSub, { color: theme.subtext }]}>{item.subtitle}</Text>
             </View>
           </Pressable>
         );
@@ -672,37 +701,39 @@ function RoleTabs({ role, setRole, setMode }) {
 }
 
 function MentorIntro() {
+  const { theme } = useTheme();
   return (
-    <View style={styles.mentorIntro}>
+    <View style={[styles.mentorIntro, { backgroundColor: theme.badgeBg, borderColor: theme.border, borderWidth: 1 }]}>
       <View style={styles.mentorAvatar}>
         <View style={styles.mentorHair} />
         <View style={styles.mentorFace} />
         <View style={styles.mentorBody} />
       </View>
       <View style={styles.mentorIntroCopy}>
-        <Text style={styles.mentorIntroTitle}>Make an Impact</Text>
-        <Text style={styles.mentorIntroText}>Share your knowledge, guide students and build a better tomorrow.</Text>
+        <Text style={[styles.mentorIntroTitle, { color: theme.text }]}>Make an Impact</Text>
+        <Text style={[styles.mentorIntroText, { color: theme.subtext }]}>Share your knowledge, guide students and build a better tomorrow.</Text>
       </View>
-      <View style={styles.mentorBadge}>
-        <Ionicons name="school" size={20} color={colors.primary} />
+      <View style={[styles.mentorBadge, { backgroundColor: theme.cardBg }]}>
+        <Ionicons name="school" size={20} color={theme.primary} />
       </View>
     </View>
   );
 }
 
 function Input({ icon, leftExtra, rightIcon, onRightPress, style, ...props }) {
+  const { theme } = useTheme();
   return (
-    <View style={[styles.inputWrap, style]}>
-      <Feather name={icon} size={17} color={colors.muted} />
-      {leftExtra ? <Text style={styles.leftExtra}>{leftExtra}</Text> : null}
+    <View style={[styles.inputWrap, { backgroundColor: theme.inputBg, borderColor: theme.border }, style]}>
+      <Feather name={icon} size={17} color={theme.subtext} />
+      {leftExtra ? <Text style={[styles.leftExtra, { color: theme.text }]}>{leftExtra}</Text> : null}
       <TextInput
-        placeholderTextColor="#9692AF"
-        style={styles.input}
+        placeholderTextColor={theme.subtext}
+        style={[styles.input, { color: theme.text }]}
         {...props}
       />
       {rightIcon ? (
         <Pressable hitSlop={10} onPress={onRightPress}>
-          <Feather name={rightIcon} size={17} color={colors.muted} />
+          <Feather name={rightIcon} size={17} color={theme.subtext} />
         </Pressable>
       ) : null}
     </View>
@@ -710,22 +741,24 @@ function Input({ icon, leftExtra, rightIcon, onRightPress, style, ...props }) {
 }
 
 function SocialRow({ onGooglePress }) {
+  const { theme } = useTheme();
   return (
     <View style={styles.socialRow}>
-      <Pressable onPress={onGooglePress} style={styles.googleFullButton}>
+      <Pressable onPress={onGooglePress} style={[styles.googleFullButton, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <FontAwesome name="google" size={18} color="#EA4335" style={{ marginRight: 10 }} />
-        <Text style={styles.googleFullText}>Continue with Google</Text>
+        <Text style={[styles.googleFullText, { color: theme.text }]}>Continue with Google</Text>
       </Pressable>
     </View>
   );
 }
 
 function Divider({ label }) {
+  const { theme } = useTheme();
   return (
     <View style={styles.divider}>
-      <View style={styles.rule} />
-      <Text style={styles.dividerText}>{label}</Text>
-      <View style={styles.rule} />
+      <View style={[styles.rule, { backgroundColor: theme.border }]} />
+      <Text style={[styles.dividerText, { color: theme.subtext }]}>{label}</Text>
+      <View style={[styles.rule, { backgroundColor: theme.border }]} />
     </View>
   );
 }

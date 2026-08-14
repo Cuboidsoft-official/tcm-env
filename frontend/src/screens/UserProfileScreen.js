@@ -386,49 +386,49 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
             {!isSelf && (friendStatus === "friends" || String(targetId) === "m1" || userRole?.toLowerCase().includes("mentor") || isMentor) ? (
               <Pressable
                 onPress={() => (onOpenChat ? onOpenChat(userObj) : Alert.alert("Message", `Opening direct chat with ${name}.`))}
-                style={styles.messageBtn}
+                style={[styles.messageBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
               >
-                <Feather name="message-square" size={15} color="#33334F" />
-                <Text style={styles.messageBtnText}>Message</Text>
+                <Feather name="message-square" size={15} color={theme.text} />
+                <Text style={[styles.messageBtnText, { color: theme.text }]}>Message</Text>
               </Pressable>
             ) : null}
 
-            <Pressable onPress={() => setOptionsSheetOpen(true)} style={styles.dropBtn}>
-              <Feather name="chevron-down" size={16} color="#4A4A6A" />
+            <Pressable onPress={() => setOptionsSheetOpen(true)} style={[styles.dropBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+              <Feather name="chevron-down" size={16} color={theme.subtext} />
             </Pressable>
           </View>
 
           {/* Social Proof Overlapping Avatars */}
-          <View style={styles.socialProofRow}>
+          <View style={[styles.socialProofRow, { borderTopColor: theme.border }]}>
             <View style={styles.avatarStack}>
-              <Image source={{ uri: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=80&q=80" }} style={styles.stackAvatar} />
-              <Image source={{ uri: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80" }} style={[styles.stackAvatar, { marginLeft: -8 }]} />
+              <Image source={{ uri: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=80&q=80" }} style={[styles.stackAvatar, { borderColor: theme.cardBg }]} />
+              <Image source={{ uri: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80" }} style={[styles.stackAvatar, { marginLeft: -8, borderColor: theme.cardBg }]} />
             </View>
-            <Text style={styles.socialProofText}>Connected with TCM Community</Text>
+            <Text style={[styles.socialProofText, { color: theme.subtext }]}>Connected with TCM Community</Text>
           </View>
         </View>
       </View>
 
       {/* 3. Non-Random Dynamic Stats Grid */}
-      <View style={styles.statsCard}>
+      <View style={[styles.statsCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <View style={styles.statCol}>
-          <Text style={styles.statVal}>{stats.postsCount}</Text>
-          <Text style={styles.statLbl}>Posts</Text>
+          <Text style={[styles.statVal, { color: theme.text }]}>{stats.postsCount}</Text>
+          <Text style={[styles.statLbl, { color: theme.subtext }]}>Posts</Text>
         </View>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
         <Pressable onPress={() => { setFollowersModalOpen(true); setFollowingModalOpen(false); }} style={styles.statCol}>
-          <Text style={styles.statVal}>{stats.followers}</Text>
-          <Text style={styles.statLbl}>Followers</Text>
+          <Text style={[styles.statVal, { color: theme.text }]}>{stats.followers}</Text>
+          <Text style={[styles.statLbl, { color: theme.subtext }]}>Followers</Text>
         </Pressable>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
         <Pressable onPress={() => { setFollowingModalOpen(true); setFollowersModalOpen(false); }} style={styles.statCol}>
-          <Text style={styles.statVal}>{stats.following}</Text>
-          <Text style={styles.statLbl}>Following</Text>
+          <Text style={[styles.statVal, { color: theme.text }]}>{stats.following}</Text>
+          <Text style={[styles.statLbl, { color: theme.subtext }]}>Following</Text>
         </Pressable>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
         <Pressable onPress={() => setMyReviewsModalOpen(true)} style={styles.statCol}>
-          <Text style={styles.statVal}>{stats.reviews || "0"}</Text>
-          <Text style={styles.statLbl}>Reviews</Text>
+          <Text style={[styles.statVal, { color: theme.text }]}>{stats.reviews || "0"}</Text>
+          <Text style={[styles.statLbl, { color: theme.subtext }]}>Reviews</Text>
         </Pressable>
       </View>
 
@@ -442,10 +442,10 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
           { label: "Projects", icon: "folder-outline" }
         ].map((item) => (
           <Pressable key={item.label} onPress={() => Alert.alert(item.label, `Viewing ${item.label}...`)} style={styles.highlightItem}>
-            <View style={styles.highlightCircle}>
-              <MaterialCommunityIcons name={item.icon} size={22} color="#0A6836" />
+            <View style={[styles.highlightCircle, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+              <MaterialCommunityIcons name={item.icon} size={22} color={theme.primary} />
             </View>
-            <Text style={styles.highlightLabel}>{item.label}</Text>
+            <Text style={[styles.highlightLabel, { color: theme.subtext }]}>{item.label}</Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -454,7 +454,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.tabsScrollView}
+        style={[styles.tabsScrollView, { borderBottomColor: theme.border }]}
         contentContainerStyle={styles.tabsScrollContent}
       >
         {[
@@ -470,10 +470,10 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
             <Pressable
               key={tab.key}
               onPress={() => setActiveTab(tab.key)}
-              style={[styles.tabItem, isActive && styles.tabItemActive]}
+              style={[styles.tabItem, isActive && { borderBottomColor: theme.primary }]}
             >
-              <Feather name={tab.icon} size={15} color={isActive ? "#0A6836" : "#7C7C9A"} />
-              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.key}</Text>
+              <Feather name={tab.icon} size={15} color={isActive ? theme.primary : theme.subtext} />
+              <Text style={[styles.tabText, { color: isActive ? theme.primary : theme.subtext }, isActive && { fontFamily: fonts.bold }]}>{tab.key}</Text>
             </Pressable>
           );
         })}
@@ -637,21 +637,21 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                   setPostSheetOpen(true);
                 }}
                 activeOpacity={0.85}
-                style={styles.gridCard}
+                style={[styles.gridCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
               >
                 {isDoc ? (
-                  <View style={{ width: "100%", height: 120, backgroundColor: "#F8FAFC", borderRadius: 12, padding: 12, justifyContent: "space-between", borderWidth: 1, borderColor: "#E2E8F0" }}>
+                  <View style={{ width: "100%", height: 120, backgroundColor: theme.inputBg, borderRadius: 12, padding: 12, justifyContent: "space-between", borderWidth: 1, borderColor: theme.border }}>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <View style={{ backgroundColor: "#FF465F18", padding: 8, borderRadius: 10 }}>
                         <MaterialCommunityIcons name="file-pdf-box" size={28} color="#FF465F" />
                       </View>
                       <TouchableOpacity hitSlop={10} onPress={() => { setSelectedPostForSheet(post); setPostSheetOpen(true); }}>
-                        <Feather name="more-vertical" size={18} color="#64748B" />
+                        <Feather name="more-vertical" size={18} color={theme.subtext} />
                       </TouchableOpacity>
                     </View>
                     <View>
-                      <Text numberOfLines={2} style={{ fontSize: 13, fontWeight: "700", color: "#0F172A", marginBottom: 2 }}>{docTitle}</Text>
-                      <Text numberOfLines={1} style={{ fontSize: 11, color: "#64748B" }}>{docSize}</Text>
+                      <Text numberOfLines={2} style={{ fontSize: 13, fontWeight: "700", color: theme.text, marginBottom: 2 }}>{docTitle}</Text>
+                      <Text numberOfLines={1} style={{ fontSize: 11, color: theme.subtext }}>{docSize}</Text>
                     </View>
                   </View>
                 ) : post.type === "code" ? (
@@ -667,7 +667,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                     </Text>
                   </View>
                 ) : (
-                  <View style={styles.imagePostCard}>
+                  <View style={[styles.imagePostCard, { backgroundColor: theme.inputBg }]}>
                     <Image source={{ uri: post.imageUrl || post.media?.imageUrl }} style={styles.cardImg} />
                     {post.type === "video" && (
                       <View style={styles.mediaOverlayBadge}>
@@ -683,20 +683,20 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                 )}
 
               <View style={styles.cardBody}>
-                <Text numberOfLines={1} style={styles.cardTitle}>{post.title || post.content || post.text}</Text>
-                <Text numberOfLines={1} style={styles.cardTags}>
+                <Text numberOfLines={1} style={[styles.cardTitle, { color: theme.text }]}>{post.title || post.content || post.text}</Text>
+                <Text numberOfLines={1} style={[styles.cardTags, { color: theme.primary }]}>
                   {post.tags?.join(" ")}
                 </Text>
 
                 <View style={styles.cardFooter}>
                   <View style={styles.metricRow}>
-                    <Ionicons name={post.isLiked ? "heart" : "heart-outline"} size={14} color={post.isLiked ? "#EAB308" : "#7C7C9A"} />
-                    <Text style={[styles.metricCount, post.isLiked && { color: "#EAB308", fontFamily: fonts.bold }]}>{post.likes}</Text>
+                    <Ionicons name={post.isLiked ? "heart" : "heart-outline"} size={14} color={post.isLiked ? "#EAB308" : theme.subtext} />
+                    <Text style={[styles.metricCount, { color: theme.subtext }, post.isLiked && { color: "#EAB308", fontFamily: fonts.bold }]}>{post.likes}</Text>
                   </View>
                   <Ionicons
                     name={post.bookmarked ? "bookmark" : "bookmark-outline"}
                     size={14}
-                    color={post.bookmarked ? "#0A6836" : "#7C7C9A"}
+                    color={post.bookmarked ? theme.primary : theme.subtext}
                   />
                 </View>
               </View>
@@ -719,12 +719,12 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
       {/* Post Action Bottom Sheet (Delete / Options on Hold) */}
       <Modal visible={postSheetOpen} animationType="slide" transparent onRequestClose={() => setPostSheetOpen(false)}>
         <Pressable onPress={() => setPostSheetOpen(false)} style={styles.modalBg}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 30 }]}>
-            <View style={styles.sheetHandleBar} />
-            <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E293B", textAlign: "center", marginTop: 8 }}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { backgroundColor: theme.cardBg, borderColor: theme.border, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 30 }]}>
+            <View style={[styles.sheetHandleBar, { backgroundColor: theme.border }]} />
+            <Text style={{ fontSize: 16, fontWeight: "700", color: theme.text, textAlign: "center", marginTop: 8 }}>
               Post Options
             </Text>
-            <Text numberOfLines={1} style={{ fontSize: 13, color: "#64748B", textAlign: "center", marginBottom: 20 }}>
+            <Text numberOfLines={1} style={{ fontSize: 13, color: theme.subtext, textAlign: "center", marginBottom: 20 }}>
               {selectedPostForSheet?.title || selectedPostForSheet?.content || selectedPostForSheet?.text || "Selected Post"}
             </Text>
 
@@ -742,16 +742,16 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: "#FEF2F2",
+                  backgroundColor: theme.isDark ? "#7F1D1D" : "#FEF2F2",
                   borderWidth: 1,
-                  borderColor: "#FCA5A5",
+                  borderColor: theme.isDark ? "#991B1B" : "#FCA5A5",
                   paddingVertical: 14,
                   borderRadius: 14,
                   marginBottom: 10
                 }}
               >
-                <Feather name="trash-2" size={18} color="#EF4444" style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "#EF4444" }}>Delete Post</Text>
+                <Feather name="trash-2" size={18} color={theme.isDark ? "#FCA5A5" : "#EF4444"} style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 15, fontWeight: "700", color: theme.isDark ? "#FCA5A5" : "#EF4444" }}>Delete Post</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -763,16 +763,16 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: "#FFFBEB",
+                  backgroundColor: theme.isDark ? "#78350F" : "#FFFBEB",
                   borderWidth: 1,
-                  borderColor: "#FDE68A",
+                  borderColor: theme.isDark ? "#92400E" : "#FDE68A",
                   paddingVertical: 14,
                   borderRadius: 14,
                   marginBottom: 10
                 }}
               >
-                <Feather name="flag" size={18} color="#D97706" style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 15, fontWeight: "600", color: "#D97706" }}>Report Post</Text>
+                <Feather name="flag" size={18} color={theme.isDark ? "#FDE68A" : "#D97706"} style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 15, fontWeight: "600", color: theme.isDark ? "#FDE68A" : "#D97706" }}>Report Post</Text>
               </TouchableOpacity>
             )}
 
@@ -785,14 +785,16 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "#F1F5F9",
+                backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9",
+                borderWidth: 1,
+                borderColor: theme.border,
                 paddingVertical: 14,
                 borderRadius: 14,
                 marginBottom: 10
               }}
             >
-              <Feather name="share-2" size={18} color="#475569" style={{ marginRight: 8 }} />
-              <Text style={{ fontSize: 15, fontWeight: "600", color: "#475569" }}>Share Post</Text>
+              <Feather name="share-2" size={18} color={theme.text} style={{ marginRight: 8 }} />
+              <Text style={{ fontSize: 15, fontWeight: "600", color: theme.text }}>Share Post</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -802,7 +804,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                 paddingVertical: 12
               }}
             >
-              <Text style={{ fontSize: 15, fontWeight: "600", color: "#64748B" }}>Cancel</Text>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: theme.subtext }}>Cancel</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -810,44 +812,45 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
 
       <Modal visible={followersModalOpen || followingModalOpen} animationType="slide" transparent onRequestClose={() => { setFollowersModalOpen(false); setFollowingModalOpen(false); }}>
         <Pressable onPress={() => { setFollowersModalOpen(false); setFollowingModalOpen(false); }} style={styles.modalBg}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { height: "78%" }]}>
-            <View style={styles.sheetHandleBar} />
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { backgroundColor: theme.cardBg, borderColor: theme.border, height: "78%" }]}>
+            <View style={[styles.sheetHandleBar, { backgroundColor: theme.border }]} />
             <View style={styles.igModalHeader}>
               <View style={styles.igTabSwitch}>
                 <Pressable
                   onPress={() => { setFollowersModalOpen(true); setFollowingModalOpen(false); }}
-                  style={[styles.igTab, followersModalOpen && styles.igTabActive]}
+                  style={[styles.igTab, followersModalOpen && { borderBottomColor: theme.primary }]}
                 >
-                  <Text style={[styles.igTabText, followersModalOpen && styles.igTabTextActive]}>
+                  <Text style={[styles.igTabText, { color: followersModalOpen ? theme.primary : theme.subtext }, followersModalOpen && { fontFamily: fonts.bold }]}>
                     Followers ({followersList.length})
                   </Text>
                 </Pressable>
                 <Pressable
                   onPress={() => { setFollowingModalOpen(true); setFollowersModalOpen(false); }}
-                  style={[styles.igTab, followingModalOpen && styles.igTabActive]}
+                  style={[styles.igTab, followingModalOpen && { borderBottomColor: theme.primary }]}
                 >
-                  <Text style={[styles.igTabText, followingModalOpen && styles.igTabTextActive]}>
+                  <Text style={[styles.igTabText, { color: followingModalOpen ? theme.primary : theme.subtext }, followingModalOpen && { fontFamily: fonts.bold }]}>
                     Following ({followingList.length})
                   </Text>
                 </Pressable>
               </View>
 
               <Pressable onPress={() => { setFollowersModalOpen(false); setFollowingModalOpen(false); }}>
-                <Feather name="x" size={20} color="#4A4A6A" />
+                <Feather name="x" size={20} color={theme.subtext} />
               </Pressable>
             </View>
 
-            <View style={styles.igSearchBox}>
-              <Feather name="search" size={15} color="#7C7C9A" />
+            <View style={[styles.igSearchBox, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+              <Feather name="search" size={15} color={theme.subtext} />
               <TextInput
                 value={userSearchQuery}
                 onChangeText={setUserSearchQuery}
                 placeholder="Search people..."
-                style={styles.igSearchInput}
+                placeholderTextColor={theme.subtext}
+                style={[styles.igSearchInput, { color: theme.text }]}
               />
               {userSearchQuery ? (
                 <Pressable onPress={() => setUserSearchQuery("")}>
-                  <Feather name="x-circle" size={14} color="#7C7C9A" />
+                  <Feather name="x-circle" size={14} color={theme.subtext} />
                 </Pressable>
               ) : null}
             </View>
@@ -856,23 +859,23 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
               {filteredUserList.map((u) => {
                 const isFollowing = followingList.some((item) => item.id === u.id || item.handle === u.handle);
                 return (
-                  <View key={u.id || u.handle} style={styles.igUserItem}>
+                  <View key={u.id || u.handle} style={[styles.igUserItem, { borderBottomColor: theme.border }]}>
                     <View style={styles.igUserLeft}>
                       <Image source={{ uri: u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80" }} style={{ width: 42, height: 42, borderRadius: 21 }} />
                       <View style={{ gap: 2 }}>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                          <Text style={styles.igUserName}>{u.name}</Text>
-                          {u.verified ? <MaterialCommunityIcons name="check-decagram" size={14} color="#0A6836" /> : null}
+                          <Text style={[styles.igUserName, { color: theme.text }]}>{u.name}</Text>
+                          {u.verified ? <MaterialCommunityIcons name="check-decagram" size={14} color={theme.primary} /> : null}
                         </View>
-                        <Text style={styles.igUserHandle}>@{u.handle || "member"} • {u.role || "TCM Member"}</Text>
+                        <Text style={[styles.igUserHandle, { color: theme.subtext }]}>@{u.handle || "member"} • {u.role || "TCM Member"}</Text>
                       </View>
                     </View>
 
                     <Pressable
                       onPress={() => handleToggleFollow(u)}
-                      style={[styles.igFollowBtn, isFollowing && styles.igFollowBtnActive]}
+                      style={[styles.igFollowBtn, { backgroundColor: theme.primary }, isFollowing && [styles.igFollowBtnActive, { backgroundColor: theme.badgeBg, borderColor: theme.border }]]}
                     >
-                      <Text style={[styles.igFollowBtnText, isFollowing && styles.igFollowBtnTextActive]}>
+                      <Text style={[styles.igFollowBtnText, isFollowing && { color: theme.primary }]}>
                         {isFollowing ? "Following" : "Follow"}
                       </Text>
                     </Pressable>
@@ -882,8 +885,8 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
 
               {!filteredUserList.length && (
                 <View style={{ paddingVertical: 35, alignItems: "center" }}>
-                  <Feather name="users" size={24} color="#A4A3B8" />
-                  <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: "#7C7C9A", marginTop: 8 }}>No users found</Text>
+                  <Feather name="users" size={24} color={theme.subtext} />
+                  <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: theme.subtext, marginTop: 8 }}>No users found</Text>
                 </View>
               )}
             </ScrollView>
@@ -931,19 +934,19 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
       {/* 3. Options Bottom Sheet */}
       <Modal visible={optionsSheetOpen} animationType="slide" transparent onRequestClose={() => setOptionsSheetOpen(false)}>
         <Pressable onPress={() => setOptionsSheetOpen(false)} style={styles.modalBg}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={styles.optionsSheetCard}>
-            <View style={styles.sheetHandleBar} />
-            <Text style={styles.optionsSheetTitle}>User Options</Text>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.optionsSheetCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <View style={[styles.sheetHandleBar, { backgroundColor: theme.border }]} />
+            <Text style={[styles.optionsSheetTitle, { color: theme.text }]}>User Options</Text>
 
             <Pressable
               onPress={() => {
                 setOptionsSheetOpen(false);
                 handleShareProfile();
               }}
-              style={styles.optionsItem}
+              style={[styles.optionsItem, { borderBottomColor: theme.border }]}
             >
-              <Feather name="share-2" size={18} color="#0A6836" />
-              <Text style={styles.optionsItemText}>Share Profile</Text>
+              <Feather name="share-2" size={18} color={theme.primary} />
+              <Text style={[styles.optionsItemText, { color: theme.text }]}>Share Profile</Text>
             </Pressable>
 
             <Pressable
@@ -951,10 +954,10 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                 setOptionsSheetOpen(false);
                 Alert.alert("Copied!", `Profile link copied: https://thecodemunk.in/user/${handle}`);
               }}
-              style={styles.optionsItem}
+              style={[styles.optionsItem, { borderBottomColor: theme.border }]}
             >
-              <Feather name="copy" size={18} color="#33334F" />
-              <Text style={styles.optionsItemText}>Copy Profile Link</Text>
+              <Feather name="copy" size={18} color={theme.text} />
+              <Text style={[styles.optionsItemText, { color: theme.text }]}>Copy Profile Link</Text>
             </Pressable>
 
             <Pressable
@@ -962,10 +965,10 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                 setOptionsSheetOpen(false);
                 Alert.alert("Message", `Opening chat with ${name}...`);
               }}
-              style={styles.optionsItem}
+              style={[styles.optionsItem, { borderBottomColor: theme.border }]}
             >
-              <Feather name="send" size={18} color="#33334F" />
-              <Text style={styles.optionsItemText}>Send Direct Message</Text>
+              <Feather name="send" size={18} color={theme.text} />
+              <Text style={[styles.optionsItemText, { color: theme.text }]}>Send Direct Message</Text>
             </Pressable>
 
             <Pressable
@@ -973,10 +976,10 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                 setOptionsSheetOpen(false);
                 Alert.alert("Muted", `Muted notifications from ${name}.`);
               }}
-              style={styles.optionsItem}
+              style={[styles.optionsItem, { borderBottomColor: theme.border }]}
             >
-              <Feather name="bell-off" size={18} color="#68677D" />
-              <Text style={styles.optionsItemText}>Mute Notifications</Text>
+              <Feather name="bell-off" size={18} color={theme.subtext} />
+              <Text style={[styles.optionsItemText, { color: theme.text }]}>Mute Notifications</Text>
             </Pressable>
 
             <Pressable
@@ -987,7 +990,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                   { text: "Block", style: "destructive", onPress: () => Alert.alert("Blocked", `${name} has been blocked.`) }
                 ]);
               }}
-              style={styles.optionsItem}
+              style={[styles.optionsItem, { borderBottomColor: theme.border }]}
             >
               <Feather name="slash" size={18} color="#E53935" />
               <Text style={[styles.optionsItemText, { color: "#E53935" }]}>Block User</Text>
@@ -998,14 +1001,14 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                 setOptionsSheetOpen(false);
                 Alert.alert("Reported", "Thank you. Our moderation team will review this profile.");
               }}
-              style={styles.optionsItem}
+              style={[styles.optionsItem, { borderBottomColor: theme.border }]}
             >
               <Feather name="flag" size={18} color="#E53935" />
               <Text style={[styles.optionsItemText, { color: "#E53935" }]}>Report Profile</Text>
             </Pressable>
 
-            <Pressable onPress={() => setOptionsSheetOpen(false)} style={styles.optionsCancelBtn}>
-              <Text style={styles.optionsCancelText}>Cancel</Text>
+            <Pressable onPress={() => setOptionsSheetOpen(false)} style={[styles.optionsCancelBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F4F3FA" }]}>
+              <Text style={[styles.optionsCancelText, { color: theme.subtext }]}>Cancel</Text>
             </Pressable>
           </Pressable>
         </Pressable>

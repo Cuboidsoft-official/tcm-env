@@ -17,8 +17,10 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { updateProfile } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 export default function EditMentorProfileModal({ visible, session, user = {}, onClose, onProfileUpdated }) {
+  const { theme } = useTheme();
   const [name, setName] = useState(user.name || "");
   const [bio, setBio] = useState(user.bio || "");
   const [yearsExperience, setYearsExperience] = useState(user.yearsExperience || "5+ Yrs Exp");
@@ -120,12 +122,12 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <View style={styles.overlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Header */}
-          <View style={styles.headerRow}>
-            <Text style={styles.headerTitle}>Edit Mentor Profile</Text>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={22} color="#181725" />
+          <View style={[styles.headerRow, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>Edit Mentor Profile</Text>
+            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+              <Feather name="x" size={22} color={theme.text} />
             </Pressable>
           </View>
 

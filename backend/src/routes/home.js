@@ -2954,17 +2954,7 @@ homeRouter.get("/search", requireAuth, async (req, res) => {
     role: "mentor"
   }));
 
-  // Add default search mock data if query matches
-  const sampleMentors = [
-    { id: "m1", name: "Rahul Dev", title: "Senior Full Stack Developer", rating: "4.9", avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", role: "mentor" },
-    { id: "m2", name: "Ananya Sharma", title: "Python & Machine Learning Specialist", rating: "4.8", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100", role: "mentor" }
-  ];
-  sampleMentors.forEach((sm) => {
-    if (sm.name.toLowerCase().includes(query) || sm.title.toLowerCase().includes(query)) {
-      if (!mentors.some((m) => m.name === sm.name)) mentors.push(sm);
-      if (!users.some((u) => u.name === sm.name)) users.push(sm);
-    }
-  });
+
 
   const posts = dbPosts.map(mapPost);
   const courses = dbCourses.map((c) => ({
@@ -3528,12 +3518,7 @@ homeRouter.get("/doubt-rooms", requireAuth, async (req, res) => {
       kbItems = await KnowledgeBaseItem.find({}).sort({ createdAt: -1 });
     } catch (e) {}
 
-    if (!rooms || rooms.length === 0) {
-      if (!req.app.locals.inMemoryDoubtRooms) {
-        getInMemoryDoubtRoom(req, "NEET-DOUBT-101");
-        getInMemoryDoubtRoom(req, "JEE-DOUBT-102");
-        getInMemoryDoubtRoom(req, "DEV-DOUBT-103");
-      }
+    if (!rooms || !Array.isArray(rooms)) {
       rooms = Object.values(req.app.locals.inMemoryDoubtRooms || {});
     }
 

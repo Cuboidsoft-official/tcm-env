@@ -1,7 +1,7 @@
 import { registerRootComponent } from "expo";
 import App from "./App";
 
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
   // Capture beforeinstallprompt globally
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();

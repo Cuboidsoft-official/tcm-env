@@ -18,8 +18,10 @@ import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/ve
 import { submitMentorStudentReview, getMentorClassReviews, getEnrolledStudents } from "../api/client";
 import { fonts } from "../constants/fonts";
 import { shadow } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 export default function MentorReviewsModal({ visible, session, courses = [], onClose }) {
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState("write_review"); // "write_review" | "student_reflections" | "view_reviews"
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -164,46 +166,46 @@ export default function MentorReviewsModal({ visible, session, courses = [], onC
         style={{ flex: 1 }}
       >
         <Pressable onPress={onClose} style={styles.overlay}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={styles.sheetBox}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.sheetBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Handle bar */}
-          <View style={styles.handleBar} />
+          <View style={[styles.handleBar, { backgroundColor: theme.isDark ? "#334155" : "#CBD5E1" }]} />
 
           {/* Header */}
-          <View style={styles.headerRow}>
+          <View style={[styles.headerRow, { borderBottomColor: theme.border }]}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <FontAwesome name="star" size={18} color="#E7A900" style={{ marginRight: 8 }} />
-              <Text style={styles.headerTitle}>Class & Student Reviews</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>Class & Student Reviews</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={20} color="#64748B" />
+            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+              <Feather name="x" size={20} color={theme.text} />
             </TouchableOpacity>
           </View>
 
           {/* Tab Selection */}
-          <View style={styles.tabsRow}>
+          <View style={[styles.tabsRow, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}>
             <TouchableOpacity
               onPress={() => setActiveTab("write_review")}
-              style={[styles.tabBtn, activeTab === "write_review" && styles.tabBtnActive]}
+              style={[styles.tabBtn, activeTab === "write_review" && [styles.tabBtnActive, { backgroundColor: theme.cardBg }]]}
             >
-              <Text style={[styles.tabBtnText, activeTab === "write_review" && styles.tabBtnTextActive]}>
+              <Text style={[styles.tabBtnText, { color: activeTab === "write_review" ? theme.primary : theme.subtext }]}>
                 + Evaluate Student
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setActiveTab("student_reflections")}
-              style={[styles.tabBtn, activeTab === "student_reflections" && styles.tabBtnActive]}
+              style={[styles.tabBtn, activeTab === "student_reflections" && [styles.tabBtnActive, { backgroundColor: theme.cardBg }]]}
             >
-              <Text style={[styles.tabBtnText, activeTab === "student_reflections" && styles.tabBtnTextActive]}>
-                Student Reflections ({reflectionsList.length})
+              <Text style={[styles.tabBtnText, { color: activeTab === "student_reflections" ? theme.primary : theme.subtext }]}>
+                Reflections ({reflectionsList.length})
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setActiveTab("view_reviews")}
-              style={[styles.tabBtn, activeTab === "view_reviews" && styles.tabBtnActive]}
+              style={[styles.tabBtn, activeTab === "view_reviews" && [styles.tabBtnActive, { backgroundColor: theme.cardBg }]]}
             >
-              <Text style={[styles.tabBtnText, activeTab === "view_reviews" && styles.tabBtnTextActive]}>
+              <Text style={[styles.tabBtnText, { color: activeTab === "view_reviews" ? theme.primary : theme.subtext }]}>
                 Evaluations ({mentorReviewsList.length})
               </Text>
             </TouchableOpacity>
@@ -212,7 +214,7 @@ export default function MentorReviewsModal({ visible, session, courses = [], onC
           {activeTab === "write_review" ? (
             <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
               {/* 1. Select Student */}
-              <Text style={styles.inputLabel}>Select Student to Review:</Text>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Select Student to Review:</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
                 {studentsList.map((st) => {
                   const isSel = selectedStudent?.id === st.id;
@@ -220,12 +222,18 @@ export default function MentorReviewsModal({ visible, session, courses = [], onC
                     <TouchableOpacity
                       key={st.id}
                       onPress={() => setSelectedStudent(st)}
-                      style={[styles.studentPill, isSel && styles.studentPillActive]}
+                      style={[
+                        styles.studentPill,
+                        {
+                          backgroundColor: isSel ? theme.badgeBg : (theme.isDark ? "#131927" : "#F8FAFC"),
+                          borderColor: isSel ? theme.primary : theme.border
+                        }
+                      ]}
                     >
                       <Image source={{ uri: st.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" }} style={styles.studentPillAvatar} />
                       <View>
-                        <Text style={[styles.studentPillName, isSel && styles.studentPillNameActive]}>{st.name}</Text>
-                        <Text style={styles.studentPillRole}>{st.role || "Learner"}</Text>
+                        <Text style={[styles.studentPillName, { color: isSel ? theme.primary : theme.text }]}>{st.name}</Text>
+                        <Text style={[styles.studentPillRole, { color: theme.subtext }]}>{st.role || "Learner"}</Text>
                       </View>
                     </TouchableOpacity>
                   );
@@ -233,67 +241,85 @@ export default function MentorReviewsModal({ visible, session, courses = [], onC
               </ScrollView>
 
               {/* 2. Select Class Day */}
-              <Text style={styles.inputLabel}>Select Live Class Session:</Text>
-              <View style={styles.pickerBox}>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Select Live Class Session:</Text>
+              <View style={[styles.pickerBox, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F8FAFC"), borderColor: theme.border }]}>
                 {classList.map((cl) => {
                   const isSel = selectedClass?.id === cl.id;
                   return (
                     <TouchableOpacity
                       key={cl.id}
                       onPress={() => setSelectedClass(cl)}
-                      style={[styles.classOptionRow, isSel && styles.classOptionActive]}
+                      style={[styles.classOptionRow, isSel && { backgroundColor: theme.badgeBg }]}
                     >
-                      <Feather name={isSel ? "check-circle" : "circle"} size={16} color={isSel ? "#5B3CF5" : "#94A3B8"} />
-                      <Text style={[styles.classOptionText, isSel && styles.classOptionTextActive]}>{cl.name}</Text>
+                      <Feather name={isSel ? "check-circle" : "circle"} size={16} color={isSel ? theme.primary : theme.subtext} />
+                      <Text style={[styles.classOptionText, { color: isSel ? theme.primary : theme.text }]}>{cl.name}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
               {/* 3. Answered Questions in Class? */}
-              <Text style={styles.inputLabel}>Did student answer questions in class?</Text>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Did student answer questions in class?</Text>
               <View style={styles.optionsRow}>
                 {["Yes", "Partially", "No"].map((opt) => (
                   <TouchableOpacity
                     key={opt}
                     onPress={() => setAnsweredQuestions(opt)}
-                    style={[styles.chipBtn, answeredQuestions === opt && styles.chipBtnActive]}
+                    style={[
+                      styles.chipBtn,
+                      {
+                        backgroundColor: answeredQuestions === opt ? theme.primary : theme.badgeBg,
+                        borderColor: answeredQuestions === opt ? theme.primary : theme.border
+                      }
+                    ]}
                   >
-                    <Text style={[styles.chipBtnText, answeredQuestions === opt && styles.chipBtnTextActive]}>{opt}</Text>
+                    <Text style={[styles.chipBtnText, { color: answeredQuestions === opt ? "#FFFFFF" : theme.primary }]}>{opt}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
               {/* 4. Active Status */}
-              <Text style={styles.inputLabel}>Class Active & Engagement Level:</Text>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Class Active & Engagement Level:</Text>
               <View style={styles.optionsRow}>
                 {["High", "Medium", "Low"].map((opt) => (
                   <TouchableOpacity
                     key={opt}
                     onPress={() => setActiveStatus(opt)}
-                    style={[styles.chipBtn, activeStatus === opt && styles.chipBtnActive]}
+                    style={[
+                      styles.chipBtn,
+                      {
+                        backgroundColor: activeStatus === opt ? theme.primary : theme.badgeBg,
+                        borderColor: activeStatus === opt ? theme.primary : theme.border
+                      }
+                    ]}
                   >
-                    <Text style={[styles.chipBtnText, activeStatus === opt && styles.chipBtnTextActive]}>{opt}</Text>
+                    <Text style={[styles.chipBtnText, { color: activeStatus === opt ? "#FFFFFF" : theme.primary }]}>{opt}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
               {/* 5. Asked Doubts / Questions? */}
-              <Text style={styles.inputLabel}>Did student ask doubts/questions?</Text>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Did student ask doubts/questions?</Text>
               <View style={styles.optionsRow}>
                 {["Yes", "No"].map((opt) => (
                   <TouchableOpacity
                     key={opt}
                     onPress={() => setAskedQuestions(opt)}
-                    style={[styles.chipBtn, askedQuestions === opt && styles.chipBtnActive]}
+                    style={[
+                      styles.chipBtn,
+                      {
+                        backgroundColor: askedQuestions === opt ? theme.primary : theme.badgeBg,
+                        borderColor: askedQuestions === opt ? theme.primary : theme.border
+                      }
+                    ]}
                   >
-                    <Text style={[styles.chipBtnText, askedQuestions === opt && styles.chipBtnTextActive]}>{opt}</Text>
+                    <Text style={[styles.chipBtnText, { color: askedQuestions === opt ? "#FFFFFF" : theme.primary }]}>{opt}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
               {/* 6. Star Rating */}
-              <Text style={styles.inputLabel}>Student Rating (1 to 5 Stars):</Text>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Student Rating (1 to 5 Stars):</Text>
               <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <TouchableOpacity key={star} onPress={() => setRating(star)}>
@@ -303,18 +329,18 @@ export default function MentorReviewsModal({ visible, session, courses = [], onC
               </View>
 
               {/* 7. Mentor Comments */}
-              <Text style={styles.inputLabel}>Mentor Feedback & Notes:</Text>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Mentor Feedback & Notes:</Text>
               <TextInput
                 value={commentText}
                 onChangeText={setCommentText}
                 placeholder="e.g. Great participation! Demonstrated clear understanding of React hooks..."
-                placeholderTextColor="#A0A0B8"
+                placeholderTextColor={theme.subtext}
                 multiline
                 numberOfLines={3}
-                style={styles.textInputArea}
+                style={[styles.textInputArea, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F8FAFC"), color: theme.text, borderColor: theme.border }]}
               />
 
-              <TouchableOpacity onPress={handleSubmitReview} disabled={submitting} style={styles.submitBtn}>
+              <TouchableOpacity onPress={handleSubmitReview} disabled={submitting} style={[styles.submitBtn, { backgroundColor: theme.primary }]}>
                 {submitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
@@ -325,39 +351,39 @@ export default function MentorReviewsModal({ visible, session, courses = [], onC
           ) : activeTab === "student_reflections" ? (
             <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
               {loading ? (
-                <ActivityIndicator size="medium" color="#5B3CF5" style={{ marginVertical: 20 }} />
+                <ActivityIndicator size="medium" color={theme.primary} style={{ marginVertical: 20 }} />
               ) : reflectionsList.length === 0 ? (
                 <View style={{ alignItems: "center", paddingVertical: 36 }}>
-                  <Feather name="book-open" size={32} color="#CBD5E1" />
-                  <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: "#64748B", marginTop: 8 }}>
+                  <Feather name="book-open" size={32} color={theme.subtext} />
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: theme.text, marginTop: 8 }}>
                     No student reflections received yet
                   </Text>
-                  <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: "#94A3B8", marginTop: 4, textAlign: "center", paddingHorizontal: 20 }}>
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: theme.subtext, marginTop: 4, textAlign: "center", paddingHorizontal: 20 }}>
                     When students finish live classes in Continue Learning, their feedback & ratings will appear here!
                   </Text>
                 </View>
               ) : (
                 reflectionsList.map((ref, idx) => (
-                  <View key={ref.id || idx} style={styles.reviewCard}>
+                  <View key={ref.id || idx} style={[styles.reviewCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <Image source={{ uri: ref.studentAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" }} style={styles.studentAvatar} />
                       <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.studentName}>{ref.studentName || "Student"}</Text>
-                        <Text style={styles.classNameText}>{ref.className}</Text>
+                        <Text style={[styles.studentName, { color: theme.text }]}>{ref.studentName || "Student"}</Text>
+                        <Text style={[styles.classNameText, { color: theme.subtext }]}>{ref.className}</Text>
                       </View>
-                      <View style={styles.starBadge}>
+                      <View style={[styles.starBadge, { backgroundColor: theme.isDark ? "#1E263B" : "#FFF8EC" }]}>
                         <FontAwesome name="star" size={12} color="#E7A900" style={{ marginRight: 4 }} />
                         <Text style={styles.starBadgeText}>{ref.rating || 5}.0</Text>
                       </View>
                     </View>
 
                     <View style={styles.pillsRow}>
-                      <View style={styles.miniPill}><Text style={styles.miniPillText}>Speaking: {ref.activeStatus || "Yes"}</Text></View>
-                      <View style={styles.miniPill}><Text style={styles.miniPillText}>Doubts Cleared: {ref.answeredQuestions || "Yes"}</Text></View>
-                      <View style={styles.miniPill}><Text style={styles.miniPillText}>Asked Qs: {ref.askedQuestions || "Yes"}</Text></View>
+                      <View style={[styles.miniPill, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}><Text style={[styles.miniPillText, { color: theme.subtext }]}>Speaking: {ref.activeStatus || "Yes"}</Text></View>
+                      <View style={[styles.miniPill, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}><Text style={[styles.miniPillText, { color: theme.subtext }]}>Doubts Cleared: {ref.answeredQuestions || "Yes"}</Text></View>
+                      <View style={[styles.miniPill, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}><Text style={[styles.miniPillText, { color: theme.subtext }]}>Asked Qs: {ref.askedQuestions || "Yes"}</Text></View>
                     </View>
 
-                    {ref.comment ? <Text style={styles.commentText}>"{ref.comment}"</Text> : null}
+                    {ref.comment ? <Text style={[styles.commentText, { color: theme.text }]}>"{ref.comment}"</Text> : null}
                   </View>
                 ))
               )}
@@ -365,36 +391,36 @@ export default function MentorReviewsModal({ visible, session, courses = [], onC
           ) : (
             <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
               {loading ? (
-                <ActivityIndicator size="medium" color="#5B3CF5" style={{ marginVertical: 20 }} />
+                <ActivityIndicator size="medium" color={theme.primary} style={{ marginVertical: 20 }} />
               ) : mentorReviewsList.length === 0 ? (
                 <View style={{ alignItems: "center", paddingVertical: 30 }}>
-                  <Feather name="star" size={32} color="#CBD5E1" />
-                  <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: "#64748B", marginTop: 8 }}>
+                  <Feather name="star" size={32} color={theme.subtext} />
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: theme.text, marginTop: 8 }}>
                     No evaluations submitted yet
                   </Text>
                 </View>
               ) : (
                 mentorReviewsList.map((rev, idx) => (
-                  <View key={rev.id || idx} style={styles.reviewCard}>
+                  <View key={rev.id || idx} style={[styles.reviewCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <Image source={{ uri: rev.studentAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" }} style={styles.studentAvatar} />
                       <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.studentName}>{rev.studentName}</Text>
-                        <Text style={styles.classNameText}>{rev.className}</Text>
+                        <Text style={[styles.studentName, { color: theme.text }]}>{rev.studentName}</Text>
+                        <Text style={[styles.classNameText, { color: theme.subtext }]}>{rev.className}</Text>
                       </View>
-                      <View style={styles.starBadge}>
+                      <View style={[styles.starBadge, { backgroundColor: theme.isDark ? "#1E263B" : "#FFF8EC" }]}>
                         <FontAwesome name="star" size={12} color="#E7A900" style={{ marginRight: 4 }} />
                         <Text style={styles.starBadgeText}>{rev.rating}.0</Text>
                       </View>
                     </View>
 
                     <View style={styles.pillsRow}>
-                      <View style={styles.miniPill}><Text style={styles.miniPillText}>Answers: {rev.answeredQuestions}</Text></View>
-                      <View style={styles.miniPill}><Text style={styles.miniPillText}>Active: {rev.activeStatus}</Text></View>
-                      <View style={styles.miniPill}><Text style={styles.miniPillText}>Questions: {rev.askedQuestions}</Text></View>
+                      <View style={[styles.miniPill, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}><Text style={[styles.miniPillText, { color: theme.subtext }]}>Answers: {rev.answeredQuestions}</Text></View>
+                      <View style={[styles.miniPill, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}><Text style={[styles.miniPillText, { color: theme.subtext }]}>Active: {rev.activeStatus}</Text></View>
+                      <View style={[styles.miniPill, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}><Text style={[styles.miniPillText, { color: theme.subtext }]}>Questions: {rev.askedQuestions}</Text></View>
                     </View>
 
-                    {rev.comment ? <Text style={styles.commentText}>"{rev.comment}"</Text> : null}
+                    {rev.comment ? <Text style={[styles.commentText, { color: theme.text }]}>"{rev.comment}"</Text> : null}
                   </View>
                 ))
               )}

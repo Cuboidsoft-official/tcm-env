@@ -13,6 +13,7 @@ import {
 import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 function formatCleanDesc(rawText = "") {
   if (!rawText) return "";
@@ -25,6 +26,7 @@ function formatCleanDesc(rawText = "") {
 }
 
 export default function JobDetailsModal({ visible, job, isMentor, onClose, onApply, onOpenDocReader }) {
+  const { theme } = useTheme();
   if (!job) return null;
 
   const selectedCount = job.selectedCandidates || (job.applicants || []).filter((a) => a.status === "selected").length;
@@ -36,21 +38,21 @@ export default function JobDetailsModal({ visible, job, isMentor, onClose, onApp
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Sheet Handle */}
           <View style={styles.sheetHandleWrap}>
-            <View style={styles.sheetHandleBar} />
+            <View style={[styles.sheetHandleBar, { backgroundColor: theme.isDark ? "#334155" : "#CBD5E1" }]} />
           </View>
 
           {/* Header */}
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-              <View style={styles.iconCircle}>
-                <Ionicons name="briefcase" size={20} color="#5B3CF5" />
+              <View style={[styles.iconCircle, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }]}>
+                <Ionicons name="briefcase" size={20} color={theme.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.modalTitle} numberOfLines={1}>{job.title}</Text>
-                <Text style={styles.modalSub}>{job.company || "TCM Partner"}</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]} numberOfLines={1}>{job.title}</Text>
+                <Text style={[styles.modalSub, { color: theme.subtext }]}>{job.company || "TCM Partner"}</Text>
               </View>
             </View>
 
@@ -63,13 +65,13 @@ export default function JobDetailsModal({ visible, job, isMentor, onClose, onApp
                     message: `Check out this Job Opportunity on TCM: "${job.title}" at ${job.company || "TCM Partner"}\n\nApply via TCM: ${shareUrl}`
                   }).catch(() => {});
                 }}
-                style={styles.closeBtn}
+                style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}
               >
-                <Feather name="share-2" size={17} color="#5B3CF5" />
+                <Feather name="share-2" size={17} color={theme.primary} />
               </TouchableOpacity>
 
-              <Pressable onPress={onClose} style={styles.closeBtn}>
-                <Feather name="x" size={20} color="#64748B" />
+              <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+                <Feather name="x" size={20} color={theme.text} />
               </Pressable>
             </View>
           </View>

@@ -1,99 +1,180 @@
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { StyleSheet, Text, View, Image, Animated, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Decorations from "../components/Decorations";
-import TcmLogo from "../components/TcmLogo";
-import WaveFooter from "../components/WaveFooter";
-import { colors } from "../constants/theme";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTheme } from "../context/ThemeContext";
+import { fonts } from "../constants/fonts";
+
+const logoImg = require("../../assets/icon.png");
 
 export default function SplashScreen() {
+  const { theme } = useTheme();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.92)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 700,
+        useNativeDriver: true
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 6,
+        tension: 40,
+        useNativeDriver: true
+      })
+    ]).start();
+  }, []);
+
   return (
-    <SafeAreaView style={styles.safe}>
-      <Decorations />
-      <View style={styles.center}>
-        <TcmLogo />
-        <Text style={styles.tagline}>
-          Learn. Grow. Achieve.{"\n"}Your <Text style={styles.future}>Future</Text> Starts Here.
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
+      <Animated.View style={[styles.centerContainer, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+        
+        {/* App Logo with Glowing Ring */}
+        <View style={styles.logoRingWrapper}>
+          <View style={[styles.logoOuterRing, { borderColor: theme.isDark ? "rgba(16, 185, 129, 0.25)" : "rgba(91, 60, 245, 0.15)" }]} />
+          <Image source={logoImg} style={styles.logoImage} resizeMode="contain" />
+        </View>
+
+        {/* Indian Flag Tricolor Brand Title */}
+        <View style={styles.brandTitleRow}>
+          <Text style={[styles.brandLetter, { color: "#FF9933" }]}>T</Text>
+          <Text style={[styles.brandLetter, { color: theme.isDark ? "#FFFFFF" : "#000080" }]}>C</Text>
+          <Text style={[styles.brandLetter, { color: "#138808" }]}>M</Text>
+          <Text style={[styles.brandLetter, { color: theme.text }]}> </Text>
+          <Text style={[styles.brandLetter, { color: "#FF9933" }]}>O</Text>
+          <Text style={[styles.brandLetter, { color: theme.isDark ? "#FFFFFF" : theme.primary }]}>n</Text>
+          <Text style={[styles.brandLetter, { color: "#138808" }]}>e</Text>
+        </View>
+
+        {/* Subtitle */}
+        <Text style={[styles.subTitle, { color: theme.subtext }]}>Talent & Career Mission</Text>
+        
+        {/* Tagline */}
+        <Text style={[styles.tagline, { color: theme.text }]}>
+          Learn. Build. Achieve.{"\n"}Your <Text style={[styles.futureHighlight, { color: theme.primary }]}>Future</Text> Starts Here.
         </Text>
 
-        <View style={styles.sloganCard}>
-          <Text style={styles.sloganText}>
+        {/* Slogan Pill Card */}
+        <View style={[styles.sloganCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <MaterialCommunityIcons name="star-shooting-outline" size={16} color={theme.primary} style={{ marginRight: 6 }} />
+          <Text style={[styles.sloganText, { color: theme.text }]}>
             "Hum wada wahi karte hain jo hum nibha paayein." ✨
           </Text>
         </View>
 
-        <View style={styles.loader}>
-          <View style={[styles.loaderPill, styles.active]} />
-          <View style={styles.loaderPill} />
-          <View style={styles.loaderPill} />
+        {/* Sleek Loader Indicator */}
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator size="small" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.subtext }]}>Launching AI Workspace & Mentors...</Text>
         </View>
-        <Text style={styles.loading}>Loading...</Text>
+
+      </Animated.View>
+
+      {/* Made for India Footer Badge */}
+      <View style={styles.footerBadgeRow}>
+        <Text style={styles.indiaFlagEmoji}>🇮🇳</Text>
+        <Text style={[styles.footerBadgeText, { color: theme.subtext }]}>
+          Made with Pride for India's Tech Leaders
+        </Text>
       </View>
-      <WaveFooter />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: {
-    backgroundColor: "#FBFAFF",
     flex: 1
   },
-  center: {
-    alignItems: "center",
+  centerContainer: {
     flex: 1,
+    alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 70
+    paddingHorizontal: 24,
+    paddingBottom: 40
+  },
+  logoRingWrapper: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20
+  },
+  logoOuterRing: {
+    position: "absolute",
+    width: 104,
+    height: 104,
+    borderRadius: 32,
+    borderWidth: 2
+  },
+  logoImage: {
+    width: 86,
+    height: 86,
+    borderRadius: 24
+  },
+  brandTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4
+  },
+  brandLetter: {
+    fontFamily: fonts.bold,
+    fontSize: 34,
+    letterSpacing: -0.5
+  },
+  subTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginBottom: 16
   },
   tagline: {
-    color: colors.ink,
-    fontSize: 18,
-    lineHeight: 28,
-    marginTop: 34,
-    textAlign: "center"
+    fontFamily: fonts.medium,
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: "center",
+    marginBottom: 20
   },
-  future: {
-    color: colors.primary,
-    fontWeight: "800"
+  futureHighlight: {
+    fontFamily: fonts.bold
   },
   sloganCard: {
-    backgroundColor: "#F0EDFF",
-    borderWidth: 1,
-    borderColor: "#C4B5FD",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    marginTop: 20,
-    shadowColor: "#5B3CF5",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2
+    borderWidth: 1,
+    marginBottom: 36
   },
   sloganText: {
-    color: colors.primary,
-    fontSize: 13.5,
-    fontWeight: "700",
-    textAlign: "center",
+    fontFamily: fonts.semiBold,
+    fontSize: 12.5,
     fontStyle: "italic"
   },
-  loader: {
+  loaderWrap: {
     flexDirection: "row",
-    marginTop: 60
+    alignItems: "center",
+    gap: 10
   },
-  loaderPill: {
-    backgroundColor: colors.lavenderLine,
-    borderRadius: 20,
-    height: 7,
-    marginHorizontal: 5,
-    width: 34
+  loadingText: {
+    fontFamily: fonts.medium,
+    fontSize: 12
   },
-  active: {
-    backgroundColor: colors.primary
+  footerBadgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 20,
+    gap: 6
   },
-  loading: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: "600",
-    marginTop: 10
+  indiaFlagEmoji: {
+    fontSize: 14
+  },
+  footerBadgeText: {
+    fontFamily: fonts.medium,
+    fontSize: 11
   }
 });

@@ -727,14 +727,14 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
             </View>
 
             {jobPosts.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="briefcase-outline" size={36} color="#CBD5E1" />
-                <Text style={styles.emptyTitle}>No Jobs Posted Yet</Text>
-                <Text style={styles.emptySub}>Mentors will post direct job opportunities here.</Text>
+              <View style={[styles.emptyContainer, { backgroundColor: theme.cardBg, borderRadius: 16, borderWidth: 1, borderColor: theme.border, marginTop: 10 }]}>
+                <Ionicons name="briefcase-outline" size={36} color={theme.subtext} />
+                <Text style={[styles.emptyTitle, { color: theme.text }]}>No Jobs Posted Yet</Text>
+                <Text style={[styles.emptySub, { color: theme.subtext }]}>Mentors will post direct job opportunities here.</Text>
                 {isMentor ? (
                   <TouchableOpacity
                     onPress={() => setCreateJobModalOpen(true)}
-                    style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: "#5B3CF5" }}
+                    style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: theme.primary }}
                   >
                     <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>+ Post a Job</Text>
                   </TouchableOpacity>
@@ -961,15 +961,15 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
         {/* 5. Dynamic Channel List Cards */}
         <View style={{ paddingHorizontal: 10, paddingBottom: 20, gap: 10 }}>
           {communities.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Feather name="users" size={36} color="#CBD5E1" />
-              <Text style={styles.emptyTitle}>No Community Channels Yet</Text>
-              <Text style={styles.emptySub}>
+            <View style={[styles.emptyContainer, { backgroundColor: theme.cardBg, borderRadius: 16, borderWidth: 1, borderColor: theme.border }]}>
+              <Feather name="users" size={36} color={theme.subtext} />
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>No Community Channels Yet</Text>
+              <Text style={[styles.emptySub, { color: theme.subtext }]}>
                 Tap '+ Create Channel' to create your first community channel!
               </Text>
               <TouchableOpacity
                 onPress={() => setCreateCommModalOpen(true)}
-                style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: "#5B3CF5" }}
+                style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: theme.primary }}
               >
                 <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>+ Create Channel</Text>
               </TouchableOpacity>

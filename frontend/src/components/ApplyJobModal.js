@@ -95,23 +95,23 @@ export default function ApplyJobModal({ visible, job, user = {}, onClose, onSubm
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Sheet Handle */}
           <View style={styles.sheetHandleWrap}>
-            <View style={styles.sheetHandleBar} />
+            <View style={[styles.sheetHandleBar, { backgroundColor: theme.isDark ? "#334155" : "#CBD5E1" }]} />
           </View>
 
           {/* Header */}
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
             <View style={{ flex: 1, marginRight: 10 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <Ionicons name="briefcase" size={18} color={theme.primary} />
-                <Text style={styles.modalTitle} numberOfLines={1}>Apply for {job.title}</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]} numberOfLines={1}>Apply for {job.title}</Text>
               </View>
-              <Text style={styles.modalSub}>{job.company || "TCM Partner"} • Salary: ₹{job.minSalary} – ₹{job.maxSalary} {job.salaryPeriod}</Text>
+              <Text style={[styles.modalSub, { color: theme.subtext }]}>{job.company || "TCM Partner"} • Salary: ₹{job.minSalary} – ₹{job.maxSalary} {job.salaryPeriod}</Text>
             </View>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={20} color="#64748B" />
+            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+              <Feather name="x" size={20} color={theme.text} />
             </Pressable>
           </View>
 
