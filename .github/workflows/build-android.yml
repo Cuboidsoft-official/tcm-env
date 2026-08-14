@@ -158,11 +158,10 @@ jobs:
             exit 0
           fi
           echo "$FIREBASE_SERVICE_ACCOUNT" > /tmp/firebase-sa.json
-          npx -y firebase-tools appdistribution:distribute frontend/dist/app-preview.apk \
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-sa.json npx -y firebase-tools appdistribution:distribute frontend/dist/app-preview.apk \
             --app "$FIREBASE_APP_ID" \
             --groups "${FIREBASE_TESTER_GROUP:-testers}" \
-            --release-notes "TCM Android build v${TCM_APP_VERSION:-0.1.0}" \
-            --service-account /tmp/firebase-sa.json || echo "::warning::Firebase distribution warning (build continues)."
+            --release-notes "TCM Android build v${TCM_APP_VERSION:-0.1.0}" || echo "::warning::Firebase distribution warning (build continues)."
           rm -f /tmp/firebase-sa.json
 
       - name: Mint one-time secret download links
