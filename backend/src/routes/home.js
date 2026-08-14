@@ -170,19 +170,7 @@ async function buildLearnPayload(user, mentors, learn = {}, memoryStore = null, 
         image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80"
       }
     ],
-    continueLearning: (safeLearn.continueLearning && safeLearn.continueLearning.length > 0)
-      ? safeLearn.continueLearning
-      : [
-          {
-            id: "c_webdev_fullstack",
-            title: "Full Stack Web Development Masterclass",
-            subtitle: "React, Node.js, Express & MongoDB",
-            progress: 0,
-            icon: "code-tags",
-            iconColor: "#5B3CF5",
-            bgColor: "#F0EDFF"
-          }
-        ],
+    continueLearning: safeLearn.continueLearning || [],
     popularCourses,
     topCategories: safeLearn.topCategories || [
       {
@@ -2541,18 +2529,18 @@ homeRouter.get("/continue-learning", requireAuth, async (req, res) => {
   } catch (e) {}
 
   // 2. Pick active real mentor course
-  const activeCourse = allCourses.length > 0 ? allCourses[0] : {
-    title: "Full Stack Web Development Masterclass",
-    mentorName: "Aayushmann C.",
-    category: "Web Development",
-    modules: [
-      { dayNum: "Day 1", topic: "Environment Setup & React Core Architecture" },
-      { dayNum: "Day 2", topic: "State Architecture, Props & Context API" },
-      { dayNum: "Day 3", topic: "Node.js Express REST API & Middleware" },
-      { dayNum: "Day 4", topic: "MongoDB Database Models & Aggregation" },
-      { dayNum: "Day 5", topic: "Production Cloud Deployment & CI/CD" }
-    ]
-  };
+  if (allCourses.length === 0) {
+    return res.json({
+      noEnrolledCourses: true,
+      courseTitle: "",
+      reflection: { reflectionRequired: false, reflectionSubmitted: false, nextClassUnlocked: true },
+      userProgress: { courseProgress: 0, dayStreak: 0, xpPoints: 0, certificates: 0 },
+      learningJourney: [],
+      whatsNext: []
+    });
+  }
+
+  const activeCourse = allCourses[0];
 
   const rawModules = activeCourse.modules && activeCourse.modules.length > 0
     ? activeCourse.modules

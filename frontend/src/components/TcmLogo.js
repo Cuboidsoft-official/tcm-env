@@ -1,7 +1,8 @@
-import { StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { colors } from "../constants/theme";
 import { useTheme } from "../context/ThemeContext";
+
+const logoImg = require("../../assets/icon.png");
 
 export default function TcmLogo({ compact = false }) {
   const { theme } = useTheme();
@@ -10,13 +11,11 @@ export default function TcmLogo({ compact = false }) {
 
   return (
     <View style={styles.wrap}>
-      <View style={[styles.mark, compact && styles.markCompact]}>
-        <Ionicons name="person" size={compact ? 20 : 30} color={primaryDarkColor} />
-        <View style={styles.bookRow}>
-          <View style={[styles.bookPage, { backgroundColor: primaryColor }]} />
-          <View style={[styles.bookPage, styles.bookPageRight, { backgroundColor: "#15803D" }]} />
-        </View>
-      </View>
+      <Image
+        source={logoImg}
+        style={[styles.logoImage, compact && styles.logoImageCompact]}
+        resizeMode="contain"
+      />
       <Text style={[styles.title, compact && styles.titleCompact, { color: primaryDarkColor }]}>TCM One</Text>
       <View style={styles.subtitleRow}>
         <View style={[styles.line, { backgroundColor: primaryColor }]} />
@@ -31,35 +30,17 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: "center"
   },
-  mark: {
-    alignItems: "center",
-    height: 82,
-    justifyContent: "flex-end",
+  logoImage: {
+    width: 84,
+    height: 84,
     marginBottom: 8,
-    width: 92
+    borderRadius: 20
   },
-  markCompact: {
+  logoImageCompact: {
+    width: 52,
     height: 52,
-    marginBottom: 3,
-    transform: [{ scale: 0.78 }]
-  },
-  bookRow: {
-    flexDirection: "row",
-    marginTop: -5
-  },
-  bookPage: {
-    borderBottomLeftRadius: 2,
-    borderTopLeftRadius: 2,
-    height: 43,
-    transform: [{ skewY: "8deg" }],
-    width: 42
-  },
-  bookPageRight: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 2,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 2,
-    transform: [{ skewY: "-8deg" }]
+    marginBottom: 4,
+    borderRadius: 12
   },
   title: {
     fontSize: 72,

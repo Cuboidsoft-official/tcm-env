@@ -359,6 +359,11 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   const [isPwaInstallModalOpen, setIsPwaInstallModalOpen] = useState(false);
   const { theme } = useTheme();
 
+  const user = useMemo(
+    () => home?.user || session?.user || { name: "Learner", role: "Student", handle: "learner" },
+    [home?.user, session?.user]
+  );
+
   // 1. Automatic Push Notification Token Registration on Launch
   useEffect(() => {
     if (session?.token) {

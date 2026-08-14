@@ -353,7 +353,23 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
         </Pressable>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      {data?.noEnrolledCourses ? (
+        <View style={{ flex: 1, padding: 24, alignItems: "center", justifyContent: "center" }}>
+          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: theme.badgeBg, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+            <MaterialCommunityIcons name="book-open-outline" size={32} color={theme.primary} />
+          </View>
+          <Text style={{ fontSize: 18, fontFamily: fonts.bold, color: theme.text, textAlign: "center", marginBottom: 8 }}>
+            No Active Learning
+          </Text>
+          <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: theme.subtext, textAlign: "center", lineHeight: 20, marginBottom: 20, maxWidth: 300 }}>
+            You haven't enrolled in any active course yet. Explore available courses to start learning!
+          </Text>
+          <Pressable onPress={onBack} style={{ backgroundColor: theme.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 }}>
+            <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 13 }}>Browse Courses →</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* 2. Top Live Class Banner Card (Original Clean Design) */}
         <View style={[styles.liveClassCard, themedSurface]}>
           <View style={styles.liveTopRow}>
@@ -983,6 +999,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
           ))}
         </View>
       </ScrollView>
+      )}
 
       {/* MODAL: MENTOR PDF DOCUMENT READER */}
       <Modal visible={showDocReaderModal} transparent animationType="slide" onRequestClose={() => setShowDocReaderModal(false)}>

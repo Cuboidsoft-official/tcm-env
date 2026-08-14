@@ -186,12 +186,11 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
             {/* App Header Badge */}
             <View style={styles.headerSection}>
               <View style={styles.appIconWrapper}>
-                <LinearGradient
-                  colors={["#5B3CF5", "#7357F6"]}
-                  style={styles.iconGradient}
-                >
-                  <Ionicons name="rocket-sharp" size={28} color="#FFFFFF" />
-                </LinearGradient>
+                <Image
+                  source={require("../../assets/icon.png")}
+                  style={styles.headerLogoImage}
+                  resizeMode="contain"
+                />
                 <View style={styles.verifiedBadge}>
                   <MaterialCommunityIcons name="check-decagram" size={16} color="#10B981" />
                 </View>
@@ -200,7 +199,7 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
               <View style={styles.headerInfo}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <Text style={[styles.appTitle, { color: theme.text }]}>TCM One</Text>
-                  <View style={styles.pwaTag}>
+                  <View style={[styles.pwaTag, { backgroundColor: theme.primary }]}>
                     <Text style={styles.pwaTagText}>PWA APP</Text>
                   </View>
                 </View>
@@ -225,8 +224,8 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
             {/* Highlights Grid */}
             <View style={[styles.highlightsContainer, { backgroundColor: theme.isDark ? "#0F172A" : "#F8FAFC" }]}>
               <View style={styles.highlightItem}>
-                <View style={[styles.highlightIcon, { backgroundColor: "rgba(91, 60, 245, 0.12)" }]}>
-                  <ZapIcon />
+                <View style={[styles.highlightIcon, { backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "rgba(10, 104, 54, 0.12)" }]}>
+                  <ZapIcon color={theme.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.highlightTitle, { color: theme.text }]}>1-Tap Home Screen</Text>
@@ -263,32 +262,32 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
 
             {/* Step-by-Step Instructions Card (Show if prompt not directly executable) */}
             {showInstructions && (
-              <View style={[styles.instructionCard, { backgroundColor: theme.isDark ? "#312E81" : "#EEF2FF", borderColor: "#6366F1" }]}>
+              <View style={[styles.instructionCard, { backgroundColor: theme.isDark ? "#064E3B" : "#ECFDF5", borderColor: theme.primary }]}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <Feather name="info" size={18} color="#4F46E5" />
-                  <Text style={[styles.instructionHeader, { color: theme.isDark ? "#E0E7FF" : "#312E81" }]}>
+                  <Feather name="info" size={18} color={theme.primary} />
+                  <Text style={[styles.instructionHeader, { color: theme.isDark ? "#E0E7FF" : theme.primaryDark }]}>
                     How to Install on {isIOS ? "iOS Safari" : "Your Browser"}:
                   </Text>
                 </View>
 
                 {isIOS ? (
                   <View style={styles.stepList}>
-                    <Text style={[styles.stepText, { color: theme.isDark ? "#C7D2FE" : "#3730A3" }]}>
-                      1. Tap the <Text style={{ fontFamily: fonts.bold }}>Share</Text> button in Safari footer (<Feather name="share" size={14} color="#4F46E5" />).
+                    <Text style={[styles.stepText, { color: theme.isDark ? "#A7F3D0" : theme.primaryDark }]}>
+                      1. Tap the <Text style={{ fontFamily: fonts.bold }}>Share</Text> button in Safari footer (<Feather name="share" size={14} color={theme.primary} />).
                     </Text>
-                    <Text style={[styles.stepText, { color: theme.isDark ? "#C7D2FE" : "#3730A3" }]}>
-                      2. Scroll down and tap <Text style={{ fontFamily: fonts.bold }}>'Add to Home Screen'</Text> (<Feather name="plus-square" size={14} color="#4F46E5" />).
+                    <Text style={[styles.stepText, { color: theme.isDark ? "#A7F3D0" : theme.primaryDark }]}>
+                      2. Scroll down and tap <Text style={{ fontFamily: fonts.bold }}>'Add to Home Screen'</Text> (<Feather name="plus-square" size={14} color={theme.primary} />).
                     </Text>
-                    <Text style={[styles.stepText, { color: theme.isDark ? "#C7D2FE" : "#3730A3" }]}>
+                    <Text style={[styles.stepText, { color: theme.isDark ? "#A7F3D0" : theme.primaryDark }]}>
                       3. Tap <Text style={{ fontFamily: fonts.bold }}>'Add'</Text> at top right to complete.
                     </Text>
                   </View>
                 ) : (
                   <View style={styles.stepList}>
-                    <Text style={[styles.stepText, { color: theme.isDark ? "#C7D2FE" : "#3730A3" }]}>
-                      1. Tap browser menu (<Feather name="more-vertical" size={14} color="#4F46E5" />) top right.
+                    <Text style={[styles.stepText, { color: theme.isDark ? "#A7F3D0" : theme.primaryDark }]}>
+                      1. Tap browser menu (<Feather name="more-vertical" size={14} color={theme.primary} />) top right.
                     </Text>
-                    <Text style={[styles.stepText, { color: theme.isDark ? "#C7D2FE" : "#3730A3" }]}>
+                    <Text style={[styles.stepText, { color: theme.isDark ? "#A7F3D0" : theme.primaryDark }]}>
                       2. Select <Text style={{ fontFamily: fonts.bold }}>'Install App'</Text> or <Text style={{ fontFamily: fonts.bold }}>'Add to Home screen'</Text>.
                     </Text>
                   </View>
@@ -305,7 +304,7 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
                 style={styles.installBtnTouchable}
               >
                 <LinearGradient
-                  colors={["#5B3CF5", "#7357F6"]}
+                  colors={[theme.primary, theme.accent || theme.primaryDark || theme.primary]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.installGradientBtn}
@@ -341,9 +340,10 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
   );
 }
 
-function ZapIcon() {
-  return <Feather name="zap" size={16} color="#5B3CF5" />;
+function ZapIcon({ color = "#0A6836" }) {
+  return <Feather name="zap" size={16} color={color} />;
 }
+
 
 const styles = StyleSheet.create({
   overlay: {
@@ -394,17 +394,10 @@ const styles = StyleSheet.create({
     position: "relative",
     marginRight: 14
   },
-  iconGradient: {
-    width: 54,
-    height: 54,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#5B3CF5",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6
+  headerLogoImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 14
   },
   verifiedBadge: {
     position: "absolute",

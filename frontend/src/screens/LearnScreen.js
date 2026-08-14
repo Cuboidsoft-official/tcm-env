@@ -58,17 +58,7 @@ const defaultHeroBanners = [
   }
 ];
 
-const defaultContinueLearning = [
-  {
-    id: "c_webdev_fullstack",
-    title: "Full Stack Web Development Masterclass",
-    subtitle: "React, Node.js, Express & MongoDB",
-    progress: 0,
-    icon: "code-tags",
-    iconColor: "#0A6836",
-    bgColor: "#E8F5E9"
-  }
-];
+const defaultContinueLearning = [];
 const defaultPopularCourses = [];
 
 const defaultTopCategories = [
@@ -196,16 +186,20 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             {
               id: data.courseId || "c_active",
               title: data.courseTitle,
-              subtitle: `Mentor: ${data.mentorName || "Aayushmann C."} • Live Batch Ready`,
+              subtitle: `Mentor: ${data.mentorName || "Mentor"} • Live Batch Ready`,
               progress: data.userProgress?.courseProgress || 0,
               icon: "code-tags",
               iconColor: "#0A6836",
               bgColor: "#E8F5E9"
             }
           ]);
+        } else {
+          setContinueLearningList([]);
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      setContinueLearningList([]);
+    }
   }
 
   const continueLearning = continueLearningList;

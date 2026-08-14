@@ -203,32 +203,7 @@ export function createVisualSeedData(passwordHash = "") {
         image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80"
       }
     ],
-    continueLearning: [
-      {
-        id: "c1",
-        title: "Python Basics",
-        progress: 60,
-        icon: "language-python",
-        iconColor: "#FFC107",
-        bgColor: "#FFF8E1"
-      },
-      {
-        id: "c2",
-        title: "Data Structures in Python",
-        progress: 45,
-        icon: "code-tags",
-        iconColor: "#5B3CF5",
-        bgColor: "#F0EDFF"
-      },
-      {
-        id: "c3",
-        title: "Java for Beginners",
-        progress: 30,
-        icon: "language-java",
-        iconColor: "#E76F51",
-        bgColor: "#FFF2EE"
-      }
-    ],
+    continueLearning: [],
     popularCourses: [
       {
         id: "p1",
