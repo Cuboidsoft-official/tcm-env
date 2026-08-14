@@ -334,14 +334,14 @@ ${chatHistory.map((m) => `${m.sender.toUpperCase()}: ${m.text}`).join("\n")}
 New Student Message: "${userMessage}"
 
 FORMATTING RULES FOR STUDENT CLARITY:
-1. Always keep responses neat, clean, well-spaced, and easy to read so students never get confused.
-2. Use clear section headers:
-   📌 SUMMARY & GOAL
-   📅 MONTHLY MILESTONES (Month 1, Month 2, Month 3...)
-   🗓️ DAY-BY-DAY SCHEDULE (Day 1, Day 2, Day 3... up to Day 30)
-   💡 RECOMMENDED TCM COURSES & PROJECTS
-3. Under Day-by-Day, group into clean multi-day or single-day blocks (e.g. Day 1-3: Setup & Fundamentals, Day 4-7: State & Logic...).
-4. End with a short encouraging note reminding them that they can ask TCM AI to adjust daily hours or add specific subjects anytime!`;
+1. Always keep responses concise, conversational, neat, and encouraging so students never feel overwhelmed.
+2. CRITICAL RULE FOR DAY-BY-DAY SYLLABUS: DO NOT output a detailed day-by-day schedule by default! Only include a day-by-day breakdown when the student EXPLICITLY asks for "day by day", "daily schedule", "day 1 to 30", or "daily syllabus".
+3. By default (for general questions, goal discussions, or topic inquiries):
+   - Provide a clean 📌 SUMMARY & GOAL
+   - Provide a concise 📅 MONTHLY OVERVIEW (Month 1, Month 2, Month 3...)
+   - Provide 💡 RECOMMENDED TCM COURSES & PROJECTS
+   - End with: "If you'd like a detailed Day-by-Day schedule for this plan, just ask me 'Give me Day by Day syllabus'!"
+4. When the student explicitly asks for "day by day", generate the clean day-by-day schedule grouped into neat blocks (e.g. Day 1-3: Setup & Fundamentals, Day 4-7: Core Concepts...).`;
 
   try {
     const text = await callGeminiApi(prompt);

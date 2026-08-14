@@ -21,11 +21,11 @@ import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
 const QUICK_SUGGESTIONS = [
-  "🌐 Full Stack Web (30-Day Plan)",
-  "🤖 AI & Python Data Science",
-  "📱 Mobile Apps (React Native)",
-  "⚡ Python & DSA Foundations",
-  "🏛️ UPSC & Govt Exam Prep"
+  "🌐 Full Stack Web Plan",
+  "🤖 AI & Data Science Plan",
+  "📱 Mobile App Dev Plan",
+  "⚡ Python & DSA Plan",
+  "🗓️ Give me Day-by-Day Syllabus"
 ];
 
 function FormattedAiMessage({ text, theme }) {
