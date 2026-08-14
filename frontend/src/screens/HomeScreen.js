@@ -4765,16 +4765,69 @@ function LoadingState() {
   );
 }
 
-function EmptyState({ title, text }) {
+function EmptyState({ title, text, icon = "text-search" }) {
+  const { theme } = useTheme();
   return (
-    <View style={styles.stateCard}>
-      <Text style={styles.stateTitle}>{title}</Text>
-      <Text style={styles.stateText}>{text}</Text>
+    <View
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: theme.cardBg,
+        borderColor: theme.border,
+        borderRadius: 18,
+        borderWidth: 1,
+        marginTop: 16,
+        paddingVertical: 32,
+        paddingHorizontal: 20,
+        gap: 10,
+        width: "100%",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: theme.isDark ? 0.3 : 0.05,
+        shadowRadius: 6
+      }}
+    >
+      <View
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: theme.badgeBg,
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 4
+        }}
+      >
+        <MaterialCommunityIcons name={icon} size={28} color={theme.primary} />
+      </View>
+      <Text
+        style={{
+          color: theme.text,
+          fontFamily: fonts.bold,
+          fontSize: 16,
+          textAlign: "center"
+        }}
+      >
+        {title}
+      </Text>
+      <Text
+        style={{
+          color: theme.subtext,
+          fontFamily: fonts.regular,
+          fontSize: 12,
+          lineHeight: 18,
+          textAlign: "center",
+          maxWidth: 280
+        }}
+      >
+        {text}
+      </Text>
     </View>
   );
 }
 
 function TabPlaceholder({ activeTab }) {
+  const { theme } = useTheme();
   const copy = {
     Learn: "Courses, notes and live classes will appear here.",
     Community: "Mentor posts, student stories and learning groups will appear here.",
@@ -4783,12 +4836,36 @@ function TabPlaceholder({ activeTab }) {
   };
 
   return (
-    <View style={styles.placeholderCard}>
-      <View style={styles.placeholderIcon}>
-        <Feather name="layers" size={23} color={colors.primary} />
+    <View
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: theme.cardBg,
+        borderColor: theme.border,
+        borderRadius: 18,
+        borderWidth: 1,
+        marginTop: 16,
+        paddingVertical: 28,
+        paddingHorizontal: 20,
+        gap: 8,
+        width: "100%"
+      }}
+    >
+      <View
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: theme.badgeBg,
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 4
+        }}
+      >
+        <Feather name="layers" size={22} color={theme.primary} />
       </View>
-      <Text style={styles.placeholderTitle}>{activeTab}</Text>
-      <Text style={styles.placeholderText}>{copy[activeTab]}</Text>
+      <Text style={{ color: theme.text, fontFamily: fonts.bold, fontSize: 15, textAlign: "center" }}>{activeTab}</Text>
+      <Text style={{ color: theme.subtext, fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, textAlign: "center" }}>{copy[activeTab]}</Text>
     </View>
   );
 }
