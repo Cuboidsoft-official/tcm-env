@@ -51,7 +51,7 @@ const communityPostSchema = new mongoose.Schema(
     media: {
       kind: {
         type: String,
-        enum: ["video", "code", "roadmap", "notes", "showcase", "none"],
+        enum: ["video", "code", "roadmap", "notes", "showcase", "photo", "none"],
         default: "none"
       },
       label: String,
