@@ -18,7 +18,8 @@ export default function SidebarDrawer({
   activeItem = "Home",
   onSelectMenuItem,
   onLogout,
-  onOpenGetVerified
+  onOpenGetVerified,
+  onOpenInstallPwa
 }) {
   const { theme } = useTheme();
   const name = user.name || "Ayushman";
@@ -130,6 +131,15 @@ export default function SidebarDrawer({
                 label="Home"
                 active={activeItem === "Home"}
                 onPress={() => handleNavigate("Home")}
+              />
+              <MenuItem
+                icon={<Feather name="download" size={18} color="#5B3CF5" />}
+                label="Install TCM App (PWA)"
+                active={false}
+                onPress={() => {
+                  onClose();
+                  if (onOpenInstallPwa) onOpenInstallPwa();
+                }}
               />
               <MenuItem
                 icon={<Feather name="users" size={18} />}

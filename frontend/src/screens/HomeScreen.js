@@ -70,7 +70,7 @@ import SidebarDrawer from "../components/SidebarDrawer";
 import GetVerifiedModal from "../components/GetVerifiedModal";
 import FeedbackModal from "../components/FeedbackModal";
 import AuthRequiredModal from "../components/AuthRequiredModal";
-import PwaInstallBanner from "../components/PwaInstallBanner";
+import PwaInstallBottomSheet from "../components/PwaInstallBottomSheet";
 import { useTheme } from "../context/ThemeContext";
 
 const fallbackTabs = [
@@ -356,39 +356,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const knownNotifIds = useRef(new Set());
   const isInitialNotifFetch = useRef(true);
-  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
-  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isPwaInstallModalOpen, setIsPwaInstallModalOpen] = useState(false);
   const { theme } = useTheme();
-
-  const user = home?.user || session?.user || {};
-
-  // PWA Install Prompt Listener (Android Chrome / Web)
-  useEffect(() => {
-    if (Platform.OS === "web" && typeof window !== "undefined") {
-      const handleBeforeInstallPrompt = (e) => {
-        e.preventDefault();
-        setDeferredInstallPrompt(e);
-        setShowInstallBanner(true);
-      };
-      window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
-      return () => {
-        window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      };
-    }
-  }, []);
-
-  async function handleInstallPwa() {
-    if (deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
-      const { outcome } = await deferredInstallPrompt.userChoice;
-      if (outcome === "accepted") {
-        console.log("User accepted PWA install prompt");
-      }
-      setDeferredInstallPrompt(null);
-      setShowInstallBanner(false);
-    }
-  }
 
   // 1. Automatic Push Notification Token Registration on Launch
   useEffect(() => {
@@ -951,7 +920,11 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   return (
     <SwipeBackWrapper onBack={activeBackAction} enabled={Boolean(activeBackAction)}>
       <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
-      <PwaInstallBanner />
+      <PwaInstallBottomSheet
+        visible={isPwaInstallModalOpen}
+        onClose={() => setIsPwaInstallModalOpen(false)}
+        onShowToast={setActiveToast}
+      />
       <View style={[styles.appShell, { backgroundColor: theme.bg }]}>
         {isFullScreenView ? (
           <View style={[styles.page, { width: isFullWidthView ? "100%" : contentWidth, flex: 1, paddingBottom: 0, paddingHorizontal: isFullWidthView ? 0 : undefined }]}>
@@ -1362,6 +1335,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
           activeItem={activeDrawerItem}
           onSelectMenuItem={handleSelectDrawerItem}
           onOpenGetVerified={() => setGetVerifiedModalOpen(true)}
+          onOpenInstallPwa={() => setIsPwaInstallModalOpen(true)}
           onLogout={() => {
             setSidebarOpen(false);
             if (session?.onLogout) {
