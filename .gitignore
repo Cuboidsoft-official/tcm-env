@@ -24,3 +24,4 @@ backend/.dev.vars
 verify-*.log
 backend/verify-*.log
 frontend/android/
+tcmindia-firebase-adminsdk-fbsvc-0eed6d0266.json
