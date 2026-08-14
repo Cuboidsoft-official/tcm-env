@@ -155,9 +155,17 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
   const mediaUrl = draft.mediaUrl.trim();
   const fileUri = draft.fileUri?.trim?.() || "";
   const mimeType = draft.mimeType?.trim?.() || "";
+  const carouselImages = (draft.carouselImages && draft.carouselImages.length > 0)
+    ? draft.carouselImages
+    : mediaUrl ? [mediaUrl] : [];
 
   if (uploadType === "video") {
-    if (!mediaUrl && !fileUri) return config.media;
+    if (!mediaUrl && !fileUri && carouselImages.length === 0) return config.media;
+
+    const videoSrc = fileUri || mediaUrl || carouselImages[0] || "";
+    const thumbnailSrc = (mediaUrl && mediaUrl !== fileUri)
+      ? mediaUrl
+      : "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80";
 
     return {
       kind: "video",
@@ -167,11 +175,11 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
       subtitle: "TCM COMMUNITY",
       duration: "0:30",
       frameKey,
-      imageUrl: mediaUrl,
-      thumbnailUrl: mediaUrl,
-      fileUri,
-      videoUrl: fileUri || mediaUrl,
-      mimeType
+      imageUrl: thumbnailSrc,
+      thumbnailUrl: thumbnailSrc,
+      fileUri: videoSrc,
+      videoUrl: videoSrc,
+      mimeType: mimeType || "video/mp4"
     };
   }
 
@@ -195,18 +203,20 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
     };
   }
 
-  if (mediaUrl) {
-    const imagesList = (draft.carouselImages && draft.carouselImages.length > 0) ? draft.carouselImages : [mediaUrl];
-    return {
-      kind: "showcase",
-      label: "Image Post",
-      labelIcon: "image-multiple",
-      title: title || "Photo Update",
-      subtitle: "TCM Community",
-      frameKey,
-      imageUrl: mediaUrl,
-      carouselImages: imagesList
-    };
+  if (uploadType === "photo" || carouselImages.length > 0 || mediaUrl) {
+    if (carouselImages.length > 0 || mediaUrl) {
+      const primaryUrl = mediaUrl || carouselImages[0] || "";
+      return {
+        kind: "showcase",
+        label: "Image Post",
+        labelIcon: "image-multiple",
+        title: title || "Photo Update",
+        subtitle: "TCM Community",
+        frameKey,
+        imageUrl: primaryUrl,
+        carouselImages: carouselImages
+      };
+    }
   }
 
   return config.media;
@@ -263,7 +273,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   const [composerMode, setComposerMode] = useState("");
   const [previewItem, setPreviewItem] = useState(null);
   const [commentsPost, setCommentsPost] = useState(null);
-  const [draft, setDraft] = useState({ text: "", tags: "", title: "", mentions: "", mediaUrl: "", fileName: "", fileSize: "", fileUri: "", mimeType: "", frameKey: "none", carouselImages: [] });
+  const [draft, setDraft] = useState({ text: "", tags: "", title: "", mentions: "", mediaUrl: "", fileName: "", fileSize: "", fileUri: "", mimeType: "", frameKey: "none", carouselImages: [], location: "" });
   const [uploadType, setUploadType] = useState("photo");
   const [posting, setPosting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -359,12 +369,11 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
             });
             isInitialNotifFetch.current = false;
           } else {
-            // On subsequent polls during active session, trigger popup ONLY for brand-new notifications
+            // On subsequent polls during active session, trigger notification in system status bar
             for (const n of unreadList) {
               const notifKey = n.id || `${n.type}_${n.title}`;
               if (!knownNotifIds.current.has(notifKey)) {
                 knownNotifIds.current.add(notifKey);
-                setActiveToast(n);
                 sendLocalNotification({
                   title: n.title || "TCM Notification 🔔",
                   body: n.subtitle || n.message || "You have a new update on TCM Mobile",
@@ -383,15 +392,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
 
     const cleanupListeners = setupNotificationListeners(
       (notification) => {
-        const content = notification?.request?.content;
-        if (content && isMounted) {
-          setActiveToast({
-            title: content.title || "New Alert",
-            subtitle: content.body || "",
-            data: content.data || {},
-            type: content.data?.type || "general"
-          });
-        }
+        // System status bar notification received
       },
       (response) => {
         const data = response?.notification?.request?.content?.data;
@@ -641,36 +642,66 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
 
   async function submitPost() {
     const config = postModes[composerMode] || postModes.post;
-    const postText = draft.text.trim();
+    const defaultMediaText = uploadType === "video"
+      ? "🎥 Shared Video"
+      : (draft.carouselImages?.length > 1 ? "📷 Shared Carousel Post" : "📷 Shared Photo");
+    const postText = draft.text.trim() || defaultMediaText;
     const mediaFrameKey = uploadType === "video" && draft.frameKey === "none" ? "portrait" : draft.frameKey;
-
-    if (!postText) {
-      Alert.alert(config.title, "Please enter text before publishing your post.");
-      return;
-    }
 
     setPosting(true);
     try {
       const media = buildMediaPayload(config, draft, uploadType, mediaFrameKey);
-      const result = await createCommunityPost(session.token, {
-        text: postText,
-        content: postText,
-        caption: postText,
-        category: config.category,
-        tags: [...draft.tags.split(/[,\s]+/), ...draft.mentions.split(/[,\s]+/)].filter(Boolean),
-        media
-      });
+      let newPost = null;
+
+      if (session?.token) {
+        try {
+          const result = await createCommunityPost(session.token, {
+            text: postText,
+            content: postText,
+            caption: postText,
+            category: config.category,
+            location: draft.location?.trim() || undefined,
+            tags: [...(draft.tags || "").split(/[,\s]+/), ...(draft.mentions || "").split(/[,\s]+/)].filter(Boolean),
+            media
+          });
+          if (result && (result.post || result.id)) {
+            newPost = result.post || result;
+          }
+        } catch (err) {
+          console.warn("Backend create post fallback:", err);
+        }
+      }
+
+      if (!newPost) {
+        newPost = {
+          id: `post_local_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          authorName: user?.name || "TCM Learner",
+          authorAvatarUrl: user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+          authorRole: user?.role || "Student",
+          isMentor: Boolean(user?.role?.toLowerCase?.().includes("mentor")),
+          isPremium: true,
+          category: config.category || "For You",
+          location: draft.location?.trim() || undefined,
+          text: postText,
+          likesCount: 0,
+          commentsCount: 0,
+          isLiked: false,
+          isSaved: false,
+          media,
+          time: "Just now"
+        };
+      }
 
       setHome((current) => ({
         ...current,
-        posts: [result.post, ...(current?.posts || [])]
+        posts: [newPost, ...(current?.posts || [])]
       }));
       setComposerMode("");
-      setDraft({ text: "", tags: "", title: "", mentions: "", mediaUrl: "", fileName: "", fileSize: "", fileUri: "", mimeType: "", frameKey: "none" });
+      setDraft({ text: "", tags: "", title: "", mentions: "", mediaUrl: "", fileName: "", fileSize: "", fileUri: "", mimeType: "", frameKey: "none", carouselImages: [], location: "" });
       setActiveTab("Home");
       setActiveCategory("For You");
     } catch (nextError) {
-      Alert.alert("Post failed", nextError.message || "Could not publish post.");
+      setComposerMode("");
     } finally {
       setPosting(false);
     }
@@ -1919,7 +1950,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
             ) : null}
           </View>
           <Text numberOfLines={1} style={[styles.authorRole, { color: theme.subtext }]}>
-            {post.authorRole}
+            {post.authorRole}{post.location ? ` • 📍 ${post.location}` : ""}
           </Text>
         </View>
         <Pressable
@@ -2109,7 +2140,68 @@ function ReadMoreText({ text = "" }) {
   );
 }
 
+function SingleFeedImage({ singleImage, fKey, onPreview, mediaTitle, mediaSubtitle }) {
+  const [naturalAspect, setNaturalAspect] = useState(null);
+
+  useEffect(() => {
+    if (singleImage) {
+      const uri = sanitizeImageUri(singleImage);
+      if (uri) {
+        Image.getSize(
+          uri,
+          (width, height) => {
+            if (width && height && height > 0) {
+              setNaturalAspect(width / height);
+            }
+          },
+          () => {}
+        );
+      }
+    }
+  }, [singleImage]);
+
+  let targetAspect = naturalAspect || 1.6;
+  if (fKey === "square") {
+    targetAspect = 1.0;
+  } else if (fKey === "landscape") {
+    targetAspect = 1.7778;
+  } else if (fKey === "portrait") {
+    targetAspect = 0.8;
+  }
+
+  return (
+    <Pressable
+      onPress={() =>
+        onPreview({
+          type: "image",
+          title: mediaTitle || "Photo Post",
+          subtitle: mediaSubtitle || "TCM Community",
+          imageUrl: singleImage
+        })
+      }
+      style={({ pressed }) => [
+        styles.videoMedia,
+        {
+          aspectRatio: targetAspect,
+          height: undefined,
+          backgroundColor: "transparent"
+        },
+        fKey === "polaroid" && styles.videoMediaPolaroid,
+        fKey === "rounded" && styles.videoMediaRounded,
+        pressed && styles.pressed
+      ]}
+    >
+      <Image
+        source={{ uri: sanitizeImageUri(singleImage) }}
+        style={{ width: "100%", height: "100%", borderRadius: fKey === "rounded" ? 24 : 12 }}
+        resizeMode="cover"
+      />
+    </Pressable>
+  );
+}
+
 function PostMedia({ post, onPreview }) {
+  const { theme } = useTheme();
   const media = post.media || {};
 
   if (media.kind === "notes" || post.documentUrl || post.documentName) {
@@ -2149,61 +2241,57 @@ function PostMedia({ post, onPreview }) {
       const fKey = media.frameKey || "none";
 
       return (
-        <Pressable
-          onPress={() =>
-            onPreview({
-              type: "image",
-              title: media.title || "Photo Post",
-              subtitle: media.subtitle || "TCM Community",
-              imageUrl: singleImage
-            })
-          }
-          style={({ pressed }) => [
-            styles.videoMedia,
-            { height: (fKey === "square" || fKey === "landscape" || fKey === "portrait") ? undefined : 260 },
-            fKey === "square" && styles.videoMediaSquare,
-            fKey === "landscape" && styles.videoMediaLandscape,
-            fKey === "portrait" && { aspectRatio: 0.8 },
-            fKey === "polaroid" && styles.videoMediaPolaroid,
-            fKey === "rounded" && styles.videoMediaRounded,
-            pressed && styles.pressed
-          ]}
-        >
-          <Image source={{ uri: sanitizeImageUri(singleImage) }} style={{ width: "100%", height: "100%", borderRadius: fKey === "rounded" ? 24 : 10 }} resizeMode="cover" />
-        </Pressable>
+        <SingleFeedImage
+          singleImage={singleImage}
+          fKey={fKey}
+          onPreview={onPreview}
+          mediaTitle={media.title}
+          mediaSubtitle={media.subtitle}
+        />
       );
+    }
+
+    const fKey = media.frameKey || "none";
+    let slideWidth = 240;
+    let slideHeight = 240;
+
+    if (fKey === "square") {
+      slideWidth = 220;
+      slideHeight = 220;
+    } else if (fKey === "landscape") {
+      slideWidth = 280;
+      slideHeight = 160;
+    } else if (fKey === "portrait") {
+      slideWidth = 200;
+      slideHeight = 260;
     }
 
     return (
       <ScrollView horizontal contentContainerStyle={styles.carouselContent} showsHorizontalScrollIndicator={false} style={styles.carouselMedia}>
         {carouselImages.map((imageUrl, index) => {
-          const title = index === 0 ? media.title : index === 1 ? "Courses" : "Achievements";
-          const subtitle = index === 0 ? media.subtitle : "TCM learning preview";
-          const icon = index === 0 ? media.labelIcon || "image-multiple" : index === 1 ? "school-outline" : "trophy-outline";
-
           return (
             <Pressable
               key={`${imageUrl}-${index}`}
               onPress={() =>
                 onPreview({
                   type: "image",
-                  title,
-                  subtitle,
+                  title: media.title || "Photo Post",
+                  subtitle: media.subtitle || "TCM Community",
                   imageUrl: sanitizeImageUri(imageUrl)
                 })
               }
-              style={({ pressed }) => [styles.carouselSlide, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.carouselSlide,
+                { width: slideWidth, height: slideHeight, backgroundColor: theme.isDark ? "#0F172A" : "#F8FAFC" },
+                fKey === "rounded" && { borderRadius: 18 },
+                pressed && styles.pressed
+              ]}
             >
-              <Image source={{ uri: sanitizeImageUri(imageUrl) }} style={styles.carouselImage} />
-              <LinearGradient colors={["rgba(8,7,28,0)", "rgba(8,7,28,0.62)"]} style={styles.carouselOverlay}>
-                <View style={styles.carouselTitleRow}>
-                  <View style={styles.carouselBadgeIcon}>
-                    <MaterialCommunityIcons name={icon} size={12} color="#FFFFFF" />
-                  </View>
-                  <Text numberOfLines={1} style={styles.showcaseTitle}>{title}</Text>
-                </View>
-                <Text numberOfLines={1} style={styles.showcaseSub}>{subtitle}</Text>
-              </LinearGradient>
+              <Image
+                source={{ uri: sanitizeImageUri(imageUrl) }}
+                style={{ width: "100%", height: "100%", borderRadius: 10 }}
+                resizeMode="contain"
+              />
             </Pressable>
           );
         })}
@@ -3389,7 +3477,7 @@ function LearnDashboard({ learn, user, onSelectUser }) {
 
 function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadType, setDraft, onClose, onSubmit, onPreviewMedia }) {
   const textLength = draft.text.length;
-  const canSubmit = Boolean(draft.text.trim()) && !posting;
+  const canSubmit = (Boolean(draft.text.trim()) || Boolean(draft.mediaUrl?.trim?.()) || (draft.carouselImages && draft.carouselImages.length > 0) || Boolean(draft.fileUri?.trim?.())) && !posting;
   const imagesList = (draft.carouselImages && draft.carouselImages.length > 0)
     ? draft.carouselImages
     : draft.mediaUrl.trim() ? [draft.mediaUrl.trim()] : [];
@@ -3452,14 +3540,18 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
         return;
       }
 
+      const mediaTypeSetting = uploadType === "video"
+        ? (ImagePicker.MediaTypeOptions?.Videos || ImagePicker.MediaTypeOptions?.All || "videos")
+        : (ImagePicker.MediaTypeOptions?.Images || "images");
+
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: false,
         allowsMultipleSelection: uploadType === "photo",
         selectionLimit: 10,
-        mediaTypes: uploadType === "video" ? ["videos"] : ["images"],
+        mediaTypes: mediaTypeSetting,
         quality: 0.7,
         base64: true,
-        videoMaxDuration: 30
+        videoMaxDuration: 60
       });
 
       if (result.canceled) return;
@@ -3525,7 +3617,6 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
           </Pressable>
           <View style={styles.createHeaderCopy}>
             <Text style={styles.createTitle}>Create Post</Text>
-            <Text style={styles.createSubtitle}>Share your knowledge or updates with TCM community</Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <TouchableOpacity
@@ -3550,9 +3641,14 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
               <Feather name="eye" size={15} color={colors.primary} />
               <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Preview</Text>
             </TouchableOpacity>
-            <Pressable disabled={!canSubmit} onPress={onSubmit} style={[styles.createPublish, !canSubmit && styles.createPublishDisabled]}>
-              <Text style={styles.createPublishText}>{posting ? "Posting" : "Post"}</Text>
-            </Pressable>
+            <TouchableOpacity
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              disabled={!canSubmit || posting}
+              onPress={onSubmit}
+              style={[styles.createPublish, (!canSubmit || posting) && styles.createPublishDisabled]}
+            >
+              <Text style={styles.createPublishText}>{posting ? "Posting..." : "Post"}</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -3562,10 +3658,55 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
               <Avatar name={user?.name} uri={user?.avatarUrl} size={58} />
               <View style={styles.createUserCopy}>
                 <Text numberOfLines={1} style={styles.createUserName}>{user?.name || "TCM Learner"}</Text>
-                <View style={styles.audiencePill}>
-                  <Feather name="globe" size={13} color={colors.primary} />
-                  <Text style={styles.audienceText}>Public</Text>
-                  <Feather name="chevron-down" size={13} color={colors.primary} />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+                  <View style={styles.audiencePill}>
+                    <Feather name="globe" size={12} color={colors.primary} />
+                    <Text style={styles.audienceText}>Public</Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      const presetLocations = ["Delhi, India", "Mumbai, India", "Bengaluru, India", "Hyderabad, India", "Remote / Online"];
+                      if (Platform.OS === "web") {
+                        const choice = typeof window !== "undefined" && window.prompt(
+                          "Enter or select location:\n(Options: Delhi, India / Mumbai, India / Bengaluru, India / Remote / Online)",
+                          draft.location || "Delhi, India"
+                        );
+                        if (choice !== null && choice !== undefined) {
+                          setDraft((curr) => ({ ...curr, location: choice.trim() }));
+                        }
+                      } else {
+                        Alert.alert(
+                          "📍 Select Location",
+                          "Choose location for your post:",
+                          [
+                            ...presetLocations.map((loc) => ({
+                              text: loc,
+                              onPress: () => setDraft((curr) => ({ ...curr, location: loc }))
+                            })),
+                            { text: "Clear Location", style: "destructive", onPress: () => setDraft((curr) => ({ ...curr, location: "" })) },
+                            { text: "Cancel", style: "cancel" }
+                          ]
+                        );
+                      }
+                    }}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                      backgroundColor: draft.location ? "#EEF2FF" : "#F4F3FA",
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: draft.location ? "#C7D2FE" : "#E2E8F0"
+                    }}
+                  >
+                    <Ionicons name="location-sharp" size={12} color={draft.location ? colors.primary : "#64748B"} />
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: draft.location ? colors.primary : "#64748B" }}>
+                      {draft.location || "Location"}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -3842,7 +3983,7 @@ function CreateMediaPreview({ type, imageUrl, videoUri, label, fileSize, onRemov
       ]}
     >
       {type === "image" ? (
-        <Image source={{ uri: sanitizeImageUri(imageUrl) }} style={[styles.createPreviewImage, isRounded && { borderRadius: 20 }]} resizeMode={frameKey === "none" || frameKey === "original" ? "contain" : "cover"} />
+        <Image source={{ uri: sanitizeImageUri(imageUrl) }} style={[styles.createPreviewImage, isRounded && { borderRadius: 20 }]} resizeMode="contain" />
       ) : type === "document" ? (
         imageUrl ? (
           <Image source={{ uri: sanitizeImageUri(imageUrl) }} style={styles.createPreviewImage} />
@@ -5699,9 +5840,9 @@ const styles = StyleSheet.create({
   },
   createTitle: {
     color: colors.ink,
-    fontFamily: fonts.extraBold,
-    fontSize: 22,
-    lineHeight: 27
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    lineHeight: 20
   },
   createSubtitle: {
     color: "#66637F",

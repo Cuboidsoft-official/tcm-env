@@ -692,17 +692,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                       style={styles.richMediaImageContainer}
                     >
                       <Image source={{ uri: mediaUrlToDisplay }} style={styles.richMediaImage} resizeMode="cover" />
-                      <View style={styles.imageOverlayPill}>
-                        <Feather name="maximize-2" size={11} color="#FFFFFF" style={{ marginRight: 4 }} />
-                        <Text style={styles.imageOverlayPillText}>Tap for Full Screen</Text>
-                      </View>
                     </Pressable>
-
-                    {msg.fileName && !msg.fileName.includes("Photo Attachment") && !msg.fileName.includes("Device Gallery Photo") && !msg.fileName.startsWith("data:image") ? (
-                      <Text style={[styles.imageCaptionFilename, isMe ? styles.imageCaptionFilenameMe : [styles.imageCaptionFilenameOther, { color: theme.subtext }]]}>
-                        {msg.fileName}
-                      </Text>
-                    ) : null}
                   </View>
                 ) : null}
 

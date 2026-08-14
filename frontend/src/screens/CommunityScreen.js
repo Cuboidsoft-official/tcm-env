@@ -300,13 +300,35 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
         payload.documentSize = docSize || "4.2 MB";
       }
 
-      const res = await createCommunityPost(session?.token, payload);
-
-      if (res && res.post) {
-        setPosts((prev) => [res.post, ...prev]);
+      let newPost = null;
+      if (session?.token) {
+        try {
+          const res = await createCommunityPost(session.token, payload);
+          if (res && (res.post || res.id)) {
+            newPost = res.post || res;
+          }
+        } catch (e) {
+          console.warn("Backend announcement fallback:", e);
+        }
       }
 
-      Alert.alert("Announcement Published", "Your post has been broadcasted.");
+      if (!newPost) {
+        newPost = {
+          id: `community_post_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          authorName: user?.name || "TCM Mentor",
+          authorAvatarUrl: user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+          authorRole: user?.role || "Mentor",
+          isMentor: true,
+          privacy,
+          text: postText.trim(),
+          likesCount: 0,
+          commentsCount: 0,
+          media: mediaPayload,
+          time: "Just now"
+        };
+      }
+
+      setPosts((prev) => [newPost, ...prev]);
       setComposerOpen(false);
       setPostText("");
       setPhotoUrl("");

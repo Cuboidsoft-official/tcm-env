@@ -302,6 +302,8 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
   const [resultData, setResultData] = useState(null);
   const [savingResult, setSavingResult] = useState(false);
 
+  const [startCountdown, setStartCountdown] = useState(null);
+
   // Persistent seen questions tracking (ZERO REPEATS)
   const [seenQIds, setSeenQIds] = useState(() => {
     try {
@@ -345,6 +347,29 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
     }
   }, [visible]);
 
+  // 3-Second Start Countdown Effect
+  useEffect(() => {
+    if (startCountdown !== null) {
+      if (typeof startCountdown === "number" && startCountdown > 1) {
+        const timer = setTimeout(() => {
+          setStartCountdown(startCountdown - 1);
+        }, 1000);
+        return () => clearTimeout(timer);
+      } else if (startCountdown === 1) {
+        const timer = setTimeout(() => {
+          setStartCountdown("GO!");
+        }, 1000);
+        return () => clearTimeout(timer);
+      } else if (startCountdown === "GO!") {
+        const timer = setTimeout(() => {
+          setStartCountdown(null);
+          setExamStarted(true);
+        }, 600);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [startCountdown]);
+
   // Countdown timer effect
   useEffect(() => {
     if (examStarted && !examFinished) {
@@ -363,6 +388,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
   }, [examStarted, examFinished]);
 
   const resetExamState = () => {
+    setStartCountdown(null);
     setExamStarted(false);
     setCurrentIndex(0);
     setSelectedAnswers({});
@@ -428,9 +454,10 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
     } catch (e) {}
 
     setQuestions(qList);
-    setExamStarted(true);
     setExamFinished(false);
     setTimeLeft(360);
+    // Launch 3-second countdown before starting exam
+    setStartCountdown(3);
   };
 
   const handleSelectOption = (optIndex) => {
@@ -499,14 +526,20 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
   };
 
   const confirmCancelExam = () => {
-    Alert.alert(
-      "Cancel Exam?",
-      "Are you sure you want to cancel the exam? Your progress will be discarded and will NOT be added to your profile scoreboard.",
-      [
-        { text: "Continue Exam", style: "cancel" },
-        { text: "Cancel & Discard", style: "destructive", onPress: handleCancelExam }
-      ]
-    );
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm("Are you sure you want to cancel the exam? Your progress will be discarded.")) {
+        handleCancelExam();
+      }
+    } else {
+      Alert.alert(
+        "Cancel Exam?",
+        "Are you sure you want to cancel the exam? Your progress will be discarded and will NOT be added to your profile scoreboard.",
+        [
+          { text: "Continue Exam", style: "cancel" },
+          { text: "Cancel & Discard", style: "destructive", onPress: handleCancelExam }
+        ]
+      );
+    }
   };
 
   const formatTime = (secs) => {
@@ -524,9 +557,51 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
-        
+        {/* === SCENARIO 0: 3-SECOND COUNTDOWN OVERLAY === */}
+        {startCountdown !== null && (
+          <View style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 99999,
+            backgroundColor: theme.isDark ? "rgba(15, 23, 42, 0.96)" : "rgba(255, 255, 255, 0.96)",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24
+          }}>
+            <View style={{
+              width: 140,
+              height: 140,
+              borderRadius: 70,
+              backgroundColor: theme.badgeBg,
+              borderWidth: 4,
+              borderColor: theme.primary,
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 24,
+              shadowColor: theme.primary,
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.25,
+              shadowRadius: 16,
+              elevation: 10
+            }}>
+              <Text style={{ fontSize: startCountdown === "GO!" ? 36 : 64, fontFamily: fonts.bold, color: theme.primary }}>
+                {startCountdown}
+              </Text>
+            </View>
+            <Text style={{ fontSize: 20, fontFamily: fonts.bold, color: theme.text, textAlign: "center", marginBottom: 6 }}>
+              Get Ready!
+            </Text>
+            <Text style={{ fontSize: 13, fontFamily: fonts.medium, color: theme.subtext, textAlign: "center" }}>
+              Exam starting in a moment... Focus and good luck!
+            </Text>
+          </View>
+        )}
+
         {/* === SCENARIO 1: START SCREEN (WITH SPECIFIC SKILL SELECTION) === */}
-        {!examStarted && !examFinished && (
+        {!examStarted && !examFinished && startCountdown === null && (
           <ScrollView contentContainerStyle={{ padding: 20, alignItems: "center", paddingTop: 50 }}>
             <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: theme.badgeBg, alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
               <MaterialCommunityIcons name="brain" size={36} color={theme.primary} />

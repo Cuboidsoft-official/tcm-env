@@ -120,6 +120,7 @@ export async function setupPushNotifications(sessionToken, force = false) {
         sound: "default",
         enableVibrate: true,
         showBadge: true,
+        priority: "max"
       });
     }
 
@@ -135,14 +136,7 @@ export async function setupPushNotifications(sessionToken, force = false) {
     let finalStatus = existingStatus;
 
     if (existingStatus !== "granted" || force) {
-      const { status } = await Notifications.requestPermissionsAsync({
-        ios: {
-          allowAlert: true,
-          allowBadge: true,
-          allowSound: true,
-          allowAnnounce: true,
-        },
-      });
+      const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
 
