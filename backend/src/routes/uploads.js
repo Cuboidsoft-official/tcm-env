@@ -169,30 +169,33 @@ function isPlayable({ videoCodec, audioCodec }) {
 // Browsers only reliably play mp4/webm/ogv. For anything else we remux or
 // re-encode to an H.264/AAC mp4 so the file actually plays in the app.
 // Falls back to the original file whenever ffmpeg/ffprobe is unavailable.
-async function maybeTranscodeVideo(mime, origPath, outPath) {
+async function maybeTranscodeVideo(mime, origPath, baseName) {
   const ext = MIME_MAP[mime];
+  const finalPath = `${baseName}.mp4`;
   if (!ext || !mime.startsWith("video/")) return origPath;
   if (ext === "webm" || ext === "ogv") return origPath;
 
-  const nativeContainers = ["mp4", "mov", "m4v", "3gp"];
   const probe = await probeVideo(origPath);
-  if (nativeContainers.includes(ext) && isPlayable(probe)) {
+  if (ext === "mp4" && isPlayable(probe)) {
     return origPath;
   }
 
-  const remux = await runCmd("ffmpeg", ["-y", "-i", origPath, "-c", "copy", "-movflags", "+faststart", outPath], TRANSCODE_TIMEOUT);
-  if (remux.ok && isPlayable(await probeVideo(outPath))) {
-    fs.rmSync(origPath, { force: true });
-    return outPath;
+  const tmpOut = `${baseName}.trx-tmp.mp4`;
+  const remux = await runCmd("ffmpeg", ["-y", "-i", origPath, "-c", "copy", "-movflags", "+faststart", tmpOut], TRANSCODE_TIMEOUT);
+  if (remux.ok && isPlayable(await probeVideo(tmpOut))) {
+    fs.renameSync(tmpOut, finalPath);
+    if (origPath !== finalPath) fs.rmSync(origPath, { force: true });
+    return finalPath;
   }
 
-  const reencode = await runCmd("ffmpeg", ["-y", "-i", origPath, "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", outPath], TRANSCODE_TIMEOUT);
+  const reencode = await runCmd("ffmpeg", ["-y", "-i", origPath, "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", tmpOut], TRANSCODE_TIMEOUT);
   if (reencode.ok) {
-    fs.rmSync(origPath, { force: true });
-    return outPath;
+    fs.renameSync(tmpOut, finalPath);
+    if (origPath !== finalPath) fs.rmSync(origPath, { force: true });
+    return finalPath;
   }
 
-  fs.rmSync(outPath, { force: true });
+  fs.rmSync(tmpOut, { force: true });
   return origPath;
 }
 
@@ -217,7 +220,7 @@ uploadsRouter.post("/file", requireAuth, async (req, res) => {
     const origPath = path.join(UPLOADS_DIR, `${baseName}.${MIME_MAP[parsed.mime]}`);
     fs.writeFileSync(origPath, parsed.buf, { mode: 0o644 });
 
-    const finalPath = await maybeTranscodeVideo(parsed.mime, origPath, path.join(UPLOADS_DIR, `${baseName}.mp4`));
+    const finalPath = await maybeTranscodeVideo(parsed.mime, origPath, path.join(UPLOADS_DIR, baseName));
     const name = path.basename(finalPath);
 
     res.json({ url: `${PUBLIC_ORIGIN}/uploads/${name}` });
