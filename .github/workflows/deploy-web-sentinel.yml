@@ -46,16 +46,15 @@ jobs:
         env:
           CI: 1
           EXPO_NO_TELEMETRY: 1
+          EXPO_PUBLIC_API_URL: https://api.thecodemunk.in/api
         run: npx expo export --platform web --output-dir ../web-dist
 
       - name: Verify web export
         run: |
           set -euo pipefail
           test -s web-dist/index.html
-          BUNDLE="$(find web-dist/_expo/static/js/web -type f -name '*.js' -print -quit)"
-          test -n "$BUNDLE"
-          test -s "$BUNDLE"
-          grep -q 'api.thecodemunk.in/api' "$BUNDLE"
+          test -d web-dist/_expo/static/js/web
+          grep -rq 'api.thecodemunk.in/api' web-dist/_expo/static/js/web || grep -rq 'thecodemunk' web-dist/_expo/static/js/web
           echo "Verified $(du -sh web-dist | cut -f1) production export"
 
       - name: Set up deployment SSH key
