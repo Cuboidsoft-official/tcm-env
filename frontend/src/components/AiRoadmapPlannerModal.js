@@ -16,93 +16,127 @@ import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/ve
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
-const TRACK_OPTIONS = [
-  { id: "web", title: "🌐 Full Stack Web", desc: "React, Node.js, Next.js & System Design", color: "#0A6836" },
-  { id: "ai", title: "🤖 AI & Machine Learning", desc: "Python, PyTorch, LLMs & Data Science", color: "#2563EB" },
-  { id: "app", title: "📱 Mobile App Dev", desc: "React Native, Expo & iOS/Android Apps", color: "#7C3AED" },
-  { id: "cloud", title: "☁️ Cloud & DevOps", desc: "AWS, Docker, Kubernetes & CI/CD", color: "#D97706" },
-  { id: "cyber", title: "🛡️ Cybersecurity & GATE", desc: "Ethical Hacking, DSA & Computer Networks", color: "#DC2626" },
-  { id: "govt", title: "🏛️ Govt & UPSC Prep", desc: "Polity, General Studies & Mock Tests", color: "#059669" }
+const AVAILABLE_COURSES = [
+  { id: "c1", name: "Full Stack Web Masterclass", category: "Development", price: 4999, durationMonths: 3, icon: "code-slash" },
+  { id: "c2", name: "AI & Data Science Masterclass", category: "Artificial Intelligence", price: 5999, durationMonths: 3, icon: "sparkles" },
+  { id: "c3", name: "Mobile App Dev (React Native)", category: "Mobile Apps", price: 3999, durationMonths: 2, icon: "phone-portrait" },
+  { id: "c4", name: "Python & DSA Foundations", category: "Core Coding", price: 2999, durationMonths: 2, icon: "terminal" },
+  { id: "c5", name: "UPSC & Govt Exam GS Masterclass", category: "Govt Preparation", price: 3499, durationMonths: 3, icon: "school" }
 ];
 
-const DURATION_OPTIONS = [
-  "⚡ 1 Month Sprint",
-  "📚 3 Months Mastery",
-  "🏆 6 Months Career Path"
+const TARGET_GOAL_OPTIONS = [
+  { id: "job", title: "Job Placement & ATS Resume", icon: "briefcase" },
+  { id: "exam", title: "Competitive Exam Preparation", icon: "award" },
+  { id: "projects", title: "Real World Live Projects", icon: "layers" }
 ];
 
-const TIME_COMMITMENT_OPTIONS = [
-  "⏱️ 1-2 Hours / Day",
-  "🔥 3-4 Hours / Day",
-  "🚀 5+ Hours / Day"
+const STUDY_COMMITMENT_OPTIONS = [
+  "1-2 Hours / Day",
+  "3-4 Hours / Day",
+  "5+ Hours / Day"
 ];
 
 export default function AiRoadmapPlannerModal({ visible, onClose, user = {} }) {
   const { theme } = useTheme();
-  const [selectedTrack, setSelectedTrack] = useState(TRACK_OPTIONS[0]);
-  const [selectedDuration, setSelectedDuration] = useState(DURATION_OPTIONS[1]);
-  const [selectedTime, setSelectedTime] = useState(TIME_COMMITMENT_OPTIONS[1]);
+  const [selectedCourseIds, setSelectedCourseIds] = useState(["c1"]);
+  const [selectedGoal, setSelectedGoal] = useState("job");
+  const [selectedCommitment, setSelectedCommitment] = useState("3-4 Hours / Day");
   const [generatedRoadmap, setGeneratedRoadmap] = useState(null);
   const [generating, setGenerating] = useState(false);
 
   if (!visible) return null;
 
-  function handleGenerateRoadmap() {
+  const selectedCourses = AVAILABLE_COURSES.filter((c) => selectedCourseIds.includes(c.id));
+  const totalPackageAmount = selectedCourses.reduce((sum, c) => sum + c.price, 0);
+  const totalDurationMonths = selectedCourses.reduce((sum, c) => sum + c.durationMonths, 0);
+
+  function toggleCourseSelection(courseId) {
+    setGeneratedRoadmap(null);
+    setSelectedCourseIds((prev) => {
+      if (prev.includes(courseId)) {
+        if (prev.length === 1) {
+          Alert.alert("Course Selection", "Please keep at least 1 course selected to build your roadmap.");
+          return prev;
+        }
+        return prev.filter((id) => id !== courseId);
+      } else {
+        return [...prev, courseId];
+      }
+    });
+  }
+
+  function handleGenerateAiRoadmap() {
+    if (selectedCourseIds.length === 0) {
+      Alert.alert("Select Course", "Please pick at least 1 course from the list below.");
+      return;
+    }
+
     setGenerating(true);
     setTimeout(() => {
       setGenerating(false);
+
+      const goalObj = TARGET_GOAL_OPTIONS.find((g) => g.id === selectedGoal);
+      const courseNames = selectedCourses.map((c) => c.name).join(" + ");
+
       setGeneratedRoadmap({
-        title: `${selectedTrack.title} (${selectedDuration.split(" ")[1]} Plan)`,
-        track: selectedTrack,
-        duration: selectedDuration,
-        commitment: selectedTime,
-        steps: [
+        title: `AI Roadmap: ${courseNames}`,
+        totalPrice: totalPackageAmount,
+        totalDuration: totalDurationMonths,
+        goal: goalObj?.title || "Career Growth",
+        commitment: selectedCommitment,
+        phases: [
           {
-            phase: "Phase 1: Foundation & Core Concepts",
-            duration: "Weeks 1 - 2",
-            details: "Master syntax, core fundamentals, version control (Git/GitHub), and building starter projects."
+            title: "Phase 1: Foundations & Core Concepts",
+            duration: "Month 1",
+            details: `Master core concepts of ${selectedCourses[0]?.name || "selected courses"}. Practice 15+ coding/theory challenges weekly with ${selectedCommitment}.`
           },
           {
-            phase: "Phase 2: Deep Dive & Industry Projects",
-            duration: "Weeks 3 - 6",
-            details: "Build 2 full-fledged real-world projects with API integrations, state management, and DB connection."
+            title: "Phase 2: Project Building & Applied Practical",
+            duration: "Month 2",
+            details: `Build 2 production-grade real-world projects based on your ${selectedCourses.map((c) => c.category).join(" & ")} package.`
           },
           {
-            phase: "Phase 3: Advanced Optimization & Architecture",
-            duration: "Weeks 7 - 10",
-            details: "Focus on clean architecture, performance optimization, security, and automated testing."
+            title: "Phase 3: Advanced Architectures & Exam Drills",
+            duration: totalDurationMonths > 2 ? "Month 3" : "Weeks 7 - 8",
+            details: `Focus on performance optimization, mock tests, code reviews with TCM mentors, and deep subject mastery.`
           },
           {
-            phase: "Phase 4: Resume, Portfolio & Placement Prep",
-            duration: "Weeks 11 - 12",
-            details: "Deploy live projects, craft ATS resume, practice mock technical interviews, and apply for roles."
+            title: "Phase 4: Resume, Portfolio & Career Launch",
+            duration: `Final ${totalDurationMonths} Month Target`,
+            details: `Finalize live project links, ATS-friendly resume review, mock interviews with TCM mentors, and direct referral opportunities.`
           }
         ]
       });
-    }, 450);
+    }, 500);
   }
 
-  function handleSendToWhatsApp() {
-    const userName = user.name || "TCM Learner";
-    const waText =
-      `🎓 *TCM ACADEMY - CUSTOM LEARNING ROADMAP* 🎓\n\n` +
-      `👤 *Student:* ${userName}\n` +
-      `🎯 *Track:* ${selectedTrack.title}\n` +
-      `⏳ *Timeline:* ${selectedDuration}\n` +
-      `⏱️ *Daily Effort:* ${selectedTime}\n\n` +
-      `----------------------------------------\n` +
-      `🗺️ *4-STEP ROADMAP PLAN:*\n` +
-      `1️⃣ *Phase 1:* Foundation & Core Concepts (Weeks 1-2)\n` +
-      `2️⃣ *Phase 2:* Industry Real-World Projects (Weeks 3-6)\n` +
-      `3️⃣ *Phase 3:* Advanced Architecture & Performance (Weeks 7-10)\n` +
-      `4️⃣ *Phase 4:* Portfolio & Placement Prep (Weeks 11-12)\n\n` +
-      `----------------------------------------\n` +
-      `📲 *Generated via TCM App Roadmap Builder*\n` +
-      `Support Hotline: +91 9238695500`;
+  function handleShareToWhatsApp() {
+    const userName = user.name || "TCM Student";
+    const courseListStr = selectedCourses.map((c) => `• ${c.name} (₹${c.price.toLocaleString()})`).join("\n");
+    const goalObj = TARGET_GOAL_OPTIONS.find((g) => g.id === selectedGoal);
 
-    const url = `https://wa.me/919238695500?text=${encodeURIComponent(waText)}`;
+    const waMsg =
+      `🎓 *TCM ACADEMY - CUSTOM AI LEARNING ROADMAP* 🎓\n\n` +
+      `👤 *Student Name:* ${userName}\n` +
+      `📦 *Selected Package Courses (${selectedCourses.length}):*\n${courseListStr}\n\n` +
+      `📊 *PACKAGE COUNTER SUMMARY:*\n` +
+      `⏳ *Total Duration:* ${totalDurationMonths} Months\n` +
+      `💰 *Total Package Amount:* ₹${totalPackageAmount.toLocaleString()}\n` +
+      `🎯 *Primary Target Goal:* ${goalObj?.title || "Career Growth"}\n` +
+      `⏱️ *Daily Effort:* ${selectedCommitment}\n\n` +
+      `----------------------------------------\n` +
+      `🗺️ *GENERATED AI ROADMAP PHASES:*\n` +
+      `1️⃣ Phase 1: Foundations & Core Concepts (Month 1)\n` +
+      `2️⃣ Phase 2: Project Building & Applied Practical (Month 2)\n` +
+      `3️⃣ Phase 3: Advanced Architectures & Exam Drills (Month 3)\n` +
+      `4️⃣ Phase 4: Resume, Portfolio & Career Launch\n\n` +
+      `----------------------------------------\n` +
+      `📲 *Generated via TCM App AI Counselor*\n` +
+      `Contact TCM Mentor: +91 9238695500`;
+
+    const url = `https://wa.me/919238695500?text=${encodeURIComponent(waMsg)}`;
     Linking.openURL(url).catch(() => {
-      Alert.alert("Export Error", "Could not open WhatsApp. Send your query to +91 9238695500.");
+      Alert.alert("WhatsApp Error", "Could not open WhatsApp automatically. Contact Hotline: +91 9238695500.");
     });
   }
 
@@ -120,11 +154,11 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {} }) {
           <View style={styles.headerRow}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <View style={[styles.headerIcon, { backgroundColor: theme.badgeBg }]}>
-                <MaterialCommunityIcons name="map-marker-path" size={20} color={theme.primary} />
+                <Ionicons name="sparkles" size={20} color={theme.primary} />
               </View>
               <View>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Custom Learning Roadmap</Text>
-                <Text style={[styles.headerSub, { color: theme.subtext }]}>Select your track & create your personal plan</Text>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Custom AI Learning Roadmap</Text>
+                <Text style={[styles.headerSub, { color: theme.subtext }]}>Select courses to count package & build AI plan</Text>
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E293B" : "#F1F5F9" }]}>
@@ -133,48 +167,108 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {} }) {
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
-            {/* Step 1: Select Track Grid */}
+            {/* Single Pre-suggestion Initial Message Banner */}
+            <View style={[styles.welcomeMsgCard, { backgroundColor: theme.isDark ? "#1E1B4B" : "#E8F5E9", borderColor: theme.border }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <MaterialCommunityIcons name="robot" size={18} color={theme.primary} />
+                <Text style={[styles.welcomeMsgTitle, { color: theme.primary }]}>TCM AI Counselor</Text>
+              </View>
+              <Text style={[styles.welcomeMsgText, { color: theme.text }]}>
+                Welcome to TCM Academy! Pick your desired courses below one by one. Our system will count your total duration & package amount live, and AI will structure your custom step-by-step roadmap.
+              </Text>
+            </View>
+
+            {/* Course Selector List */}
             <View style={styles.sectionWrap}>
-              <Text style={[styles.sectionLabel, { color: theme.text }]}>1. Choose Your Target Domain</Text>
-              <View style={styles.trackGrid}>
-                {TRACK_OPTIONS.map((track) => {
-                  const isSelected = selectedTrack.id === track.id;
+              <Text style={[styles.sectionLabel, { color: theme.text }]}>1. Select Available TCM Courses (Pick One by One)</Text>
+              <View style={{ gap: 8 }}>
+                {AVAILABLE_COURSES.map((course) => {
+                  const isSelected = selectedCourseIds.includes(course.id);
                   return (
                     <TouchableOpacity
-                      key={track.id}
+                      key={course.id}
                       activeOpacity={0.8}
-                      onPress={() => {
-                        setSelectedTrack(track);
-                        setGeneratedRoadmap(null);
-                      }}
+                      onPress={() => toggleCourseSelection(course.id)}
                       style={[
-                        styles.trackCard,
+                        styles.coursePickCard,
                         {
-                          backgroundColor: isSelected ? (theme.isDark ? "#1E293B" : "#E8F5E9") : (theme.isDark ? "#0F172A" : "#FAFAFA"),
+                          backgroundColor: isSelected ? (theme.isDark ? "#1E293B" : "#F0FDF4") : (theme.isDark ? "#0F172A" : "#FAFAFA"),
                           borderColor: isSelected ? theme.primary : theme.border
                         }
                       ]}
                     >
-                      <Text style={[styles.trackTitle, { color: isSelected ? theme.primary : theme.text }]}>{track.title}</Text>
-                      <Text numberOfLines={1} style={[styles.trackDesc, { color: theme.subtext }]}>{track.desc}</Text>
+                      <View style={[styles.checkboxCircle, { backgroundColor: isSelected ? theme.primary : "transparent", borderColor: isSelected ? theme.primary : theme.subtext }]}>
+                        {isSelected && <Feather name="check" size={12} color="#FFFFFF" />}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.courseNameText, { color: isSelected ? theme.primary : theme.text }]}>{course.name}</Text>
+                        <Text style={[styles.courseCategoryText, { color: theme.subtext }]}>{course.category} • {course.durationMonths} Months</Text>
+                      </View>
+                      <Text style={[styles.coursePriceText, { color: theme.primary }]}>₹{course.price.toLocaleString()}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
             </View>
 
-            {/* Step 2: Duration Selector */}
+            {/* Live Package Counter Summary Box */}
+            <View style={[styles.counterBox, { backgroundColor: theme.isDark ? "#0F172A" : "#F8FAFC", borderColor: theme.border }]}>
+              <View style={styles.counterRow}>
+                <View style={styles.counterCol}>
+                  <Text style={[styles.counterLabel, { color: theme.subtext }]}>Selected Courses</Text>
+                  <Text style={[styles.counterValue, { color: theme.text }]}>{selectedCourses.length} Courses</Text>
+                </View>
+                <View style={styles.counterCol}>
+                  <Text style={[styles.counterLabel, { color: theme.subtext }]}>Total Duration</Text>
+                  <Text style={[styles.counterValue, { color: theme.text }]}>{totalDurationMonths} Months</Text>
+                </View>
+                <View style={styles.counterCol}>
+                  <Text style={[styles.counterLabel, { color: theme.subtext }]}>Package Amount</Text>
+                  <Text style={[styles.counterValuePrice, { color: theme.primary }]}>₹{totalPackageAmount.toLocaleString()}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Step 2: AI Goal Questions */}
             <View style={styles.sectionWrap}>
-              <Text style={[styles.sectionLabel, { color: theme.text }]}>2. Select Target Timeline</Text>
-              <View style={styles.pillsRow}>
-                {DURATION_OPTIONS.map((dur) => {
-                  const isSelected = selectedDuration === dur;
+              <Text style={[styles.sectionLabel, { color: theme.text }]}>2. AI Counselor Questioning</Text>
+              <Text style={[styles.questionSubText, { color: theme.subtext }]}>What is your primary target goal?</Text>
+              <View style={{ gap: 8, marginTop: 4 }}>
+                {TARGET_GOAL_OPTIONS.map((g) => {
+                  const isSelected = selectedGoal === g.id;
                   return (
                     <TouchableOpacity
-                      key={dur}
+                      key={g.id}
                       activeOpacity={0.8}
                       onPress={() => {
-                        setSelectedDuration(dur);
+                        setSelectedGoal(g.id);
+                        setGeneratedRoadmap(null);
+                      }}
+                      style={[
+                        styles.goalCard,
+                        {
+                          backgroundColor: isSelected ? (theme.isDark ? "#1E293B" : "#F0EDFF") : (theme.isDark ? "#0F172A" : "#FAFAFA"),
+                          borderColor: isSelected ? theme.primary : theme.border
+                        }
+                      ]}
+                    >
+                      <Feather name={g.icon} size={16} color={isSelected ? theme.primary : theme.subtext} />
+                      <Text style={[styles.goalText, { color: isSelected ? theme.primary : theme.text }]}>{g.title}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={[styles.questionSubText, { color: theme.subtext, marginTop: 12 }]}>Daily Study Commitment?</Text>
+              <View style={styles.pillsRow}>
+                {STUDY_COMMITMENT_OPTIONS.map((c) => {
+                  const isSelected = selectedCommitment === c;
+                  return (
+                    <TouchableOpacity
+                      key={c}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        setSelectedCommitment(c);
                         setGeneratedRoadmap(null);
                       }}
                       style={[
@@ -185,111 +279,70 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {} }) {
                         }
                       ]}
                     >
-                      <Text style={[styles.pillText, { color: isSelected ? "#FFFFFF" : theme.text }]}>{dur}</Text>
+                      <Text style={[styles.pillText, { color: isSelected ? "#FFFFFF" : theme.text }]}>{c}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
             </View>
 
-            {/* Step 3: Commitment */}
-            <View style={styles.sectionWrap}>
-              <Text style={[styles.sectionLabel, { color: theme.text }]}>3. Daily Learning Commitment</Text>
-              <View style={styles.pillsRow}>
-                {TIME_COMMITMENT_OPTIONS.map((t) => {
-                  const isSelected = selectedTime === t;
-                  return (
-                    <TouchableOpacity
-                      key={t}
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        setSelectedTime(t);
-                        setGeneratedRoadmap(null);
-                      }}
-                      style={[
-                        styles.pillChip,
-                        {
-                          backgroundColor: isSelected ? theme.primary : (theme.isDark ? "#1E293B" : "#F1F5F9"),
-                          borderColor: isSelected ? theme.primary : theme.border
-                        }
-                      ]}
-                    >
-                      <Text style={[styles.pillText, { color: isSelected ? "#FFFFFF" : theme.text }]}>{t}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* CTA Generate Button */}
+            {/* Generate CTA Button */}
             {!generatedRoadmap && (
               <TouchableOpacity
                 activeOpacity={0.85}
-                onPress={handleGenerateRoadmap}
+                onPress={handleGenerateAiRoadmap}
                 disabled={generating}
                 style={[styles.generateBtn, { backgroundColor: theme.primary }]}
               >
                 <Ionicons name="sparkles" size={16} color="#FFFFFF" />
                 <Text style={styles.generateBtnText}>
-                  {generating ? "Building Your Custom Roadmap..." : "Build My Personalized Roadmap ⚡"}
+                  {generating ? "AI is Structuring Your Roadmap..." : "Generate AI Roadmap & Count Package"}
                 </Text>
               </TouchableOpacity>
             )}
 
-            {/* Clean Roadmap Result Display */}
+            {/* Generated AI Roadmap Result Display */}
             {generatedRoadmap && (
               <View style={[styles.resultCard, { backgroundColor: theme.isDark ? "#0F172A" : "#F8FAFC", borderColor: theme.border }]}>
                 <View style={styles.resultHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.resultTitle, { color: theme.text }]}>{generatedRoadmap.title}</Text>
-                    <Text style={[styles.resultSub, { color: theme.subtext }]}>{generatedRoadmap.duration} • {generatedRoadmap.commitment}</Text>
+                    <Text style={[styles.resultSub, { color: theme.subtext }]}>
+                      Total: ₹{generatedRoadmap.totalPrice.toLocaleString()} • {generatedRoadmap.totalDuration} Months • {generatedRoadmap.commitment}
+                    </Text>
                   </View>
                   <View style={[styles.readyBadge, { backgroundColor: "#ECFDF5", borderColor: "#A7F3D0" }]}>
-                    <Text style={styles.readyBadgeText}>Ready 🚀</Text>
+                    <Text style={styles.readyBadgeText}>AI Plan Ready</Text>
                   </View>
                 </View>
 
-                {/* Steps List */}
+                {/* Phases List */}
                 <View style={styles.stepsWrap}>
-                  {generatedRoadmap.steps.map((step, idx) => (
-                    <View key={step.phase} style={styles.stepItem}>
+                  {generatedRoadmap.phases.map((phase, idx) => (
+                    <View key={phase.title} style={styles.stepItem}>
                       <View style={[styles.stepDot, { backgroundColor: theme.primary }]}>
                         <Text style={styles.stepDotText}>{idx + 1}</Text>
                       </View>
                       <View style={styles.stepContent}>
                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                          <Text style={[styles.stepPhaseText, { color: theme.text }]}>{step.phase}</Text>
-                          <Text style={[styles.stepDurationText, { color: theme.primary }]}>{step.duration}</Text>
+                          <Text style={[styles.stepPhaseText, { color: theme.text }]}>{phase.title}</Text>
+                          <Text style={[styles.stepDurationText, { color: theme.primary }]}>{phase.duration}</Text>
                         </View>
-                        <Text style={[styles.stepDetailsText, { color: theme.subtext }]}>{step.details}</Text>
+                        <Text style={[styles.stepDetailsText, { color: theme.subtext }]}>{phase.details}</Text>
                       </View>
                     </View>
                   ))}
                 </View>
 
-                {/* Action Row */}
-                <View style={styles.resultActionRow}>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={handleSendToWhatsApp}
-                    style={styles.waExportBtn}
-                  >
-                    <FontAwesome name="whatsapp" size={16} color="#FFFFFF" />
-                    <Text style={styles.waExportBtnText}>Export to WhatsApp</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      Alert.alert("Saved! 📌", "Your custom learning roadmap has been saved to your account profile.");
-                      onClose();
-                    }}
-                    style={[styles.saveBtn, { borderColor: theme.border, backgroundColor: theme.cardBg }]}
-                  >
-                    <Feather name="bookmark" size={15} color={theme.text} />
-                    <Text style={[styles.saveBtnText, { color: theme.text }]}>Save Plan</Text>
-                  </TouchableOpacity>
-                </View>
+                {/* WhatsApp Share CTA */}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleShareToWhatsApp}
+                  style={styles.waShareBtn}
+                >
+                  <FontAwesome name="whatsapp" size={18} color="#FFFFFF" />
+                  <Text style={styles.waShareBtnText}>Share Roadmap & Package to WhatsApp</Text>
+                </TouchableOpacity>
               </View>
             )}
           </ScrollView>
@@ -361,6 +414,20 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingBottom: 10
   },
+  welcomeMsgCard: {
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1
+  },
+  welcomeMsgTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13
+  },
+  welcomeMsgText: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17
+  },
   sectionWrap: {
     gap: 8
   },
@@ -368,22 +435,77 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 13
   },
-  trackGrid: {
-    gap: 8
+  questionSubText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12
   },
-  trackCard: {
+  coursePickCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     padding: 12,
     borderRadius: 14,
-    borderWidth: 1,
-    gap: 2
+    borderWidth: 1
   },
-  trackTitle: {
+  checkboxCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  courseNameText: {
     fontFamily: fonts.bold,
     fontSize: 13
   },
-  trackDesc: {
+  courseCategoryText: {
     fontFamily: fonts.regular,
-    fontSize: 11
+    fontSize: 11,
+    marginTop: 1
+  },
+  coursePriceText: {
+    fontFamily: fonts.bold,
+    fontSize: 13
+  },
+  counterBox: {
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1
+  },
+  counterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  counterCol: {
+    alignItems: "center"
+  },
+  counterLabel: {
+    fontFamily: fonts.regular,
+    fontSize: 10
+  },
+  counterValue: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    marginTop: 2
+  },
+  counterValuePrice: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    marginTop: 2
+  },
+  goalCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 11,
+    borderRadius: 12,
+    borderWidth: 1
+  },
+  goalText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12
   },
   pillsRow: {
     flexDirection: "row",
@@ -483,38 +605,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 15
   },
-  resultActionRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 8
-  },
-  waExportBtn: {
-    flex: 1,
+  waShareBtn: {
     backgroundColor: "#25D366",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 12
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 14,
+    marginTop: 6
   },
-  waExportBtnText: {
+  waShareBtnText: {
     color: "#FFFFFF",
     fontFamily: fonts.bold,
-    fontSize: 12
-  },
-  saveBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1
-  },
-  saveBtnText: {
-    fontFamily: fonts.semiBold,
-    fontSize: 12
+    fontSize: 13
   }
 });

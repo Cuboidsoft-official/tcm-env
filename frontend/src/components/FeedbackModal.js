@@ -11,21 +11,21 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { Feather, FontAwesome } from "@expo/vector-icons";
+import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
 const CATEGORY_OPTIONS = [
-  "📱 App Experience",
-  "📚 Course Content",
-  "⚡ Performance & Bug",
-  "💡 Feature Request"
+  { id: "app", label: "App Experience", icon: "smartphone" },
+  { id: "course", label: "Course Content", icon: "book-open" },
+  { id: "bug", label: "Performance & Bug", icon: "zap" },
+  { id: "feature", label: "Feature Request", icon: "lightbulb" }
 ];
 
 export default function FeedbackModal({ visible, onClose, user = {} }) {
   const { theme } = useTheme();
   const [rating, setRating] = useState(5);
-  const [selectedCategory, setSelectedCategory] = useState(CATEGORY_OPTIONS[0]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("app");
   const [feedbackText, setFeedbackText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,7 +40,7 @@ export default function FeedbackModal({ visible, onClose, user = {} }) {
     setSubmitting(true);
     setTimeout(() => {
       setSubmitting(false);
-      Alert.alert("Feedback Submitted! 🎉", "Thank you for rating and helping us improve TCM Academy!");
+      Alert.alert("Feedback Submitted", "Thank you for rating and helping us improve TCM Academy!");
       setFeedbackText("");
       onClose();
     }, 600);
@@ -92,9 +92,12 @@ export default function FeedbackModal({ visible, onClose, user = {} }) {
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={styles.ratingReflectionText}>
-                {rating === 5 ? "⭐⭐⭐⭐⭐ Outstanding!" : rating === 4 ? "⭐⭐⭐⭐ Great Experience" : rating === 3 ? "⭐⭐⭐ Good, can improve" : "Need Improvements"}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+                <Feather name="thumbs-up" size={13} color="#D97706" />
+                <Text style={styles.ratingReflectionText}>
+                  {rating === 5 ? "Outstanding Experience" : rating === 4 ? "Great Experience" : rating === 3 ? "Good, can improve" : "Needs Improvement"}
+                </Text>
+              </View>
             </View>
 
             {/* Category Select Section */}
@@ -102,12 +105,12 @@ export default function FeedbackModal({ visible, onClose, user = {} }) {
               <Text style={[styles.sectionLabel, { color: theme.text }]}>Select Category</Text>
               <View style={styles.categoriesWrap}>
                 {CATEGORY_OPTIONS.map((cat) => {
-                  const isSelected = selectedCategory === cat;
+                  const isSelected = selectedCategoryId === cat.id;
                   return (
                     <TouchableOpacity
-                      key={cat}
+                      key={cat.id}
                       activeOpacity={0.8}
-                      onPress={() => setSelectedCategory(cat)}
+                      onPress={() => setSelectedCategoryId(cat.id)}
                       style={[
                         styles.catChip,
                         {
@@ -116,8 +119,9 @@ export default function FeedbackModal({ visible, onClose, user = {} }) {
                         }
                       ]}
                     >
+                      <Feather name={cat.icon} size={14} color={isSelected ? "#FFFFFF" : theme.primary} />
                       <Text style={[styles.catChipText, { color: isSelected ? "#FFFFFF" : theme.text }]}>
-                        {cat}
+                        {cat.label}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -153,7 +157,7 @@ export default function FeedbackModal({ visible, onClose, user = {} }) {
               disabled={submitting}
               style={[styles.submitBtn, { backgroundColor: theme.primary }]}
             >
-              <FontAwesome name="paper-plane" size={15} color="#FFFFFF" />
+              <Feather name="send" size={15} color="#FFFFFF" />
               <Text style={styles.submitBtnText}>
                 {submitting ? "Submitting..." : "Submit Feedback & Review"}
               </Text>
@@ -246,8 +250,7 @@ const styles = StyleSheet.create({
   ratingReflectionText: {
     fontFamily: fonts.semiBold,
     fontSize: 12,
-    color: "#D97706",
-    marginTop: 4
+    color: "#D97706"
   },
   categoriesWrap: {
     flexDirection: "row",
@@ -255,8 +258,11 @@ const styles = StyleSheet.create({
     gap: 8
   },
   catChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1
   },
