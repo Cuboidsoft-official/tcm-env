@@ -59,9 +59,9 @@ export default function SplashScreen() {
 
         {/* Slogan Pill Card */}
         <View style={[styles.sloganCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          <MaterialCommunityIcons name="star-shooting-outline" size={16} color={theme.primary} style={{ marginRight: 6 }} />
-          <Text style={[styles.sloganText, { color: theme.text }]}>
-            "Hum wada wahi karte hain jo hum nibha paayein." ✨
+          <MaterialCommunityIcons name="shield-check-outline" size={15} color={theme.primary} style={{ marginRight: 6 }} />
+          <Text style={[styles.sloganText, { color: theme.text }]} numberOfLines={1}>
+            "Hum wada wahi karte hain jo hum nibha paayein."
           </Text>
         </View>
 
@@ -143,16 +143,19 @@ const styles = StyleSheet.create({
   sloganCard: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 9,
     borderRadius: 20,
     borderWidth: 1,
-    marginBottom: 36
+    marginBottom: 36,
+    maxWidth: "92%",
+    alignSelf: "center"
   },
   sloganText: {
     fontFamily: fonts.semiBold,
-    fontSize: 12.5,
-    fontStyle: "italic"
+    fontSize: 12,
+    textAlign: "center"
   },
   loaderWrap: {
     flexDirection: "row",

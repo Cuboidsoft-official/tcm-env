@@ -1757,7 +1757,7 @@ function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
   if (!categories.length) return null;
 
   return (
-    <ScrollView horizontal contentContainerStyle={styles.categoryContent} showsHorizontalScrollIndicator={false}>
+    <ScrollView horizontal contentContainerStyle={{ gap: 6, paddingHorizontal: 2, paddingBottom: 10 }} showsHorizontalScrollIndicator={false}>
       {categories.map((category) => {
         const active = category === activeCategory;
         const conf = getCategoryIconConfig(category);
@@ -1766,34 +1766,38 @@ function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
           <Pressable
             key={category}
             onPress={() => setActiveCategory(category)}
-            style={[
-              styles.categoryTab,
-              active && styles.categoryTabActive,
-              {
-                backgroundColor: active ? (theme.activeChipBg || theme.primary) : (theme.inactiveChipBg || theme.cardBg),
-                borderColor: active ? theme.primary : theme.border,
-                borderWidth: 1
-              }
-            ]}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 5,
+              paddingHorizontal: 11,
+              paddingVertical: 6,
+              borderRadius: 18,
+              backgroundColor: active ? (theme.activeChipBg || theme.primary) : (theme.inactiveChipBg || theme.cardBg),
+              borderColor: active ? theme.primary : theme.border,
+              borderWidth: 1,
+              shadowColor: active ? theme.primary : "#000",
+              shadowOffset: { width: 0, height: active ? 2 : 1 },
+              shadowOpacity: active ? 0.25 : (theme.isDark ? 0.2 : 0.04),
+              shadowRadius: active ? 4 : 2
+            }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Ionicons
-                name={conf.icon}
-                size={16}
-                color={active ? (theme.activeChipText || "#FFFFFF") : theme.primary}
-              />
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.categoryText,
-                  { color: active ? (theme.activeChipText || "#FFFFFF") : (theme.inactiveChipText || theme.text) },
-                  active && styles.categoryTextActive
-                ]}
-              >
-                {conf.label}
-              </Text>
-            </View>
-            {active ? <View style={[styles.activeCategoryIndicator, { backgroundColor: theme.primary }]} /> : null}
+            <Ionicons
+              name={conf.icon}
+              size={13}
+              color={active ? (theme.activeChipText || "#FFFFFF") : theme.primary}
+            />
+            <Text
+              numberOfLines={1}
+              style={{
+                fontFamily: fonts.semiBold,
+                fontSize: 11.5,
+                color: active ? (theme.activeChipText || "#FFFFFF") : (theme.inactiveChipText || theme.text),
+                letterSpacing: 0.2
+              }}
+            >
+              {conf.label}
+            </Text>
           </Pressable>
         );
       })}
