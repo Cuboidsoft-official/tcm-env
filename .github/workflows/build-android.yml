@@ -148,9 +148,8 @@ jobs:
             --notes "TCM Android APK + AAB build. App version: ${{ env.TCM_APP_VERSION || '0.1.0' }}."
 
       - name: Publish APK to Firebase App Distribution
-        env:
-          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        if: env.FIREBASE_CREDENTIALS != ''
+        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && secrets.FIREBASE_APP_ID != '' }}
+        continue-on-error: true
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
