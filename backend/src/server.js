@@ -59,7 +59,14 @@ app.use(
   express.static(UPLOADS_DIR, {
     maxAge: "30d",
     immutable: true,
-    index: false
+    index: false,
+    setHeaders(res, filePath) {
+      const m = /\.(heic|heif|avif)$/i.exec(filePath);
+      if (m) {
+        const map = { heic: "image/heic", heif: "image/heif", avif: "image/avif" };
+        res.setHeader("Content-Type", map[m[1].toLowerCase()]);
+      }
+    }
   })
 );
 
