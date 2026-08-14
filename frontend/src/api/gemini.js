@@ -314,3 +314,41 @@ Instructions:
 
   return "Thank you for sharing your learning goals! Based on your target field, we recommend starting with our Full Stack Web Development Masterclass or AI Masterclass at TCM Academy. Your estimated budget will be ₹4,999 - ₹8,999. Click 'Send to WhatsApp (9238695500)' below to receive your complete roadmap!";
 }
+
+export async function generateInteractiveAiRoadmapAndChat(chatHistory = [], userMessage = "") {
+  const prompt = `You are Google Gemini & Groq AI acting as Senior AI Learning Architect & Career Counselor at TCM Academy.
+Your job is to interactively chat with a student, ask them questions about what they want to learn, and construct a comprehensive DAY-BY-DAY and MONTHLY learning roadmap tailored to their goals.
+
+System Knowledge about TCM Academy Courses:
+- Full Stack Web Development (MERN / React / Node.js): ₹4,999 (3 Months)
+- AI & Machine Learning Masterclass (Python / PyTorch / LLMs): ₹5,999 (3 Months)
+- Mobile App Development (React Native / Expo / iOS & Android): ₹3,999 (2 Months)
+- Python & Data Structures & Algorithms (DSA): ₹2,999 (2 Months)
+- UPSC & Govt Exam General Studies Masterclass: ₹3,499 (3 Months)
+
+Chat History:
+${chatHistory.map((m) => `${m.sender.toUpperCase()}: ${m.text}`).join("\n")}
+
+New Student Message: "${userMessage}"
+
+INSTRUCTIONS FOR YOUR RESPONSE:
+1. Be extremely encouraging, intelligent, and helpful.
+2. If the student hasn't specified their topic/goal or daily study hours yet, ask specific questions to understand what they want to learn.
+3. If they share a goal (e.g. Full Stack Web, Python, Mobile App, UPSC, GATE, DevOps), provide a structured breakdown containing:
+   - 📅 MONTHLY OVERVIEW (Month 1, Month 2, Month 3...)
+   - 🗓️ DAY-BY-DAY SCHEDULE (Day 1, Day 2, Day 3... up to Day 30)
+   - 💡 Recommended TCM Academy Courses & Real-world Projects
+4. Format your output clearly using neat headers and bullet points.
+5. Remind the student that they can ask follow-up questions or request modifications anytime!`;
+
+  try {
+    const text = await callGeminiApi(prompt);
+    if (text && text.trim()) {
+      return text.trim();
+    }
+  } catch (err) {
+    console.warn("AI Roadmap Chat Generation error:", err);
+  }
+
+  return "I'm ready to build your custom learning roadmap! Tell me what skill, topic, or career goal you'd like to master (e.g. Full Stack Web, Python DSA, AI, Mobile App, UPSC Prep) and how many hours you can study daily.";
+}
