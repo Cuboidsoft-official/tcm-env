@@ -733,6 +733,9 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
           });
           if (result && (result.post || result.id)) {
             newPost = result.post || result;
+            if (result.mediaWarning) {
+              Alert.alert("Media not saved", result.mediaWarning);
+            }
           }
         } catch (err) {
           console.warn("Backend create post fallback:", err);

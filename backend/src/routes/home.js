@@ -856,6 +856,17 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     .slice(0, 6);
 
   const cleanMedia = sanitizeIncomingMedia(media);
+  const mediaWarning = (() => {
+    const localOnly = (uri) => typeof uri === "string" && /^(blob:|file:|content:|ph:)/i.test(uri.trim());
+    const candidates = [
+      media?.videoUrl, media?.fileUri, media?.imageUrl, media?.thumbnailUrl,
+      ...(Array.isArray(media?.carouselImages) ? media.carouselImages : [])
+    ].filter(Boolean);
+    if (candidates.some(localOnly)) {
+      return "Your media could not be saved (unsupported or temporary file URLs). The post was published as text.";
+    }
+    return null;
+  })();
   const isUserMentor = req.user.role === "mentor";
   const postPayload = {
     authorName: req.user.name,
@@ -924,7 +935,7 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     channelId: targetCourseId || category
   }).catch(() => {});
 
-  return res.status(201).json({ post: mapPost(createdPost, {}, req.user._id?.toString()) });
+  return res.status(201).json({ post: mapPost(createdPost, {}, req.user._id?.toString()), mediaWarning });
 });
 
 homeRouter.delete("/posts/:postId", requireAuth, async (req, res) => {
