@@ -943,15 +943,16 @@ const styles = StyleSheet.create({
     borderRadius: 12
   },
   quickAiRoadmapBar: {
-    marginHorizontal: 16,
-    marginTop: 10,
-    marginBottom: 10,
+    width: "100%",
+    alignSelf: "stretch",
+    marginTop: 8,
+    marginBottom: 14,
     backgroundColor: "#E8F5E9",
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#C4B5FD",
     borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between"

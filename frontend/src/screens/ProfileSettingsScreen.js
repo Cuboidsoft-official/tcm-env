@@ -609,9 +609,9 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             <View style={[styles.iconWrap, iconWrapStyle]}>
               <Feather name="user" size={18} color={activeAppTheme.primary} />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, rowTitleStyle]}>Edit Profile Info</Text>
-              <Text style={[styles.rowSub, rowSubStyle]}>Name, Bio, Handle, Location & Links</Text>
+              <Text numberOfLines={1} style={[styles.rowSub, rowSubStyle]}>Name, Bio, Handle, Location & Links</Text>
             </View>
           </View>
           <Feather name="chevron-right" size={18} color="#8A879F" />
@@ -622,9 +622,9 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             <View style={[styles.iconWrap, { backgroundColor: "#EEF2FF" }]}>
               <MaterialCommunityIcons name="code-tags-check" size={20} color="#4F46E5" />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, rowTitleStyle]}>Skills & Proficiency Matrix</Text>
-              <Text style={[styles.rowSub, rowSubStyle]}>LeetCode style skills • Strength out of 100 & auto icons</Text>
+              <Text numberOfLines={1} style={[styles.rowSub, rowSubStyle]}>LeetCode style skills • Auto icons</Text>
             </View>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -642,9 +642,9 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             <View style={[styles.iconWrap, { backgroundColor: "#EAF5FF" }]}>
               <Feather name="lock" size={18} color="#2F79B9" />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, rowTitleStyle]}>Password & Security</Text>
-              <Text style={[styles.rowSub, rowSubStyle]}>Change password & security credentials</Text>
+              <Text numberOfLines={1} style={[styles.rowSub, rowSubStyle]}>Change password & security credentials</Text>
             </View>
           </View>
           <Feather name="chevron-right" size={18} color="#8A879F" />
@@ -655,9 +655,9 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             <View style={[styles.iconWrap, { backgroundColor: "#FFF8EC" }]}>
               <FontAwesome name="star" size={18} color="#D97706" />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, rowTitleStyle]}>My Class Reviews & Performance</Text>
-              <Text style={[styles.rowSub, rowSubStyle]}>View class reflections & mentor feedback received</Text>
+              <Text numberOfLines={1} style={[styles.rowSub, rowSubStyle]}>Class reflections & mentor feedback</Text>
             </View>
           </View>
           <Feather name="chevron-right" size={18} color="#8A879F" />
@@ -668,9 +668,9 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             <View style={[styles.iconWrap, { backgroundColor: "#ECF9E9" }]}>
               <Feather name="shield" size={18} color="#2E7D32" />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, rowTitleStyle]}>Public Profile Visibility</Text>
-              <Text style={[styles.rowSub, rowSubStyle]}>Allow non-connections to see your posts</Text>
+              <Text numberOfLines={1} style={[styles.rowSub, rowSubStyle]}>Allow non-connections to see your posts</Text>
             </View>
           </View>
           <Switch
@@ -693,9 +693,9 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             <View style={[styles.iconWrap, { backgroundColor: activeAppTheme.badgeBg }]}>
               <Feather name="moon" size={18} color={activeAppTheme.primary} />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, rowTitleStyle]}>App Theme & Appearance</Text>
-              <Text style={[styles.rowSub, rowSubStyle]}>{activeAppTheme.name} Mode • Custom Accents</Text>
+              <Text numberOfLines={1} style={[styles.rowSub, rowSubStyle]}>{activeAppTheme.name} Mode • Custom Accents</Text>
             </View>
           </View>
           <View style={[styles.themeBadgePill, { backgroundColor: activeAppTheme.badgeBg, borderColor: activeAppTheme.primary }]}>
@@ -716,9 +716,9 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             <View style={[styles.iconWrap, { backgroundColor: "#FFF6DA" }]}>
               <Feather name="bell" size={18} color="#E7A900" />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, rowTitleStyle]}>Push Notifications</Text>
-              <Text style={[styles.rowSub, rowSubStyle]}>Class alerts, mentions & community posts</Text>
+              <Text numberOfLines={1} style={[styles.rowSub, rowSubStyle]}>Class alerts & mentions</Text>
             </View>
           </View>
           <Switch
@@ -735,9 +735,9 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             <View style={[styles.iconWrap, { backgroundColor: "#F0EDFF" }]}>
               <Feather name="mail" size={18} color="#5B3CF5" />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, rowTitleStyle]}>Email Digests & Updates</Text>
-              <Text style={[styles.rowSub, rowSubStyle]}>Weekly progress report & newsletter</Text>
+              <Text numberOfLines={1} style={[styles.rowSub, rowSubStyle]}>Weekly progress report</Text>
             </View>
           </View>
           <Switch
@@ -754,9 +754,9 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             <View style={[styles.iconWrap, { backgroundColor: "#FFF0F2" }]}>
               <Feather name="wifi" size={18} color="#FF465F" />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, rowTitleStyle]}>Wi-Fi Only Downloads</Text>
-              <Text style={[styles.rowSub, rowSubStyle]}>Download course material only over Wi-Fi</Text>
+              <Text numberOfLines={1} style={[styles.rowSub, rowSubStyle]}>Download material over Wi-Fi</Text>
             </View>
           </View>
           <Switch
@@ -1599,12 +1599,11 @@ const styles = StyleSheet.create({
   smallSwitch: {
     transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }]
   },
-
   topBackHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 10,
     marginTop: 2,
     paddingHorizontal: 2
   },
@@ -1615,9 +1614,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0EDFF",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#E5E1FF"
+    borderRadius: 10
   },
   inlineBackText: {
     fontFamily: fonts.semiBold,
@@ -1629,16 +1626,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#181725"
   },
-
-  // User Summary Card
   userSummaryCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
-    padding: 16,
-    marginBottom: 14,
+    padding: 14,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#F0EFFF",
     ...shadow.soft
@@ -1725,13 +1720,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#5B3CF5"
   },
-
-  // Section Card
   sectionCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
-    padding: 16,
-    marginBottom: 14,
+    padding: 14,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#F0EFFF",
     ...shadow.soft
@@ -1741,14 +1734,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     color: "#8A879F",
     letterSpacing: 0.8,
-    marginBottom: 12
+    marginBottom: 8
   },
-
   settingRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#F4F3FA"
   },
@@ -1756,7 +1748,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12
+    paddingVertical: 8
   },
   rowLeft: {
     flexDirection: "row",
@@ -1765,8 +1757,8 @@ const styles = StyleSheet.create({
     flex: 1
   },
   iconWrap: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center"

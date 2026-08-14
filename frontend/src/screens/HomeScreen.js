@@ -66,6 +66,7 @@ import DiscoverPartnersScreen from "./DiscoverPartnersScreen";
 import PartnerProfilePreviewScreen from "./PartnerProfilePreviewScreen";
 import SidebarDrawer from "../components/SidebarDrawer";
 import GetVerifiedModal from "../components/GetVerifiedModal";
+import FeedbackModal from "../components/FeedbackModal";
 import AuthRequiredModal from "../components/AuthRequiredModal";
 import PwaInstallBanner from "../components/PwaInstallBanner";
 import { useTheme } from "../context/ThemeContext";
@@ -332,6 +333,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   const [showCreateCourseScreen, setShowCreateCourseScreen] = useState(false);
   const [showCreateWebinarScreen, setShowCreateWebinarScreen] = useState(false);
   const [showAllMentorsScreen, setShowAllMentorsScreen] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showCommunityScreen, setShowCommunityScreen] = useState(false);
   const [showDiscoverPartnersScreen, setShowDiscoverPartnersScreen] = useState(false);
   const [selectedPartnerForPreview, setSelectedPartnerForPreview] = useState(null);
@@ -597,6 +599,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
       setActiveTab("ProfileSettings");
     } else if (itemKey === "Go Premium" || itemKey === "Get Premium" || itemKey === "Get TCM Verified Pro") {
       setGetVerifiedModalOpen(true);
+    } else if (itemKey === "Feedback" || itemKey === "Feedback & Suggestions") {
+      setShowFeedbackModal(true);
     } else {
       setDrawerFeatureModal(itemKey);
     }
@@ -1341,6 +1345,12 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
               setHome((prev) => (prev ? { ...prev, user: { ...prev.user, verified: true } } : prev));
             }
           }}
+        />
+
+        <FeedbackModal
+          visible={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          user={user}
         />
 
         <DrawerFeatureModal

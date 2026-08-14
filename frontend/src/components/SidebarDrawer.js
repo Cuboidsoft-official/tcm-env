@@ -187,6 +187,12 @@ export default function SidebarDrawer({
                 active={activeItem === "Notifications"}
                 onPress={() => handleNavigate("Notifications")}
               />
+              <MenuItem
+                icon={<Feather name="message-square" size={18} />}
+                label="Feedback & Suggestions"
+                active={activeItem === "Feedback"}
+                onPress={() => handleNavigate("Feedback")}
+              />
             </View>
 
             {/* 6. Go Premium Banner */}
