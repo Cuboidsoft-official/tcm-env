@@ -4196,6 +4196,7 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
 }
 
 function FramePreviewModal({ frame, frames, imageUrl, mediaType, selectedKey, videoUri, onApply, onClose, onSelect }) {
+  const { theme } = useTheme();
   if (!frame || (!imageUrl && !videoUri)) return null;
   const isVideo = mediaType === "video";
 
@@ -4203,21 +4204,22 @@ function FramePreviewModal({ frame, frames, imageUrl, mediaType, selectedKey, vi
     <Modal animationType="fade" transparent visible={Boolean(frame)} onRequestClose={onClose}>
       <View style={styles.frameModalBackdrop}>
         <Pressable style={styles.frameModalDim} onPress={onClose} />
-        <View style={styles.frameModalSheet}>
+        <View style={[styles.frameModalSheet, { backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }]}>
           <View style={styles.frameModalHeader}>
             <View>
-              <Text style={styles.frameModalTitle}>Frame Preview</Text>
-              <Text style={styles.frameModalSub}>Post me {isVideo ? "video" : "image"} aise dikhegi</Text>
+              <Text style={[styles.frameModalTitle, { color: theme.text }]}>Frame Preview</Text>
+              <Text style={[styles.frameModalSub, { color: theme.subtext }]}>Post me {isVideo ? "video" : "image"} aise dikhegi</Text>
             </View>
-            <Pressable onPress={onClose} style={styles.frameModalClose}>
-              <Feather name="x" size={22} color={colors.ink} />
+            <Pressable onPress={onClose} style={[styles.frameModalClose, { backgroundColor: theme.badgeBg }]}>
+              <Feather name="x" size={22} color={theme.text} />
             </Pressable>
           </View>
 
-          <View style={styles.framePreviewStage}>
+          <View style={[styles.framePreviewStage, { backgroundColor: theme.inputBg || (theme.isDark ? "#131927" : "#F7F6FC") }]}>
             <View
               style={[
                 styles.framePreviewCanvas,
+                { backgroundColor: theme.cardBg },
                 frame.key === "square" && styles.framePreviewSquare,
                 frame.key === "portrait" && styles.framePreviewPortrait,
                 frame.key === "landscape" && styles.framePreviewLandscape,
@@ -4237,14 +4239,24 @@ function FramePreviewModal({ frame, frames, imageUrl, mediaType, selectedKey, vi
             {frames.map((item) => {
               const active = item.key === frame.key;
               return (
-                <Pressable key={item.key} onPress={() => onSelect(item)} style={[styles.frameModalOption, active && styles.frameModalOptionActive]}>
-                  <Text numberOfLines={1} style={[styles.frameModalOptionText, active && styles.frameModalOptionTextActive]}>{item.label}</Text>
+                <Pressable
+                  key={item.key}
+                  onPress={() => onSelect(item)}
+                  style={[
+                    styles.frameModalOption,
+                    { backgroundColor: theme.isDark ? "#1E263B" : "#F7F6FC", borderColor: theme.border },
+                    active && [styles.frameModalOptionActive, { backgroundColor: theme.badgeBg, borderColor: theme.primary }]
+                  ]}
+                >
+                  <Text numberOfLines={1} style={[styles.frameModalOptionText, { color: theme.subtext }, active && { color: theme.primary, fontFamily: fonts.bold }]}>
+                    {item.label}
+                  </Text>
                 </Pressable>
               );
             })}
           </ScrollView>
 
-          <Pressable onPress={() => onApply(frame.key || selectedKey)} style={styles.frameApplyButton}>
+          <Pressable onPress={() => onApply(frame.key || selectedKey)} style={[styles.frameApplyButton, { backgroundColor: theme.primary }]}>
             <Text style={styles.frameApplyText}>Apply Frame</Text>
           </Pressable>
         </View>
