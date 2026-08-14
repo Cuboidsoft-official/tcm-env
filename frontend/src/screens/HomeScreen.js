@@ -133,7 +133,7 @@ const postModes = {
   }
 };
 
-const initialsFor = (name = "TCM") =>
+const initialsFor = (name = "TCM One") =>
   name
     .split(" ")
     .filter(Boolean)
@@ -1439,7 +1439,7 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
             <Feather name="chevron-left" size={26} color={iconColor} />
           </Pressable>
           <View style={styles.brandWrap}>
-            <Text style={[styles.brand, { color: brandColor }]}>TCM</Text>
+            <Text style={[styles.brand, { color: brandColor }]}>TCM One</Text>
             <Text style={[styles.brandSub, { color: subtextColor }]}>{backLabel || "Talent & Career Mission"}</Text>
           </View>
         </View>
@@ -1485,7 +1485,7 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
           <Feather name="menu" size={25} color={iconColor} />
         </Pressable>
         <View style={styles.brandWrap}>
-          <Text style={[styles.brand, { color: brandColor }]}>TCM</Text>
+          <Text style={[styles.brand, { color: brandColor }]}>TCM One</Text>
           <Text style={[styles.brandSub, { color: subtextColor }]}>Talent & Career Mission</Text>
         </View>
       </View>
@@ -2950,7 +2950,7 @@ function MediaPreviewModal({ item, onClose }) {
             <View style={styles.previewTitleWrap}>
               <Text numberOfLines={1} style={styles.previewTitle}>{item.title}</Text>
               <Text numberOfLines={1} style={styles.previewSub}>
-                {item.fileSize || "Document"} | {item.authorName || "TCM"}
+                {item.fileSize || "Document"} | {item.authorName || "TCM One"}
               </Text>
             </View>
             <Pressable hitSlop={10} onPress={onClose} style={styles.previewClose}>
@@ -3473,7 +3473,7 @@ function LearnDashboard({ learn, user, onSelectUser }) {
         </View>
       </LinearGradient>
 
-      <Text style={styles.sectionTitle}>Explore TCM</Text>
+      <Text style={styles.sectionTitle}>Explore TCM One</Text>
       <View style={styles.exploreGrid}>
         {(learn.explore || []).map((item) => (
           <Pressable key={item.id} style={styles.exploreCard}>

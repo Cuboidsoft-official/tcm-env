@@ -90,7 +90,7 @@ async function callGeminiApi(prompt) {
   return null;
 }
 
-export async function generateSyllabusWithAI(courseTitle, category = "TCM Information Tech", duration = "20 Days") {
+export async function generateSyllabusWithAI(courseTitle, category = "TCM One Information Tech", duration = "20 Days") {
   const daysMatch = (duration || "").match(/(\d+)\s*(days?|weeks?)/i);
   let totalDays = 20;
   if (daysMatch) {
@@ -100,7 +100,7 @@ export async function generateSyllabusWithAI(courseTitle, category = "TCM Inform
   }
   totalDays = Math.min(Math.max(totalDays, 5), 45);
 
-  const prompt = `You are Google Gemini AI acting as Senior Curriculum Architect at TCM Academy. Design an IN-DEPTH, highly specific, DAY-BY-DAY day-wise curriculum for a course titled "${courseTitle}" under category "${category}" planned for a total duration of "${totalDays} Days".
+  const prompt = `You are Google Gemini AI acting as Senior Curriculum Architect at TCM One Academy. Design an IN-DEPTH, highly specific, DAY-BY-DAY day-wise curriculum for a course titled "${courseTitle}" under category "${category}" planned for a total duration of "${totalDays} Days".
 
 CRITICAL REQUIREMENTS:
 1. Generate EXACTLY ${totalDays} Day-by-Day modules. Title each module clearly starting with "Day 1:", "Day 2:", "Day 3:", ..., "Day ${totalDays}:".
@@ -182,8 +182,8 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
   return fallbackModules;
 }
 
-export async function generateCourseOverviewInsightsWithAI(courseTitle, category = "TCM Academy", level = "All Levels") {
-  const prompt = `You are Google Gemini AI acting as Lead Career Counselor & Industry Analyst at TCM Academy. Provide highly accurate, professional career and salary insights for a course titled "${courseTitle}" in category "${category}" for level "${level}".
+export async function generateCourseOverviewInsightsWithAI(courseTitle, category = "TCM One Academy", level = "All Levels") {
+  const prompt = `You are Google Gemini AI acting as Lead Career Counselor & Industry Analyst at TCM One Academy. Provide highly accurate, professional career and salary insights for a course titled "${courseTitle}" in category "${category}" for level "${level}".
 
 Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational text):
 {
@@ -228,8 +228,8 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
   };
 }
 
-export async function generateMcqQuizWithGemini(topic, courseTitle = "TCM Course") {
-  const prompt = `You are Google Gemini AI acting as Lead Examiner at TCM Academy. Generate EXACTLY 10 multiple-choice questions (MCQs) for a student practice test on the topic "${topic}" of the course "${courseTitle}".
+export async function generateMcqQuizWithGemini(topic, courseTitle = "TCM One Course") {
+  const prompt = `You are TCM One AI acting as Lead Examiner at TCM One Academy. Generate EXACTLY 10 multiple-choice questions (MCQs) for a student practice test on the topic "${topic}" of the course "${courseTitle}".
 
 CRITICAL REQUIREMENTS:
 1. Generate EXACTLY 10 questions. Each question must have 4 options: ["A", "B", "C", "D"].
@@ -316,12 +316,12 @@ Instructions:
 }
 
 export async function generateInteractiveAiRoadmapAndChat(chatHistory = [], userMessage = "") {
-  const prompt = `You are TCM AI, the official Senior AI Learning Architect & Career Counselor at TCM Academy (The Code Munk).
-IMPORTANT IDENTITY RULE: You must ONLY identify yourself as "TCM AI". Never mention "Groq", "Llama", "Google Gemini", "ChatGPT", or any third-party provider name.
+  const prompt = `You are TCM One AI, the official Senior AI Learning Architect & Career Counselor at TCM One Academy (The Code Munk).
+IMPORTANT IDENTITY RULE: You must ONLY identify yourself as "TCM One AI". Never mention "Groq", "Llama", "Google Gemini", "ChatGPT", or any third-party provider name.
 
 Your job is to interactively chat with a student, understand what they want to learn, ask clarifying questions if needed, and build a BEAUTIFULLY STRUCTURED, EASY-TO-READ Day-by-Day & Monthly learning roadmap.
 
-System Knowledge about TCM Academy Courses:
+System Knowledge about TCM One Academy Courses:
 - Full Stack Web Development (MERN / React / Node.js): ₹4,999 (3 Months)
 - AI & Machine Learning Masterclass (Python / PyTorch / LLMs): ₹5,999 (3 Months)
 - Mobile App Development (React Native / Expo / iOS & Android): ₹3,999 (2 Months)
@@ -339,7 +339,7 @@ FORMATTING RULES FOR STUDENT CLARITY:
 3. By default (for general questions, goal discussions, or topic inquiries):
    - Provide a clean 📌 SUMMARY & GOAL
    - Provide a concise 📅 MONTHLY OVERVIEW (Month 1, Month 2, Month 3...)
-   - Provide 💡 RECOMMENDED TCM COURSES & PROJECTS
+   - Provide 💡 RECOMMENDED TCM ONE COURSES & PROJECTS
    - End with: "If you'd like a detailed Day-by-Day schedule for this plan, just ask me 'Give me Day by Day syllabus'!"
 4. When the student explicitly asks for "day by day", generate the clean day-by-day schedule grouped into neat blocks (e.g. Day 1-3: Setup & Fundamentals, Day 4-7: Core Concepts...).`;
 
@@ -348,13 +348,13 @@ FORMATTING RULES FOR STUDENT CLARITY:
     if (text && text.trim()) {
       // Strip out any accidental third-party mentions
       return text.trim()
-        .replace(/Groq\s*AI/gi, "TCM AI")
-        .replace(/Llama\s*\d*(\.\d*)?/gi, "TCM AI")
-        .replace(/Gemini\s*AI/gi, "TCM AI");
+        .replace(/Groq\s*AI/gi, "TCM One AI")
+        .replace(/Llama\s*\d*(\.\d*)?/gi, "TCM One AI")
+        .replace(/Gemini\s*AI/gi, "TCM One AI");
     }
   } catch (err) {
-    console.warn("TCM AI Roadmap Chat Generation error:", err);
+    console.warn("TCM One AI Roadmap Chat Generation error:", err);
   }
 
-  return "I'm TCM AI, ready to build your custom learning roadmap! Tell me what skill, topic, or career goal you'd like to master (e.g. Full Stack Web, Python DSA, AI, Mobile App, UPSC Prep) and how many hours you can study daily.";
+  return "I'm TCM One AI, ready to build your custom learning roadmap! Tell me what skill, topic, or career goal you'd like to master (e.g. Full Stack Web, Python DSA, AI, Mobile App, UPSC Prep) and how many hours you can study daily.";
 }

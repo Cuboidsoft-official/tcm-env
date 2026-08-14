@@ -21,7 +21,7 @@ import { fonts } from "../constants/fonts";
 
 export default function CreateJobModal({ visible, user = {}, jobToEdit = null, onClose, onSubmitJob }) {
   const [title, setTitle] = useState("");
-  const [company, setCompany] = useState(user.company || "TCM Hiring Partner");
+  const [company, setCompany] = useState(user.company || "TCM One Hiring Partner");
   const [description, setDescription] = useState("");
   const [minSalary, setMinSalary] = useState("3,50,000");
   const [maxSalary, setMaxSalary] = useState("6,50,000");
@@ -39,7 +39,7 @@ export default function CreateJobModal({ visible, user = {}, jobToEdit = null, o
       const targetJob = jobToEdit?.jobData || jobToEdit;
       if (targetJob) {
         setTitle(targetJob.title || targetJob.text?.split("\n")[0] || "");
-        setCompany(targetJob.company || user.company || "TCM Hiring Partner");
+        setCompany(targetJob.company || user.company || "TCM One Hiring Partner");
         setDescription(targetJob.description || targetJob.text || "");
         setMinSalary(targetJob.minSalary !== undefined ? String(targetJob.minSalary) : "");
         setMaxSalary(targetJob.maxSalary !== undefined ? String(targetJob.maxSalary) : "");
@@ -52,7 +52,7 @@ export default function CreateJobModal({ visible, user = {}, jobToEdit = null, o
         setDocumentName(targetJob.documentName || "");
       } else {
         setTitle("");
-        setCompany(user.company || "TCM Hiring Partner");
+        setCompany(user.company || "TCM One Hiring Partner");
         setDescription("");
         setMinSalary("3,50,000");
         setMaxSalary("6,50,000");

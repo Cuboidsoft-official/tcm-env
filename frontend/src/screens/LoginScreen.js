@@ -384,7 +384,7 @@ export default function LoginScreen({ onLogin }) {
             <TcmLogo compact />
             <Text style={styles.signupTitle}>{mode === "mentor" ? "Mentor Sign Up" : "Create Your Account"}</Text>
             <Text style={styles.signupSub}>
-              {mode === "mentor" ? "Join as a mentor and inspire the future" : "Join TCM and start your learning journey"}
+              {mode === "mentor" ? "Join as a mentor and inspire the future" : "Join TCM One and start your learning journey"}
             </Text>
 
             {mode === "mentor" ? <MentorIntro /> : <RoleTabs role={role} setRole={setRole} setMode={setMode} />}

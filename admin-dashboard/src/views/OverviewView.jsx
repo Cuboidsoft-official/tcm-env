@@ -43,7 +43,7 @@ export function OverviewView({ stats, pendingMentors, onApprove, onReject, onNav
             </div>
           </div>
           <div className="stat-value">{stats.approvedMentorsCount || 0}</div>
-          <div className="stat-sub" style={{ color: '#34D399' }}>Publicly visible on TCM</div>
+          <div className="stat-sub" style={{ color: '#34D399' }}>Publicly visible on TCM One</div>
         </div>
 
         <div className="stat-card">

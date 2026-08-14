@@ -17,7 +17,7 @@ export default function TcmLogo({ compact = false }) {
           <View style={[styles.bookPage, styles.bookPageRight, { backgroundColor: "#15803D" }]} />
         </View>
       </View>
-      <Text style={[styles.title, compact && styles.titleCompact, { color: primaryDarkColor }]}>TCM</Text>
+      <Text style={[styles.title, compact && styles.titleCompact, { color: primaryDarkColor }]}>TCM One</Text>
       <View style={styles.subtitleRow}>
         <View style={[styles.line, { backgroundColor: primaryColor }]} />
         <Text style={[styles.subtitle, compact && styles.subtitleCompact, { color: primaryDarkColor }]}>Talent & Career Mission</Text>

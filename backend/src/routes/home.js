@@ -4039,10 +4039,12 @@ homeRouter.get("/knowledge-base/search", requireAuth, async (req, res) => {
 export async function serveOpenGraphPreview(req, res) {
   try {
     const { type, id } = req.params;
-    let title = "TCM Academy - Tech & Learning Community";
-    let description = "Check out this update on TCM Academy!";
+    let title = "TCM One Academy - Tech & Learning Community";
+    let description = "Check out this update on TCM One Academy!";
     let image = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80";
     let video = "";
+    let authorName = "TCM One Member";
+    let authorAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150";
 
     if (id) {
       let post = null;
@@ -4065,10 +4067,14 @@ export async function serveOpenGraphPreview(req, res) {
       }
 
       if (post) {
-        title = post.title || post.jobData?.title || post.text?.split("\n")[0] || post.content?.slice(0, 80) || "TCM Update";
-        description = post.content || post.text || post.description || post.title || "Shared from TCM Academy App";
-        if (description.length > 180) {
-          description = description.substring(0, 177) + "...";
+        title = post.title || post.jobData?.title || post.text?.split("\n")[0] || post.content?.slice(0, 80) || "TCM One Update";
+        description = post.content || post.text || post.description || post.title || "Shared from TCM One Academy App";
+        if (description.length > 240) {
+          description = description.substring(0, 237) + "...";
+        }
+        authorName = post.authorName || post.mentorName || "TCM One Educator";
+        if (post.authorAvatarUrl || post.mentorAvatarUrl) {
+          authorAvatar = post.authorAvatarUrl || post.mentorAvatarUrl;
         }
 
         const candidateImg =
@@ -4098,11 +4104,11 @@ export async function serveOpenGraphPreview(req, res) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)}</title>
+  <title>${escapeHtml(title)} | TCM One</title>
   <meta name="description" content="${escapeHtml(description)}">
   
   <!-- Open Graph / WhatsApp / Facebook Meta Tags -->
-  <meta property="og:site_name" content="TCM Academy">
+  <meta property="og:site_name" content="TCM One Academy">
   <meta property="og:type" content="${video ? "video.other" : "article"}">
   <meta property="og:url" content="${escapeHtml(previewUrl)}">
   <meta property="og:title" content="${escapeHtml(title)}">
@@ -4122,20 +4128,226 @@ export async function serveOpenGraphPreview(req, res) {
   <meta name="twitter:description" content="${escapeHtml(description)}">
   <meta name="twitter:image" content="${escapeHtml(image)}">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0F172A; color: #F8FAFC; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
-    .card { background: #1E263B; padding: 24px; border-radius: 18px; max-width: 480px; width: 100%; border: 1px solid #334155; box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
-    img, video { width: 100%; max-height: 260px; object-fit: cover; border-radius: 14px; margin: 16px 0; }
-    a.btn { display: inline-block; background: #5B3CF5; color: #FFF; text-decoration: none; font-weight: bold; padding: 14px 28px; border-radius: 12px; margin-top: 14px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #090D16;
+      color: #F8FAFC;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      top: -10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(91, 60, 245, 0.22) 0%, rgba(9, 13, 22, 0) 70%);
+      pointer-events: none;
+    }
+    .wrapper {
+      max-width: 520px;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+    }
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: linear-gradient(135deg, #5B3CF5, #7357F6);
+      color: #FFFFFF;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 6px 14px;
+      border-radius: 10px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 14px rgba(91, 60, 245, 0.4);
+    }
+    .brand-sub {
+      color: #94A3B8;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .card {
+      background: rgba(19, 27, 46, 0.85);
+      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+    .author-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .author-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #5B3CF5;
+    }
+    .author-info { text-align: left; }
+    .author-name { font-weight: 700; font-size: 15px; color: #FFFFFF; }
+    .author-tag { font-size: 12px; color: #38BDF8; font-weight: 600; }
+    .post-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #F8FAFC;
+      line-height: 1.35;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+    .post-desc {
+      font-size: 14px;
+      color: #CBD5E1;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      text-align: left;
+      white-space: pre-line;
+    }
+    .media-container {
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #0B0F19;
+    }
+    .media-container img, .media-container video {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      display: block;
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #5B3CF5 0%, #7357F6 100%);
+      color: #FFFFFF;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 16px 24px;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(91, 60, 245, 0.4);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(91, 60, 245, 0.55);
+    }
+    .btn-secondary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.06);
+      color: #E2E8F0;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 14px 20px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: background 0.2s ease;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .features-list {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-around;
+    }
+    .feat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #94A3B8;
+      font-weight: 600;
+    }
+    .feat-item span { color: #10B981; }
+    .footer-note {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #64748B;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>${escapeHtml(title)}</h2>
-    <p>${escapeHtml(description)}</p>
-    ${video ? `<video src="${escapeHtml(video)}" controls poster="${escapeHtml(image)}"></video>` : image ? `<img src="${escapeHtml(image)}" alt="Preview" />` : ""}
-    <br/>
-    <a href="${escapeHtml(previewUrl)}" class="btn">Open in TCM Academy App</a>
+  <div class="wrapper">
+    <div class="brand-header">
+      <div class="brand-badge">TCM One</div>
+      <div class="brand-sub">Talent & Career Mission</div>
+    </div>
+
+    <div class="card">
+      <div class="author-row">
+        <img src="${escapeHtml(authorAvatar)}" alt="${escapeHtml(authorName)}" class="author-avatar" />
+        <div class="author-info">
+          <div class="author-name">${escapeHtml(authorName)}</div>
+          <div class="author-tag">✓ Verified Post on TCM One</div>
+        </div>
+      </div>
+
+      <h1 class="post-title">${escapeHtml(title)}</h1>
+      <p class="post-desc">${escapeHtml(description)}</p>
+
+      ${video ? `<div class="media-container"><video src="${escapeHtml(video)}" controls poster="${escapeHtml(image)}"></video></div>` : image ? `<div class="media-container"><img src="${escapeHtml(image)}" alt="Preview" /></div>` : ""}
+
+      <div class="actions">
+        <a href="${escapeHtml(previewUrl)}" class="btn-primary">
+          <span>Open in TCM One App</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="${escapeHtml(previewUrl)}" class="btn-secondary">
+          Log In or Create Account to Comment
+        </a>
+      </div>
+
+      <div class="features-list">
+        <div class="feat-item"><span>✓</span> 100% Free Access</div>
+        <div class="feat-item"><span>✓</span> Verified Job Drives</div>
+        <div class="feat-item"><span>✓</span> AI Career Guidance</div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      © 2026 TCM One Academy (The Code Munk). All rights reserved.
+    </div>
   </div>
 </body>
 </html>`;

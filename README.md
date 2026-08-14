@@ -1,4 +1,4 @@
-# TCM App
+# TCM One App
 
 Separated React Native frontend and MongoDB backend for Talent & Career Mission.
 

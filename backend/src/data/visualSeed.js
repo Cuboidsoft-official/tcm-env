@@ -8,8 +8,8 @@ export function createVisualSeedData(passwordHash = "") {
     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
     handle: "ayushman",
     verified: true,
-    memberBadge: "TCM Member",
-    bio: "Building TCM to help curious minds learn, grow & create impact.",
+    memberBadge: "TCM One Member",
+    bio: "Building TCM One to help curious minds learn, grow & create impact.",
     location: "India",
     joinedDate: "Joined Jan 2024",
     website: "thecodemunk.in",
@@ -38,8 +38,8 @@ export function createVisualSeedData(passwordHash = "") {
     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
     handle: "admin",
     verified: true,
-    memberBadge: "TCM Administrator",
-    bio: "TCM Platform Administrator"
+    memberBadge: "TCM One Administrator",
+    bio: "TCM One Platform Administrator"
   };
 
   const partnerUser = {
@@ -51,7 +51,7 @@ export function createVisualSeedData(passwordHash = "") {
     role: "partner",
     isApproved: true,
     avatarUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=300&q=80",
-    partnerCategory: "TCM Partner Institute",
+    partnerCategory: "TCM One Partner Institute",
     location: "Bilaspur, Chhattisgarh",
     rating: 4.6,
     reviewsCount: "128 Reviews",
@@ -62,7 +62,7 @@ export function createVisualSeedData(passwordHash = "") {
     contactNumber: "+91 98765 43210",
     existingCourses: ["Full Stack Development", "Python Programming", "Web Development"],
     verified: true,
-    memberBadge: "TCM Partner Institute",
+    memberBadge: "TCM One Partner Institute",
     recentStudents: [
       { id: "s1", name: "Aman Verma", course: "Full Stack Development", date: "20 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" },
       { id: "s2", name: "Priya Sahu", course: "Python Programming", date: "18 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120" },
@@ -306,7 +306,7 @@ export function createVisualSeedData(passwordHash = "") {
     explore: [
       {
         id: "inform-tech",
-        title: "TCM Inform Tech",
+        title: "TCM One Inform Tech",
         subtitle: "Live Classes, Notes,\nAssignments & More",
         icon: "play-circle",
         color: "#5B3CF5",
@@ -314,7 +314,7 @@ export function createVisualSeedData(passwordHash = "") {
       },
       {
         id: "academy",
-        title: "TCM Academy",
+        title: "TCM One Academy",
         subtitle: "Premium Courses,\nSpecialized Programs",
         icon: "school",
         color: "#2E7D32",
@@ -322,7 +322,7 @@ export function createVisualSeedData(passwordHash = "") {
       },
       {
         id: "guide",
-        title: "TCM Guide",
+        title: "TCM One Guide",
         subtitle: "Guidance, Career Paths,\nMentorship",
         icon: "book-open-page-variant",
         color: "#E7A900",
@@ -330,7 +330,7 @@ export function createVisualSeedData(passwordHash = "") {
       },
       {
         id: "career",
-        title: "TCM Career",
+        title: "TCM One Career",
         subtitle: "Internships, Jobs,\nPlacements",
         icon: "briefcase",
         color: "#2F79B9",

@@ -49,7 +49,7 @@ export default function AuthRequiredModal({
 
           {/* Description */}
           <Text style={[styles.description, { color: theme.subtext }]}>
-            To <Text style={{ fontFamily: fonts.bold, color: theme.primary }}>{actionTitle}</Text>, please log in or create your free account on TCM.
+            To <Text style={{ fontFamily: fonts.bold, color: theme.primary }}>{actionTitle}</Text>, please log in or create your free account on <Text style={{ fontFamily: fonts.bold, color: theme.primary }}>TCM One</Text>.
           </Text>
 
           {/* Features List */}
@@ -64,7 +64,7 @@ export default function AuthRequiredModal({
             </View>
             <View style={styles.featureItem}>
               <Feather name="check-circle" size={15} color="#10B981" style={{ marginRight: 8 }} />
-              <Text style={[styles.featureText, { color: theme.text }]}>Connect with mentors & active learners</Text>
+              <Text style={[styles.featureText, { color: theme.text }]}>Connect with mentors & active learners on TCM One</Text>
             </View>
           </View>
 
@@ -82,7 +82,7 @@ export default function AuthRequiredModal({
               style={styles.loginBtnContainer}
             >
               <LinearGradient
-                colors={["#0A6836", "#044421"]}
+                colors={["#5B3CF5", "#7357F6"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.loginBtn}

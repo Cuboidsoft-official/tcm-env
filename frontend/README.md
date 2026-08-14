@@ -1,4 +1,4 @@
-# TCM Frontend
+# TCM One Frontend
 
 Expo React Native app for Android Studio emulator or Expo Go.
 

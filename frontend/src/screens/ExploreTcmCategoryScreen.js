@@ -96,15 +96,17 @@ const comingSoonBatches = {
 const categoryDetails = {
   inform: {
     id: "inform",
-    badge: "🟣 LIVE TECH BATCHES",
+    badge: "🔥 MOST POPULAR BATCHES 2026",
     badgeBg: "#EEECFE",
     badgeColor: "#5B3CF5",
-    title: "TCM Inform Tech",
-    subtitle: "Live Tech Classes, Video Notes, Hands-on Coding Assignments & Projects",
+    title: "TCM One Inform Tech",
+    subtitle: "Full Stack Web Dev, Python, AI/ML & DevOps",
+    categoryKey: "TCM Information Tech",
     icon: "play",
     iconBg: "#EEECFE",
     iconColor: "#5B3CF5",
-    tickerText: "🔥 TCM INFORM TECH: Live Interactive Batches 2026 • Full Stack MERN • DevOps & K8s • System Design • 100% Placement Guidance • Daily Live Doubt Clearance",
+    heroImage: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1000",
+    tickerText: "🔥 TCM ONE INFORM TECH: Live Interactive Batches 2026 • Full Stack MERN • DevOps & K8s • System Design • 100% Placement Guidance • Daily Live Doubt Clearance",
     banners: [
       {
         id: "b_inf1",
@@ -200,12 +202,12 @@ const categoryDetails = {
     badge: "ACADEMIC EXCELLENCE",
     badgeBg: "#EAF7EC",
     badgeColor: "#2E7D32",
-    title: "TCM Academy",
+    title: "TCM One Academy",
     subtitle: "NEET, JEE Main & Advanced, Board Exams & Specialized Academic Batches",
     icon: "school",
     iconBg: "#EAF7EC",
     iconColor: "#2E7D32",
-    tickerText: "TCM ACADEMY: NEET Ultimate Crash Course 2026 • JEE Main & Advanced Rank Booster • Class 12th Board Exam Topper Batch • 5000+ MCQs & Mock Tests",
+    tickerText: "TCM ONE ACADEMY: NEET Ultimate Crash Course 2026 • JEE Main & Advanced Rank Booster • Class 12th Board Exam Topper Batch • 5000+ MCQs & Mock Tests",
     banners: [
       {
         id: "b_ac1",
@@ -301,12 +303,12 @@ const categoryDetails = {
     badge: "GOVT EXAM PREP",
     badgeBg: "#FFF8EC",
     badgeColor: "#E7A900",
-    title: "TCM Government",
+    title: "TCM One Government",
     subtitle: "UPSC Civil Services, SSC CGL & CHSL, Banking, Railways & Govt Competition Exams",
     icon: "bank",
     iconBg: "#FFF8EC",
     iconColor: "#E7A900",
-    tickerText: "TCM GOVERNMENT: UPSC CSE 2026 Foundation Batch • SSC CGL Tier I & II Complete Course • IBPS PO / SBI PO Banking Special • Railway RRB NTPC • Daily Current Affairs & Mock Tests",
+    tickerText: "TCM ONE GOVERNMENT: UPSC CSE 2026 Foundation Batch • SSC CGL Tier I & II Complete Course • IBPS PO / SBI PO Banking Special • Railway RRB NTPC • Daily Current Affairs & Mock Tests",
     banners: [
       {
         id: "b_gv1",
@@ -396,12 +398,12 @@ const categoryDetails = {
     badge: "🏛️ GOVT EXAM PREP",
     badgeBg: "#FFF8EC",
     badgeColor: "#E7A900",
-    title: "TCM Government",
+    title: "TCM One Government",
     subtitle: "UPSC Civil Services, SSC CGL & CHSL, Banking, Railways & Govt Competition Exams",
     icon: "bank",
     iconBg: "#FFF8EC",
     iconColor: "#E7A900",
-    tickerText: "🏛️ TCM GOVERNMENT: UPSC CSE 2026 Foundation Batch • SSC CGL Tier I & II Complete Course • IBPS PO / SBI PO Banking Special • Railway RRB NTPC • Daily Current Affairs & Mock Tests",
+    tickerText: "🏛️ TCM ONE GOVERNMENT: UPSC CSE 2026 Foundation Batch • SSC CGL Tier I & II Complete Course • IBPS PO / SBI PO Banking Special • Railway RRB NTPC • Daily Current Affairs & Mock Tests",
     banners: [
       {
         id: "b_gv1",
@@ -442,12 +444,12 @@ const categoryDetails = {
     badge: "🔵 PLACEMENT & INTERNSHIP HUB",
     badgeBg: "#EBF5FF",
     badgeColor: "#2F79B9",
-    title: "TCM Career",
+    title: "TCM One Career",
     subtitle: "Internships, Direct Job Openings, Off-Campus Drives & Placement Guarantee",
     icon: "briefcase",
     iconBg: "#EBF5FF",
     iconColor: "#2F79B9",
-    tickerText: "🔵 TCM CAREER: TCM Placement Guarantee Batch (Assured 5+ Interviews, CTC ₹6-18 LPA) • Remote React Internships • Direct Job Referrals to 150+ Hiring Partners",
+    tickerText: "🔵 TCM ONE CAREER: TCM One Placement Guarantee Batch (Assured 5+ Interviews, CTC ₹6-18 LPA) • Remote React Internships • Direct Job Referrals to 150+ Hiring Partners",
     banners: [
       {
         id: "b_cr1",

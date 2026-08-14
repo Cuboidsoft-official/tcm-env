@@ -492,7 +492,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
     else if (pct >= 60) grade = "Proficient";
 
     const timeSpentSec = 360 - timeLeft;
-    const certId = `TCM-EXAM-${Math.floor(10000 + Math.random() * 90000)}`;
+    const certId = `TCM-ONE-EXAM-${Math.floor(10000 + Math.random() * 90000)}`;
 
     const examTitleStr = selectedSubSkill !== "All Skills" ? `${selectedSubSkill} (${selectedDomain})` : `${selectedDomain} Assessment`;
 
@@ -607,7 +607,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
               <MaterialCommunityIcons name="brain" size={36} color={theme.primary} />
             </View>
             <Text style={{ fontSize: 22, fontFamily: fonts.bold, color: theme.text, textAlign: "center" }}>
-              TCM AI Interview & Skill Examinations
+              TCM One AI Interview & Skill Examinations
             </Text>
             <Text style={{ fontSize: 13, color: theme.subtext, textAlign: "center", marginTop: 4, marginBottom: 24, paddingHorizontal: 20 }}>
               Top-tier GeeksforGeeks & Toptal level interview questions with zero repetition tracking!
@@ -1091,7 +1091,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
                   {user?.name || "Student"}
                 </Text>
                 <Text style={{ fontSize: 11.5, color: theme.subtext, marginTop: 2 }}>
-                  TCM Verified Learner • {user?.handle ? `@${user.handle}` : "Achievement Credentials"}
+                  TCM One Verified Learner • {user?.handle ? `@${user.handle}` : "Achievement Credentials"}
                 </Text>
               </View>
 

@@ -320,7 +320,7 @@ export function CoursesView({ courses = [], onCreateCourse, onDeleteCourse, sear
                   </div>
                 ))
               ) : (
-                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Standard TCM Accredited Tech Curriculum.</div>
+                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Standard TCM One Accredited Tech Curriculum.</div>
               )}
             </div>
 

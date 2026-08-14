@@ -81,7 +81,7 @@ function ProfileAvatar({ name = "", uri, size = 74 }) {
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
-    .toUpperCase() || "TCM";
+    .toUpperCase() || "TCM One";
 
   const isInvalidWebUri = Platform.OS === "web" && typeof uri === "string" && uri.startsWith("file://");
 

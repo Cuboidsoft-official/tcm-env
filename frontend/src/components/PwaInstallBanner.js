@@ -44,7 +44,7 @@ export default function PwaInstallBanner() {
       setVisible(false);
     } else {
       // Fallback instructions for browsers that don't support beforeinstallprompt (e.g. iOS Safari)
-      alert("To install TCM Web App on your home screen:\n\n1. Tap the Share button in Safari / Chrome\n2. Select 'Add to Home Screen'");
+      alert("To install TCM One Web App on your home screen:\n\n1. Tap the Share button in Safari / Chrome\n2. Select 'Add to Home Screen'");
       setVisible(false);
     }
   }
@@ -54,14 +54,14 @@ export default function PwaInstallBanner() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={["#0A6836", "#044421"]}
+        colors={["#5B3CF5", "#7357F6"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.bannerContent}
       >
         <View style={styles.leftCol}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>Install TCM App</Text>
+            <Text style={styles.bannerTitle}>Install TCM One App</Text>
             <Text style={styles.bannerSub} numberOfLines={1}>
               Add to home screen for 1-tap access & push alerts
             </Text>

@@ -42,14 +42,14 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
       iconName: "trending-up",
       iconType: "feather",
       title: "Rank Your Profile",
-      desc: "Boost your profile ranking & visibility across TCM community leaderboards."
+      desc: "Boost your profile ranking & visibility across TCM One community leaderboards."
     },
     {
       id: "ats_resume",
       iconName: "file-text",
       iconType: "feather",
-      title: "Make Highly ATS-Optimized Resume with TCM",
-      desc: "Build, format & export ATS-compliant resumes with verified TCM badges & skill ratings."
+      title: "Make Highly ATS-Optimized Resume with TCM One",
+      desc: "Build, format & export ATS-compliant resumes with verified TCM One badges & skill ratings."
     }
   ];
 
@@ -58,8 +58,8 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
     setTimeout(() => {
       setLoading(false);
       Alert.alert(
-        "🎉 Welcome to TCM Verified Pro!",
-        `Your ${selectedPlan === "yearly" ? "Yearly (₹249/yr)" : "Monthly (₹29/mo)"} subscription has been activated successfully! Your profile is now verified.`,
+        "Subscription Successful! 🎉",
+        `Welcome to TCM One Verified ${selectedPlan === "yearly" ? "Annual" : "Pro"}! Your verified shield badge is now active on your profile.`,
         [
           {
             text: "Awesome!",
@@ -70,13 +70,13 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
           }
         ]
       );
-    }, 1200);
+    }, 800);
   }
 
   const sheetSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
   const softSurface = { backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#F8FAFC", borderColor: theme.border };
   const activePlanSurface = {
-    backgroundColor: theme.isDark ? "#1E1B4B" : "#FAF5FF",
+    backgroundColor: theme.badgeBg,
     borderColor: theme.primary
   };
   const activeTextColor = theme.isDark ? "#C7D2FE" : theme.primary;
@@ -106,7 +106,7 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
               <View style={[styles.crownBadgeIcon, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
                 <MaterialCommunityIcons name="shield-check" size={34} color={theme.primary} />
               </View>
-              <Text style={[styles.heroTitle, { color: theme.text }]}>Get TCM Verified</Text>
+              <Text style={[styles.heroTitle, { color: theme.text }]}>Get TCM One Verified</Text>
               <Text style={[styles.heroSub, { color: theme.subtext }]}>
                 Unlock elite developer tools, top recruiter visibility & industry domain projects.
               </Text>

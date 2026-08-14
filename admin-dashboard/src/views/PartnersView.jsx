@@ -30,7 +30,7 @@ export function PartnersView({ partners, onCreatePartner, onUpdatePartner, onDel
   const [labFee, setLabFee] = useState('₹0 - ₹100 /hr');
   const [timings, setTimings] = useState('9:00 AM - 8:00 PM');
   const [existingCourses, setExistingCourses] = useState('Full Stack Development, Python Programming, Web Development');
-  const [bio, setBio] = useState('Leading technical educational institute offering TCM certified courses.');
+  const [bio, setBio] = useState('Leading technical educational institute offering TCM One certified courses.');
 
   const filtered = partners.filter((p) =>
     (p.instituteName || p.name)?.toLowerCase().includes(search.toLowerCase()) ||

@@ -18,11 +18,11 @@ const mentorSchema = new mongoose.Schema(
     },
     title: {
       type: String,
-      default: "TCM Educator"
+      default: "TCM One Educator"
     },
     mentorCategory: {
       type: String,
-      default: "TCM Information Tech"
+      default: "TCM One Information Tech"
     },
     isApproved: {
       type: Boolean,

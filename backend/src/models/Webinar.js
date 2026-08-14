@@ -18,7 +18,7 @@ const webinarSchema = new mongoose.Schema(
     registrationLimit: { type: String, default: "" },
     registeredStudentsCount: { type: Number, default: 0 },
     mentorId: { type: String },
-    mentorName: { type: String, default: "TCM Educator" },
+    mentorName: { type: String, default: "TCM One Educator" },
     mentorRole: { type: String, default: "Top Mentor" },
     mentorAvatarUrl: { type: String, default: "" },
     status: { type: String, enum: ["upcoming", "live", "completed", "draft"], default: "upcoming" }
