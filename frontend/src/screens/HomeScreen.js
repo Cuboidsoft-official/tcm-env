@@ -235,7 +235,7 @@ async function uploadLocalMedia(token, uri, mimeType) {
   } catch (e) {
     console.warn("Upload endpoint fallback:", e);
   }
-  return dataUri;
+  return "";
 }
 
 async function normalizeDraftMedia(token, draft) {
@@ -703,6 +703,18 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
         if (norm) normalizedDraft = norm;
       } catch (err) {
         console.warn("Normalize draft error:", err);
+      }
+
+      const isRemote = (uri) => !uri || /^https?:\/\//i.test(uri);
+      const pendingLocal = [
+        normalizedDraft.mediaUrl,
+        normalizedDraft.fileUri,
+        ...(Array.isArray(normalizedDraft.carouselImages) ? normalizedDraft.carouselImages : [])
+      ].filter((uri) => uri && !isRemote(uri));
+      if (pendingLocal.length > 0) {
+        setPosting(false);
+        Alert.alert("Media upload failed", "Your file could not be uploaded (max 80MB, supported formats only). Please try again.");
+        return;
       }
 
       const media = buildMediaPayload(config, normalizedDraft, uploadType, mediaFrameKey);
