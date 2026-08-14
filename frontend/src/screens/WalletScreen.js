@@ -20,6 +20,7 @@ import { addWalletMoney, convertCoinsToCash, convertReferralBonus, getWallet, wi
 import { Linking } from "react-native";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
@@ -33,6 +34,7 @@ function generateReferralCode(user = {}) {
 }
 
 export default function WalletScreen({ session, user = {}, onBack }) {
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [walletData, setWalletData] = useState({
     totalBalance: user.wallet?.totalBalance !== undefined ? user.wallet.totalBalance : 0.0,
@@ -303,15 +305,15 @@ export default function WalletScreen({ session, user = {}, onBack }) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Top Header Bar matching reference image */}
-      <View style={styles.topHeader}>
+      <View style={[styles.topHeader, { backgroundColor: theme.bg, borderColor: theme.border }]}>
         <Pressable onPress={onBack} style={styles.backBtn}>
-          <Feather name="chevron-left" size={24} color="#181725" />
+          <Feather name="chevron-left" size={24} color={theme.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Wallet</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Wallet</Text>
         <Pressable onPress={() => Alert.alert("TCM Wallet Help", "Earn coins via referrals and convert coins to withdrawable cash anytime!")} style={styles.helpBtn}>
-          <Feather name="help-circle" size={20} color="#181725" />
+          <Feather name="help-circle" size={20} color={theme.text} />
         </Pressable>
       </View>
 
@@ -360,10 +362,10 @@ export default function WalletScreen({ session, user = {}, onBack }) {
         </View>
 
         {/* 3. 4-Column Metric Summary Card */}
-        <View style={styles.metricsCard}>
+        <View style={[styles.metricsCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Column 1: Total Earned */}
           <View style={styles.metricCol}>
-            <Text style={styles.metricLabel}>Total Earned</Text>
+            <Text style={[styles.metricLabel, { color: theme.subtext }]}>Total Earned</Text>
             <View style={styles.metricValueRow}>
               <Text style={styles.earnedVal}>₹{walletData.totalEarned.toFixed(2)}</Text>
               <View style={styles.arrowUpBadge}>
@@ -372,11 +374,11 @@ export default function WalletScreen({ session, user = {}, onBack }) {
             </View>
           </View>
 
-          <View style={styles.metricDivider} />
+          <View style={[styles.metricDivider, { backgroundColor: theme.border }]} />
 
           {/* Column 2: Total Withdrawn */}
           <View style={styles.metricCol}>
-            <Text style={styles.metricLabel}>Total Withdrawn</Text>
+            <Text style={[styles.metricLabel, { color: theme.subtext }]}>Total Withdrawn</Text>
             <View style={styles.metricValueRow}>
               <Text style={styles.withdrawnVal}>₹{walletData.totalWithdrawn.toFixed(2)}</Text>
               <View style={styles.arrowDownBadge}>
@@ -385,24 +387,24 @@ export default function WalletScreen({ session, user = {}, onBack }) {
             </View>
           </View>
 
-          <View style={styles.metricDivider} />
+          <View style={[styles.metricDivider, { backgroundColor: theme.border }]} />
 
           {/* Column 3: TCM Coins */}
           <View style={styles.metricCol}>
-            <Text style={styles.metricLabel}>TCM Coins</Text>
+            <Text style={[styles.metricLabel, { color: theme.subtext }]}>TCM Coins</Text>
             <View style={styles.metricValueRow}>
               <View style={styles.coinCircle}>
                 <Text style={styles.coinSymbol}>$</Text>
               </View>
-              <Text style={styles.coinsVal}>{walletData.tcmCoins}</Text>
+              <Text style={[styles.coinsVal, { color: theme.text }]}>{walletData.tcmCoins}</Text>
             </View>
           </View>
 
-          <View style={styles.metricDivider} />
+          <View style={[styles.metricDivider, { backgroundColor: theme.border }]} />
 
           {/* Column 4: Pending */}
           <View style={styles.metricCol}>
-            <Text style={styles.metricLabel}>Pending</Text>
+            <Text style={[styles.metricLabel, { color: theme.subtext }]}>Pending</Text>
             <View style={styles.metricValueRow}>
               <Text style={styles.pendingVal}>₹{walletData.pendingBalance.toFixed(2)}</Text>
               <View style={styles.clockBadge}>
@@ -413,43 +415,43 @@ export default function WalletScreen({ session, user = {}, onBack }) {
         </View>
 
         {/* 4. Your Referral Code & Add Referral Code Card */}
-        <View style={styles.referralCard}>
-          <Text style={styles.referralCardTitle}>Your Referral Code</Text>
+        <View style={[styles.referralCard, { backgroundColor: theme.isDark ? theme.badgeBg : "#F0FDFA", borderColor: theme.border }]}>
+          <Text style={[styles.referralCardTitle, { color: theme.text }]}>Your Referral Code</Text>
 
           <View style={styles.referralMainRow}>
             <View style={styles.referralLeftCol}>
-              <Pressable onPress={handleCopyReferral} style={styles.dashedCodeBox}>
-                <Text style={styles.referralCodeText}>{referralCode}</Text>
-                <Feather name="copy" size={16} color="#0A6836" style={{ marginLeft: 8 }} />
+              <Pressable onPress={handleCopyReferral} style={[styles.dashedCodeBox, { backgroundColor: theme.cardBg, borderColor: theme.primary }]}>
+                <Text style={[styles.referralCodeText, { color: theme.primary }]}>{referralCode}</Text>
+                <Feather name="copy" size={16} color={theme.primary} style={{ marginLeft: 8 }} />
               </Pressable>
             </View>
 
             <View style={styles.referralRightCol}>
-              <Text style={styles.referralInviteText}>
+              <Text style={[styles.referralInviteText, { color: theme.subtext }]}>
                 Earn <Text style={{ fontFamily: fonts.bold, color: "#10B981" }}>₹300 Cash</Text> per friend who buys a course using your code!
               </Text>
 
-              <Pressable onPress={handleShareReferral} style={styles.shareEarnBtn}>
+              <Pressable onPress={handleShareReferral} style={[styles.shareEarnBtn, { backgroundColor: theme.primary }]}>
                 <Feather name="share-2" size={13} color="#FFFFFF" style={{ marginRight: 6 }} />
                 <Text style={styles.shareEarnBtnText}>Share & Earn ₹300</Text>
               </Pressable>
             </View>
 
             <View style={styles.giftGraphicWrap}>
-              <MaterialCommunityIcons name="gift-outline" size={40} color="#0A6836" />
+              <MaterialCommunityIcons name="gift-outline" size={40} color={theme.primary} />
             </View>
           </View>
 
           {/* Add Friend's Referral Code Section */}
-          <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: "#E2E8F0" }}>
-            <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#0F172A", marginBottom: 4 }}>Have a Referral Code?</Text>
-            <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: "#64748B", marginBottom: 8 }}>Enter someone's referral code to get 20 TCM Coins instantly!</Text>
+          <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: theme.border }}>
+            <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: theme.text, marginBottom: 4 }}>Have a Referral Code?</Text>
+            <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: theme.subtext, marginBottom: 8 }}>Enter someone's referral code to get 20 TCM Coins instantly!</Text>
 
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TextInput
                 placeholder="Enter referral code (e.g. AYU25X)"
-                placeholderTextColor="#94A3B8"
-                style={{ flex: 1, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, fontFamily: fonts.medium, textTransform: "uppercase" }}
+                placeholderTextColor={theme.subtext}
+                style={{ flex: 1, backgroundColor: theme.inputBg, borderWidth: 1, borderColor: theme.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, fontFamily: fonts.medium, textTransform: "uppercase", color: theme.text }}
                 value={inputReferralCode}
                 onChangeText={setInputReferralCode}
                 disabled={appliedReferral}
@@ -457,7 +459,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
               <Pressable
                 onPress={handleApplyReferralCode}
                 disabled={appliedReferral}
-                style={{ backgroundColor: appliedReferral ? "#94A3B8" : "#0A6836", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, justifyContent: "center" }}
+                style={{ backgroundColor: appliedReferral ? "#94A3B8" : theme.primary, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, justifyContent: "center" }}
               >
                 <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: "#FFFFFF" }}>{appliedReferral ? "Applied ✓" : "Apply Code"}</Text>
               </Pressable>
@@ -473,20 +475,20 @@ export default function WalletScreen({ session, user = {}, onBack }) {
         </View>
 
         {/* 4.5. Coin Conversion & Converted Referral Rewards Card */}
-        <View style={styles.coinConvCard}>
+        <View style={[styles.coinConvCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.coinConvHeaderRow}>
-            <View style={styles.coinIconWrap}>
+            <View style={[styles.coinIconWrap, { backgroundColor: theme.badgeBg }]}>
               <MaterialCommunityIcons name="coins" size={22} color="#10B981" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.coinConvTitle}>500 Coins = ₹100 Cash Conversion</Text>
-              <Text style={styles.coinConvSub}>20 Coins per referral code • 500 Coins = ₹100 Cash • ₹300 per successful course refer</Text>
+              <Text style={[styles.coinConvTitle, { color: theme.text }]}>500 Coins = ₹100 Cash Conversion</Text>
+              <Text style={[styles.coinConvSub, { color: theme.subtext }]}>20 Coins per referral code • 500 Coins = ₹100 Cash • ₹300 per successful course refer</Text>
             </View>
           </View>
 
-          <View style={styles.coinProgressRow}>
-            <Text style={styles.coinProgressText}>Current Balance: <Text style={{ fontFamily: fonts.bold, color: "#10B981" }}>{walletData.tcmCoins} Coins</Text></Text>
-            <Text style={styles.coinReqText}>Target: 500 Coins = ₹100.00</Text>
+          <View style={[styles.coinProgressRow, { backgroundColor: theme.inputBg }]}>
+            <Text style={[styles.coinProgressText, { color: theme.text }]}>Current Balance: <Text style={{ fontFamily: fonts.bold, color: "#10B981" }}>{walletData.tcmCoins} Coins</Text></Text>
+            <Text style={[styles.coinReqText, { color: theme.subtext }]}>Target: 500 Coins = ₹100.00</Text>
           </View>
 
           <Pressable
@@ -504,43 +506,43 @@ export default function WalletScreen({ session, user = {}, onBack }) {
           </Pressable>
 
           {/* Course Purchase Eligibility & Discount Banner */}
-          <View style={{ marginTop: 14, backgroundColor: "#E8F5E9", borderRadius: 14, padding: 12, borderWidth: 1, borderColor: "#C8E6C9" }}>
+          <View style={{ marginTop: 14, backgroundColor: theme.badgeBg, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: theme.border }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
-              <MaterialCommunityIcons name="school-outline" size={18} color="#0A6836" />
-              <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#0A6836" }}>Eligible for New Course Purchase 🎓</Text>
+              <MaterialCommunityIcons name="school-outline" size={18} color={theme.primary} />
+              <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: theme.primary }}>Eligible for New Course Purchase 🎓</Text>
             </View>
-            <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: "#1E293B", lineHeight: 17 }}>
-              Aap apne converted wallet cash (<Text style={{ fontFamily: fonts.bold, color: "#0A6836" }}>₹{walletData.availableBalance.toFixed(2)}</Text>) se naye TCM Courses purchase kar sakte hain ya instant course discount claim kar sakte hain!
+            <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: theme.text, lineHeight: 17 }}>
+              Aap apne converted wallet cash (<Text style={{ fontFamily: fonts.bold, color: theme.primary }}>₹{walletData.availableBalance.toFixed(2)}</Text>) se naye TCM Courses purchase kar sakte hain ya instant course discount claim kar sakte hain!
             </Text>
           </View>
         </View>
 
         {/* Referral Tracking List */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Referrals Track History</Text>
-          <Text style={styles.viewAllText}>{walletData.referrals?.length || 0} Referred</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Referrals Track History</Text>
+          <Text style={[styles.viewAllText, { color: theme.primary }]}>{walletData.referrals?.length || 0} Referred</Text>
         </View>
 
         {Array.isArray(walletData.referrals) && walletData.referrals.length > 0 ? (
-          <View style={styles.referralsList}>
+          <View style={[styles.referralsList, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             {walletData.referrals.map((ref) => (
-              <View key={ref.id || Math.random()} style={styles.refRowItem}>
-                <View style={styles.refAvatarWrap}>
+              <View key={ref.id || Math.random()} style={[styles.refRowItem, { borderBottomColor: theme.border }]}>
+                <View style={[styles.refAvatarWrap, { backgroundColor: theme.primary }]}>
                   <Text style={styles.refAvatarText}>{ref.name?.[0]?.toUpperCase() || "U"}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.refNameText}>{ref.name}</Text>
-                  <Text style={styles.refDateText}>{ref.date || "Recently"}</Text>
+                  <Text style={[styles.refNameText, { color: theme.text }]}>{ref.name}</Text>
+                  <Text style={[styles.refDateText, { color: theme.subtext }]}>{ref.date || "Recently"}</Text>
                 </View>
                 <View style={styles.refBadgeCol}>
-                  <View style={[styles.refBadgePill, ref.status === "Converted" ? { backgroundColor: "#E8F5E9" } : { backgroundColor: "#ECFDF5" }]}>
-                    <Text style={[styles.refBadgeText, ref.status === "Converted" ? { color: "#0A6836" } : { color: "#10B981" }]}>
+                  <View style={[styles.refBadgePill, ref.status === "Converted" ? { backgroundColor: theme.badgeBg } : { backgroundColor: theme.badgeBg }]}>
+                    <Text style={[styles.refBadgeText, { color: theme.primary }]}>
                       {ref.status === "Converted" ? "Converted (+₹500)" : "Joined (+10 Coins)"}
                     </Text>
                   </View>
                   {ref.status !== "Converted" && (
-                    <Pressable onPress={() => handleClaimConvertedReferral(ref.id, ref.name)} style={styles.claimBonusBtn}>
-                      <Text style={styles.claimBonusText}>Claim ₹500 Bonus</Text>
+                    <Pressable onPress={() => handleClaimConvertedReferral(ref.id, ref.name)} style={[styles.claimBonusBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+                      <Text style={[styles.claimBonusText, { color: theme.primary }]}>Claim ₹500 Bonus</Text>
                     </Pressable>
                   )}
                 </View>
@@ -548,79 +550,79 @@ export default function WalletScreen({ session, user = {}, onBack }) {
             ))}
           </View>
         ) : (
-          <View style={styles.emptyRefCard}>
-            <MaterialCommunityIcons name="account-group-outline" size={32} color="#94A3B8" />
-            <Text style={styles.emptyRefText}>No referrals tracked yet</Text>
-            <Text style={styles.emptyRefSub}>Share your code {referralCode} to get 10 coins per join & ₹500 on converted referrals!</Text>
+          <View style={[styles.emptyRefCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <MaterialCommunityIcons name="account-group-outline" size={32} color={theme.subtext} />
+            <Text style={[styles.emptyRefText, { color: theme.text }]}>No referrals tracked yet</Text>
+            <Text style={[styles.emptyRefSub, { color: theme.subtext }]}>Share your code {referralCode} to get 10 coins per join & ₹500 on converted referrals!</Text>
           </View>
         )}
 
         {/* 5. Recent Transactions Section */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Recent Transactions</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent Transactions</Text>
           <Pressable onPress={() => Alert.alert("Transactions History", "Showing all recent wallet transactions.")}>
-            <Text style={styles.viewAllText}>View All →</Text>
+            <Text style={[styles.viewAllText, { color: theme.primary }]}>View All →</Text>
           </Pressable>
         </View>
 
         {walletData.transactions && walletData.transactions.length > 0 ? (
-          <View style={styles.transactionsList}>
+          <View style={[styles.transactionsList, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             {walletData.transactions.map((tx) => (
-              <View key={tx.id} style={styles.txRowItem}>
-                <View style={[styles.txIconBox, { backgroundColor: tx.iconBg }]}>
-                  <MaterialCommunityIcons name={tx.icon} size={18} color={tx.iconColor} />
+              <View key={tx.id} style={[styles.txRowItem, { borderBottomColor: theme.border }]}>
+                <View style={[styles.txIconBox, { backgroundColor: theme.badgeBg }]}>
+                  <MaterialCommunityIcons name={tx.icon} size={18} color={theme.primary} />
                 </View>
 
                 <View style={styles.txMainInfo}>
-                  <Text style={styles.txTitle}>{tx.title}</Text>
-                  <Text style={styles.txSub}>{tx.subtitle}</Text>
+                  <Text style={[styles.txTitle, { color: theme.text }]}>{tx.title}</Text>
+                  <Text style={[styles.txSub, { color: theme.subtext }]}>{tx.subtitle}</Text>
                 </View>
 
                 <View style={styles.txRightCol}>
                   <Text style={[styles.txAmount, tx.type === "credit" ? styles.creditText : styles.debitText]}>
                     {tx.amount}
                   </Text>
-                  <Text style={styles.txDate}>{tx.date}</Text>
+                  <Text style={[styles.txDate, { color: theme.subtext }]}>{tx.date}</Text>
                 </View>
               </View>
             ))}
           </View>
         ) : (
-          <View style={styles.emptyTxCard}>
-            <MaterialCommunityIcons name="history" size={32} color="#9E9EB2" />
-            <Text style={styles.emptyTxTitle}>No Recent Transactions</Text>
-            <Text style={styles.emptyTxSub}>Your wallet history will appear here once you add funds or withdraw earnings.</Text>
+          <View style={[styles.emptyTxCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <MaterialCommunityIcons name="history" size={32} color={theme.subtext} />
+            <Text style={[styles.emptyTxTitle, { color: theme.text }]}>No Recent Transactions</Text>
+            <Text style={[styles.emptyTxSub, { color: theme.subtext }]}>Your wallet history will appear here once you add funds or withdraw earnings.</Text>
           </View>
         )}
 
         {/* 6. How it Works? Section */}
-        <Text style={styles.sectionTitle}>How it Works?</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>How it Works?</Text>
         <View style={styles.stepsGrid}>
           {/* Step 1 */}
-          <View style={styles.stepCard}>
-            <View style={styles.stepIconWrap}>
-              <Feather name="users" size={20} color="#0A6836" />
+          <View style={[styles.stepCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <View style={[styles.stepIconWrap, { backgroundColor: theme.badgeBg }]}>
+              <Feather name="users" size={20} color={theme.primary} />
             </View>
-            <Text style={styles.stepNumTitle}>1. Refer</Text>
-            <Text style={styles.stepSubText}>Invite your friends to TCM Academy</Text>
+            <Text style={[styles.stepNumTitle, { color: theme.text }]}>1. Refer</Text>
+            <Text style={[styles.stepSubText, { color: theme.subtext }]}>Invite your friends to TCM Academy</Text>
           </View>
 
           {/* Step 2 */}
-          <View style={styles.stepCard}>
-            <View style={styles.stepIconWrap}>
+          <View style={[styles.stepCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <View style={[styles.stepIconWrap, { backgroundColor: theme.badgeBg }]}>
               <MaterialCommunityIcons name="currency-usd" size={20} color="#FFB800" />
             </View>
-            <Text style={styles.stepNumTitle}>2. Earn</Text>
-            <Text style={styles.stepSubText}>You earn coins on successful referrals</Text>
+            <Text style={[styles.stepNumTitle, { color: theme.text }]}>2. Earn</Text>
+            <Text style={[styles.stepSubText, { color: theme.subtext }]}>You earn coins on successful referrals</Text>
           </View>
 
           {/* Step 3 */}
-          <View style={styles.stepCard}>
-            <View style={styles.stepIconWrap}>
-              <MaterialCommunityIcons name="wallet-outline" size={20} color="#0A6836" />
+          <View style={[styles.stepCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <View style={[styles.stepIconWrap, { backgroundColor: theme.badgeBg }]}>
+              <MaterialCommunityIcons name="wallet-outline" size={20} color={theme.primary} />
             </View>
-            <Text style={styles.stepNumTitle}>3. Redeem</Text>
-            <Text style={styles.stepSubText}>Convert coins to cash and withdraw</Text>
+            <Text style={[styles.stepNumTitle, { color: theme.text }]}>3. Redeem</Text>
+            <Text style={[styles.stepSubText, { color: theme.subtext }]}>Convert coins to cash and withdraw</Text>
           </View>
         </View>
       </View>
@@ -630,46 +632,46 @@ export default function WalletScreen({ session, user = {}, onBack }) {
       <Modal visible={withdrawModalOpen} transparent animationType="slide" onRequestClose={() => setWithdrawModalOpen(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <View style={styles.modalHeaderRow}>
-                <Text style={styles.modalTitle}>Withdraw Funds</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Withdraw Funds</Text>
                 <Pressable onPress={() => setWithdrawModalOpen(false)}>
-                  <Feather name="x" size={20} color="#181725" />
+                  <Feather name="x" size={20} color={theme.text} />
                 </Pressable>
               </View>
 
               {/* Maintenance Warning Banner */}
-              <View style={{ backgroundColor: "#FEF3C7", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#FDE68A", marginBottom: 14 }}>
-                <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#92400E", marginBottom: 3 }}>Withdrawal Gateway Under Maintenance</Text>
-                <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: "#78350F", lineHeight: 17 }}>
+              <View style={{ backgroundColor: theme.isDark ? "#3A2A18" : "#FEF3C7", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: theme.isDark ? "#5A4222" : "#FDE68A", marginBottom: 14 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: theme.isDark ? "#FBBF24" : "#92400E", marginBottom: 3 }}>Withdrawal Gateway Under Maintenance</Text>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: theme.isDark ? "#FDE68A" : "#78350F", lineHeight: 17 }}>
                   Automated payout gateway is currently undergoing maintenance. Send your withdrawal request on WhatsApp to <Text style={{ fontWeight: "700" }}>9238695500</Text> for instant direct UPI transfer.
                 </Text>
               </View>
 
-              <Text style={styles.modalSubText}>
+              <Text style={[styles.modalSubText, { color: theme.subtext }]}>
                 Available balance for withdrawal:{" "}
                 <Text style={{ fontFamily: fonts.bold, color: "#2E7D32" }}>
                   ₹{walletData.availableBalance.toFixed(2)}
                 </Text>
               </Text>
 
-              <Text style={styles.inputLabel}>Enter Amount (₹):</Text>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Enter Amount (₹):</Text>
               <TextInput
                 value={withdrawAmount}
                 onChangeText={setWithdrawAmount}
                 placeholder="e.g. 500"
-                placeholderTextColor="#A0A0B8"
+                placeholderTextColor={theme.subtext}
                 keyboardType="numeric"
-                style={styles.modalInput}
+                style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
               />
 
-              <Text style={styles.inputLabel}>Enter UPI ID / Bank Details:</Text>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Enter UPI ID / Bank Details:</Text>
               <TextInput
                 value={upiId}
                 onChangeText={setUpiId}
                 placeholder="e.g. name@upi or Account No."
-                placeholderTextColor="#A0A0B8"
-                style={styles.modalInput}
+                placeholderTextColor={theme.subtext}
+                style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
               />
 
               <TouchableOpacity onPress={handleWithdrawWhatsApp} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#0F172A", paddingVertical: 14, borderRadius: 14, marginTop: 8 }}>
@@ -685,33 +687,33 @@ export default function WalletScreen({ session, user = {}, onBack }) {
       <Modal visible={addMoneyModalOpen} transparent animationType="slide" onRequestClose={() => setAddMoneyModalOpen(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <View style={styles.modalHeaderRow}>
-                <Text style={styles.modalTitle}>Add Money to Wallet</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Add Money to Wallet</Text>
                 <Pressable onPress={() => setAddMoneyModalOpen(false)}>
-                  <Feather name="x" size={20} color="#181725" />
+                  <Feather name="x" size={20} color={theme.text} />
                 </Pressable>
               </View>
 
-              <Text style={styles.inputLabel}>Enter Amount to Add (₹):</Text>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Enter Amount to Add (₹):</Text>
               <TextInput
                 value={addAmount}
                 onChangeText={setAddAmount}
                 placeholder="e.g. 500"
-                placeholderTextColor="#A0A0B8"
+                placeholderTextColor={theme.subtext}
                 keyboardType="numeric"
-                style={styles.modalInput}
+                style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
               />
 
               <View style={styles.quickPillsRow}>
                 {[100, 500, 1000, 2000].map((amt) => (
-                  <Pressable key={amt} onPress={() => setAddAmount(amt.toString())} style={styles.quickPill}>
-                    <Text style={styles.quickPillText}>+ ₹{amt}</Text>
+                  <Pressable key={amt} onPress={() => setAddAmount(amt.toString())} style={[styles.quickPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+                    <Text style={[styles.quickPillText, { color: theme.primary }]}>+ ₹{amt}</Text>
                   </Pressable>
                 ))}
               </View>
 
-              <Pressable onPress={handleAddMoneySubmit} style={styles.modalSubmitBtn}>
+              <Pressable onPress={handleAddMoneySubmit} style={[styles.modalSubmitBtn, { backgroundColor: theme.primary }]}>
                 <Text style={styles.modalSubmitBtnText}>Proceed to Pay with UPI</Text>
               </Pressable>
             </View>

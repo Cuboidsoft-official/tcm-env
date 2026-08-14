@@ -4619,10 +4619,148 @@ function DrawerFeatureModal({ feature, onClose, user }) {
 }
 
 function LoadingState() {
+  const { theme } = useTheme();
+  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 0.95,
+          duration: 700,
+          useNativeDriver: true
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0.4,
+          duration: 700,
+          useNativeDriver: true
+        })
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [pulseAnim]);
+
+  const skeletonBg = theme.isDark ? "#283046" : "#E2E8F0";
+
   return (
-    <View style={styles.stateCard}>
-      <ActivityIndicator color={colors.primary} />
-      <Text style={styles.stateText}>Loading live workspace...</Text>
+    <View style={{ width: "100%", gap: 14, marginVertical: 10 }}>
+      {/* Top Banner Badge */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          paddingVertical: 10,
+          paddingHorizontal: 16,
+          borderRadius: 20,
+          backgroundColor: theme.badgeBg,
+          borderWidth: 1,
+          borderColor: theme.border,
+          alignSelf: "center",
+          marginBottom: 4
+        }}
+      >
+        <ActivityIndicator size="small" color={theme.primary} />
+        <Text style={{ fontFamily: fonts.semiBold, fontSize: 13, color: theme.primary }}>
+          Curating live TCM feed & stories...
+        </Text>
+      </View>
+
+      {/* 3 Animated Skeleton Feed Post Cards */}
+      {[1, 2, 3].map((key) => (
+        <View
+          key={key}
+          style={{
+            backgroundColor: theme.cardBg,
+            borderRadius: 18,
+            padding: 16,
+            borderWidth: 1,
+            borderColor: theme.border,
+            gap: 12,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: theme.isDark ? 0.3 : 0.05,
+            shadowRadius: 6
+          }}
+        >
+          {/* Skeleton Header: Avatar + User Info */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <Animated.View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: skeletonBg,
+                opacity: pulseAnim
+              }}
+            />
+            <View style={{ gap: 6, flex: 1 }}>
+              <Animated.View
+                style={{
+                  width: "45%",
+                  height: 12,
+                  borderRadius: 6,
+                  backgroundColor: skeletonBg,
+                  opacity: pulseAnim
+                }}
+              />
+              <Animated.View
+                style={{
+                  width: "25%",
+                  height: 10,
+                  borderRadius: 5,
+                  backgroundColor: skeletonBg,
+                  opacity: pulseAnim
+                }}
+              />
+            </View>
+          </View>
+
+          {/* Skeleton Content Lines */}
+          <View style={{ gap: 8, marginVertical: 4 }}>
+            <Animated.View
+              style={{
+                width: "92%",
+                height: 12,
+                borderRadius: 6,
+                backgroundColor: skeletonBg,
+                opacity: pulseAnim
+              }}
+            />
+            <Animated.View
+              style={{
+                width: "78%",
+                height: 12,
+                borderRadius: 6,
+                backgroundColor: skeletonBg,
+                opacity: pulseAnim
+              }}
+            />
+          </View>
+
+          {/* Skeleton Image/Media Box (rendered for cards 1 and 3) */}
+          {key !== 2 && (
+            <Animated.View
+              style={{
+                width: "100%",
+                height: 160,
+                borderRadius: 14,
+                backgroundColor: skeletonBg,
+                opacity: pulseAnim
+              }}
+            />
+          )}
+
+          {/* Skeleton Action Bar */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.border }}>
+            <Animated.View style={{ width: 60, height: 22, borderRadius: 11, backgroundColor: skeletonBg, opacity: pulseAnim }} />
+            <Animated.View style={{ width: 60, height: 22, borderRadius: 11, backgroundColor: skeletonBg, opacity: pulseAnim }} />
+            <Animated.View style={{ width: 60, height: 22, borderRadius: 11, backgroundColor: skeletonBg, opacity: pulseAnim }} />
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
