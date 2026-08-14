@@ -3594,8 +3594,15 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/vnd.ms-powerpoint",
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/rtf",
+            "application/zip",
+            "application/vnd.rar",
+            "application/x-7z-compressed",
+            "text/*",
             "image/*",
-            "text/*"
+            "video/*"
           ]
         });
         if (result.canceled) return;
