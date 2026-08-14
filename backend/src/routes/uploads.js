@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { execFile } from "child_process";
 import express from "express";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -126,7 +127,76 @@ function guessMime(buf) {
   return null;
 }
 
-uploadsRouter.post("/file", requireAuth, (req, res) => {
+const PLAYABLE_VIDEO_CODECS = new Set(["h264", "avc1", "vp8", "vp9", "av1"]);
+const PLAYABLE_AUDIO_CODECS = new Set(["aac", "mp3", "opus", "vorbis", "mp4a", "none", ""]);
+const TRANSCODE_TIMEOUT = 300000;
+
+function runCmd(cmd, args, timeout) {
+  return new Promise((resolve) => {
+    const child = execFile(cmd, args, { timeout, maxBuffer: 16 * 1024 * 1024 }, (error, _stdout, stderr) => {
+      if (error) {
+        resolve({ ok: false, error: error.code || error.message, stderr: String(stderr).slice(0, 500) });
+      } else {
+        resolve({ ok: true });
+      }
+    });
+    child.on("error", (err) => resolve({ ok: false, error: err.code || err.message }));
+  });
+}
+
+async function probeVideo(filePath) {
+  try {
+    const { stdout } = await new Promise((resolve, reject) => {
+      execFile("ffprobe", ["-v", "error", "-print_format", "json", "-show_streams", filePath], { timeout: 20000, maxBuffer: 16 * 1024 * 1024 }, (err, out) => (err ? reject(err) : resolve({ stdout: out })));
+    });
+    const info = JSON.parse(stdout);
+    const video = (info.streams || []).find((s) => s.codec_type === "video");
+    const audio = (info.streams || []).find((s) => s.codec_type === "audio");
+    return {
+      videoCodec: video?.codec_name || "",
+      audioCodec: audio?.codec_name || ""
+    };
+  } catch {
+    return { videoCodec: "", audioCodec: "" };
+  }
+}
+
+function isPlayable({ videoCodec, audioCodec }) {
+  if (!videoCodec) return false;
+  return PLAYABLE_VIDEO_CODECS.has(videoCodec) && PLAYABLE_AUDIO_CODECS.has(audioCodec);
+}
+
+// Browsers only reliably play mp4/webm/ogv. For anything else we remux or
+// re-encode to an H.264/AAC mp4 so the file actually plays in the app.
+// Falls back to the original file whenever ffmpeg/ffprobe is unavailable.
+async function maybeTranscodeVideo(mime, origPath, outPath) {
+  const ext = MIME_MAP[mime];
+  if (!ext || !mime.startsWith("video/")) return origPath;
+  if (ext === "webm" || ext === "ogv") return origPath;
+
+  const nativeContainers = ["mp4", "mov", "m4v", "3gp"];
+  const probe = await probeVideo(origPath);
+  if (nativeContainers.includes(ext) && isPlayable(probe)) {
+    return origPath;
+  }
+
+  const remux = await runCmd("ffmpeg", ["-y", "-i", origPath, "-c", "copy", "-movflags", "+faststart", outPath], TRANSCODE_TIMEOUT);
+  if (remux.ok && isPlayable(await probeVideo(outPath))) {
+    fs.rmSync(origPath, { force: true });
+    return outPath;
+  }
+
+  const reencode = await runCmd("ffmpeg", ["-y", "-i", origPath, "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", outPath], TRANSCODE_TIMEOUT);
+  if (reencode.ok) {
+    fs.rmSync(origPath, { force: true });
+    return outPath;
+  }
+
+  fs.rmSync(outPath, { force: true });
+  return origPath;
+}
+
+uploadsRouter.post("/file", requireAuth, async (req, res) => {
   try {
     const parsed = parseFileData(req.body?.data);
     if (!parsed || !parsed.buf.length) {
@@ -143,8 +213,12 @@ uploadsRouter.post("/file", requireAuth, (req, res) => {
     }
 
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-    const name = `${Date.now().toString(36)}-${crypto.randomBytes(6).toString("hex")}.${MIME_MAP[parsed.mime]}`;
-    fs.writeFileSync(path.join(UPLOADS_DIR, name), parsed.buf, { mode: 0o644 });
+    const baseName = `${Date.now().toString(36)}-${crypto.randomBytes(6).toString("hex")}`;
+    const origPath = path.join(UPLOADS_DIR, `${baseName}.${MIME_MAP[parsed.mime]}`);
+    fs.writeFileSync(origPath, parsed.buf, { mode: 0o644 });
+
+    const finalPath = await maybeTranscodeVideo(parsed.mime, origPath, path.join(UPLOADS_DIR, `${baseName}.mp4`));
+    const name = path.basename(finalPath);
 
     res.json({ url: `${PUBLIC_ORIGIN}/uploads/${name}` });
   } catch (error) {

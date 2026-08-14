@@ -323,7 +323,12 @@ function sanitizeIncomingMedia(media) {
   }
 
   if (media.kind === "video") {
-    if (!video && !image) return { kind: "none" };
+    if (!video && !image && !thumb) return { kind: "none" };
+    if (!video) {
+      // No usable video URL: fall back to a photo so the feed never renders
+      // a "playable" video card that cannot actually play.
+      return { kind: "showcase", imageUrl: image || thumb, thumbnailUrl: thumb || image, carouselImages: [] };
+    }
     return {
       ...media,
       videoUrl: video,
@@ -360,15 +365,18 @@ function sanitizePostMedia(media) {
   }
 
   if (media.kind === "video") {
-    const videoUrl = typeof media.videoUrl === "string" && (
-      /^https?:\/\//i.test(media.videoUrl.trim()) ||
-      /^data:video\//i.test(media.videoUrl.trim()) ||
-      /^blob:/i.test(media.videoUrl.trim()) ||
-      /^file:/i.test(media.videoUrl.trim()) ||
-      /^\/uploads\//i.test(media.videoUrl.trim())
-    ) ? media.videoUrl : (media.fileUri || "");
+    const rawVideo = typeof media.videoUrl === "string" ? media.videoUrl.trim() : "";
+    const videoUrl = /^(https?:\/\/|\/uploads\/|data:video\/)/i.test(rawVideo)
+      ? rawVideo
+      : (typeof media.fileUri === "string" && /^(https?:\/\/|\/uploads\/|data:video\/)/i.test(media.fileUri.trim())
+        ? media.fileUri.trim()
+        : "");
     const imageUrl = isValidImageUri(media.imageUrl) ? media.imageUrl : (isValidImageUri(media.thumbnailUrl) ? media.thumbnailUrl : "");
-    if (!videoUrl && !imageUrl) {
+    if (!videoUrl && imageUrl) {
+      // Video URL is dead (e.g. blob/file from an old client): render as a photo.
+      return { ...media, kind: "showcase", imageUrl, carouselImages: [] };
+    }
+    if (!videoUrl) {
       return { kind: "none" };
     }
     return { ...media, videoUrl, imageUrl, thumbnailUrl: media.thumbnailUrl || imageUrl };

@@ -1,14 +1,15 @@
 import { getApiUrlCandidates } from "./api-url-candidates";
 
 const REQUEST_TIMEOUT_MS = 6000;
+const UPLOAD_TIMEOUT_MS = 300000;
 
-async function fetchWithTimeout(url, options) {
+async function fetchWithTimeout(url, options, timeoutMs = REQUEST_TIMEOUT_MS) {
   if (typeof AbortController === "undefined") {
     return fetch(url, options);
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     return await fetch(url, {
@@ -29,14 +30,14 @@ async function request(path, options = {}) {
     triedUrls.push(apiUrl);
 
     try {
-      const { headers: optionHeaders = {}, ...requestOptions } = options;
+      const { headers: optionHeaders = {}, timeoutMs = REQUEST_TIMEOUT_MS, ...requestOptions } = options;
       const response = await fetchWithTimeout(`${apiUrl}${path}`, {
         ...requestOptions,
         headers: {
           "Content-Type": "application/json",
           ...optionHeaders
         }
-      });
+      }, timeoutMs);
 
       const data = await response.json().catch(() => ({}));
 
@@ -264,13 +265,14 @@ export function createCommunityPost(token, payload) {
   });
 }
 
-export function uploadFile(token, dataUri) {
+export function uploadFile(token, dataUri, timeoutMs = UPLOAD_TIMEOUT_MS) {
   return request("/uploads/file", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`
     },
-    body: JSON.stringify({ data: dataUri })
+    body: JSON.stringify({ data: dataUri }),
+    timeoutMs
   });
 }
 

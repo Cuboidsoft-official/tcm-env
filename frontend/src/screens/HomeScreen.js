@@ -31,6 +31,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as VideoThumbnails from "expo-video-thumbnails";
 import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
+import { useEvent } from "expo";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { addPostComment, deletePostComment, createCommunityPost, deleteCommunityPost, getHome, getNotifications, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost, applyJobPost, deleteJobPost, uploadFile } from "../api/client";
 import { sanitizeImageUri, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUtils";
@@ -2389,6 +2390,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [showControls, setShowControls] = useState(false);
+  const [playerError, setPlayerError] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
   const userPausedRef = useRef(false);
   const containerRef = useRef(null);
@@ -2401,6 +2403,12 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
     videoPlayer.loop = true;
     videoPlayer.muted = true;
   });
+  const { status: playerStatus } = useEvent(player, "statusChange", { status: player?.status });
+
+  useEffect(() => {
+    if (playerStatus === "error") setPlayerError(true);
+    else if (playerStatus === "readyToPlay") setPlayerError(false);
+  }, [playerStatus]);
 
   // Autoplay on mount when player is initialized
   useEffect(() => {
@@ -2522,21 +2530,27 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
         frameKey === "rounded" && styles.videoMediaRounded
       ]}
     >
-      {sourceUri ? (
+      {sourceUri && !playerError ? (
         <VideoView player={player} nativeControls={false} contentFit="cover" style={styles.videoPlayerView} />
       ) : posterUri ? (
         <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoThumbImage} />
       ) : null}
-      {!playing && posterUri && posterUri !== sourceUri ? <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoPosterImage} /> : null}
+      {!playing && !playerError && posterUri && posterUri !== sourceUri ? <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoPosterImage} /> : null}
+      {playerError ? (
+        <View style={styles.videoErrorBadge}>
+          <Feather name="alert-triangle" size={14} color="#FFFFFF" />
+          <Text numberOfLines={2} style={styles.videoErrorText}>Video can't be played on this device</Text>
+        </View>
+      ) : null}
       <LinearGradient colors={["rgba(8,7,28,0.04)", "rgba(8,7,28,0.78)"]} style={styles.videoShade} />
-      <Pressable onPress={togglePlay} style={styles.videoTapLayer} />
+      <Pressable onPress={playerError ? () => {} : togglePlay} style={styles.videoTapLayer} />
       <View style={styles.videoCopy}>
         <Text numberOfLines={1} style={styles.videoTitle}>{media.title || "Video Post"}</Text>
         <Text numberOfLines={1} style={styles.videoSmall}>{media.subtitle || "TCM Community"}</Text>
       </View>
 
       {/* Auto-Hiding Play/Pause Icon Overlay */}
-      {showControls || !playing ? (
+      {!playerError && (showControls || !playing) ? (
         <Pressable onPress={togglePlay} style={styles.playCircle}>
           <FontAwesome name={playing ? "pause" : "play"} size={18} color="#FFFFFF" />
         </Pressable>
@@ -4894,6 +4908,27 @@ const styles = StyleSheet.create({
   videoPlayerView: {
     height: "100%",
     width: "100%"
+  },
+  videoErrorBadge: {
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderRadius: 20,
+    flexDirection: "row",
+    gap: 6,
+    justifyContent: "center",
+    marginTop: 60,
+    maxWidth: "85%",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    position: "absolute",
+    top: 40,
+    zIndex: 3
+  },
+  videoErrorText: {
+    color: "#FFFFFF",
+    fontFamily: fonts.medium,
+    fontSize: 12
   },
   videoPosterImage: {
     bottom: 0,
