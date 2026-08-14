@@ -295,6 +295,52 @@ function isValidImageUri(uri) {
   return /^(https?:\/\/|data:image\/|blob:|file:|content:|ph:\/\/|\/uploads\/)/i.test(trimmed);
 }
 
+function isUsableMediaUri(uri) {
+  if (typeof uri !== "string" || !uri.trim()) return false;
+  const trimmed = uri.trim();
+  return /^(https?:\/\/|\/uploads\/|data:(image|video)\/)/i.test(trimmed);
+}
+
+function sanitizeIncomingMedia(media) {
+  if (!media || typeof media !== "object") return { kind: "none" };
+
+  const image = isUsableMediaUri(media.imageUrl) ? media.imageUrl.trim() : "";
+  const thumb = isUsableMediaUri(media.thumbnailUrl) ? media.thumbnailUrl.trim() : "";
+  const video = isUsableMediaUri(media.videoUrl) ? media.videoUrl.trim() : "";
+  const file = isUsableMediaUri(media.fileUri) ? media.fileUri.trim() : "";
+  const carousel = Array.isArray(media.carouselImages)
+    ? media.carouselImages.map((u) => (typeof u === "string" ? u.trim() : "")).filter(isUsableMediaUri)
+    : [];
+
+  if (media.kind === "photo") {
+    if (!image && !thumb) return { kind: "none" };
+    return { ...media, imageUrl: image || thumb, thumbnailUrl: thumb || image };
+  }
+
+  if (media.kind === "showcase") {
+    if (!image && carousel.length === 0) return { kind: "none" };
+    return { ...media, imageUrl: image || carousel[0] || "", carouselImages: carousel };
+  }
+
+  if (media.kind === "video") {
+    if (!video && !image) return { kind: "none" };
+    return {
+      ...media,
+      videoUrl: video,
+      fileUri: file || video,
+      imageUrl: image || thumb,
+      thumbnailUrl: thumb || image
+    };
+  }
+
+  if (media.kind === "notes") {
+    if (!file && !image) return { kind: "none" };
+    return { ...media, fileUri: file || "", imageUrl: image || "" };
+  }
+
+  return media;
+}
+
 function sanitizePostMedia(media) {
   if (!media) return { kind: "none" };
 
@@ -809,6 +855,7 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))
     .slice(0, 6);
 
+  const cleanMedia = sanitizeIncomingMedia(media);
   const isUserMentor = req.user.role === "mentor";
   const postPayload = {
     authorName: req.user.name,
@@ -825,7 +872,7 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     documentName: documentName || null,
     documentSize: documentSize || "4.2 MB",
     text: postText,
-    media,
+    media: cleanMedia,
     metrics: {
       likes: 0,
       comments: 0,

@@ -386,7 +386,7 @@ chatRouter.post("/send", requireAuth, async (req, res) => {
       senderAvatar: userAvatar,
       text: text.trim() || (driveLink ? `📁 Google Drive Doc: ${fileName || "Shared File"}` : "📷 Shared Image"),
       mediaType: mediaType || (driveLink ? "document" : mediaUrl ? "image" : null),
-      mediaUrl: mediaUrl || null,
+      mediaUrl: typeof mediaUrl === "string" && /^(https?:\/\/|\/uploads\/|data:image\/|data:video\/)/i.test(mediaUrl.trim()) ? mediaUrl.trim() : null,
       driveLink: driveLink || null,
       fileName: fileName || null,
       time: timeStr,
