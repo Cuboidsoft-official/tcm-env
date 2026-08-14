@@ -64,6 +64,7 @@ import DoubtRoomScreen from "./DoubtRoomScreen";
 import CommunityScreen from "./CommunityScreen";
 import DiscoverPartnersScreen from "./DiscoverPartnersScreen";
 import PartnerProfilePreviewScreen from "./PartnerProfilePreviewScreen";
+import PostActionBottomSheet from "../components/PostActionBottomSheet";
 import SidebarDrawer from "../components/SidebarDrawer";
 import GetVerifiedModal from "../components/GetVerifiedModal";
 import FeedbackModal from "../components/FeedbackModal";
@@ -349,6 +350,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
   const [selectedJobForApply, setSelectedJobForApply] = useState(null);
   const [activeToast, setActiveToast] = useState(null);
+  const [actionSheetPost, setActionSheetPost] = useState(null);
+  const [isActionSheetOpen, setIsActionSheetOpen] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const knownNotifIds = useRef(new Set());
   const isInitialNotifFetch = useRef(true);
@@ -1245,6 +1248,10 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
                             onApplyJob={(j) => setSelectedJobForApply(j)}
                             onJobDetails={(j) => setSelectedJobForDetails(j)}
                             onToggleLike={handleTogglePostLike}
+                            onOpenActionSheet={(targetPost) => {
+                              setActionSheetPost(targetPost);
+                              setIsActionSheetOpen(true);
+                            }}
                           />
                         ))
                       ) : (
@@ -1447,6 +1454,23 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
           toast={activeToast}
           onDismiss={() => setActiveToast(null)}
           onPress={handleToastNavigate}
+        />
+
+        <PostActionBottomSheet
+          visible={isActionSheetOpen}
+          onClose={() => {
+            setIsActionSheetOpen(false);
+            setActionSheetPost(null);
+          }}
+          post={actionSheetPost}
+          session={session}
+          onDeletePost={handleDeletePost}
+          onSelectUser={(u) => {
+            setIsActionSheetOpen(false);
+            setActionSheetPost(null);
+            handleSelectUser(u);
+          }}
+          onShowToast={(toastObj) => setActiveToast(toastObj)}
         />
       </View>
     </SafeAreaView>
@@ -1666,7 +1690,7 @@ function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
   );
 }
 
-function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeletePost, onApplyJob, onJobDetails, onToggleLike }) {
+function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeletePost, onApplyJob, onJobDetails, onToggleLike, onOpenActionSheet }) {
   const { theme } = useTheme();
   const metrics = post.metrics || {};
   const media = post.media || {};
@@ -1775,24 +1799,11 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
 
           <Pressable
             onPress={() => {
-              if (Platform.OS === "web") {
-                if (typeof window !== "undefined" && window.confirm(`Delete job posting "${job.title}"?`)) {
-                  onDeletePost && onDeletePost(job.id);
-                }
-                return;
+              if (onOpenActionSheet) {
+                onOpenActionSheet(post);
+              } else if (onDeletePost) {
+                onDeletePost(job.id || post.id);
               }
-              Alert.alert(
-                "Job Drive Options",
-                `Options for "${job.title}":`,
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Delete Job Posting",
-                    style: "destructive",
-                    onPress: () => onDeletePost && onDeletePost(job.id)
-                  }
-                ]
-              );
             }}
             style={{ padding: 6 }}
           >
@@ -2031,45 +2042,10 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
         </View>
         <Pressable
           onPress={() => {
-            const currentUserIdStr = String(session?.user?.id || session?.user?._id || "").trim();
-            const authorIdStr = String(post.authorId || "").trim();
-            const currentUserName = (session?.user?.name || "").toLowerCase().trim();
-            const authorName = (post.authorName || "").toLowerCase().trim();
-
-            const isSelfPost = Boolean(
-              post.isSelf ||
-              (currentUserIdStr && authorIdStr === currentUserIdStr) ||
-              (currentUserName && authorName === currentUserName)
-            );
-
-            if (isSelfPost) {
-              if (Platform.OS === "web") {
-                if (typeof window !== "undefined" && window.confirm("Delete this post?")) {
-                  onDeletePost && onDeletePost(post.id);
-                }
-                return;
-              }
-              Alert.alert(
-                "Post Options",
-                "Choose an action for your post:",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Delete Post",
-                    style: "destructive",
-                    onPress: () => onDeletePost && onDeletePost(post.id)
-                  }
-                ]
-              );
-            } else {
-              Alert.alert(
-                "Post Options",
-                "Choose an action:",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  { text: "Report Post", onPress: () => Alert.alert("Reported", "Thank you. Post reported for review.") }
-                ]
-              );
+            if (onOpenActionSheet) {
+              onOpenActionSheet(post);
+            } else if (onDeletePost) {
+              onDeletePost(post.id);
             }
           }}
           style={{ padding: 6 }}
@@ -2413,6 +2389,8 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [showControls, setShowControls] = useState(false);
+  const [userPaused, setUserPaused] = useState(false);
+  const userPausedRef = useRef(false);
   const containerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
 
@@ -2426,7 +2404,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
 
   // Autoplay on mount when player is initialized
   useEffect(() => {
-    if (player && sourceUri) {
+    if (player && sourceUri && !userPausedRef.current) {
       try {
         player.play();
         setPlaying(true);
@@ -2446,14 +2424,18 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
       const observer = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
-            try {
-              player?.play();
-              setPlaying(true);
-            } catch (e) {}
+            if (!userPausedRef.current) {
+              try {
+                player?.play();
+                setPlaying(true);
+              } catch (e) {}
+            }
           } else {
             try {
               player?.pause();
               setPlaying(false);
+              userPausedRef.current = false;
+              setUserPaused(false);
             } catch (e) {}
           }
         },
@@ -2475,14 +2457,18 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
             const windowHeight = Dimensions.get("window").height;
             const isVisible = y + height * 0.4 >= 0 && y + height * 0.3 <= windowHeight;
             if (isVisible) {
-              try {
-                player?.play();
-                setPlaying(true);
-              } catch (e) {}
+              if (!userPausedRef.current && player) {
+                try {
+                  player.play();
+                  setPlaying(true);
+                } catch (e) {}
+              }
             } else {
               try {
                 player?.pause();
                 setPlaying(false);
+                userPausedRef.current = false;
+                setUserPaused(false);
               } catch (e) {}
             }
           });
@@ -2495,20 +2481,28 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
   }, [player]);
 
   function togglePlay() {
-    if (!sourceUri) return;
-    const nextPlaying = !playing;
+    if (!sourceUri || !player) return;
     if (playing) {
-      player.pause();
+      try {
+        player.pause();
+      } catch (e) {}
+      setPlaying(false);
+      userPausedRef.current = true;
+      setUserPaused(true);
     } else {
-      player.play();
+      try {
+        player.play();
+      } catch (e) {}
+      setPlaying(true);
+      userPausedRef.current = false;
+      setUserPaused(false);
     }
-    setPlaying(nextPlaying);
 
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     controlsTimeoutRef.current = setTimeout(() => {
       setShowControls(false);
-    }, 900);
+    }, 1200);
   }
 
   function toggleMute() {

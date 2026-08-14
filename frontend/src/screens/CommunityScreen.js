@@ -28,6 +28,7 @@ import CreateJobModal from "../components/CreateJobModal";
 import ApplyJobModal from "../components/ApplyJobModal";
 import JobDetailsModal from "../components/JobDetailsModal";
 import JobApplicantsModal from "../components/JobApplicantsModal";
+import PostActionBottomSheet from "../components/PostActionBottomSheet";
 import {
   createCommunityPost,
   deleteCommunityPost,
@@ -107,6 +108,8 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
   const [selectedJobForApply, setSelectedJobForApply] = useState(null);
   const [selectedJobForApplicants, setSelectedJobForApplicants] = useState(null);
+  const [actionSheetPost, setActionSheetPost] = useState(null);
+  const [isActionSheetOpen, setIsActionSheetOpen] = useState(false);
 
   // Modal States
   const [createCommModalOpen, setCreateCommModalOpen] = useState(false);
@@ -1130,20 +1133,31 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                       <Text style={styles.authorRole}>{post.authorRole || "Mentor"}</Text>
                     </View>
 
-                    {/* Type Badge */}
-                    <View style={{ alignItems: "flex-end" }}>
-                      <View style={styles.typeBadge}>
-                        <Text style={styles.typeBadgeText}>
-                          {post.postType === "exam_news"
-                            ? "EXAM NEWS"
-                            : post.postType === "job_news"
-                            ? "JOB ALERT"
-                            : post.postType === "study_doc"
-                            ? "STUDY DOC"
-                            : "UPDATE"}
-                        </Text>
+                    {/* Type Badge & 3-Dots Action Options */}
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <View style={{ alignItems: "flex-end" }}>
+                        <View style={styles.typeBadge}>
+                          <Text style={styles.typeBadgeText}>
+                            {post.postType === "exam_news"
+                              ? "EXAM NEWS"
+                              : post.postType === "job_news"
+                              ? "JOB ALERT"
+                              : post.postType === "study_doc"
+                              ? "STUDY DOC"
+                              : "UPDATE"}
+                          </Text>
+                        </View>
+                        <Text style={styles.timeText}>{post.timeLabel || "Today"}</Text>
                       </View>
-                      <Text style={styles.timeText}>{post.timeLabel || "Today"}</Text>
+                      <Pressable
+                        onPress={() => {
+                          setActionSheetPost(post);
+                          setIsActionSheetOpen(true);
+                        }}
+                        style={{ padding: 4 }}
+                      >
+                        <Feather name="more-vertical" size={18} color="#64748B" />
+                      </Pressable>
                     </View>
                   </View>
 

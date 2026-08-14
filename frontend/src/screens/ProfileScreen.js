@@ -20,6 +20,7 @@ import { deleteCommunityPost, getProfile, getSavedPosts, getExamResults, toggleF
 import EditMentorProfileModal from "../components/EditMentorProfileModal";
 import GetVerifiedModal from "../components/GetVerifiedModal";
 import MyReviewsModal from "../components/MyReviewsModal";
+import PostActionBottomSheet from "../components/PostActionBottomSheet";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
@@ -1062,67 +1063,14 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
         }}
       />
 
-      {/* Post Action Bottom Sheet (Delete / Options on Hold) */}
-      <Modal visible={postSheetOpen} animationType="slide" transparent onRequestClose={() => setPostSheetOpen(false)}>
-        <Pressable onPress={() => setPostSheetOpen(false)} style={styles.modalBg}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 30 }]}>
-            <View style={styles.sheetHandleBar} />
-            <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E293B", textAlign: "center", marginTop: 8 }}>
-              Post Options
-            </Text>
-            <Text numberOfLines={1} style={{ fontSize: 13, color: "#64748B", textAlign: "center", marginBottom: 20 }}>
-              {selectedPostForSheet?.title || selectedPostForSheet?.content || selectedPostForSheet?.text || "Selected Post"}
-            </Text>
-
-            <TouchableOpacity
-              onPress={handleDeletePostFromSheet}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#FEF2F2",
-                borderWidth: 1,
-                borderColor: "#FCA5A5",
-                paddingVertical: 14,
-                borderRadius: 14,
-                marginBottom: 10
-              }}
-            >
-              <Feather name="trash-2" size={18} color="#EF4444" style={{ marginRight: 8 }} />
-              <Text style={{ fontSize: 15, fontWeight: "700", color: "#EF4444" }}>Delete Post</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setPostSheetOpen(false);
-                Share.share({ message: `Check out this post on TCM: ${selectedPostForSheet?.title || "TCM Post"}` }).catch(() => {});
-              }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#F1F5F9",
-                paddingVertical: 14,
-                borderRadius: 14,
-                marginBottom: 10
-              }}
-            >
-              <Feather name="share-2" size={18} color="#475569" style={{ marginRight: 8 }} />
-              <Text style={{ fontSize: 15, fontWeight: "600", color: "#475569" }}>Share Post</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setPostSheetOpen(false)}
-              style={{
-                alignItems: "center",
-                paddingVertical: 12
-              }}
-            >
-              <Text style={{ fontSize: 15, fontWeight: "600", color: "#64748B" }}>Cancel</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {/* Post Action Bottom Sheet (Delete / Options) */}
+      <PostActionBottomSheet
+        visible={postSheetOpen}
+        onClose={() => setPostSheetOpen(false)}
+        post={selectedPostForSheet}
+        session={session}
+        onDeletePost={handleDeletePostFromSheet}
+      />
 
       {/* Edit Profile Bottom Sheet */}
       {profileUser.role === "mentor" || profileUser.isMentor ? (
