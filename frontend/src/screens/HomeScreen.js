@@ -1023,7 +1023,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
                 }}
                 onSelectMentor={(mId) => {
                   setSelectedCourseId(null);
-                  handleSelectUser(typeof mId === "object" ? mId : { id: mId || "m1", name: "Rahul Sharma", role: "Mentor" });
+                  setSelectedMentorId(mId || "m1");
                 }}
               />
             ) : exploreCategoryKey ? (
@@ -1043,7 +1043,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
                 onBack={() => setShowAllMentorsScreen(false)}
                 onSelectMentor={(mId) => {
                   setShowAllMentorsScreen(false);
-                  handleSelectUser(typeof mId === "object" ? mId : { id: mId || "m1", name: "Mentor" });
+                  setSelectedMentorId(mId || "m1");
                 }}
               />
             ) : showCommunityScreen ? (
@@ -1238,7 +1238,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
                 session={session}
                 onOpenSidebar={() => setSidebarOpen(true)}
                 onNotifications={() => handleSelectDrawerItem("Notifications")}
-                onSelectUser={(m) => handleSelectUser(m)}
+                onSelectUser={(m) => setSelectedMentorId(m || "m1")}
                 onSelectCourse={(cId) => setSelectedCourseId(cId || "p1")}
                 onOpenContinueLearning={() => setShowContinueLearning(true)}
                 onOpenPopularCourses={() => setShowPopularCourses(true)}
