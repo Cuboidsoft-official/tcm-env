@@ -1,6 +1,7 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import fs from "fs";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import { connectDatabase } from "./config/db.js";
@@ -11,6 +12,7 @@ import { profileRouter } from "./routes/profile.js";
 import { chatRouter } from "./routes/chat.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { adminRouter } from "./routes/admin.js";
+import { uploadsRouter, UPLOADS_DIR } from "./routes/uploads.js";
 
 dotenv.config();
 
@@ -23,7 +25,7 @@ app.use(
     credentials: true
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "30mb" }));
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -45,6 +47,21 @@ app.use("/api/profile", profileRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/jobs", jobsRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/uploads", uploadsRouter);
+
+try {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+} catch (e) {
+  console.warn(`Could not create uploads dir ${UPLOADS_DIR}: ${e.message}`);
+}
+app.use(
+  "/uploads",
+  express.static(UPLOADS_DIR, {
+    maxAge: "30d",
+    immutable: true,
+    index: false
+  })
+);
 
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });

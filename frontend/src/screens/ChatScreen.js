@@ -22,7 +22,8 @@ import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@exp
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import { getChatMessages, sendChatMessage, sendFriendRequest, sendFriendRequestAction } from "../api/client";
+import { getChatMessages, sendChatMessage, sendFriendRequest, sendFriendRequestAction, uploadFile } from "../api/client";
+import { fileToDataUri } from "../utils/fileUtils";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
@@ -388,12 +389,42 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
       if (!result.canceled && result.assets?.[0]) {
         const asset = result.assets[0];
-        const imgUri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        let imgUri = null;
+        if (asset.base64) {
+          const mime = asset.mimeType || "image/jpeg";
+          imgUri = `data:${mime};base64,${asset.base64}`;
+        } else if (typeof window !== "undefined" && asset.uri) {
+          try {
+            const blob = await (await fetch(asset.uri)).blob();
+            imgUri = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = () => resolve(null);
+              reader.readAsDataURL(blob);
+            });
+          } catch (e) {
+            console.warn("Blob to data URI failed:", e);
+          }
+        }
+        if (!imgUri) imgUri = asset.uri;
         setPreviewImageUri(imgUri);
         setPreviewImageTitle("Device Gallery Photo");
       }
     } catch (e) {
       Alert.alert("Photo Upload", "Opening file chooser...");
+    }
+  }
+
+  async function uploadLocalDocToServer(asset) {
+    if (!session?.token) return "";
+    try {
+      const dataUri = await fileToDataUri(asset);
+      if (!dataUri) return "";
+      const res = await uploadFile(session.token, dataUri);
+      return res?.url || "";
+    } catch (e) {
+      console.warn("Chat doc upload failed:", e.message);
+      return "";
     }
   }
 
@@ -403,12 +434,17 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
         const input = document.createElement("input");
         input.type = "file";
         input.accept = ".pdf,.doc,.docx,.ppt,.pptx,.txt";
-        input.onchange = (e) => {
+        input.onchange = async (e) => {
           const file = e.target?.files?.[0];
           if (file) {
+            const realUrl = await uploadLocalDocToServer({
+              uri: URL.createObjectURL(file),
+              name: file.name,
+              mimeType: file.type || "application/pdf"
+            });
             handleSendAttachment({
               type: "doc",
-              driveUrl: "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
+              driveUrl: realUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
               title: file.name || "Uploaded_Document.pdf"
             });
           }
@@ -424,9 +460,10 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
       if (!result.canceled && result.assets?.[0]) {
         const doc = result.assets[0];
+        const realUrl = await uploadLocalDocToServer(doc);
         handleSendAttachment({
           type: "doc",
-          driveUrl: "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
+          driveUrl: realUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
           title: doc.name || "Device_Document.pdf"
         });
       }
@@ -437,8 +474,30 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
     const userMsgId = `msg_user_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
 
     const isImage = type === "image";
-    const mediaUrlVal = isImage ? (url || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80") : null;
-    const driveLinkVal = !isImage ? (driveUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view") : null;
+    const isDoc = type === "doc";
+    let effectiveUrl = url || "";
+    if (isImage && session?.token) {
+      const isLocalImage = /^(blob:|file:|data:image\/)/i.test(effectiveUrl);
+      if (isLocalImage) {
+        try {
+          const res = await uploadFile(session.token, effectiveUrl);
+          effectiveUrl = res?.url || effectiveUrl;
+        } catch (e) {
+          console.warn("Chat image upload failed, keeping local preview:", e.message);
+        }
+      }
+    }
+    let effectiveDriveUrl = driveUrl || "";
+    if (isDoc && session?.token && /^(blob:|file:|data:application\/)/i.test(effectiveDriveUrl)) {
+      try {
+        const res = await uploadFile(session.token, effectiveDriveUrl);
+        effectiveDriveUrl = res?.url || effectiveDriveUrl;
+      } catch (e) {
+        console.warn("Chat doc upload failed, keeping fallback link:", e.message);
+      }
+    }
+    const mediaUrlVal = isImage ? (effectiveUrl || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80") : null;
+    const driveLinkVal = !isImage ? (effectiveDriveUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view") : null;
     const fileNameVal = title || (isImage ? "Photo Attachment" : "Google Drive Document.pdf");
 
     const defaultText = isImage ? (title || "📷 Photo Attachment") : `📁 Google Drive Doc: ${fileNameVal}`;

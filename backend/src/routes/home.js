@@ -289,6 +289,42 @@ async function buildLearnPayload(user, mentors, learn = {}, memoryStore = null, 
   };
 }
 
+function isValidImageUri(uri) {
+  return typeof uri === "string" && /^(https?:\/\/|data:image\/)/i.test(uri.trim());
+}
+
+function sanitizePostMedia(media) {
+  if (!media) return { kind: "none" };
+
+  if (media.kind === "photo") {
+    return isValidImageUri(media.imageUrl) ? media : { kind: "none" };
+  }
+
+  if (media.kind === "showcase") {
+    const carouselImages = Array.isArray(media.carouselImages)
+      ? media.carouselImages.filter(isValidImageUri)
+      : [];
+    const imageUrl = isValidImageUri(media.imageUrl) ? media.imageUrl : (carouselImages[0] || "");
+    if (!imageUrl && carouselImages.length === 0) {
+      return { kind: "none" };
+    }
+    return { ...media, imageUrl, carouselImages };
+  }
+
+  if (media.kind === "video") {
+    const videoUrl = typeof media.videoUrl === "string" && /^https?:\/\//i.test(media.videoUrl.trim())
+      ? media.videoUrl
+      : "";
+    const imageUrl = isValidImageUri(media.imageUrl) ? media.imageUrl : "";
+    if (!videoUrl && !imageUrl) {
+      return { kind: "none" };
+    }
+    return { ...media, videoUrl, imageUrl };
+  }
+
+  return media;
+}
+
 function mapPost(post, globalPostComments = {}, userId = null) {
   const isMentor = Boolean(
     post.isMentor ||
@@ -327,7 +363,7 @@ function mapPost(post, globalPostComments = {}, userId = null) {
     documentName: post.documentName || null,
     documentSize: post.documentSize || "4.2 MB",
     text: post.text,
-    media: post.media,
+    media: sanitizePostMedia(post.media),
     metrics: {
       likes: post.metrics?.likes || likedByArr.length || 0,
       comments: totalComments,

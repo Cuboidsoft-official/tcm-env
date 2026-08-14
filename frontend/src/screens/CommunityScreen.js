@@ -19,9 +19,11 @@ import {
 } from "react-native";
 import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 import { sanitizeImageUri } from "../utils/imageUtils";
+import { fileToDataUri, formatFileSize } from "../utils/fileUtils";
 import CreateJobModal from "../components/CreateJobModal";
 import ApplyJobModal from "../components/ApplyJobModal";
 import JobDetailsModal from "../components/JobDetailsModal";
@@ -42,7 +44,8 @@ import {
   updateJobPost,
   applyJobPost,
   updateJobApplicantStatus,
-  deleteJobPost
+  deleteJobPost,
+  uploadFile
 } from "../api/client";
 
 export default function CommunityScreen({ navigation, route, session, onChannelStateChange, onOpenChannelChat }) {
@@ -123,6 +126,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   const [docUrl, setDocUrl] = useState("");
   const [docName, setDocName] = useState("");
   const [docSize, setDocSize] = useState("4.2 MB");
+  const [docUploading, setDocUploading] = useState(false);
   const [posting, setPosting] = useState(false);
 
   // Document Reader Modal State
@@ -142,12 +146,69 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
         base64: true
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          const mime = asset.mimeType || "image/jpeg";
+          return `data:${mime};base64,${asset.base64}`;
+        }
+        if (typeof window !== "undefined" && asset.uri) {
+          try {
+            const blob = await (await fetch(asset.uri)).blob();
+            return await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = () => resolve(null);
+              reader.readAsDataURL(blob);
+            });
+          } catch (e) {
+            console.warn("Blob to data URI failed:", e);
+          }
+        }
         return asset.uri;
       }
     } catch (e) {
       console.warn("Device image picker error:", e);
     }
     return null;
+  }
+
+  async function uploadPhotoToServer(dataUri) {
+    if (!dataUri) return "";
+    const res = await uploadFile(session?.token, dataUri);
+    return res?.url || "";
+  }
+
+  async function pickDocumentFromDevice() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"],
+        copyToCacheDirectory: true,
+        multiple: false
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const asset = result.assets[0];
+      setDocUploading(true);
+      try {
+        const dataUri = await fileToDataUri(asset);
+        if (!dataUri) {
+          Alert.alert("Upload Failed", "Could not read the selected document.");
+          return;
+        }
+        const res = await uploadFile(session?.token, dataUri);
+        if (!res?.url) {
+          Alert.alert("Upload Failed", "Could not upload the document. Please try again.");
+          return;
+        }
+        setDocUrl(res.url);
+        setDocName(asset.name || "Study Material.pdf");
+        setDocSize(formatFileSize(asset.size) || docSize);
+      } finally {
+        setDocUploading(false);
+      }
+    } catch (e) {
+      console.warn("Document picker error:", e);
+    }
   }
 
   useEffect(() => {
@@ -190,12 +251,22 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
 
     setCreatingComm(true);
     try {
+      let finalCoverUrl = "";
+      if (newCommCover.trim()) {
+        try {
+          finalCoverUrl = await uploadPhotoToServer(newCommCover.trim());
+        } catch (err) {
+          Alert.alert("Upload Failed", "Could not upload the cover photo. Please try again.");
+          setCreatingComm(false);
+          return;
+        }
+      }
       const res = await createCommunityChannel(session?.token, {
         name: newCommName.trim(),
         privacy: newCommPrivacy,
         category: newCommCategory,
         description: newCommDescription.trim(),
-        coverImage: newCommCover.trim() || undefined
+        coverImage: finalCoverUrl || undefined
       });
 
       if (res && res.community) {
@@ -284,7 +355,23 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
 
     setPosting(true);
     try {
-      const mediaPayload = photoUrl.trim() ? { kind: "photo", imageUrl: photoUrl.trim() } : { kind: "none" };
+      let finalImageUrl = "";
+      if (photoUrl.trim()) {
+        try {
+          finalImageUrl = await uploadPhotoToServer(photoUrl.trim());
+        } catch (err) {
+          Alert.alert("Upload Failed", "Could not upload the photo. Please try again.");
+          setPosting(false);
+          return;
+        }
+        if (!finalImageUrl) {
+          Alert.alert("Upload Failed", "Could not upload the photo. Please try again.");
+          setPosting(false);
+          return;
+        }
+      }
+
+      const mediaPayload = finalImageUrl ? { kind: "photo", imageUrl: finalImageUrl } : { kind: "none" };
 
       const payload = {
         text: postText.trim(),
@@ -1059,7 +1146,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                   <Text style={styles.postText}>{post.text}</Text>
 
                   {/* Photo Attachment View */}
-                  {post.media?.imageUrl ? (
+                  {post.media?.imageUrl && /^(https?:\/\/|data:image\/)/i.test(post.media.imageUrl) ? (
                     <Image source={{ uri: sanitizeImageUri(post.media.imageUrl) }} style={styles.postImage} resizeMode="cover" />
                   ) : null}
 
@@ -1304,7 +1391,32 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
               ) : null}
 
               {/* Optional PDF Document Link */}
-              <Text style={styles.fieldLabel}>5. PDF Document Link (Optional)</Text>
+              <Text style={styles.fieldLabel}>5. PDF / Study Document (Optional)</Text>
+
+              <TouchableOpacity
+                onPress={pickDocumentFromDevice}
+                disabled={docUploading || posting}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#F1F5F9",
+                  borderColor: "#CBD5E1",
+                  borderWidth: 1,
+                  borderStyle: "dashed",
+                  borderRadius: 12,
+                  paddingVertical: 12,
+                  marginBottom: 12,
+                  opacity: docUploading ? 0.7 : 1
+                }}
+              >
+                <Feather name="upload" size={16} color="#5B3CF5" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 12.5, fontFamily: fonts.bold, color: "#5B3CF5" }}>
+                  {docUploading ? "Uploading Document... ⏳" : docUrl && !docUrl.startsWith("https://drive.google.com") ? "Document Attached ✓ (Tap to Replace)" : "Upload PDF / Study Document from Device 📄"}
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.fieldLabel}>Or paste a document link (Optional)</Text>
               <TextInput
                 value={docUrl}
                 onChangeText={setDocUrl}

@@ -147,6 +147,20 @@ jobs:
             --title "TCM Android Build ${{ env.TCM_APP_VERSION || '0.1.0' }}" \
             --notes "TCM Android APK + AAB build. App version: ${{ env.TCM_APP_VERSION || '0.1.0' }}."
 
+      - name: Publish APK to Firebase App Distribution
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        if: env.FIREBASE_CREDENTIALS != ''
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: ${{ vars.FIREBASE_TESTER_GROUP || 'testers' }}
+          file: frontend/dist/app-preview.apk
+          releaseNotes: |
+            TCM Android build v${{ env.TCM_APP_VERSION || '0.1.0' }}.
+            Installed automatically from CI. Report issues in the repo.
+
       - name: Mint one-time secret download links
         env:
           OCI_USER: ${{ secrets.OCI_USER }}

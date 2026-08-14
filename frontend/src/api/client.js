@@ -264,6 +264,16 @@ export function createCommunityPost(token, payload) {
   });
 }
 
+export function uploadFile(token, dataUri) {
+  return request("/uploads/file", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ data: dataUri })
+  });
+}
+
 export function deleteCommunityPost(token, postId) {
   return request(`/home/posts/${postId}`, {
     method: "DELETE",

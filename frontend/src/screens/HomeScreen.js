@@ -32,8 +32,9 @@ import * as VideoThumbnails from "expo-video-thumbnails";
 import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
-import { addPostComment, deletePostComment, createCommunityPost, deleteCommunityPost, getHome, getNotifications, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost, applyJobPost, deleteJobPost } from "../api/client";
+import { addPostComment, deletePostComment, createCommunityPost, deleteCommunityPost, getHome, getNotifications, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost, applyJobPost, deleteJobPost, uploadFile } from "../api/client";
 import { sanitizeImageUri, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUtils";
+import { uriToDataUri } from "../utils/fileUtils";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import ApplyJobModal from "../components/ApplyJobModal";
@@ -220,6 +221,42 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
   }
 
   return config.media;
+}
+
+async function uploadLocalMedia(token, uri, mimeType) {
+  if (!uri) return "";
+  if (/^https?:\/\//i.test(uri)) return uri;
+  const dataUri = await uriToDataUri(uri, mimeType);
+  if (!dataUri) return "";
+  const res = await uploadFile(token, dataUri);
+  return res?.url || "";
+}
+
+async function normalizeDraftMedia(token, draft) {
+  const mimeType = draft.mimeType || "";
+  const local = /^(blob:|file:|content:|ph:\/\/|data:)/i;
+  const cache = new Map();
+  const resolve = async (uri) => {
+    if (!uri) return "";
+    if (cache.has(uri)) return cache.get(uri);
+    const url = await uploadLocalMedia(token, uri, mimeType);
+    cache.set(uri, url);
+    return url;
+  };
+
+  const fileUri = await resolve(draft.fileUri);
+  if (local.test(draft.fileUri || "") && !fileUri) return null;
+
+  const mediaUrl = await resolve(draft.mediaUrl);
+  if (local.test(draft.mediaUrl || "") && !mediaUrl) return null;
+
+  let carouselImages = [];
+  if (Array.isArray(draft.carouselImages) && draft.carouselImages.length > 0) {
+    carouselImages = await Promise.all(draft.carouselImages.map((u) => resolve(u)));
+    if (carouselImages.some((u) => !u)) return null;
+  }
+
+  return { ...draft, mediaUrl, carouselImages, fileUri };
 }
 
 function SwipeBackWrapper({ children, onBack, enabled = true }) {

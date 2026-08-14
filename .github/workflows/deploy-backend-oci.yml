@@ -34,7 +34,7 @@ jobs:
         run: |
           set -euo pipefail
           ssh -o StrictHostKeyChecking=accept-new "$OCI_USER@$OCI_HOST" \
-            "sudo mkdir -p /opt/tcm/backend"
+            "sudo mkdir -p /opt/tcm/backend && sudo install -d -o ubuntu -g ubuntu /opt/tcm/uploads"
           rsync -avz --delete --delay-updates \
             --exclude 'node_modules' --exclude '.env' \
             -e "ssh -o StrictHostKeyChecking=accept-new" \
