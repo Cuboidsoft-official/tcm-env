@@ -3045,6 +3045,14 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike }) {
             avatarUrl: item.avatarUrl || item.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
             isMentor: Boolean(item.isMentor || item.role === "mentor")
           };
+        } else if (typeof item === "string" && item.trim().length > 0) {
+          return {
+            id: `user_${item}_${idx}`,
+            name: item,
+            role: "TCM Member",
+            avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+            isMentor: false
+          };
         }
         return null;
       })
