@@ -6,6 +6,7 @@ import { User } from "../models/User.js";
 import { ClassReview } from "../models/ClassReview.js";
 import { ExamResult } from "../models/ExamResult.js";
 import { publicUser } from "./auth.js";
+import { resolveMediaUrl } from "./uploads.js";
 
 export const profileRouter = express.Router();
 
@@ -230,7 +231,7 @@ async function handleUpdateProfile(req, res) {
           ...(bio !== undefined && { bio: bio.trim() }),
           ...(location !== undefined && { location: location.trim() }),
           ...(website !== undefined && { website: website.trim() }),
-          ...(avatarUrl !== undefined && { avatarUrl: avatarUrl.trim() }),
+          ...(avatarUrl !== undefined && { avatarUrl: (await resolveMediaUrl(avatarUrl)) || (typeof avatarUrl === "string" ? avatarUrl.trim() : "") }),
           ...(mentorCategory !== undefined && { mentorCategory }),
           ...(yearsExperience !== undefined && { yearsExperience }),
           ...(Array.isArray(subjects) && { subjects }),

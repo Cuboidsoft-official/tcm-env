@@ -41,7 +41,15 @@
     "plugins": [
       "expo-font",
       "expo-updates",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#261B94",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "extra": {
       "eas": {

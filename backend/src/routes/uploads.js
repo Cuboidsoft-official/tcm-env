@@ -199,6 +199,28 @@ async function maybeTranscodeVideo(mime, origPath, baseName) {
   return origPath;
 }
 
+// Persist a raw payload (data URI or base64) to disk and return its public URL.
+// Returns "" for remote/relative URLs or invalid input so callers can treat it
+// as a pass-through when the value is already a usable hosted reference.
+export async function resolveMediaUrl(data) {
+  if (typeof data !== "string" || !data.trim()) return "";
+  const trimmed = data.trim();
+  if (/^(https?:\/\/|\/uploads\/)/i.test(trimmed)) return trimmed;
+  if (trimmed.length > MAX_BYTES * 2) return "";
+
+  const parsed = parseFileData(trimmed);
+  if (!parsed || !parsed.buf.length) return "";
+  if (!MIME_MAP[parsed.mime] || !/^image\//.test(parsed.mime)) return "";
+  if (parsed.buf.length > MAX_BYTES) return "";
+  if (!isContainerContent(parsed.mime, parsed.buf)) return "";
+
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  const baseName = `${Date.now().toString(36)}-${crypto.randomBytes(6).toString("hex")}`;
+  const filePath = path.join(UPLOADS_DIR, `${baseName}.${MIME_MAP[parsed.mime]}`);
+  fs.writeFileSync(filePath, parsed.buf, { mode: 0o644 });
+  return `${PUBLIC_ORIGIN}/uploads/${path.basename(filePath)}`;
+}
+
 uploadsRouter.post("/file", requireAuth, async (req, res) => {
   try {
     const parsed = parseFileData(req.body?.data);

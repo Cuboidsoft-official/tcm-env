@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import { Job } from "../models/Job.js";
+import { resolveMediaUrl } from "./uploads.js";
 import {
   notifyApplicantStatusUpdated,
   notifyJobApplied,
@@ -67,7 +68,7 @@ jobsRouter.post("/", async (req, res) => {
       company: payload.company || "TCM Hiring Partner",
       mentorId: payload.mentorId || "m-1",
       mentorName: payload.mentorName || "Mentor",
-      mentorAvatarUrl: payload.mentorAvatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+      mentorAvatarUrl: (await resolveMediaUrl(payload.mentorAvatarUrl)) || payload.mentorAvatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
       mentorRole: payload.mentorRole || "Senior Mentor",
       description: payload.description,
       minSalary: payload.minSalary || "3,00,000",
@@ -79,7 +80,7 @@ jobsRouter.post("/", async (req, res) => {
       applicants: [],
       startDate: payload.startDate || "Immediate",
       deadline: payload.deadline || "Open until filled",
-      imageUrl: payload.imageUrl || "",
+      imageUrl: (await resolveMediaUrl(payload.imageUrl)) || payload.imageUrl || "",
       documentUrl: payload.documentUrl || "",
       documentName: payload.documentName || (payload.documentUrl ? "Job_Description.pdf" : ""),
       documentSize: payload.documentSize || "1.5 MB",
@@ -122,6 +123,12 @@ jobsRouter.put("/:id", async (req, res) => {
       const job = await Job.findById(cleanId);
       if (!job) return res.status(404).json({ ok: false, message: "Job not found" });
 
+      if (payload.imageUrl !== undefined) {
+        payload.imageUrl = (await resolveMediaUrl(payload.imageUrl)) || payload.imageUrl;
+      }
+      if (payload.mentorAvatarUrl !== undefined) {
+        payload.mentorAvatarUrl = (await resolveMediaUrl(payload.mentorAvatarUrl)) || payload.mentorAvatarUrl;
+      }
       Object.assign(job, payload);
       const selectedCount = (job.applicants || []).filter((a) => a.status === "selected").length;
       job.selectedCandidates = selectedCount;

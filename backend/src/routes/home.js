@@ -24,6 +24,7 @@ import {
   notifyPostCommented
 } from "../services/pushNotificationService.js";
 import { askGeminiAi, generateSmartAcademicFallback } from "../services/geminiService.js";
+import { resolveMediaUrl } from "./uploads.js";
 
 export const homeRouter = express.Router();
 
@@ -44,12 +45,16 @@ function getUnreadNotifCount(req, userId) {
   return list.filter((n) => n.unread).length;
 }
 
-homeRouter.post("/notifications/register-token", requireAuth, (req, res) => {
-  const { pushToken, platform } = req.body;
-  if (pushToken) {
-    registerPushToken(req.user._id, pushToken, platform);
+homeRouter.post("/notifications/register-token", requireAuth, async (req, res) => {
+  try {
+    const { pushToken, platform } = req.body;
+    if (pushToken) {
+      await registerPushToken(req.user._id, pushToken, platform);
+    }
+    res.json({ success: true, registered: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Failed to register push token." });
   }
-  res.json({ success: true, registered: true });
 });
 
 const categories = ["For You", "Following", "Trending", "💼 Jobs & Hiring", "UPSC", "JEE", "NEET", "Coding", "AI / ML", "Design"];
@@ -652,7 +657,7 @@ homeRouter.post("/communities", requireAuth, async (req, res) => {
       privacy,
       category,
       description: (description || "").trim(),
-      coverImage: coverImage?.trim() || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80",
+      coverImage: (await resolveMediaUrl(coverImage)) || coverImage?.trim() || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80",
       membersCount: 1,
       members: [req.user._id?.toString()]
     });
@@ -736,7 +741,7 @@ homeRouter.patch("/communities/:id", requireAuth, async (req, res) => {
       if (comm) {
         if (name) comm.name = name.trim();
         if (description !== undefined) comm.description = description.trim();
-        if (coverImage) comm.coverImage = coverImage.trim();
+        if (coverImage) comm.coverImage = (await resolveMediaUrl(coverImage)) || coverImage.trim();
         if (category) comm.category = category;
         if (privacy) comm.privacy = privacy;
         await comm.save();
@@ -3734,7 +3739,7 @@ homeRouter.post("/doubt-rooms/:roomId/manage", requireAuth, async (req, res) => 
     } else if (action === "update_info") {
       if (title !== undefined) room.title = title;
       if (description !== undefined) room.description = description;
-      if (roomAvatar !== undefined) room.roomAvatar = roomAvatar;
+      if (roomAvatar !== undefined) room.roomAvatar = (await resolveMediaUrl(roomAvatar)) || roomAvatar;
       if (isPrivate !== undefined) room.isPrivate = Boolean(isPrivate);
     }
 

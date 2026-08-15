@@ -29,7 +29,8 @@ import {
   voteDoubtRoomPoll,
   markDoubtRoomSolved,
   joinDoubtRoom,
-  manageDoubtRoom
+  manageDoubtRoom,
+  uploadImageToServer
 } from "../api/client";
 import RoomDetailsScreen from "./RoomDetailsScreen";
 import { useTheme } from "../context/ThemeContext";
@@ -447,7 +448,13 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
   async function handleSendAttachment({ type, url, driveUrl, title }) {
     const isImage = type === "image";
-    const mediaUrlVal = isImage ? (url || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80") : null;
+    let mediaUrlVal = isImage ? (url || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80") : null;
+    if (isImage && url && !/^(https?:\/\/|\/uploads\/)/i.test(url)) {
+      try {
+        const hosted = await uploadImageToServer(session?.token, url);
+        if (hosted) mediaUrlVal = hosted;
+      } catch (e) {}
+    }
     const driveLinkVal = !isImage ? (driveUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view") : null;
     const fileNameVal = title || (isImage ? "Photo Attachment" : "Google Drive Document.pdf");
     const defaultText = isImage ? (title || "📷 Photo Attachment") : `📁 Google Drive Doc: ${fileNameVal}`;

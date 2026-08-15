@@ -19,8 +19,9 @@ import * as ImagePicker from "expo-image-picker";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
+import { uploadImageToServer } from "../api/client";
 
-export default function CreateJobModal({ visible, user = {}, jobToEdit = null, onClose, onSubmitJob }) {
+export default function CreateJobModal({ visible, user = {}, token, jobToEdit = null, onClose, onSubmitJob }) {
   const { theme } = useTheme();
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState(user.company || "TCM One Hiring Partner");
@@ -90,8 +91,6 @@ export default function CreateJobModal({ visible, user = {}, jobToEdit = null, o
         let uri = asset.uri;
         if (asset.base64) {
           uri = `data:${asset.mimeType || "image/jpeg"};base64,${asset.base64}`;
-        } else if (Platform.OS === "web" && uri.startsWith("file://")) {
-          uri = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600";
         }
         setImageUrl(uri);
       }
@@ -117,6 +116,13 @@ export default function CreateJobModal({ visible, user = {}, jobToEdit = null, o
 
     setSubmitting(true);
     try {
+      let finalImageUrl = imageUrl.trim();
+      if (token && finalImageUrl && !/^(https?:\/\/|\/uploads\/)/i.test(finalImageUrl)) {
+        try {
+          const hosted = await uploadImageToServer(token, finalImageUrl);
+          if (hosted) finalImageUrl = hosted;
+        } catch (e) {}
+      }
       const payload = {
         title: title.trim(),
         company: company.trim() || "TCM Hiring Partner",
@@ -130,7 +136,7 @@ export default function CreateJobModal({ visible, user = {}, jobToEdit = null, o
         requiredCandidates: reqCount,
         startDate: startDate.trim() || "Immediate",
         deadline: deadline.trim() || "Open until filled",
-        imageUrl: imageUrl.trim() || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600",
+        imageUrl: finalImageUrl || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600",
         documentUrl: documentUrl.trim(),
         documentName: documentName.trim() || (documentUrl.trim() ? "Job_Description.pdf" : ""),
         documentSize: "2.1 MB"

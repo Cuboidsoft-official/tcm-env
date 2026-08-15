@@ -1043,6 +1043,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
       <CreateJobModal
         visible={createJobModalOpen}
         user={user}
+        token={session?.token}
         jobToEdit={jobToEdit}
         onClose={() => {
           setCreateJobModalOpen(false);

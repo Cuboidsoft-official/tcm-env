@@ -16,7 +16,7 @@ import {
 import { Share } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { deleteCommunityPost, getProfile, getSavedPosts, getExamResults, toggleFollowUser, updateProfile } from "../api/client";
+import { deleteCommunityPost, getProfile, getSavedPosts, getExamResults, toggleFollowUser, updateProfile, uploadImageToServer } from "../api/client";
 import EditMentorProfileModal from "../components/EditMentorProfileModal";
 import GetVerifiedModal from "../components/GetVerifiedModal";
 import MyReviewsModal from "../components/MyReviewsModal";
@@ -223,8 +223,6 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
       let selectedUri = asset.uri;
       if (asset.base64) {
         selectedUri = `data:${asset.mimeType || "image/jpeg"};base64,${asset.base64}`;
-      } else if (Platform.OS === "web" && selectedUri?.startsWith("file://")) {
-        selectedUri = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80";
       }
       setForm((prev) => ({ ...prev, avatarUrl: selectedUri }));
     }
@@ -250,7 +248,12 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
     setUpdating(true);
     try {
       if (session?.token) {
-        const res = await updateProfile(session.token, form);
+        let payload = { ...form };
+        if (form.avatarUrl) {
+          const hosted = await uploadImageToServer(session.token, form.avatarUrl);
+          if (hosted) payload.avatarUrl = hosted;
+        }
+        const res = await updateProfile(session.token, payload);
         if (res?.user) {
           setProfileUser(res.user);
         }

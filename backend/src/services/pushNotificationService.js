@@ -1,11 +1,33 @@
 // Push Notification Service supporting FCM, Expo Push API, & In-App Notification Center
 
+import mongoose from "mongoose";
+import { PushToken } from "../models/PushToken.js";
+
 export const VAPID_PUBLIC_KEY = "BKfFsEAwiqI4h42Z0OC0sx0In8j8g3CrjmyN_TNjHaj4kLlu26_h1gFwdsj4uDURFcljxo4-3F3NBVLWG3ly3So";
 
 const userPushTokens = {}; // userId -> Array of { token, platform, registeredAt }
 export const userNotificationsStore = {}; // userId -> Array of In-App Notification objects
 
-export function registerPushToken(userId, token, platform = "android") {
+export async function hydratePushTokens() {
+  if (mongoose.connection.readyState !== 1) return;
+  try {
+    const docs = await PushToken.find({}).lean();
+    for (const doc of docs) {
+      const key = String(doc.userId);
+      if (!userPushTokens[key]) {
+        userPushTokens[key] = [];
+      }
+      if (!userPushTokens[key].some((t) => t.token === doc.token)) {
+        userPushTokens[key].push({ token: doc.token, platform: doc.platform, registeredAt: doc.registeredAt });
+      }
+    }
+    console.log(`Hydrated ${docs.length} push token(s) from MongoDB.`);
+  } catch (e) {
+    console.error("Failed to hydrate push tokens:", e.message);
+  }
+}
+
+export async function registerPushToken(userId, token, platform = "android") {
   if (!userId || !token) return;
   const key = String(userId);
   if (!userPushTokens[key]) {
@@ -15,10 +37,35 @@ export function registerPushToken(userId, token, platform = "android") {
   if (!exists) {
     userPushTokens[key].push({ token, platform, registeredAt: new Date() });
   }
+  if (mongoose.connection.readyState === 1) {
+    try {
+      await PushToken.findOneAndUpdate(
+        { userId: key, token },
+        { platform, registeredAt: new Date() },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    } catch (e) {
+      console.error("Failed to persist push token:", e.message);
+    }
+  }
 }
 
-export function getUserPushTokens(userId) {
-  return userPushTokens[String(userId)] || [];
+export async function getUserPushTokens(userId) {
+  const key = String(userId);
+  const cached = userPushTokens[key] || [];
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const docs = await PushToken.find({ userId: key }).lean();
+      const merged = docs.map((d) => ({ token: d.token, platform: d.platform, registeredAt: d.registeredAt }));
+      for (const t of cached) {
+        if (!merged.some((m) => m.token === t.token)) merged.push(t);
+      }
+      return merged;
+    } catch (e) {
+      return cached;
+    }
+  }
+  return cached;
 }
 
 export function addInAppNotification(targetUserId, notifObj) {
@@ -84,7 +131,7 @@ export async function sendPushNotification({ userIds = [], title, body, data = {
       type,
       ...data
     });
-    const list = userPushTokens[uid] || [];
+    const list = await getUserPushTokens(uid);
     list.forEach((entry) => {
       const tok = entry.token;
       if (tok && typeof tok === "string" && tok.startsWith("{") && tok.includes("endpoint")) {

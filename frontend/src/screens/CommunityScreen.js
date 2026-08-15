@@ -1277,6 +1277,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
       <CreateJobModal
         visible={createJobModalOpen}
         user={user}
+        token={session?.token}
         jobToEdit={jobToEdit}
         onClose={() => {
           setCreateJobModalOpen(false);

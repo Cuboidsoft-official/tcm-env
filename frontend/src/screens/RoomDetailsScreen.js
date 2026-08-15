@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { manageDoubtRoom } from "../api/client";
+import { manageDoubtRoom, uploadImageToServer } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
 
 const PRESET_AVATARS = [
@@ -257,9 +257,16 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
     }
     try {
       setUpdating(true);
+      let finalUrl = urlToSave;
+      if (!/^(https?:\/\/|\/uploads\/)/i.test(urlToSave)) {
+        try {
+          const hosted = await uploadImageToServer(session?.token, urlToSave);
+          if (hosted) finalUrl = hosted;
+        } catch (e) {}
+      }
       const res = await manageDoubtRoom(session?.token, room.roomId, {
         action: "update_info",
-        roomAvatar: urlToSave
+        roomAvatar: finalUrl
       });
       if (res && res.room) {
         setRoom(res.room);

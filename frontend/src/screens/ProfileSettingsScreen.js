@@ -18,7 +18,7 @@ import {
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { applyReferralCode, askSupportAi, deleteAccount, getProfile, updateProfile } from "../api/client";
+import { applyReferralCode, askSupportAi, deleteAccount, getProfile, updateProfile, uploadImageToServer } from "../api/client";
 import MyReviewsModal from "../components/MyReviewsModal";
 import { useTheme } from "../context/ThemeContext";
 import { colors, shadow } from "../constants/theme";
@@ -429,8 +429,6 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       let selectedUri = asset.uri;
       if (asset.base64) {
         selectedUri = `data:${asset.mimeType || "image/jpeg"};base64,${asset.base64}`;
-      } else if (Platform.OS === "web" && selectedUri?.startsWith("file://")) {
-        selectedUri = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80";
       }
       setForm((prev) => ({ ...prev, avatarUrl: selectedUri }));
     }
@@ -453,6 +451,10 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       };
 
       if (session?.token) {
+        if (form.avatarUrl) {
+          const hosted = await uploadImageToServer(session.token, form.avatarUrl);
+          if (hosted) payload.avatarUrl = hosted;
+        }
         const res = await updateProfile(session.token, payload);
         if (res?.user) {
           setUser(res.user);

@@ -1,4 +1,5 @@
 import { getApiUrlCandidates } from "./api-url-candidates";
+import { uriToDataUri } from "../utils/fileUtils";
 
 const REQUEST_TIMEOUT_MS = 6000;
 const UPLOAD_TIMEOUT_MS = 300000;
@@ -283,6 +284,16 @@ export function uploadFile(token, dataUri, timeoutMs = UPLOAD_TIMEOUT_MS) {
     body: JSON.stringify({ data: dataUri }),
     timeoutMs
   });
+}
+
+export async function uploadImageToServer(token, uri, mimeType = "image/jpeg") {
+  if (!uri) return "";
+  const trimmed = String(uri).trim();
+  if (/^(https?:\/\/|\/uploads\/)/i.test(trimmed)) return trimmed;
+  const dataUri = /^data:/i.test(trimmed) ? trimmed : await uriToDataUri(trimmed, mimeType);
+  if (!dataUri) return "";
+  const res = await uploadFile(token, dataUri);
+  return res?.url || "";
 }
 
 export function deleteCommunityPost(token, postId) {

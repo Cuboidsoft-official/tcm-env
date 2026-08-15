@@ -140,6 +140,12 @@ async function start() {
     await connectDatabase();
     await ensureDefaultAdmin();
     await ensureDefaultPartner();
+    try {
+      const { hydratePushTokens } = await import("./services/pushNotificationService.js");
+      await hydratePushTokens();
+    } catch (e) {
+      console.warn("Push token hydration skipped:", e.message);
+    }
   } catch (error) {
     console.warn("MongoDB unavailable. Starting with in-memory visual seed data.");
     const passwordHash = await bcrypt.hash("password123", 12);

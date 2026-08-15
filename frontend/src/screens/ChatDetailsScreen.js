@@ -18,7 +18,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
-import { manageCommunityJoinRequest, updateCommunityChannel } from "../api/client";
+import { manageCommunityJoinRequest, updateCommunityChannel, uploadImageToServer } from "../api/client";
 
 export default function ChatDetailsScreen({
   session,
@@ -191,12 +191,17 @@ export default function ChatDetailsScreen({
                       if (!result.canceled && result.assets && result.assets.length > 0) {
                         const asset = result.assets[0];
                         const imgUri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
-                        setCoverInput(imgUri);
+                        let hostedUrl = imgUri;
+                        try {
+                          const url = await uploadImageToServer(session?.token, imgUri);
+                          if (url) hostedUrl = url;
+                        } catch (e) {}
+                        setCoverInput(hostedUrl);
                         if (onUpdateChannel) {
-                          onUpdateChannel({ coverImage: imgUri, avatarUrl: imgUri });
+                          onUpdateChannel({ coverImage: hostedUrl, avatarUrl: hostedUrl });
                         }
                         try {
-                          await updateCommunityChannel(session?.token, targetUser?.id, { coverImage: imgUri });
+                          await updateCommunityChannel(session?.token, targetUser?.id, { coverImage: hostedUrl });
                         } catch (e) {}
                         setIsEditingCover(false);
                         Alert.alert("Cover Updated 🖼️", "New cover photo uploaded from device.");
