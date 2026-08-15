@@ -2539,13 +2539,13 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
   }, []);
 
   // Web IntersectionObserver: Instagram-style flow
-  // Autoplay when >= 65% in view. Pause and Mute IMMEDIATELY if < 65% visible (partially hidden / off-screen)
+  // Autoplay when >= 50% in view. Pause IMMEDIATELY when < 50% visible (post half hidden / off-screen)
   useEffect(() => {
     if (Platform.OS === "web" && containerRef.current && typeof IntersectionObserver !== "undefined") {
       const targetElement = containerRef.current.node || containerRef.current;
       const observer = new IntersectionObserver(
         ([entry]) => {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.65) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.50) {
             if (!userPausedRef.current && player) {
               try {
                 player.play();
@@ -2553,18 +2553,19 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
               } catch (e) {}
             }
           } else {
-            // Partially hidden (< 65% visible) or scrolled off-screen -> pause and mute immediately
+            // Post half hidden (< 50% visible) or scrolled off-screen -> pause immediately
             if (player) {
               try {
                 player.pause();
-                player.muted = true;
-                setMuted(true);
                 setPlaying(false);
               } catch (e) {}
             }
+            // Reset user pause state when scrolled off-screen so next/previous video autoplays when scrolled to
+            userPausedRef.current = false;
+            setUserPaused(false);
           }
         },
-        { threshold: [0, 0.35, 0.65, 0.85, 1.0] }
+        { threshold: [0, 0.25, 0.50, 0.75, 1.0] }
       );
 
       if (targetElement && typeof observer.observe === "function") {
@@ -2574,7 +2575,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
     }
   }, [player]);
 
-  // Native Viewport Scroll Check: Instagram-style flow (>= 65% in viewport)
+  // Native Viewport Scroll Check: Instagram-style flow (>= 50% in viewport)
   useEffect(() => {
     let checkInterval;
     if (Platform.OS !== "web" && containerRef.current) {
@@ -2591,7 +2592,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
             const visibleHeight = Math.max(0, visibleBottom - visibleTop);
             const visibleRatio = height > 0 ? visibleHeight / height : 0;
 
-            const isFullyOrMostlyVisible = visibleRatio >= 0.65;
+            const isFullyOrMostlyVisible = visibleRatio >= 0.50;
 
             if (isFullyOrMostlyVisible) {
               if (!userPausedRef.current && player) {
@@ -2604,11 +2605,11 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
               if (player) {
                 try {
                   player.pause();
-                  player.muted = true;
-                  setMuted(true);
                   setPlaying(false);
                 } catch (e) {}
               }
+              userPausedRef.current = false;
+              setUserPaused(false);
             }
           });
         }
@@ -4393,7 +4394,7 @@ function ActionDock({ open, setOpen, onAction, tabs, activeTab, setActiveTab }) 
   const safeBottom = Math.max(8, insets?.bottom || 0);
 
   return (
-    <View style={[styles.bottomDock, { bottom: safeBottom }]}>
+    <View style={[styles.bottomDock, Platform.OS === "web" ? { position: "fixed", bottom: 10 } : { bottom: safeBottom }]}>
       <View style={styles.fabRow}>
         <Pressable onPress={() => onAction("post")} style={({ pressed }) => [styles.fab, pressed && styles.pressed]}>
           <LinearGradient colors={[theme.fabBg || theme.primary, theme.primaryDark || "#044324"]} style={styles.fabGradient}>
@@ -7125,7 +7126,7 @@ const styles = StyleSheet.create({
     fontSize: 12
   },
   bottomDock: {
-    position: "absolute",
+    position: Platform.OS === "web" ? "fixed" : "absolute",
     bottom: 12,
     left: 0,
     right: 0,

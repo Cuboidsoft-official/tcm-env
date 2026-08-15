@@ -86,32 +86,34 @@ export default function SplashScreen() {
 
 const styles = StyleSheet.create({
   safe: {
-    flex: 1
+    flex: 1,
+    width: "100%",
+    justifyContent: "space-between"
   },
   centerContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
-    paddingBottom: 40
+    paddingHorizontal: 20,
+    paddingVertical: 16
   },
   logoRingWrapper: {
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20
+    marginBottom: 16
   },
   logoOuterRing: {
     position: "absolute",
-    width: 104,
-    height: 104,
-    borderRadius: 32,
+    width: 92,
+    height: 92,
+    borderRadius: 28,
     borderWidth: 2
   },
   logoImage: {
-    width: 86,
-    height: 86,
-    borderRadius: 24
+    width: 76,
+    height: 76,
+    borderRadius: 20
   },
   brandTitleRow: {
     flexDirection: "row",
@@ -120,22 +122,22 @@ const styles = StyleSheet.create({
   },
   brandLetter: {
     fontFamily: fonts.bold,
-    fontSize: 34,
+    fontSize: 30,
     letterSpacing: -0.5
   },
   subTitle: {
     fontFamily: fonts.semiBold,
-    fontSize: 12,
+    fontSize: 11,
     letterSpacing: 1.5,
     textTransform: "uppercase",
-    marginBottom: 16
+    marginBottom: 12
   },
   tagline: {
     fontFamily: fonts.medium,
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
     textAlign: "center",
-    marginBottom: 20
+    marginBottom: 16
   },
   futureHighlight: {
     fontFamily: fonts.bold
@@ -144,40 +146,42 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
     borderWidth: 1,
-    marginBottom: 36,
-    maxWidth: "92%",
+    marginBottom: 20,
+    maxWidth: "94%",
     alignSelf: "center"
   },
   sloganText: {
     fontFamily: fonts.semiBold,
-    fontSize: 12,
+    fontSize: 11.5,
     textAlign: "center"
   },
   loaderWrap: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10
+    gap: 8,
+    marginTop: 4
   },
   loadingText: {
     fontFamily: fonts.medium,
-    fontSize: 12
+    fontSize: 11.5
   },
   footerBadgeRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 20,
+    paddingBottom: 16,
+    paddingTop: 8,
     gap: 6
   },
   indiaFlagEmoji: {
-    fontSize: 14
+    fontSize: 13
   },
   footerBadgeText: {
     fontFamily: fonts.medium,
-    fontSize: 11
+    fontSize: 10.5
   }
 });
