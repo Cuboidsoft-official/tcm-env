@@ -20,158 +20,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const CITIES = ['All Cities', 'Bilaspur', 'Raipur', 'Durg', 'Korba', 'Bhilai'];
 
-const SEED_PARTNERS = [
-  {
-    id: 'p1',
-    instituteName: 'Future Tech Institute',
-    partnerCategory: 'IT Partner',
-    categoryType: 'it',
-    tagline: 'Lab Access & Support',
-    location: 'Bilaspur, Chhattisgarh',
-    city: 'Bilaspur',
-    distance: '1.2 km',
-    rating: 4.6,
-    reviewsCount: '128 Reviews',
-    fee: '₹0 - ₹100 /hr',
-    feeLabel: 'Lab Access Fee',
-    status: 'Available',
-    statusBg: colors.primaryLight,
-    statusColor: colors.primary,
-    photosCount: '12 Photos',
-    avatarText: 'FT',
-    avatarBg: '#0F172A',
-    image: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=500',
-    badges: [
-      { text: 'Lab Access', icon: 'desktop-outline', bg: colors.mint, color: colors.primary },
-      { text: 'High Speed WiFi', icon: 'wifi-outline', bg: colors.mint, color: colors.primary },
-      { text: 'Project Support', icon: 'ribbon-outline', bg: colors.yellowSoft, color: '#D97706' }
-    ],
-    contactNumber: '+91 98765 43210',
-    email: 'contact@futuretech.com',
-    existingCourses: ['Full Stack Web Development', 'Python Data Analytics', 'Cloud DevOps', 'UI/UX Design'],
-    bio: 'Premier IT lab and research center in Bilaspur offering high-speed workstation access, project guidance, and certified skill testing.'
-  },
-  {
-    id: 'p2',
-    instituteName: 'Code Center Bilaspur',
-    partnerCategory: 'IT Partner',
-    categoryType: 'it',
-    tagline: 'Coding Lab & Print Hub',
-    location: 'Bilaspur, Chhattisgarh',
-    city: 'Bilaspur',
-    distance: '2.4 km',
-    rating: 4.4,
-    reviewsCount: '96 Reviews',
-    fee: '₹0 - ₹80 /hr',
-    feeLabel: 'Lab Access Fee',
-    status: 'Available',
-    statusBg: colors.primaryLight,
-    statusColor: colors.primary,
-    photosCount: '8 Photos',
-    avatarText: 'CC',
-    avatarBg: '#1E293B',
-    image: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500',
-    badges: [
-      { text: 'Lab Access', icon: 'desktop-outline', bg: colors.blueSoft, color: '#0284C7' },
-      { text: 'Printing', icon: 'print-outline', bg: '#F3E8FF', color: '#7E22CE' },
-      { text: 'Mentor Help', icon: 'person-outline', bg: colors.yellowSoft, color: '#D97706' }
-    ],
-    contactNumber: '+91 98765 12345',
-    email: 'info@codecenter.in',
-    existingCourses: ['Java Programming', 'C++ Data Structures', 'React Native App Dev'],
-    bio: 'Dedicated student coding lounge equipped with dual-monitor setups, cloud sandbox environments, and instant printing services.'
-  },
-  {
-    id: 'p3',
-    instituteName: 'Digital Solutions Academy',
-    partnerCategory: 'IT Partner',
-    categoryType: 'it',
-    tagline: 'High Performance Computing',
-    location: 'Raipur, Chhattisgarh',
-    city: 'Raipur',
-    distance: '3.1 km',
-    rating: 4.7,
-    reviewsCount: '152 Reviews',
-    fee: '₹0 - ₹120 /hr',
-    feeLabel: 'Lab Access Fee',
-    status: 'Busy',
-    statusBg: '#FFEDD5',
-    statusColor: '#C2410C',
-    photosCount: '15 Photos',
-    avatarText: 'DS',
-    avatarBg: '#044324',
-    image: 'https://images.unsplash.com/photo-1562774053-701939374585?w=500',
-    badges: [
-      { text: 'Lab Access', icon: 'desktop-outline', bg: colors.blueSoft, color: '#0284C7' },
-      { text: 'AC Lab', icon: 'snow-outline', bg: '#E0F2FE', color: '#0369A1' },
-      { text: '24x7 Access', icon: 'time-outline', bg: '#FEE2E2', color: '#B91C1C' }
-    ],
-    contactNumber: '+91 91234 56789',
-    email: 'support@digitalsolutions.org',
-    existingCourses: ['AI & Machine Learning', 'Cyber Security Essentials', 'Backend Engineering'],
-    bio: '24x7 Air-conditioned lab center with high end GPU servers, robotics testing beds, and software development workstations.'
-  },
-  {
-    id: 'p4',
-    instituteName: 'Govt. Polytechnic College',
-    partnerCategory: 'Gov Institution',
-    categoryType: 'gov',
-    tagline: 'Govt. & Public Institutes',
-    location: 'Bilaspur, Chhattisgarh',
-    city: 'Bilaspur',
-    distance: '4.5 km',
-    rating: 4.3,
-    reviewsCount: '215 Reviews',
-    fee: 'Timings',
-    feeLabel: '9:00 AM - 5:00 PM',
-    status: 'Open Now',
-    statusBg: colors.primaryLight,
-    statusColor: colors.primary,
-    photosCount: '15 Photos',
-    avatarText: 'GP',
-    avatarBg: '#0F172A',
-    image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=500',
-    badges: [
-      { text: 'Government', icon: 'business-outline', bg: colors.mint, color: colors.primary },
-      { text: 'Approved', icon: 'checkmark-done-circle-outline', bg: colors.blueSoft, color: '#0284C7' },
-      { text: 'Affordable', icon: 'pricetag-outline', bg: '#F3E8FF', color: '#7E22CE' }
-    ],
-    contactNumber: '+91 77522 34567',
-    email: 'principal@govtpolybilaspur.ac.in',
-    existingCourses: ['Diploma Computer Science', 'Electrical Engineering', 'Mechanical Technology'],
-    bio: 'State government technical institution providing subsidized lab facilities, government certification, and vocational skill workshops.'
-  },
-  {
-    id: 'p5',
-    instituteName: 'Bhilai Institute of Technology',
-    partnerCategory: 'Academic',
-    categoryType: 'academics',
-    tagline: 'Schools, Colleges & More',
-    location: 'Bhilai, Chhattisgarh',
-    city: 'Bhilai',
-    distance: '5.2 km',
-    rating: 4.5,
-    reviewsCount: '178 Reviews',
-    fee: 'Timings',
-    feeLabel: '8:30 AM - 4:30 PM',
-    status: 'Open Now',
-    statusBg: colors.primaryLight,
-    statusColor: colors.primary,
-    photosCount: '18 Photos',
-    avatarText: 'BIT',
-    avatarBg: '#4F46E5',
-    image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500',
-    badges: [
-      { text: 'Courses', icon: 'book-outline', bg: '#F3E8FF', color: '#7E22CE' },
-      { text: 'Placement Support', icon: 'briefcase-outline', bg: colors.yellowSoft, color: '#D97706' },
-      { text: 'NAAC A', icon: 'ribbon-outline', bg: colors.blueSoft, color: '#0284C7' }
-    ],
-    contactNumber: '+91 77524 88990',
-    email: 'admissions@bitbilaspur.edu.in',
-    existingCourses: ['B.Tech Computer Science', 'M.Tech Data Science', 'MCA Cloud Computing'],
-    bio: 'NAAC Accredited Grade A institute featuring campus incubation cells, corporate training rooms, and state-of-the-art software auditoriums.'
-  }
-];
+const SEED_PARTNERS = [];
 
 export default function DiscoverPartnersScreen({ session, onBack, onSelectPartner }) {
   const { theme } = useTheme();
@@ -180,7 +29,7 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('All Cities');
   const [selectedFilterPill, setSelectedFilterPill] = useState('All');
-  const [partnersList, setPartnersList] = useState(SEED_PARTNERS);
+  const [partnersList, setPartnersList] = useState([]);
 
   // Request partner modal state
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -232,18 +81,7 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
             bio: p.bio || 'Accredited partner institute providing facilities and certified courses.'
           }));
 
-          setPartnersList((prev) => {
-            const combined = [...formatted, ...SEED_PARTNERS];
-            const unique = [];
-            const map = new Map();
-            for (const item of combined) {
-              if (!map.has(item.instituteName.toLowerCase())) {
-                map.set(item.instituteName.toLowerCase(), true);
-                unique.push(item);
-              }
-            }
-            return unique;
-          });
+          setPartnersList(formatted);
         }
       })
       .catch(() => {});
@@ -508,9 +346,9 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
                   <View style={styles.cardFooter}>
                     <TouchableOpacity
                       onPress={() => (onSelectPartner ? onSelectPartner(item) : Alert.alert(item.instituteName, 'Opening full institute preview...'))}
-                      style={[styles.viewDetailsBtn, { backgroundColor: colors.lavender, borderColor: colors.lavenderLine }]}
+                      style={[styles.viewDetailsBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}
                     >
-                      <Text style={[styles.viewDetailsBtnText, { color: colors.primary }]}>View Details</Text>
+                      <Text style={[styles.viewDetailsBtnText, { color: theme.primary }]}>View Details</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -520,14 +358,14 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
         </View>
 
         {/* 7. Bottom Banner Card: "Can't find the right partner?" */}
-        <View style={[styles.bottomBannerCard, { backgroundColor: colors.lavender, borderColor: colors.lavenderLine }]}>
+        <View style={[styles.bottomBannerCard, { backgroundColor: theme.isDark ? '#1E263B' : colors.lavender, borderColor: theme.border }]}>
           <View style={styles.bannerLeft}>
-            <View style={[styles.mapIconBg, { backgroundColor: colors.primaryLight }]}>
-              <Ionicons name="map" size={24} color={colors.primary} />
+            <View style={[styles.mapIconBg, { backgroundColor: theme.badgeBg }]}>
+              <Ionicons name="map" size={24} color={theme.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.bannerTitle, { color: colors.ink }]}>Can't find the right partner?</Text>
-              <Text style={[styles.bannerSub, { color: colors.muted }]}>
+              <Text style={[styles.bannerTitle, { color: theme.text }]}>Can't find the right partner?</Text>
+              <Text style={[styles.bannerSub, { color: theme.subtext }]}>
                 Help us connect you with the best institute.
               </Text>
             </View>
@@ -535,7 +373,7 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
 
           <TouchableOpacity
             onPress={() => setShowRequestModal(true)}
-            style={[styles.requestBtn, { backgroundColor: colors.primary }]}
+            style={[styles.requestBtn, { backgroundColor: theme.primary }]}
           >
             <Text style={styles.requestBtnText}>Request Partner</Text>
           </TouchableOpacity>

@@ -644,20 +644,20 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
           if (isChannelChat) {
             return (
-              <View key={String(msg.id || `msg_${index}`)} style={styles.channelPostCard}>
+              <View key={String(msg.id || `msg_${index}`)} style={[styles.channelPostCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                 {/* Channel Post Header */}
                 <View style={styles.channelPostHeader}>
                   <Image source={{ uri: msg.senderAvatar || currentTarget.avatarUrl }} style={styles.channelPostAvatar} />
                   <View style={{ flex: 1, marginLeft: 10 }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                      <Text style={styles.channelPostName}>{msg.senderName || currentTarget.name}</Text>
+                      <Text style={[styles.channelPostName, { color: theme.text }]}>{msg.senderName || currentTarget.name}</Text>
                       {msg.isPremium ? (
-                        <MaterialCommunityIcons name="check-decagram" size={15} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                        <MaterialCommunityIcons name="check-decagram" size={15} color={theme.primary} style={{ marginLeft: 2 }} />
                       ) : null}
                     </View>
-                    <Text style={styles.channelPostTime}>{msg.time || "Just now"}</Text>
+                    <Text style={[styles.channelPostTime, { color: theme.subtext }]}>{msg.time || "Just now"}</Text>
                   </View>
-                  <FontAwesome5 name="thumbtack" size={12} color="#94A3B8" />
+                  <FontAwesome5 name="thumbtack" size={12} color={theme.subtext} />
                 </View>
 
                 {/* Rich Photo Attachment */}
@@ -682,34 +682,34 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                         Alert.alert("Google Drive Link", `Document URL:\n${link}`);
                       });
                     }}
-                    style={styles.channelDocCard}
+                    style={[styles.channelDocCard, { backgroundColor: theme.isDark ? "#131927" : "#F8FAFC", borderColor: theme.border }]}
                   >
                     <MaterialCommunityIcons name="file-pdf-box" size={32} color="#DC2626" style={{ marginRight: 10 }} />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.channelDocTitle} numberOfLines={1}>
+                      <Text style={[styles.channelDocTitle, { color: theme.text }]} numberOfLines={1}>
                         {msg.fileName || msg.text}
                       </Text>
-                      <Text style={styles.channelDocSub}>Official PDF Document • Tap to view</Text>
+                      <Text style={[styles.channelDocSub, { color: theme.subtext }]}>Official PDF Document • Tap to view</Text>
                     </View>
-                    <Feather name="chevron-right" size={18} color="#94A3B8" />
+                    <Feather name="chevron-right" size={18} color={theme.subtext} />
                   </Pressable>
                 ) : null}
 
                 {/* Post Text Content */}
                 {msg.text && !isDocMsg ? (
-                  <Text style={styles.channelPostText}>{msg.text}</Text>
+                  <Text style={[styles.channelPostText, { color: theme.text }]}>{msg.text}</Text>
                 ) : null}
 
                 {/* Bottom WhatsApp Channel Reactions & Share Bar */}
-                <View style={styles.channelPostFooter}>
-                  <TouchableOpacity style={styles.channelPostActionBtn}>
-                    <Feather name="heart" size={15} color="#64748B" style={{ marginRight: 5 }} />
-                    <Text style={styles.channelPostActionText}>{msg.likesCount || 24}</Text>
+                <View style={[styles.channelPostFooter, { borderTopColor: theme.border }]}>
+                  <TouchableOpacity style={[styles.channelPostActionBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+                    <Feather name="heart" size={15} color={theme.subtext} style={{ marginRight: 5 }} />
+                    <Text style={[styles.channelPostActionText, { color: theme.subtext }]}>{msg.likesCount || 24}</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.channelPostActionBtn}>
-                    <Feather name="message-square" size={15} color="#64748B" style={{ marginRight: 5 }} />
-                    <Text style={styles.channelPostActionText}>{msg.commentsCount || 5}</Text>
+                  <TouchableOpacity style={[styles.channelPostActionBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+                    <Feather name="message-square" size={15} color={theme.subtext} style={{ marginRight: 5 }} />
+                    <Text style={[styles.channelPostActionText, { color: theme.subtext }]}>{msg.commentsCount || 5}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -719,10 +719,10 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                         message: `${currentTarget.name}: ${msg.text || "Check out this update on TCM"}`
                       });
                     }}
-                    style={styles.channelPostActionBtn}
+                    style={[styles.channelPostActionBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}
                   >
-                    <Feather name="share-2" size={15} color="#5B3CF5" style={{ marginRight: 5 }} />
-                    <Text style={[styles.channelPostActionText, { color: "#5B3CF5", fontFamily: fonts.bold }]}>Share</Text>
+                    <Feather name="share-2" size={15} color={theme.primary} style={{ marginRight: 5 }} />
+                    <Text style={[styles.channelPostActionText, { color: theme.primary, fontFamily: fonts.bold }]}>Share</Text>
                   </TouchableOpacity>
                 </View>
               </View>

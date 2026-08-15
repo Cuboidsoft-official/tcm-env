@@ -58,8 +58,11 @@ function generateClientSmartFallback(query, category = "Academic") {
   return `📚 **Comprehensive Guide & Explanation: ${rawTopic}**\n\n1. **Executive Concept Overview**:\n   Regarding **"${query}"**: This topic involves understanding underlying principles, operational steps, and practical applications.\n\n2. **Step-by-Step Resolution & Methodology**:\n   • **Step 1 (Core Fundamentals)**: Define basic terms, inputs, and expected outcomes.\n   • **Step 2 (Execution Strategy)**: Structure logic into clean, modular steps to ensure clarity and accuracy.\n   • **Step 3 (Edge Case Handling)**: Validate outputs against boundary conditions and verify syntax/parameters.\n\n3. **Key Takeaways & Best Practices**:\n   Break down complex problems into smaller manageable sub-tasks and test with realistic edge cases.`;
 }
 
-function renderAiFormattedResponse(rawText) {
+function renderAiFormattedResponse(rawText, theme = {}) {
   if (!rawText) return null;
+  const isDark = Boolean(theme?.isDark);
+  const textColor = theme?.text || (isDark ? "#F8FAFC" : "#334155");
+  const textStyleMain = { fontSize: 13, color: textColor, lineHeight: 19 };
 
   const codeBlockRegex = /```([a-zA-Z]*)\n([\s\S]*?)```/g;
   const elements = [];
@@ -67,7 +70,7 @@ function renderAiFormattedResponse(rawText) {
   let match;
   let keyCount = 0;
 
-  const renderInlineFormatted = (inlineStr, textStyle = {}) => {
+  const renderInlineFormatted = (inlineStr, textStyle = textStyleMain) => {
     if (!inlineStr) return null;
     const regex = /(\*\*.*?\*\*|`.*?`)/g;
     const parts = inlineStr.split(regex);
@@ -76,7 +79,7 @@ function renderAiFormattedResponse(rawText) {
       if (part.startsWith("**") && part.endsWith("**")) {
         const clean = part.slice(2, -2);
         return (
-          <Text key={idx} style={[textStyle, { fontWeight: "700", color: "#0F172A" }]}>
+          <Text key={idx} style={[textStyle, { fontWeight: "700", color: theme?.text || (isDark ? "#FFFFFF" : "#0F172A") }]}>
             {clean}
           </Text>
         );
@@ -84,7 +87,7 @@ function renderAiFormattedResponse(rawText) {
       if (part.startsWith("`") && part.endsWith("`")) {
         const clean = part.slice(1, -1);
         return (
-          <Text key={idx} style={{ backgroundColor: "#E2E8F0", color: "#4338CA", fontFamily: "monospace", fontSize: 12, paddingHorizontal: 4, borderRadius: 4 }}>
+          <Text key={idx} style={{ backgroundColor: isDark ? "#1E263B" : "#E2E8F0", color: theme?.primary || "#6366F1", fontFamily: "monospace", fontSize: 12, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
             {clean}
           </Text>
         );
@@ -104,7 +107,7 @@ function renderAiFormattedResponse(rawText) {
       }
 
       if (/^(=+|-+|\*+)$/.test(trimmed)) {
-        elements.push(<View key={`hr_${keyCount++}`} style={{ height: 1, backgroundColor: "#E2E8F0", marginVertical: 8, width: "100%" }} />);
+        elements.push(<View key={`hr_${keyCount++}`} style={{ height: 1, backgroundColor: theme?.border || "#E2E8F0", marginVertical: 8, width: "100%" }} />);
         return;
       }
 
@@ -113,7 +116,7 @@ function renderAiFormattedResponse(rawText) {
       if (isHeader) {
         elements.push(
           <View key={`hdr_${keyCount++}`} style={{ marginTop: 6, marginBottom: 4 }}>
-            <Text style={{ fontSize: 13, fontWeight: "700", color: "#0F172A", lineHeight: 19 }}>
+            <Text style={{ fontSize: 13, fontWeight: "700", color: theme?.text || (isDark ? "#FFFFFF" : "#0F172A"), lineHeight: 19 }}>
               {renderInlineFormatted(trimmed)}
             </Text>
           </View>
@@ -122,16 +125,16 @@ function renderAiFormattedResponse(rawText) {
         const bulletText = trimmed.replace(/^([•\-\*]\s*)/, "");
         elements.push(
           <View key={`blt_${keyCount++}`} style={{ flexDirection: "row", marginTop: 2, marginBottom: 2, paddingLeft: 2 }}>
-            <Text style={{ fontSize: 13, color: "#6366F1", marginRight: 6 }}>•</Text>
-            <Text style={{ flex: 1, fontSize: 13, color: "#334155", lineHeight: 19 }}>
-              {renderInlineFormatted(bulletText, { fontSize: 13, color: "#334155", lineHeight: 19 })}
+            <Text style={{ fontSize: 13, color: theme?.primary || "#6366F1", marginRight: 6 }}>•</Text>
+            <Text style={{ flex: 1, fontSize: 13, color: textColor, lineHeight: 19 }}>
+              {renderInlineFormatted(bulletText, { fontSize: 13, color: textColor, lineHeight: 19 })}
             </Text>
           </View>
         );
       } else {
         elements.push(
-          <Text key={`txt_${keyCount++}`} style={{ fontSize: 13, color: "#334155", lineHeight: 19, marginBottom: 3 }}>
-            {renderInlineFormatted(trimmed, { fontSize: 13, color: "#334155", lineHeight: 19 })}
+          <Text key={`txt_${keyCount++}`} style={{ fontSize: 13, color: textColor, lineHeight: 19, marginBottom: 3 }}>
+            {renderInlineFormatted(trimmed, { fontSize: 13, color: textColor, lineHeight: 19 })}
           </Text>
         );
       }
@@ -145,14 +148,14 @@ function renderAiFormattedResponse(rawText) {
     const lang = match[1] || "CODE";
     const codeContent = match[2].trim();
     elements.push(
-      <View key={`code_${keyCount++}`} style={styles.aiCodeContainer}>
-        <View style={styles.aiCodeHeader}>
-          <Text style={styles.aiCodeLangText}>{lang.toUpperCase()}</Text>
-          <MaterialCommunityIcons name="code-tags" size={14} color="#5B3CF5" />
+      <View key={`code_${keyCount++}`} style={[styles.aiCodeContainer, { backgroundColor: isDark ? "#0F172A" : "#F1F5F9", borderColor: theme?.border || "#CBD5E1" }]}>
+        <View style={[styles.aiCodeHeader, { backgroundColor: isDark ? "#1E263B" : "#E2E8F0" }]}>
+          <Text style={[styles.aiCodeLangText, { color: theme?.primary || "#5B3CF5" }]}>{lang.toUpperCase()}</Text>
+          <MaterialCommunityIcons name="code-tags" size={14} color={theme?.primary || "#5B3CF5"} />
         </View>
         <ScrollView nestedScrollEnabled style={{ maxHeight: 150 }} showsVerticalScrollIndicator>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <Text style={styles.aiCodeText}>{codeContent}</Text>
+            <Text style={[styles.aiCodeText, { color: isDark ? "#F8FAFC" : "#0F172A" }]}>{codeContent}</Text>
           </ScrollView>
         </ScrollView>
       </View>
@@ -168,11 +171,16 @@ function renderAiFormattedResponse(rawText) {
 }
 
 function CollapsibleMessageContainer({ item, children }) {
+  const { theme } = useTheme();
   const isLong = (item?.text || "").length > 180 || (item?.text || "").includes("\n\n");
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <View style={[styles.bubbleLeft, item?.isAi && styles.bubbleAi]}>
+    <View style={[
+      styles.bubbleLeft,
+      { backgroundColor: theme.cardBg, borderColor: theme.border },
+      item?.isAi && [styles.bubbleAi, { backgroundColor: theme.isDark ? "#111827" : "#F8FAFC", borderColor: theme.border }]
+    ]}>
       <View style={isLong && !expanded ? { maxHeight: 150, overflow: "hidden" } : undefined}>
         {children}
       </View>
@@ -184,17 +192,17 @@ function CollapsibleMessageContainer({ item, children }) {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: expanded ? "#F1F5F9" : "#F0EDFF",
+            backgroundColor: theme.badgeBg,
             paddingVertical: 5,
             paddingHorizontal: 10,
             borderRadius: 8,
             marginTop: 8,
             borderWidth: 1,
-            borderColor: expanded ? "#CBD5E1" : "#C4B5FD"
+            borderColor: theme.border
           }}
           activeOpacity={0.8}
         >
-          <Text style={{ fontSize: 11.5, fontWeight: "700", color: expanded ? "#64748B" : "#5B3CF5", marginRight: 4 }}>
+          <Text style={{ fontSize: 11.5, fontWeight: "700", color: theme.primary, marginRight: 4 }}>
             {expanded ? "Show Less ▲" : "Read Full Answer ▼"}
           </Text>
         </TouchableOpacity>
@@ -840,22 +848,22 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         ) : null}
 
         {/* 3. PINNED ANNOUNCEMENT BANNER */}
-        <View style={styles.pinnedBanner}>
+        <View style={[styles.pinnedBanner, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.pinnedIconWrap}>
-            <MaterialCommunityIcons name="pin" size={18} color="#5B3CF5" />
+            <MaterialCommunityIcons name="pin" size={18} color={theme.primary} />
           </View>
           <View style={styles.pinnedTextWrap}>
-            <Text style={styles.pinnedAuthor}>Pinned by Admin</Text>
-            <Text style={styles.pinnedText}>{room?.pinnedAnnouncement?.text || "Please use this group only for NEET related doubts."}</Text>
+            <Text style={[styles.pinnedAuthor, { color: theme.primary }]}>Pinned by Admin</Text>
+            <Text style={[styles.pinnedText, { color: theme.text }]} numberOfLines={1}>{room?.pinnedAnnouncement?.text || "Please use this group only for NEET related doubts."}</Text>
           </View>
-          <TouchableOpacity style={styles.viewBannerBtn} onPress={() => Alert.alert("Announcement", room?.pinnedAnnouncement?.text)}>
-            <Text style={styles.viewBannerText}>View</Text>
+          <TouchableOpacity style={[styles.viewBannerBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]} onPress={() => Alert.alert("Announcement", room?.pinnedAnnouncement?.text)}>
+            <Text style={[styles.viewBannerText, { color: theme.primary }]}>View</Text>
           </TouchableOpacity>
         </View>
 
         {/* DATE DIVIDER */}
         <View style={styles.dateDivider}>
-          <Text style={styles.dateDividerText}>Today</Text>
+          <Text style={[styles.dateDividerText, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", color: theme.subtext }]}>Today</Text>
         </View>
 
         {/* 4. CHAT MESSAGES LIST */}
@@ -1007,7 +1015,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
             if (item.isSelf) {
               return (
                 <View key={uniqueKey} style={styles.msgRowRight}>
-                  <View style={styles.msgBodyRight}>
+                  <View style={[styles.msgBodyRight, { backgroundColor: theme.primary }]}>
                     <Text style={styles.msgTextRight}>{item.text}</Text>
                     <View style={styles.metaRowRight}>
                       <Text style={styles.msgTimeRight}>{item.time}</Text>
@@ -1017,12 +1025,12 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                     {/* ASK WITH AI BUTTON (RIGHT SIDE SELF MESSAGE) */}
                     {isQuestionMessage(item) && (
                       <TouchableOpacity
-                        style={[styles.askAiBtn, { alignSelf: "flex-end", marginTop: 4 }]}
+                        style={[styles.askAiBtn, { alignSelf: "flex-end", marginTop: 4, backgroundColor: theme.isDark ? "#1E1B4B" : "#E8F5E9", borderColor: theme.isDark ? "#312E81" : "#C8E6C9" }]}
                         onPress={() => handleAskAi(item)}
                         disabled={aiLoading}
                       >
-                        <MaterialCommunityIcons name="sparkles" size={13} color="#6366F1" />
-                        <Text style={styles.askAiText}>
+                        <MaterialCommunityIcons name="sparkles" size={13} color={theme.isDark ? "#A78BFA" : "#6366F1"} />
+                        <Text style={[styles.askAiText, { color: theme.isDark ? "#A78BFA" : "#0A6836" }]}>
                           {aiLoading ? "Asking AI..." : "Ask with AI"}
                         </Text>
                       </TouchableOpacity>
@@ -1039,29 +1047,29 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                 <Image source={{ uri: item.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }} style={styles.msgAvatar} />
                 <View style={styles.msgBodyLeft}>
                   <View style={styles.authorHeaderRow}>
-                    <Text style={styles.msgAuthor}>{item.authorName}</Text>
+                    <Text style={[styles.msgAuthor, { color: theme.text }]}>{item.authorName}</Text>
                     {item.isAdmin || item.authorRole === "Admin" ? (
-                      <View style={styles.adminTag}><Text style={styles.adminTagText}>Admin</Text></View>
+                      <View style={[styles.adminTag, { backgroundColor: theme.isDark ? "#064E3B" : "#E8F5E9" }]}><Text style={[styles.adminTagText, { color: theme.isDark ? "#A7F3D0" : "#0A6836" }]}>Admin</Text></View>
                     ) : null}
                     {item.isAi ? (
-                      <View style={styles.aiTag}><Text style={styles.aiTagText}>AI Assistant</Text></View>
+                      <View style={[styles.aiTag, { backgroundColor: theme.isDark ? "#1E1B4B" : "#ECF9E9" }]}><Text style={[styles.aiTagText, { color: theme.isDark ? "#C7D2FE" : "#2E7D32" }]}>AI Assistant</Text></View>
                     ) : null}
-                    <Text style={styles.msgTime}>{item.time}</Text>
+                    <Text style={[styles.msgTime, { color: theme.subtext }]}>{item.time}</Text>
                   </View>
 
                   <CollapsibleMessageContainer item={item}>
                     {item.isAi ? (
-                      renderAiFormattedResponse(item.text)
+                      renderAiFormattedResponse(item.text, theme)
                     ) : (
-                      <Text style={[styles.msgTextLeft, item.isAi && styles.msgTextAi]}>{item.text}</Text>
+                      <Text style={[styles.msgTextLeft, { color: theme.text }, item.isAi && styles.msgTextAi]}>{item.text}</Text>
                     )}
                   </CollapsibleMessageContainer>
 
                   {/* SEPARATE PROFESSIONAL MENTION FOR AI BUBBLE BELOW THE BUBBLE */}
                   {item.isAi && (
                     <View style={styles.aiFooterMentionRow}>
-                      <MaterialCommunityIcons name="shield-check" size={13} color="#6366F1" />
-                      <Text style={styles.aiFooterMentionText}>
+                      <MaterialCommunityIcons name="shield-check" size={13} color={theme.isDark ? "#A78BFA" : "#6366F1"} />
+                      <Text style={[styles.aiFooterMentionText, { color: theme.isDark ? "#A78BFA" : "#0A6836" }]}>
                         ⚡ Powered by TCM AI Engine • Verified Academic Mentor
                       </Text>
                     </View>
@@ -1070,12 +1078,12 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                   {/* ASK WITH AI BUTTON (LEFT SIDE PARTICIPANT MESSAGE) */}
                   {isQuestionMessage(item) && (
                     <TouchableOpacity
-                      style={styles.askAiBtn}
+                      style={[styles.askAiBtn, { backgroundColor: theme.isDark ? "#1E1B4B" : "#E8F5E9", borderColor: theme.isDark ? "#312E81" : "#C8E6C9" }]}
                       onPress={() => handleAskAi(item)}
                       disabled={aiLoading}
                     >
-                      <MaterialCommunityIcons name="sparkles" size={13} color="#6366F1" />
-                      <Text style={styles.askAiText}>
+                      <MaterialCommunityIcons name="sparkles" size={13} color={theme.isDark ? "#A78BFA" : "#6366F1"} />
+                      <Text style={[styles.askAiText, { color: theme.isDark ? "#A78BFA" : "#0A6836" }]}>
                         {aiLoading ? "Asking AI..." : "Ask with AI"}
                       </Text>
                     </TouchableOpacity>
@@ -1085,19 +1093,19 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                   {item.canRequestMentorHelp && (
                     <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
                       <TouchableOpacity
-                        style={[styles.mentorHelpBtn, { flex: 1 }]}
+                        style={[styles.mentorHelpBtn, { flex: 1, backgroundColor: theme.isDark ? "#3F1D1D" : "#FEF2F2", borderColor: theme.isDark ? "#7F1D1D" : "#FCA5A5" }]}
                         onPress={() => Alert.alert("Mentor Alerted", `${assignedMentor.name} has been notified and will review this doubt.`)}
                       >
-                        <MaterialCommunityIcons name="shield-account" size={16} color="#EF4444" />
-                        <Text style={styles.mentorHelpText}>Need Mentor Help</Text>
+                        <MaterialCommunityIcons name="shield-account" size={16} color={theme.isDark ? "#FCA5A5" : "#EF4444"} />
+                        <Text style={[styles.mentorHelpText, { color: theme.isDark ? "#FCA5A5" : "#EF4444" }]}>Need Mentor Help</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={[styles.mentorHelpBtn, { backgroundColor: "#F0EDFF", borderColor: "#DDD6FE" }]}
+                        style={[styles.mentorHelpBtn, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF", borderColor: theme.isDark ? "#312E81" : "#DDD6FE" }]}
                         onPress={() => setPollModalVisible(true)}
                       >
-                        <MaterialCommunityIcons name="poll" size={16} color="#5B3CF5" />
-                        <Text style={[styles.mentorHelpText, { color: "#5B3CF5" }]}>Create Poll</Text>
+                        <MaterialCommunityIcons name="poll" size={16} color={theme.isDark ? "#C7D2FE" : "#5B3CF5"} />
+                        <Text style={[styles.mentorHelpText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>Create Poll</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -1110,14 +1118,14 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
       {/* 5. INPUT BAR OR JOIN ROOM BAR */}
       {!isMember ? (
-        <View style={styles.joinRoomContainer}>
+        <View style={[styles.joinRoomContainer, { backgroundColor: theme.cardBg, borderTopColor: theme.border }]}>
           {hasRequestedJoin ? (
             <View style={[styles.joinRoomButton, { backgroundColor: "#64748B" }]}>
               <MaterialCommunityIcons name="clock-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
               <Text style={styles.joinRoomButtonText}>Join Request Pending Approval</Text>
             </View>
           ) : (
-            <TouchableOpacity style={styles.joinRoomButton} onPress={handleJoinRoom} disabled={joining}>
+            <TouchableOpacity style={[styles.joinRoomButton, { backgroundColor: theme.primary }]} onPress={handleJoinRoom} disabled={joining}>
               {joining ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
@@ -1164,19 +1172,19 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
       {/* MODAL: OPTIONS & ADMIN MENU */}
       <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMenuVisible(false)}>
-          <View style={styles.menuContainer}>
-            <Text style={styles.menuHeaderTitle}>Doubt Room Options</Text>
+          <View style={[styles.menuContainer, { backgroundColor: theme.cardBg }]}>
+            <Text style={[styles.menuHeaderTitle, { color: theme.text }]}>Doubt Room Options</Text>
 
             <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setShowRoomDetails(true); }}>
-              <MaterialCommunityIcons name="information-outline" size={20} color="#5B3CF5" />
-              <Text style={styles.menuItemText}>Group Room Details & Settings</Text>
+              <MaterialCommunityIcons name="information-outline" size={20} color={theme.primary} />
+              <Text style={[styles.menuItemText, { color: theme.text }]}>Group Room Details & Settings</Text>
             </TouchableOpacity>
 
             {isAdmin ? (
               <>
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setManageModalVisible(true); }}>
-                  <MaterialCommunityIcons name="shield-account" size={20} color="#5B3CF5" />
-                  <Text style={styles.menuItemText}>
+                  <MaterialCommunityIcons name="shield-account" size={20} color={theme.primary} />
+                  <Text style={[styles.menuItemText, { color: theme.text }]}>
                     Admin Tools & Requests {(room?.joinRequests?.length || 0) > 0 ? `(${room.joinRequests.length} Pending)` : ""}
                   </Text>
                 </TouchableOpacity>
@@ -1184,16 +1192,16 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
             ) : null}
 
             <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setPollModalVisible(true); }}>
-              <MaterialCommunityIcons name="poll" size={20} color="#5B3CF5" />
-              <Text style={styles.menuItemText}>Create Live Poll</Text>
+              <MaterialCommunityIcons name="poll" size={20} color={theme.primary} />
+              <Text style={[styles.menuItemText, { color: theme.text }]}>Create Live Poll</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setCodeModalVisible(true); }}>
               <MaterialCommunityIcons name="code-json" size={20} color="#3B82F6" />
-              <Text style={styles.menuItemText}>Share Code Snippet</Text>
+              <Text style={[styles.menuItemText, { color: theme.text }]}>Share Code Snippet</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={handleMarkSolved}>
               <MaterialCommunityIcons name="check-circle-outline" size={20} color="#10B981" />
-              <Text style={styles.menuItemText}>Mark Doubt as Solved</Text>
+              <Text style={[styles.menuItemText, { color: theme.text }]}>Mark Doubt as Solved</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

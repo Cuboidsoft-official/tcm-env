@@ -181,10 +181,10 @@ export default function PartnerProfilePreviewScreen({ partner = {}, onBack }) {
               </View>
 
               {/* Fee Pricing Card */}
-              <View style={[styles.pricingCard, { backgroundColor: colors.lavender, borderColor: colors.lavenderLine }]}>
-                <Text style={[styles.pricingFeeText, { color: colors.ink }]}>{fee}</Text>
-                <Text style={[styles.pricingFeeSub, { color: colors.muted }]}>Lab Access Fee</Text>
-                <TouchableOpacity onPress={() => Alert.alert('Lab Pricing', 'Standard Lab Access: ₹0 - ₹100/hr based on workstation configuration.')} style={[styles.viewPricingBtn, { backgroundColor: colors.primary }]}>
+              <View style={[styles.pricingCard, { backgroundColor: theme.isDark ? '#1E263B' : colors.lavender, borderColor: theme.border }]}>
+                <Text style={[styles.pricingFeeText, { color: theme.text }]}>{fee}</Text>
+                <Text style={[styles.pricingFeeSub, { color: theme.subtext }]}>Lab Access Fee</Text>
+                <TouchableOpacity onPress={() => Alert.alert('Lab Pricing', 'Standard Lab Access: ₹0 - ₹100/hr based on workstation configuration.')} style={[styles.viewPricingBtn, { backgroundColor: theme.primary }]}>
                   <Text style={styles.viewPricingBtnText}>View Pricing</Text>
                 </TouchableOpacity>
               </View>
@@ -264,27 +264,27 @@ export default function PartnerProfilePreviewScreen({ partner = {}, onBack }) {
 
           {/* 3 Stats Responsive Grid */}
           <View style={styles.aboutStatsGrid}>
-            <View style={[styles.statCell, { backgroundColor: colors.lavender, borderColor: colors.lavenderLine }]}>
-              <Ionicons name="image-outline" size={16} color={colors.primary} />
+            <View style={[styles.statCell, { backgroundColor: theme.isDark ? '#1E263B' : colors.lavender, borderColor: theme.border }]}>
+              <Ionicons name="image-outline" size={16} color={theme.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.statCellLabel, { color: colors.muted }]} numberOfLines={1}>Established</Text>
-                <Text style={[styles.statCellVal, { color: colors.ink }]} numberOfLines={1}>2018</Text>
+                <Text style={[styles.statCellLabel, { color: theme.subtext }]} numberOfLines={1}>Established</Text>
+                <Text style={[styles.statCellVal, { color: theme.text }]} numberOfLines={1}>2018</Text>
               </View>
             </View>
 
-            <View style={[styles.statCell, { backgroundColor: colors.lavender, borderColor: colors.lavenderLine }]}>
-              <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
+            <View style={[styles.statCell, { backgroundColor: theme.isDark ? '#1E263B' : colors.lavender, borderColor: theme.border }]}>
+              <Ionicons name="shield-checkmark-outline" size={16} color={theme.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.statCellLabel, { color: colors.muted }]} numberOfLines={1}>Partner Since</Text>
-                <Text style={[styles.statCellVal, { color: colors.ink }]} numberOfLines={1}>Jan 2024</Text>
+                <Text style={[styles.statCellLabel, { color: theme.subtext }]} numberOfLines={1}>Partner Since</Text>
+                <Text style={[styles.statCellVal, { color: theme.text }]} numberOfLines={1}>Jan 2024</Text>
               </View>
             </View>
 
-            <View style={[styles.statCell, { backgroundColor: colors.lavender, borderColor: colors.lavenderLine }]}>
-              <Ionicons name="school-outline" size={16} color={colors.primary} />
+            <View style={[styles.statCell, { backgroundColor: theme.isDark ? '#1E263B' : colors.lavender, borderColor: theme.border }]}>
+              <Ionicons name="school-outline" size={16} color={theme.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.statCellLabel, { color: colors.muted }]} numberOfLines={1}>Students</Text>
-                <Text style={[styles.statCellVal, { color: colors.ink }]} numberOfLines={1}>56</Text>
+                <Text style={[styles.statCellLabel, { color: theme.subtext }]} numberOfLines={1}>Students</Text>
+                <Text style={[styles.statCellVal, { color: theme.text }]} numberOfLines={1}>56</Text>
               </View>
             </View>
           </View>

@@ -22,10 +22,10 @@ export default function SidebarDrawer({
   onOpenInstallPwa
 }) {
   const { theme } = useTheme();
-  const name = user.name || "Ayushman";
-  const handle = user.handle ? `@${user.handle}` : "@ayushman.dev";
-  const memberBadge = user.memberBadge || "Premium Member";
-  const rawAvatar = user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80";
+  const name = user.name || "Student User";
+  const handle = user.handle ? `@${user.handle}` : "@tcm.student";
+  const memberBadge = user.memberBadge || (user.role === "mentor" ? "Verified Mentor" : user.verified ? "Verified Member" : "TCM Student");
+  const rawAvatar = user.avatarUrl || "";
   const isInvalidWebUri = Platform.OS === "web" && typeof rawAvatar === "string" && rawAvatar.startsWith("file://");
   const avatarUri = isInvalidWebUri ? null : rawAvatar;
 
@@ -35,12 +35,12 @@ export default function SidebarDrawer({
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
-    .toUpperCase() || "AY";
+    .toUpperCase() || "TC";
   const softSurface = theme.isDark ? theme.inputBg || "#131927" : "#F0EEF8";
 
-  const enrolledCoursesCount = user?.enrolledCoursesCount ?? user?.enrolledCourses?.length ?? user?.coursesCount ?? (user?.role === "mentor" ? 8 : 4);
-  const tcmCoins = user?.wallet?.tcmCoins ?? user?.tcmCoins ?? user?.coins ?? user?.points ?? 250;
-  const certificatesCount = user?.certificatesCount ?? user?.completedCoursesCount ?? user?.certificates?.length ?? (user?.role === "mentor" ? 5 : 2);
+  const enrolledCoursesCount = user?.enrolledCoursesCount ?? user?.enrolledCourses?.length ?? user?.coursesCount ?? 0;
+  const tcmCoins = user?.wallet?.tcmCoins ?? user?.tcmCoins ?? user?.coins ?? user?.points ?? 0;
+  const certificatesCount = user?.certificatesCount ?? user?.completedCoursesCount ?? user?.certificates?.length ?? 0;
 
   function handleNavigate(itemKey) {
     onClose();
@@ -133,7 +133,7 @@ export default function SidebarDrawer({
                 onPress={() => handleNavigate("Home")}
               />
               <MenuItem
-                icon={<Feather name="download" size={18} color="#5B3CF5" />}
+                icon={<Feather name="download" size={18} color={theme.primary} />}
                 label="Install TCM App (PWA)"
                 active={false}
                 onPress={() => {
@@ -155,8 +155,7 @@ export default function SidebarDrawer({
               />
               <MenuItem
                 icon={<Feather name="message-circle" size={18} />}
-                label="Doubts"
-                badgeCount={5}
+                label="Doubts Room"
                 active={activeItem === "Doubts"}
                 onPress={() => handleNavigate("Doubts")}
               />
@@ -193,7 +192,6 @@ export default function SidebarDrawer({
               <MenuItem
                 icon={<Feather name="bell" size={18} />}
                 label="Notifications"
-                badgeCount={3}
                 active={activeItem === "Notifications"}
                 onPress={() => handleNavigate("Notifications")}
               />

@@ -2177,7 +2177,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
       </View>
       <ReadMoreText text={post.text} />
       <PostMedia post={post} onPreview={onPreview} />
-      <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} onToggleLike={onToggleLike} />
+      <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} onToggleLike={onToggleLike} onSelectUser={onSelectUser} />
 
       {post.tags?.length ? (
         <View style={styles.tagsRow}>
@@ -2991,36 +2991,174 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike }) {
     Alert.alert("Link Copied", "Post URL copied to clipboard.");
   }
 
+  const [likedByModalOpen, setLikedByModalOpen] = useState(false);
+
+  const currentUserId = session?.user?.id || session?.user?._id;
+  const currentUserName = session?.user?.name || "You";
+  const currentUserAvatar = session?.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80";
+  let rawUsers = [];
+  if (Array.isArray(post?.likedByUsers) && post.likedByUsers.length) {
+    rawUsers = [...post.likedByUsers];
+  } else if (Array.isArray(post?.likedBy) && post.likedBy.length) {
+    rawUsers = post.likedBy
+      .map((item, idx) => {
+        if (typeof item === "object" && item !== null) {
+          return {
+            id: item.id || item._id || `user_${idx}`,
+            name: item.name || item.username || "TCM Member",
+            role: item.role || "TCM Member",
+            avatarUrl: item.avatarUrl || item.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+            isMentor: Boolean(item.isMentor || item.role === "mentor")
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  }
+
+  let realLikedUsers = [...rawUsers];
+  if (liked && currentUserId && !realLikedUsers.some((u) => String(u.id || u._id) === String(currentUserId))) {
+    realLikedUsers.unshift({
+      id: currentUserId,
+      name: currentUserName,
+      role: session?.user?.role || "TCM Member",
+      avatarUrl: currentUserAvatar,
+      isMentor: Boolean(session?.user?.role === "mentor" || session?.user?.isMentor)
+    });
+  }
+
+  const totalRealLikersCount = realLikedUsers.length;
+
   return (
-    <View style={styles.actionsRow}>
-      {/* 1. Clapping Hands Button with Micro Animation */}
-      <Pressable onPress={handleToggleClap} style={styles.metric}>
-        <Animated.View style={{ transform: [{ scale: clapScaleAnim }] }}>
-          <MaterialCommunityIcons
-            name={liked ? "hand-clap" : "hand-clap"}
-            size={24}
-            color={liked ? "#EAB308" : theme.subtext}
-          />
-        </Animated.View>
-        <Text style={[styles.metricText, { color: theme.subtext }, liked && { color: "#EAB308", fontFamily: fonts.bold }]}>{likesCount} Claps</Text>
-      </Pressable>
+    <View style={{ width: "100%" }}>
+      <View style={styles.actionsRow}>
+        {/* 1. Clapping Hands Button with Micro Animation */}
+        <Pressable onPress={handleToggleClap} style={styles.metric}>
+          <Animated.View style={{ transform: [{ scale: clapScaleAnim }] }}>
+            <MaterialCommunityIcons
+              name={liked ? "hand-clap" : "hand-clap"}
+              size={24}
+              color={liked ? "#EAB308" : theme.subtext}
+            />
+          </Animated.View>
+          <Text style={[styles.metricText, { color: theme.subtext }, liked && { color: "#EAB308", fontFamily: fonts.bold }]}>{likesCount} Claps</Text>
+        </Pressable>
 
-      {/* 2. Comments Button */}
-      <Pressable onPress={onComment} style={styles.metric}>
-        <Feather name="message-circle" size={22} color={theme.subtext} />
-        <Text style={[styles.metricText, { color: theme.subtext }]}>{commentsCount}</Text>
-      </Pressable>
+        {/* 2. Comments Button */}
+        <Pressable onPress={onComment} style={styles.metric}>
+          <Feather name="message-circle" size={22} color={theme.subtext} />
+          <Text style={[styles.metricText, { color: theme.subtext }]}>{commentsCount}</Text>
+        </Pressable>
 
-      {/* 3. Social Share Button */}
-      <Pressable onPress={() => setShareModalOpen(true)} style={styles.metric}>
-        <Feather name="send" size={22} color={theme.subtext} />
-        <Text style={[styles.metricText, { color: theme.subtext }]}>{sharesCount}</Text>
-      </Pressable>
+        {/* 3. Social Share Button */}
+        <Pressable onPress={() => setShareModalOpen(true)} style={styles.metric}>
+          <Feather name="send" size={22} color={theme.subtext} />
+          <Text style={[styles.metricText, { color: theme.subtext }]}>{sharesCount}</Text>
+        </Pressable>
 
-      {/* 4. Save Bookmark Button (Filled Icon when Saved) */}
-      <Pressable onPress={handleToggleSave} style={styles.saveAction}>
-        <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={23} color={saved ? theme.primary : theme.subtext} />
-      </Pressable>
+        {/* 4. Save Bookmark Button (Filled Icon when Saved) */}
+        <Pressable onPress={handleToggleSave} style={styles.saveAction}>
+          <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={23} color={saved ? theme.primary : theme.subtext} />
+        </Pressable>
+      </View>
+
+      {/* Real Overlapping Liked-By Avatar Stack Row */}
+      {totalRealLikersCount > 0 ? (
+        <TouchableOpacity
+          onPress={() => setLikedByModalOpen(true)}
+          activeOpacity={0.7}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginTop: 8,
+            paddingTop: 8,
+            borderTopWidth: 1,
+            borderTopColor: theme.isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9"
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", marginRight: 8 }}>
+            {realLikedUsers.slice(0, 3).map((u, idx) => (
+              <Image
+                key={u.id || idx}
+                source={{ uri: u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }}
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  borderWidth: 1.5,
+                  borderColor: theme.cardBg,
+                  marginLeft: idx === 0 ? 0 : -7
+                }}
+              />
+            ))}
+          </View>
+          <Text style={{ fontSize: 11.5, fontFamily: fonts.medium, color: theme.subtext, flex: 1 }} numberOfLines={1}>
+            Liked by <Text style={{ fontFamily: fonts.bold, color: theme.text }}>{realLikedUsers[0]?.name}</Text>
+            {totalRealLikersCount > 1 ? ` and ${totalRealLikersCount - 1} ${totalRealLikersCount - 1 === 1 ? "other" : "others"}` : ""}
+          </Text>
+          <Feather name="chevron-right" size={14} color={theme.subtext} />
+        </TouchableOpacity>
+      ) : null}
+
+      {/* Liked By Bottom Sheet Modal */}
+      <Modal visible={likedByModalOpen} transparent animationType="slide" onRequestClose={() => setLikedByModalOpen(false)}>
+        <Pressable onPress={() => setLikedByModalOpen(false)} style={styles.modalOverlay}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalContent, { backgroundColor: theme.cardBg, maxHeight: "70%" }]}>
+            <View style={styles.sheetHandle} />
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <MaterialCommunityIcons name="hand-clap" size={20} color="#EAB308" />
+                <Text style={{ fontFamily: fonts.bold, fontSize: 16, color: theme.text }}>Liked & Clapped ({totalRealLikersCount})</Text>
+              </View>
+              <Pressable onPress={() => setLikedByModalOpen(false)} style={{ padding: 4 }}>
+                <Feather name="x" size={20} color={theme.subtext} />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
+              {realLikedUsers.map((likedUser, idx) => (
+                <TouchableOpacity
+                  key={likedUser.id || `liker_${idx}`}
+                  onPress={() => {
+                    setLikedByModalOpen(false);
+                    if (onSelectUser) {
+                      onSelectUser(likedUser);
+                    }
+                  }}
+                  activeOpacity={0.75}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 10,
+                    borderBottomWidth: 1,
+                    borderBottomColor: theme.border
+                  }}
+                >
+                  <Image
+                    source={{ uri: likedUser.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }}
+                    style={{ width: 42, height: 42, borderRadius: 21, marginRight: 12, borderWidth: 1, borderColor: theme.border }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: theme.text }}>{likedUser.name}</Text>
+                      {likedUser.isMentor ? (
+                        <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: theme.border }}>
+                          <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: theme.subtext, marginTop: 2 }}>{likedUser.role || "TCM Member"}</Text>
+                  </View>
+                  <View style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: theme.primary }}>Profile</Text>
+                    <Feather name="chevron-right" size={13} color={theme.primary} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Social Share Sheet Modal (Clean Vector Icons, No Emojis) */}
       <Modal visible={shareModalOpen} transparent animationType="fade" onRequestClose={() => setShareModalOpen(false)}>
