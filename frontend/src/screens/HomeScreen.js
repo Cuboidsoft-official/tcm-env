@@ -1597,7 +1597,7 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
 
   if (showBack) {
     return (
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.bg }]}>
         <View style={styles.brandRow}>
           <Pressable onPress={onBack} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
             <Feather name="chevron-left" size={26} color={iconColor} />
@@ -1643,7 +1643,7 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
   }
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { backgroundColor: theme.bg }]}>
       <View style={styles.brandRow}>
         <Pressable onPress={onOpenSidebar} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
           <Feather name="menu" size={25} color={iconColor} />
@@ -2517,22 +2517,20 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
     videoPlayer.loop = true;
     videoPlayer.muted = true;
   });
+
   const { status: playerStatus } = useEvent(player, "statusChange", { status: player?.status });
+  const { isPlaying } = useEvent(player, "playingChange", { isPlaying: player?.playing });
+
+  useEffect(() => {
+    if (isPlaying !== undefined) {
+      setPlaying(Boolean(isPlaying));
+    }
+  }, [isPlaying]);
 
   useEffect(() => {
     if (playerStatus === "error") setPlayerError(true);
     else if (playerStatus === "readyToPlay") setPlayerError(false);
   }, [playerStatus]);
-
-  // Autoplay on mount when player is initialized
-  useEffect(() => {
-    if (player && sourceUri && !userPausedRef.current) {
-      try {
-        player.play();
-        setPlaying(true);
-      } catch (e) {}
-    }
-  }, [player, sourceUri]);
 
   useEffect(() => {
     return () => {
@@ -2540,12 +2538,14 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
     };
   }, []);
 
-  // Web IntersectionObserver: Autoplay when in view (>= 40%), pause when off-screen
+  // Web IntersectionObserver: Instagram-style flow
+  // Autoplay when >= 65% in view. Pause and Mute IMMEDIATELY if < 65% visible (partially hidden / off-screen)
   useEffect(() => {
     if (Platform.OS === "web" && containerRef.current && typeof IntersectionObserver !== "undefined") {
+      const targetElement = containerRef.current.node || containerRef.current;
       const observer = new IntersectionObserver(
         ([entry]) => {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.4) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.65) {
             if (!userPausedRef.current && player) {
               try {
                 player.play();
@@ -2553,23 +2553,28 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
               } catch (e) {}
             }
           } else {
+            // Partially hidden (< 65% visible) or scrolled off-screen -> pause and mute immediately
             if (player) {
               try {
                 player.pause();
+                player.muted = true;
+                setMuted(true);
                 setPlaying(false);
               } catch (e) {}
             }
           }
         },
-        { threshold: [0, 0.4, 0.8] }
+        { threshold: [0, 0.35, 0.65, 0.85, 1.0] }
       );
 
-      observer.observe(containerRef.current);
+      if (targetElement && typeof observer.observe === "function") {
+        observer.observe(targetElement);
+      }
       return () => observer.disconnect();
     }
   }, [player]);
 
-  // Native Viewport Scroll Check: Autoplay when in viewport (Native OS ONLY)
+  // Native Viewport Scroll Check: Instagram-style flow (>= 65% in viewport)
   useEffect(() => {
     let checkInterval;
     if (Platform.OS !== "web" && containerRef.current) {
@@ -2577,8 +2582,18 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
         if (containerRef.current && containerRef.current.measureInWindow) {
           containerRef.current.measureInWindow((x, y, width, height) => {
             const windowHeight = Dimensions.get("window").height;
-            const isVisible = y + height * 0.4 >= 0 && y + height * 0.3 <= windowHeight;
-            if (isVisible) {
+            const topBoundary = y;
+            const bottomBoundary = y + height;
+
+            // Calculate visible height in window
+            const visibleTop = Math.max(0, topBoundary);
+            const visibleBottom = Math.min(windowHeight, bottomBoundary);
+            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+            const visibleRatio = height > 0 ? visibleHeight / height : 0;
+
+            const isFullyOrMostlyVisible = visibleRatio >= 0.65;
+
+            if (isFullyOrMostlyVisible) {
               if (!userPausedRef.current && player) {
                 try {
                   player.play();
@@ -2589,13 +2604,15 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
               if (player) {
                 try {
                   player.pause();
+                  player.muted = true;
+                  setMuted(true);
                   setPlaying(false);
                 } catch (e) {}
               }
             }
           });
         }
-      }, 400);
+      }, 350);
     }
     return () => {
       if (checkInterval) clearInterval(checkInterval);
@@ -2604,7 +2621,8 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
 
   function togglePlay() {
     if (!sourceUri || !player) return;
-    if (playing) {
+    const isCurrentlyPlaying = player.playing || playing;
+    if (isCurrentlyPlaying) {
       try {
         player.pause();
       } catch (e) {}
@@ -2628,10 +2646,13 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
   }
 
   function toggleMute() {
+    if (!player) return;
     const nextMuted = !muted;
     player.muted = nextMuted;
     setMuted(nextMuted);
   }
+
+  const isActuallyPlaying = player?.playing || playing;
 
   return (
     <View
@@ -2645,11 +2666,20 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
       ]}
     >
       {sourceUri && !playerError ? (
-        <VideoView player={player} nativeControls={false} contentFit="cover" style={styles.videoPlayerView} />
+        <VideoView
+          player={player}
+          nativeControls={false}
+          allowsFullscreen={false}
+          allowsPictureInPicture={false}
+          contentFit="cover"
+          style={styles.videoPlayerView}
+        />
       ) : posterUri ? (
         <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoThumbImage} />
       ) : null}
-      {!playing && !playerError && posterUri && posterUri !== sourceUri ? <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoPosterImage} /> : null}
+      {!isActuallyPlaying && !playerError && posterUri && posterUri !== sourceUri ? (
+        <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoPosterImage} />
+      ) : null}
       {playerError ? (
         <View style={styles.videoErrorBadge}>
           <Feather name="alert-triangle" size={14} color="#FFFFFF" />
@@ -2664,9 +2694,9 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
       </View>
 
       {/* Auto-Hiding Play/Pause Icon Overlay */}
-      {!playerError && (showControls || !playing) ? (
+      {!playerError && (showControls || !isActuallyPlaying) ? (
         <Pressable onPress={togglePlay} style={styles.playCircle}>
-          <FontAwesome name={playing ? "pause" : "play"} size={18} color="#FFFFFF" />
+          <FontAwesome name={isActuallyPlaying ? "pause" : "play"} size={18} color="#FFFFFF" />
         </Pressable>
       ) : null}
 
@@ -4894,8 +4924,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingBottom: 18,
-    paddingTop: 8
+    paddingBottom: 10,
+    paddingTop: 8,
+    paddingHorizontal: 4,
+    position: "sticky",
+    top: 0,
+    zIndex: 100
   },
   brandRow: {
     alignItems: "center",

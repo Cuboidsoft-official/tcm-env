@@ -230,6 +230,18 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
     }
   }
 
+  function openEditModal() {
+    setForm({
+      name: profileUser.name || "",
+      handle: profileUser.handle || "",
+      bio: profileUser.bio || "",
+      location: profileUser.location || "India",
+      website: profileUser.website || "thecodemunk.in",
+      avatarUrl: profileUser.avatarUrl || ""
+    });
+    setEditModalOpen(true);
+  }
+
   async function handleSaveProfile() {
     if (!form.name.trim()) {
       Alert.alert("Invalid Input", "Name cannot be empty.");
@@ -1085,94 +1097,99 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
         />
       ) : (
         <Modal visible={editModalOpen} animationType="slide" transparent onRequestClose={() => setEditModalOpen(false)}>
-        <Pressable onPress={() => setEditModalOpen(false)} style={styles.modalBg}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={styles.modalCard}>
-            <View style={styles.sheetHandleBar} />
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
-              <Pressable onPress={() => setEditModalOpen(false)}>
-                <Feather name="x" size={20} color="#4A4A6A" />
-              </Pressable>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
-              <View style={styles.avatarEditSection}>
-                <ProfileAvatar name={form.name || profileUser.name} uri={form.avatarUrl} size={76} />
-                <Pressable onPress={pickImage} style={[styles.changePicBtn, { marginTop: 8 }]}>
-                  <Feather name="camera" size={14} color="#0A6836" />
-                  <Text style={styles.changePicText}>Choose Photo</Text>
+          <Pressable onPress={() => setEditModalOpen(false)} style={styles.modalBg}>
+            <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: theme.border }]} />
+              <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Edit Profile</Text>
+                <Pressable onPress={() => setEditModalOpen(false)}>
+                  <Feather name="x" size={20} color={theme.text} />
                 </Pressable>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Full Name</Text>
-                <TextInput
-                  value={form.name}
-                  onChangeText={(val) => setForm({ ...form, name: val })}
-                  placeholder="Your Name"
-                  style={styles.textInput}
-                />
+              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+                <View style={styles.avatarEditSection}>
+                  <ProfileAvatar name={form.name || profileUser.name} uri={form.avatarUrl} size={76} />
+                  <Pressable onPress={pickImage} style={[styles.changePicBtn, { marginTop: 8, backgroundColor: theme.badgeBg }]}>
+                    <Feather name="camera" size={14} color={theme.primary} />
+                    <Text style={[styles.changePicText, { color: theme.primary }]}>Choose Photo</Text>
+                  </Pressable>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.subtext }]}>Full Name</Text>
+                  <TextInput
+                    value={form.name}
+                    onChangeText={(val) => setForm({ ...form, name: val })}
+                    placeholder="Your Name"
+                    placeholderTextColor={theme.subtext}
+                    style={[styles.textInput, { backgroundColor: theme.inputBg || (theme.isDark ? "#1E293B" : "#F8F7FF"), color: theme.text, borderColor: theme.border }]}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.subtext }]}>Username Handle</Text>
+                  <TextInput
+                    value={form.handle}
+                    onChangeText={(val) => setForm({ ...form, handle: val })}
+                    placeholder="ayushman"
+                    placeholderTextColor={theme.subtext}
+                    style={[styles.textInput, { backgroundColor: theme.inputBg || (theme.isDark ? "#1E293B" : "#F8F7FF"), color: theme.text, borderColor: theme.border }]}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.subtext }]}>Bio</Text>
+                  <TextInput
+                    value={form.bio}
+                    onChangeText={(val) => setForm({ ...form, bio: val })}
+                    placeholder="Tell people about yourself..."
+                    placeholderTextColor={theme.subtext}
+                    multiline
+                    numberOfLines={3}
+                    style={[styles.textInput, { backgroundColor: theme.inputBg || (theme.isDark ? "#1E293B" : "#F8F7FF"), color: theme.text, borderColor: theme.border, height: 75, textAlignVertical: "top" }]}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.subtext }]}>Location</Text>
+                  <TextInput
+                    value={form.location}
+                    onChangeText={(val) => setForm({ ...form, location: val })}
+                    placeholder="India"
+                    placeholderTextColor={theme.subtext}
+                    style={[styles.textInput, { backgroundColor: theme.inputBg || (theme.isDark ? "#1E293B" : "#F8F7FF"), color: theme.text, borderColor: theme.border }]}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.subtext }]}>Website / Portfolio Link</Text>
+                  <TextInput
+                    value={form.website}
+                    onChangeText={(val) => setForm({ ...form, website: val })}
+                    placeholder="thecodemunk.in"
+                    placeholderTextColor={theme.subtext}
+                    style={[styles.textInput, { backgroundColor: theme.inputBg || (theme.isDark ? "#1E293B" : "#F8F7FF"), color: theme.text, borderColor: theme.border }]}
+                  />
+                </View>
+              </ScrollView>
+
+              <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
+                <Pressable onPress={() => setEditModalOpen(false)} style={[styles.cancelBtn, { backgroundColor: theme.isDark ? "#1E293B" : "#F4F3FA" }]}>
+                  <Text style={[styles.cancelBtnText, { color: theme.subtext }]}>Cancel</Text>
+                </Pressable>
+
+                <Pressable onPress={handleSaveProfile} disabled={updating} style={[styles.saveBtn, { backgroundColor: theme.primary }]}>
+                  {updating ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.saveBtnText}>Save Changes</Text>
+                  )}
+                </Pressable>
               </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Username Handle</Text>
-                <TextInput
-                  value={form.handle}
-                  onChangeText={(val) => setForm({ ...form, handle: val })}
-                  placeholder="ayushman"
-                  style={styles.textInput}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Bio</Text>
-                <TextInput
-                  value={form.bio}
-                  onChangeText={(val) => setForm({ ...form, bio: val })}
-                  placeholder="Tell people about yourself..."
-                  multiline
-                  numberOfLines={3}
-                  style={[styles.textInput, { height: 75, textAlignVertical: "top" }]}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Location</Text>
-                <TextInput
-                  value={form.location}
-                  onChangeText={(val) => setForm({ ...form, location: val })}
-                  placeholder="India"
-                  style={styles.textInput}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Website / Portfolio Link</Text>
-                <TextInput
-                  value={form.website}
-                  onChangeText={(val) => setForm({ ...form, website: val })}
-                  placeholder="thecodemunk.in"
-                  style={styles.textInput}
-                />
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <Pressable onPress={() => setEditModalOpen(false)} style={styles.cancelBtn}>
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </Pressable>
-
-              <Pressable onPress={handleSaveProfile} disabled={updating} style={styles.saveBtn}>
-                {updating ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.saveBtnText}>Save Changes</Text>
-                )}
-              </Pressable>
-            </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
       )}
 
       {/* Instagram-Style Followers / Following Bottom Sheet */}

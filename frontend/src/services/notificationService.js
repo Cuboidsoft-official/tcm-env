@@ -120,7 +120,8 @@ export async function setupPushNotifications(sessionToken, force = false) {
         sound: "default",
         enableVibrate: true,
         showBadge: true,
-        priority: "max"
+        priority: "max",
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility?.PUBLIC
       });
     }
 
@@ -188,12 +189,28 @@ export async function sendLocalNotification({ title, body, data }) {
           } catch (e) {}
         }
         if (perm === "granted") {
-          const notif = new window.Notification(title || "TCM Alert 🔔", {
+          const options = {
             body: body || "You have a new update on TCM Mobile",
             data: data || {},
-            icon: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=128&q=80",
-            badge: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=128&q=80"
-          });
+            icon: "/icon-192.png",
+            badge: "/icon-192.png",
+            vibrate: [100, 50, 100],
+            requireInteraction: true
+          };
+
+          // Route via ServiceWorker if active for OS Notification Shade popup
+          if ("serviceWorker" in navigator) {
+            try {
+              const reg = await navigator.serviceWorker.ready;
+              if (reg && reg.showNotification) {
+                await reg.showNotification(title || "TCM Alert 🔔", options);
+                return;
+              }
+            } catch (swErr) {}
+          }
+
+          // Fallback to HTML5 Notification
+          const notif = new window.Notification(title || "TCM Alert 🔔", options);
           notif.onclick = function () {
             if (window.focus) window.focus();
             notif.close();
@@ -209,13 +226,14 @@ export async function sendLocalNotification({ title, body, data }) {
             body: body || "You have a new update on TCM Mobile",
             data: data || {},
             sound: "default",
+            priority: Notifications.AndroidNotificationPriority?.MAX || "max"
           },
           trigger: null,
         });
       }
     }
   } catch (err) {
-    console.log("Error displaying local notification:", err.message);
+    console.log("Error displaying system push notification:", err.message);
   }
 }
 

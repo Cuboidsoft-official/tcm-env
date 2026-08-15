@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -24,23 +24,19 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
   const [name, setName] = useState(user.name || "");
   const [bio, setBio] = useState(user.bio || "");
   const [yearsExperience, setYearsExperience] = useState(user.yearsExperience || "5+ Yrs Exp");
-  
-  // Subjects
+
   const [subjectsText, setSubjectsText] = useState(
-    Array.isArray(user.subjects) ? user.subjects.join(", ") : "Full Stack Development, React Native, Node.js & MongoDB"
+    Array.isArray(user.subjects) ? user.subjects.join(", ") : typeof user.subjects === "string" ? user.subjects : "Full Stack Development, React Native, Node.js & MongoDB"
   );
-  
-  // Certifications
+
   const [certificationsText, setCertificationsText] = useState(
-    Array.isArray(user.certifications) ? user.certifications.join(", ") : "Certified Technical Instructor, Full Stack Systems Architect"
+    Array.isArray(user.certifications) ? user.certifications.join(", ") : typeof user.certifications === "string" ? user.certifications : "Certified Technical Instructor, Full Stack Systems Architect"
   );
 
-  // Interests
   const [interestsText, setInterestsText] = useState(
-    Array.isArray(user.interests) ? user.interests.join(", ") : "System Architecture, AI & Machine Learning, Student Mentorship"
+    Array.isArray(user.interests) ? user.interests.join(", ") : typeof user.interests === "string" ? user.interests : "System Architecture, AI & Machine Learning, Student Mentorship"
   );
 
-  // Experiences List
   const [experiences, setExperiences] = useState(
     user.experiences?.length
       ? user.experiences
@@ -50,6 +46,40 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
   );
 
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (visible && user) {
+      setName(user.name || "");
+      setBio(user.bio || "");
+      setYearsExperience(user.yearsExperience || "5+ Yrs Exp");
+      setSubjectsText(
+        Array.isArray(user.subjects)
+          ? user.subjects.join(", ")
+          : typeof user.subjects === "string"
+          ? user.subjects
+          : "Full Stack Development, React Native, Node.js & MongoDB"
+      );
+      setCertificationsText(
+        Array.isArray(user.certifications)
+          ? user.certifications.join(", ")
+          : typeof user.certifications === "string"
+          ? user.certifications
+          : "Certified Technical Instructor, Full Stack Systems Architect"
+      );
+      setInterestsText(
+        Array.isArray(user.interests)
+          ? user.interests.join(", ")
+          : typeof user.interests === "string"
+          ? user.interests
+          : "System Architecture, AI & Machine Learning, Student Mentorship"
+      );
+      setExperiences(
+        user.experiences?.length
+          ? user.experiences
+          : [{ id: "exp1", role: "Senior Software Engineer & Mentor", company: "TCM Academy", durationPill: "3+ Years" }]
+      );
+    }
+  }, [visible, user]);
 
   function handleAddExperience() {
     const newExp = {
@@ -118,158 +148,176 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
     }
   }
 
+  const inputStyle = [
+    styles.textInput,
+    {
+      backgroundColor: theme.inputBg || (theme.isDark ? "#1E293B" : "#F8F7FF"),
+      color: theme.text,
+      borderColor: theme.border
+    }
+  ];
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <View style={styles.overlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          {/* Header */}
-          <View style={[styles.headerRow, { borderBottomColor: theme.border }]}>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>Edit Mentor Profile</Text>
-            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
-              <Feather name="x" size={22} color={theme.text} />
-            </Pressable>
-          </View>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBg || (theme.isDark ? "#0F172A" : "#FFFFFF"), borderColor: theme.border }]}>
+            <View style={[styles.sheetHandleBar, { backgroundColor: theme.border }]} />
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* 1. Basic Info */}
-            <Text style={styles.sectionHeading}>Basic Information</Text>
-
-            <Text style={styles.inputLabel}>Full Name</Text>
-            <TextInput value={name} onChangeText={setName} style={styles.textInput} />
-
-            <Text style={styles.inputLabel}>Bio / Introduction</Text>
-            <TextInput
-              value={bio}
-              onChangeText={setBio}
-              multiline
-              numberOfLines={3}
-              placeholder="Tell students about your expertise and teaching philosophy..."
-              placeholderTextColor="#A0A0B8"
-              style={[styles.textInput, { height: 75, textAlignVertical: "top" }]}
-            />
-
-            <Text style={styles.inputLabel}>Years of Experience</Text>
-            <TextInput
-              value={yearsExperience}
-              onChangeText={setYearsExperience}
-              placeholder="e.g. 6+ Yrs Exp"
-              placeholderTextColor="#A0A0B8"
-              style={styles.textInput}
-            />
-
-            {/* 2. Subjects They Want to Teach */}
-            <Text style={styles.sectionHeading}>Subjects You Want to Teach</Text>
-            <Text style={styles.inputSubLabel}>Separate subjects with commas (e.g. MERN Stack, NEET Physics, Python AI)</Text>
-            <TextInput
-              value={subjectsText}
-              onChangeText={setSubjectsText}
-              multiline
-              placeholder="MERN Stack, Python AI, React Native, NEET Physics"
-              placeholderTextColor="#A0A0B8"
-              style={[styles.textInput, { height: 60, textAlignVertical: "top" }]}
-            />
-
-            {/* 3. Experiences & Industry History */}
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionHeading}>Work Experiences</Text>
-              <TouchableOpacity onPress={handleAddExperience} style={styles.addSmallBtn}>
-                <Feather name="plus" size={13} color="#0A6836" style={{ marginRight: 4 }} />
-                <Text style={styles.addSmallBtnText}>Add</Text>
-              </TouchableOpacity>
+            {/* Header */}
+            <View style={[styles.headerRow, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>Edit Mentor Profile</Text>
+              <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC" }]}>
+                <Feather name="x" size={20} color={theme.text} />
+              </Pressable>
             </View>
 
-            {experiences.map((exp, idx) => (
-              <View key={exp.id || idx} style={styles.expBox}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
-                  <Text style={styles.expIndexText}>Experience #{idx + 1}</Text>
-                  <Pressable onPress={() => handleDeleteExp(idx)}>
-                    <Feather name="trash-2" size={15} color="#D32F2F" />
-                  </Pressable>
-                </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+              {/* 1. Basic Info */}
+              <Text style={[styles.sectionHeading, { color: theme.text }]}>Basic Information</Text>
 
-                <TextInput
-                  value={exp.role}
-                  onChangeText={(val) => handleUpdateExp(idx, "role", val)}
-                  placeholder="Role (e.g. Senior Software Engineer)"
-                  placeholderTextColor="#A0A0B8"
-                  style={[styles.textInput, { marginBottom: 6 }]}
-                />
+              <Text style={[styles.inputLabel, { color: theme.subtext }]}>Full Name</Text>
+              <TextInput value={name} onChangeText={setName} style={inputStyle} placeholderTextColor={theme.subtext} />
 
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                  <TextInput
-                    value={exp.company}
-                    onChangeText={(val) => handleUpdateExp(idx, "company", val)}
-                    placeholder="Company (e.g. Google)"
-                    placeholderTextColor="#A0A0B8"
-                    style={[styles.textInput, { flex: 1 }]}
-                  />
-                  <TextInput
-                    value={exp.durationPill}
-                    onChangeText={(val) => handleUpdateExp(idx, "durationPill", val)}
-                    placeholder="Duration (e.g. 3+ Yrs)"
-                    placeholderTextColor="#A0A0B8"
-                    style={[styles.textInput, { width: 110 }]}
-                  />
-                </View>
+              <Text style={[styles.inputLabel, { color: theme.subtext }]}>Bio / Introduction</Text>
+              <TextInput
+                value={bio}
+                onChangeText={setBio}
+                multiline
+                numberOfLines={3}
+                placeholder="Tell students about your expertise and teaching philosophy..."
+                placeholderTextColor={theme.subtext}
+                style={[inputStyle, { height: 75, textAlignVertical: "top" }]}
+              />
+
+              <Text style={[styles.inputLabel, { color: theme.subtext }]}>Years of Experience</Text>
+              <TextInput
+                value={yearsExperience}
+                onChangeText={setYearsExperience}
+                placeholder="e.g. 6+ Yrs Exp"
+                placeholderTextColor={theme.subtext}
+                style={inputStyle}
+              />
+
+              {/* 2. Subjects They Want to Teach */}
+              <Text style={[styles.sectionHeading, { color: theme.text }]}>Subjects You Want to Teach</Text>
+              <Text style={[styles.inputSubLabel, { color: theme.subtext }]}>Separate subjects with commas (e.g. MERN Stack, NEET Physics, Python AI)</Text>
+              <TextInput
+                value={subjectsText}
+                onChangeText={setSubjectsText}
+                multiline
+                placeholder="MERN Stack, Python AI, React Native, NEET Physics"
+                placeholderTextColor={theme.subtext}
+                style={[inputStyle, { height: 60, textAlignVertical: "top" }]}
+              />
+
+              {/* 3. Experiences & Industry History */}
+              <View style={styles.sectionHeaderRow}>
+                <Text style={[styles.sectionHeading, { color: theme.text }]}>Work Experiences</Text>
+                <TouchableOpacity onPress={handleAddExperience} style={[styles.addSmallBtn, { backgroundColor: theme.isDark ? "#1E293B" : "#E8F5E9" }]}>
+                  <Feather name="plus" size={13} color={theme.primary} style={{ marginRight: 4 }} />
+                  <Text style={[styles.addSmallBtnText, { color: theme.primary }]}>Add</Text>
+                </TouchableOpacity>
               </View>
-            ))}
 
-            {/* 4. Certifications & Achievements */}
-            <Text style={styles.sectionHeading}>Certifications & Achievements</Text>
-            <Text style={styles.inputSubLabel}>Separate certifications with commas</Text>
-            <TextInput
-              value={certificationsText}
-              onChangeText={setCertificationsText}
-              multiline
-              placeholder="Certified Technical Instructor, AWS Solutions Architect"
-              placeholderTextColor="#A0A0B8"
-              style={[styles.textInput, { height: 55, textAlignVertical: "top" }]}
-            />
+              {experiences.map((exp, idx) => (
+                <View key={exp.id || idx} style={[styles.expBox, { backgroundColor: theme.isDark ? "#1E293B" : "#F9F8FF", borderColor: theme.border }]}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                    <Text style={[styles.expIndexText, { color: theme.primary }]}>Experience #{idx + 1}</Text>
+                    <Pressable onPress={() => handleDeleteExp(idx)}>
+                      <Feather name="trash-2" size={15} color="#EF4444" />
+                    </Pressable>
+                  </View>
 
-            {/* 5. Specialization Interests */}
-            <Text style={styles.sectionHeading}>Interests & Specializations</Text>
-            <Text style={styles.inputSubLabel}>Separate interest tags with commas</Text>
-            <TextInput
-              value={interestsText}
-              onChangeText={setInterestsText}
-              multiline
-              placeholder="System Architecture, LLMs, Student Mentorship"
-              placeholderTextColor="#A0A0B8"
-              style={[styles.textInput, { height: 55, textAlignVertical: "top" }]}
-            />
-          </ScrollView>
+                  <TextInput
+                    value={exp.role}
+                    onChangeText={(val) => handleUpdateExp(idx, "role", val)}
+                    placeholder="Role (e.g. Senior Software Engineer)"
+                    placeholderTextColor={theme.subtext}
+                    style={[inputStyle, { marginBottom: 6 }]}
+                  />
 
-          {/* Footer Actions */}
-          <View style={styles.footerRow}>
-            <Pressable onPress={onClose} style={styles.cancelBtn}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </Pressable>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <TextInput
+                      value={exp.company}
+                      onChangeText={(val) => handleUpdateExp(idx, "company", val)}
+                      placeholder="Company (e.g. Google)"
+                      placeholderTextColor={theme.subtext}
+                      style={[inputStyle, { flex: 1 }]}
+                    />
+                    <TextInput
+                      value={exp.durationPill}
+                      onChangeText={(val) => handleUpdateExp(idx, "durationPill", val)}
+                      placeholder="Duration (e.g. 3+ Yrs)"
+                      placeholderTextColor={theme.subtext}
+                      style={[inputStyle, { width: 110 }]}
+                    />
+                  </View>
+                </View>
+              ))}
 
-            <Pressable onPress={handleSave} disabled={saving} style={styles.saveBtn}>
-              {saving ? <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 6 }} /> : null}
-              <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save Profile"}</Text>
-            </Pressable>
+              {/* 4. Certifications & Achievements */}
+              <Text style={[styles.sectionHeading, { color: theme.text }]}>Certifications & Achievements</Text>
+              <Text style={[styles.inputSubLabel, { color: theme.subtext }]}>Separate certifications with commas</Text>
+              <TextInput
+                value={certificationsText}
+                onChangeText={setCertificationsText}
+                multiline
+                placeholder="Certified Technical Instructor, AWS Solutions Architect"
+                placeholderTextColor={theme.subtext}
+                style={[inputStyle, { height: 55, textAlignVertical: "top" }]}
+              />
+
+              {/* 5. Specialization Interests */}
+              <Text style={[styles.sectionHeading, { color: theme.text }]}>Interests & Specializations</Text>
+              <Text style={[styles.inputSubLabel, { color: theme.subtext }]}>Separate interest tags with commas</Text>
+              <TextInput
+                value={interestsText}
+                onChangeText={setInterestsText}
+                multiline
+                placeholder="System Architecture, LLMs, Student Mentorship"
+                placeholderTextColor={theme.subtext}
+                style={[inputStyle, { height: 55, textAlignVertical: "top" }]}
+              />
+            </ScrollView>
+
+            {/* Footer Actions */}
+            <View style={[styles.footerRow, { borderTopColor: theme.border }]}>
+              <Pressable onPress={onClose} style={[styles.cancelBtn, { backgroundColor: theme.isDark ? "#1E293B" : "#F4F3FA" }]}>
+                <Text style={[styles.cancelBtnText, { color: theme.subtext }]}>Cancel</Text>
+              </Pressable>
+
+              <Pressable onPress={handleSave} disabled={saving} style={[styles.saveBtn, { backgroundColor: theme.primary }]}>
+                {saving ? <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 6 }} /> : null}
+                <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save Profile"}</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
-      </View>
-    </KeyboardAvoidingView>
-  </Modal>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
     justifyContent: "flex-end"
   },
   modalContent: {
-    backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "90%",
-    padding: 16
+    padding: 16,
+    borderWidth: 1
+  },
+  sheetHandleBar: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 10
   },
   headerRow: {
     flexDirection: "row",
@@ -277,16 +325,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0EFFF",
     marginBottom: 8
   },
   headerTitle: {
     fontFamily: fonts.bold,
-    fontSize: 17,
-    color: "#181725"
+    fontSize: 17
   },
   closeBtn: {
-    padding: 4
+    padding: 6,
+    borderRadius: 10
   },
   scrollContent: {
     paddingBottom: 20
@@ -294,7 +341,6 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontFamily: fonts.bold,
     fontSize: 14,
-    color: "#181725",
     marginTop: 12,
     marginBottom: 4
   },
@@ -308,75 +354,61 @@ const styles = StyleSheet.create({
   addSmallBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8F5E9",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 8
   },
   addSmallBtnText: {
     fontFamily: fonts.bold,
-    fontSize: 11,
-    color: "#0A6836"
+    fontSize: 11
   },
   inputLabel: {
     fontFamily: fonts.medium,
     fontSize: 11,
-    color: "#55556A",
     marginTop: 8,
     marginBottom: 4
   },
   inputSubLabel: {
     fontFamily: fonts.regular,
     fontSize: 10,
-    color: "#7C7C9A",
     marginBottom: 6
   },
   textInput: {
-    backgroundColor: "#F8F7FF",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 12,
-    color: "#181725",
-    borderWidth: 1,
-    borderColor: "#EBEAFA"
+    borderWidth: 1
   },
   expBox: {
-    backgroundColor: "#F9F8FF",
     borderRadius: 12,
     padding: 10,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#EBEAFA"
+    borderWidth: 1
   },
   expIndexText: {
     fontFamily: fonts.bold,
-    fontSize: 11,
-    color: "#0A6836"
+    fontSize: 11
   },
   footerRow: {
     flexDirection: "row",
     gap: 10,
     paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#F0EFFF"
+    borderTopWidth: 1
   },
   cancelBtn: {
     flex: 1,
-    backgroundColor: "#F4F3FA",
     paddingVertical: 12,
     borderRadius: 14,
     alignItems: "center"
   },
   cancelBtnText: {
     fontFamily: fonts.bold,
-    fontSize: 13,
-    color: "#55556A"
+    fontSize: 13
   },
   saveBtn: {
     flex: 2,
     flexDirection: "row",
-    backgroundColor: "#0A6836",
     paddingVertical: 12,
     borderRadius: 14,
     alignItems: "center",
