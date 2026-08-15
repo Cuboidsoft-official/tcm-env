@@ -2620,6 +2620,56 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
     };
   }, [player]);
 
+  const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
+
+  // Web Inline Video Configuration Guard:
+  // Force playsinline, webkit-playsinline & pointer-events: none on HTML5 <video> elements
+  // to prevent mobile Safari/Chrome native fullscreen video trigger on touch/scroll.
+  useEffect(() => {
+    if (Platform.OS === "web" && containerRef.current) {
+      const elem = containerRef.current.node || containerRef.current;
+      if (elem && typeof elem.querySelectorAll === "function") {
+        const videos = elem.querySelectorAll("video");
+        videos.forEach((v) => {
+          v.setAttribute("playsinline", "true");
+          v.setAttribute("webkit-playsinline", "true");
+          v.setAttribute("x5-playsinline", "true");
+          v.setAttribute("disablepictureinpicture", "true");
+          v.controls = false;
+          v.style.pointerEvents = "none";
+          v.style.webkitUserSelect = "none";
+          v.style.userSelect = "none";
+        });
+      }
+    }
+  }, [player, sourceUri]);
+
+  function handleTouchStart(e) {
+    if (Platform.OS === "web" && e?.nativeEvent) {
+      const touch = e.nativeEvent.touches ? e.nativeEvent.touches[0] : e.nativeEvent;
+      if (touch) {
+        touchStartRef.current = { x: touch.clientX || 0, y: touch.clientY || 0, time: Date.now() };
+      }
+    }
+  }
+
+  function handleTapPress(e) {
+    if (playerError) return;
+    if (Platform.OS === "web" && e?.nativeEvent) {
+      const touch = e.nativeEvent.changedTouches ? e.nativeEvent.changedTouches[0] : e.nativeEvent;
+      if (touch && touchStartRef.current.time > 0) {
+        const dx = Math.abs((touch.clientX || 0) - touchStartRef.current.x);
+        const dy = Math.abs((touch.clientY || 0) - touchStartRef.current.y);
+        const dt = Date.now() - touchStartRef.current.time;
+        // If finger moved > 6px or press was held > 400ms, user is scrolling or dragging, NOT tapping!
+        if (dx > 6 || dy > 6 || dt > 400) {
+          return;
+        }
+      }
+    }
+    togglePlay();
+  }
+
   function togglePlay() {
     if (!sourceUri || !player) return;
     const isCurrentlyPlaying = player.playing || playing;
@@ -2673,7 +2723,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
           allowsFullscreen={false}
           allowsPictureInPicture={false}
           contentFit="cover"
-          style={styles.videoPlayerView}
+          style={[styles.videoPlayerView, Platform.OS === "web" && { pointerEvents: "none" }]}
         />
       ) : posterUri ? (
         <Image source={{ uri: sanitizeImageUri(posterUri) }} style={styles.videoThumbImage} />
@@ -2688,7 +2738,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
         </View>
       ) : null}
       <LinearGradient colors={["rgba(8,7,28,0.04)", "rgba(8,7,28,0.78)"]} style={styles.videoShade} />
-      <Pressable onPress={playerError ? () => {} : togglePlay} style={styles.videoTapLayer} />
+      <Pressable onPressIn={handleTouchStart} onPress={handleTapPress} style={styles.videoTapLayer} />
       <View style={styles.videoCopy}>
         <Text numberOfLines={1} style={styles.videoTitle}>{media.title || "Video Post"}</Text>
         <Text numberOfLines={1} style={styles.videoSmall}>{media.subtitle || "TCM Community"}</Text>
@@ -2696,7 +2746,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
 
       {/* Auto-Hiding Play/Pause Icon Overlay */}
       {!playerError && (showControls || !isActuallyPlaying) ? (
-        <Pressable onPress={togglePlay} style={styles.playCircle}>
+        <Pressable onPressIn={handleTouchStart} onPress={handleTapPress} style={styles.playCircle}>
           <FontAwesome name={isActuallyPlaying ? "pause" : "play"} size={18} color="#FFFFFF" />
         </Pressable>
       ) : null}
