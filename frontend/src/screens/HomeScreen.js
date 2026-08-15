@@ -360,6 +360,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   const knownNotifIds = useRef(new Set());
   const isInitialNotifFetch = useRef(true);
   const [isPwaInstallModalOpen, setIsPwaInstallModalOpen] = useState(false);
+  const mainScrollRef = useRef(null);
+  const lastHomeTapRef = useRef(0);
   const { theme } = useTheme();
 
   const user = useMemo(
@@ -575,7 +577,18 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
     setSidebarOpen(false);
 
     if (itemKey === "Home") {
+      const now = Date.now();
+      if (activeTab === "Home" || (now - lastHomeTapRef.current < 500)) {
+        setRefreshing(true);
+        if (mainScrollRef.current) {
+          try {
+            mainScrollRef.current.scrollTo({ y: 0, animated: true });
+          } catch (e) {}
+        }
+        loadHome({ quiet: true }).finally(() => setRefreshing(false));
+      }
       setActiveTab("Home");
+      lastHomeTapRef.current = now;
     } else if (itemKey === "My Classes") {
       setActiveTab("Learn");
     } else if (itemKey === "Doubts") {
@@ -1200,6 +1213,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
           </View>
         ) : (
           <ScrollView
+            ref={mainScrollRef}
             contentContainerStyle={styles.scroll}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -1376,13 +1390,34 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
             tabs={tabs}
             activeTab={activeTab}
             setActiveTab={(tab) => {
-              setShowPartnerDashboard(false);
-              setShowMentorDashboard(false);
-              setShowDiscoverPartnersScreen(false);
-              setSelectedPartnerForPreview(null);
-              resetSubScreens();
-              setActiveTab(tab);
-              setActiveDrawerItem(tab);
+              if (tab === "Home") {
+                const now = Date.now();
+                if (activeTab === "Home" || (now - lastHomeTapRef.current < 500)) {
+                  setRefreshing(true);
+                  if (mainScrollRef.current) {
+                    try {
+                      mainScrollRef.current.scrollTo({ y: 0, animated: true });
+                    } catch (e) {}
+                  }
+                  loadHome({ quiet: true }).finally(() => setRefreshing(false));
+                }
+                setShowPartnerDashboard(false);
+                setShowMentorDashboard(false);
+                setShowDiscoverPartnersScreen(false);
+                setSelectedPartnerForPreview(null);
+                resetSubScreens();
+                setActiveTab("Home");
+                setActiveDrawerItem("Home");
+                lastHomeTapRef.current = now;
+              } else {
+                setShowPartnerDashboard(false);
+                setShowMentorDashboard(false);
+                setShowDiscoverPartnersScreen(false);
+                setSelectedPartnerForPreview(null);
+                resetSubScreens();
+                setActiveTab(tab);
+                setActiveDrawerItem(tab);
+              }
             }}
           />
         ) : null}
