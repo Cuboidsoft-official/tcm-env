@@ -30,7 +30,16 @@ function signToken(user) {
 }
 
 export function publicUser(user) {
-  const userHandle = user.handle || (user.email ? user.email.split("@")[0] : "member");
+  let userHandle = user.handle;
+  if (!userHandle || userHandle === "ayushman" || userHandle === "ayushman.dev") {
+    if (user.name) {
+      userHandle = user.name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
+    } else if (user.email) {
+      userHandle = user.email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "_");
+    } else {
+      userHandle = "member";
+    }
+  }
   return {
     id: user._id,
     name: user.name,

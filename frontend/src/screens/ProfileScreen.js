@@ -195,9 +195,12 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
   }
 
   function initForm(u) {
+    const defaultHandle = (u.handle && u.handle !== "ayushman" && u.handle !== "ayushman.dev")
+      ? u.handle
+      : (u.name ? u.name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") : "tcm_member");
     setForm({
       name: u.name || "",
-      handle: u.handle || "",
+      handle: defaultHandle,
       bio: u.bio || "",
       location: u.location || "",
       website: u.website || "",
@@ -415,7 +418,13 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
           </View>
 
           <View style={styles.handleRow}>
-            {profileUser.handle ? <Text style={[styles.handleText, { color: theme.subtext }]}>@{profileUser.handle}</Text> : null}
+            {profileUser ? (
+              <Text style={[styles.handleText, { color: theme.subtext }]}>
+                @{profileUser.handle && profileUser.handle !== "ayushman" && profileUser.handle !== "ayushman.dev"
+                  ? profileUser.handle.replace(/^@/, "")
+                  : (profileUser.name ? profileUser.name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") : "tcm_member")}
+              </Text>
+            ) : null}
             <View style={[styles.memberBadgePill, { backgroundColor: theme.badgeBg }]}>
               <Text style={[styles.memberBadgeText, { color: theme.primary }]}>{profileUser.memberBadge || "TCM Member"}</Text>
             </View>

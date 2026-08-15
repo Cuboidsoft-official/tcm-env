@@ -23,7 +23,10 @@ export default function SidebarDrawer({
 }) {
   const { theme } = useTheme();
   const name = user.name || "Student User";
-  const handle = user.handle ? `@${user.handle}` : "@tcm.student";
+  const rawHandle = (user.handle && user.handle !== "ayushman" && user.handle !== "ayushman.dev")
+    ? user.handle.replace(/^@/, "")
+    : (name ? name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") : "tcm_student");
+  const handle = `@${rawHandle}`;
   const memberBadge = user.memberBadge || (user.role === "mentor" ? "Verified Mentor" : user.verified ? "Verified Member" : "TCM Student");
   const rawAvatar = user.avatarUrl || "";
   const isInvalidWebUri = Platform.OS === "web" && typeof rawAvatar === "string" && rawAvatar.startsWith("file://");

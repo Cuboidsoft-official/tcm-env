@@ -397,9 +397,12 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
 
   function openEditModal() {
     const subjectsArray = Array.isArray(user.subjects) ? user.subjects : [];
+    const autoHandle = (user.handle && user.handle !== "ayushman" && user.handle !== "ayushman.dev")
+      ? user.handle
+      : (user.name ? user.name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") : "tcm_member");
     setForm({
       name: user.name || "",
-      handle: user.handle || "",
+      handle: autoHandle,
       bio: user.bio || "",
       location: user.location || "India",
       website: user.website || "thecodemunk.in",
@@ -583,7 +586,11 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                 </View>
               )}
             </View>
-            <Text style={[styles.userHandleText, { color: activeAppTheme.subtext }]}>@{user.handle || "tcm_member"}</Text>
+            <Text style={[styles.userHandleText, { color: activeAppTheme.subtext }]}>
+              @{user.handle && user.handle !== "ayushman" && user.handle !== "ayushman.dev"
+                ? user.handle.replace(/^@/, "")
+                : (user.name ? user.name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") : "tcm_member")}
+            </Text>
             <Text style={[styles.userEmailText, { color: activeAppTheme.subtext }]}>{user.email || "user@thecodemunk.in"}</Text>
           </View>
         </View>

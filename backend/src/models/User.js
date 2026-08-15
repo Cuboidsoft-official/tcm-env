@@ -85,8 +85,7 @@ const userSchema = new mongoose.Schema(
     },
     avatarUrl: String,
     handle: {
-      type: String,
-      default: "ayushman"
+      type: String
     },
     verified: {
       type: Boolean,
