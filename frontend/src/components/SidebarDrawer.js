@@ -150,7 +150,7 @@ export default function SidebarDrawer({
                     <FontAwesome5 name="crown" size={15} color="#FFB800" />
                   </View>
                   <Text style={[styles.menuLabel, { color: theme.text, fontFamily: fonts.bold }]}>
-                    Premium Features ⭐
+                    Premium Features
                   </Text>
                 </View>
 
