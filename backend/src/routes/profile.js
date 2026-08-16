@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { requireAuth } from "../middleware/auth.js";
 import { CommunityPost } from "../models/CommunityPost.js";
 import { User } from "../models/User.js";
+import { Mentor } from "../models/Mentor.js";
 import { ClassReview } from "../models/ClassReview.js";
 import { ExamResult } from "../models/ExamResult.js";
 import { getOrGenerateReferralCode, publicUser } from "./auth.js";
@@ -220,6 +221,18 @@ async function handleUpdateProfile(req, res) {
             if (avatarUrl) post.authorAvatarUrl = avatarUrl.trim();
           }
         });
+
+        // Also sync Mentor memoryStore object if mentor
+        if (Array.isArray(memoryStore.mentors)) {
+          const mentorObj = memoryStore.mentors.find((m) => String(m.userId || m.id) === reqUserId || m.email === req.user.email);
+          if (mentorObj) {
+            if (name !== undefined && name.trim()) mentorObj.name = name.trim();
+            if (avatarUrl !== undefined) mentorObj.avatarUrl = avatarUrl.trim();
+            if (mentorCategory !== undefined) mentorObj.mentorCategory = mentorCategory;
+            if (yearsExperience !== undefined) mentorObj.title = `${mentorCategory || mentorObj.mentorCategory || "Mentor"} (${yearsExperience})`;
+            if (Array.isArray(subjects)) mentorObj.subjects = subjects;
+          }
+        }
       }
       return res.json({ user: publicUser(user) });
     }
@@ -245,6 +258,24 @@ async function handleUpdateProfile(req, res) {
       },
       { new: true }
     );
+
+    const resolvedAvatarUrl = (await resolveMediaUrl(avatarUrl)) || (typeof avatarUrl === "string" ? avatarUrl.trim() : "");
+
+    // Also update Mentor collection in MongoDB
+    try {
+      await Mentor.updateMany(
+        { $or: [{ userId: String(req.user._id || req.user.id) }, { email: req.user.email }] },
+        {
+          $set: {
+            ...(name && name.trim() && { name: name.trim() }),
+            ...(resolvedAvatarUrl && { avatarUrl: resolvedAvatarUrl }),
+            ...(mentorCategory && { mentorCategory }),
+            ...(yearsExperience && { title: `${mentorCategory || "Mentor"} (${yearsExperience})` }),
+            ...(Array.isArray(subjects) && { subjects })
+          }
+        }
+      );
+    } catch (mErr) {}
 
     if (name || avatarUrl) {
       await CommunityPost.updateMany(

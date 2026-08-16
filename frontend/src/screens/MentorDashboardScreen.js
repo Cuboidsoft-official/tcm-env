@@ -348,9 +348,20 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           <View style={styles.heroDecoCircle2} />
 
           <View style={styles.heroTopRow}>
-            <View>
-              <Text style={styles.greetingText}>Welcome back,</Text>
-              <Text style={styles.mentorNameText}>{user.name || "Mentor"}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              {user.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} style={{ width: 46, height: 46, borderRadius: 23, borderWidth: 2, borderColor: "#FFFFFF" }} />
+              ) : (
+                <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: "rgba(255, 255, 255, 0.2)", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#FFFFFF" }}>
+                  <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 18 }}>
+                    {(user.name || "M").charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View>
+                <Text style={styles.greetingText}>Welcome back,</Text>
+                <Text style={styles.mentorNameText}>{user.name || "Mentor"}</Text>
+              </View>
             </View>
 
             <View style={styles.heroBadgeIcon}>
