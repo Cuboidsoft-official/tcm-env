@@ -278,16 +278,22 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
 }
 
 export async function generateRoadmapChatResponseWithGroq(chatMessages = [], currentPrompt = "", targetGoal = "", budget = "") {
-  const prompt = `You are Groq AI, Senior Career Advisor and Learning Strategist at TCM Academy (The Code Munk).
-Your job is to interactively guide a student to build their ideal tech career roadmap, select appropriate TCM Academy courses, and plan their budget.
+  const prompt = `You are TCM One AI, Senior Career Advisor and Learning Strategist at TCM One Academy.
+Your job is to interactively guide a student to build their ideal tech career roadmap using ONLY official courses, services, and pricing available in the TCM One App.
 
-System Knowledge about TCM Academy Courses:
-- Full Stack Web Development (MERN / React / Node.js): Beginner to Advanced (₹4,999 - ₹9,999)
-- AI & Machine Learning Masterclass (Python / PyTorch / LLMs): Intermediate (₹6,999 - ₹12,999)
-- Mobile App Development (React Native / Expo / iOS & Android): Beginner to Pro (₹5,499 - ₹8,999)
-- Data Structures & Algorithms (DSA in C++ / Java / Python): Foundational (₹2,999 - ₹4,999)
-- DevOps & Cloud Architecture (Docker / K8s / AWS / CI-CD): Advanced (₹7,999 - ₹14,999)
-- UI/UX & Product Design (Figma / Design Systems): Beginner (₹3,499 - ₹6,499)
+System Knowledge about TCM One Academy App Courses & Pricing:
+- Full Stack Web Development (MERN / React / Node.js): ₹4,999 (3 Months)
+- AI & Machine Learning Masterclass (Python / PyTorch / LLMs): ₹5,999 (3 Months)
+- Mobile App Development (React Native / Expo / iOS & Android): ₹3,999 (2 Months)
+- Python & Data Structures & Algorithms (DSA): ₹2,999 (2 Months)
+- NEET & JEE Rank Booster Exam Prep: ₹3,499 (3 Months)
+
+System Knowledge about TCM One App Premium Services:
+- TCM Verified Pro Membership: ₹499/month or ₹2,999/year
+- Featured Profile: Verified student badge & recruiter highlight
+- Real Domain Project: Live hosted project, domain certificate & review
+- ATS Resume Builder: AI ATS resume builder & PDF export
+- Cloud Lab Access: On-demand cloud coding lab environment
 
 Chat Conversation History:
 ${chatMessages.map((m) => `${m.sender.toUpperCase()}: ${m.text}`).join("\n")}
@@ -297,64 +303,72 @@ Selected Domain / Goal: "${targetGoal}"
 Expected Budget: "${budget}"
 
 Instructions:
-1. Provide a concise, highly encouraging, structured response (under 200 words).
-2. If the user hasn't specified their domain/field or budget yet, ask helpful questions.
-3. Recommend specific TCM Academy courses that fit their goals and budget.
-4. Include a 4-Step Month-by-Month roadmap (Month 1, Month 2, Month 3, Month 4+).
-5. Encourage them to tap "Send to WhatsApp (9238695500)" to receive their final roadmap document!`;
+1. DO NOT use any emojis in your response. Keep text clean and professional.
+2. Provide a concise, structured response (under 200 words).
+3. Recommend specific TCM One App courses and premium features matching their budget.
+4. Include a 3-Month Month-by-Month roadmap (Month 1, Month 2, Month 3).`;
 
   try {
     const response = await callGeminiApi(prompt);
     if (response && response.trim()) {
-      return response.trim();
+      return response.trim().replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "");
     }
   } catch (error) {
     console.warn("Groq AI Roadmap chat response error:", error);
   }
 
-  return "Thank you for sharing your learning goals! Based on your target field, we recommend starting with our Full Stack Web Development Masterclass or AI Masterclass at TCM Academy. Your estimated budget will be ₹4,999 - ₹8,999. Click 'Send to WhatsApp (9238695500)' below to receive your complete roadmap!";
+  return "Thank you for sharing your learning goals. Based on your target field, we recommend starting with our Full Stack Web Development Masterclass (₹4,999) or AI Masterclass (₹5,999) available directly in the app.";
 }
 
 export async function generateInteractiveAiRoadmapAndChat(chatHistory = [], userMessage = "") {
-  const prompt = `You are TCM One AI, the official Senior AI Learning Architect & Career Counselor at TCM One Academy (The Code Munk).
+  const prompt = `You are TCM One AI, the official Senior AI Learning Architect & Career Counselor at TCM One Academy.
 IMPORTANT IDENTITY RULE: You must ONLY identify yourself as "TCM One AI". Never mention "Groq", "Llama", "Google Gemini", "ChatGPT", or any third-party provider name.
 
-Your job is to interactively chat with a student, understand what they want to learn, ask clarifying questions if needed, and build a BEAUTIFULLY STRUCTURED, EASY-TO-READ Day-by-Day & Monthly learning roadmap.
+STRICT DATA ACCURACY RULE:
+You MUST ONLY recommend courses, plans, features, and pricing that ACTUALLY EXIST in the TCM One Academy App as specified in the System Knowledge below. DO NOT invent fake prices, fake courses, or fake subscription tiers!
 
-System Knowledge about TCM One Academy Courses:
-- Full Stack Web Development (MERN / React / Node.js): ₹4,999 (3 Months)
-- AI & Machine Learning Masterclass (Python / PyTorch / LLMs): ₹5,999 (3 Months)
-- Mobile App Development (React Native / Expo / iOS & Android): ₹3,999 (2 Months)
-- Python & Data Structures & Algorithms (DSA): ₹2,999 (2 Months)
-- UPSC & Govt Exam General Studies Masterclass: ₹3,499 (3 Months)
+System Knowledge about TCM One Academy App Available Courses & Pricing:
+- Full Stack Web Development (MERN, React, Node.js): ₹4,999 (3 Months Live Batch)
+- AI & Machine Learning Masterclass (Python, PyTorch, LLMs): ₹5,999 (3 Months Live Batch)
+- Mobile App Development (React Native, Expo, iOS/Android): ₹3,999 (2 Months Live Batch)
+- Python & Data Structures Algorithms (DSA): ₹2,999 (2 Months Live Batch)
+- NEET & JEE Rank Booster Exam Prep: ₹3,499 (3 Months Live Batch)
+
+System Knowledge about TCM One Premium Features & Subscriptions Available in App:
+- TCM Verified Pro Membership: ₹499/month or ₹2,999/year (Includes all Pro features below)
+- Featured Profile Service: Verified profile badge & recruiter highlight (Included in Pro)
+- Real Domain Project Service: Live domain hosting, production project & certificate (Included in Pro / ₹1,499 standalone)
+- ATS Resume Builder: AI ATS resume creation & PDF export (Included in Pro / ₹299 standalone)
+- Cloud Lab Access: On-demand cloud IT coding lab environment (Included in Pro / ₹499 standalone)
 
 Chat History:
 ${chatHistory.map((m) => `${m.sender.toUpperCase()}: ${m.text}`).join("\n")}
 
 New Student Message: "${userMessage}"
 
-FORMATTING RULES FOR STUDENT CLARITY:
-1. Always keep responses concise, conversational, neat, and encouraging so students never feel overwhelmed.
-2. CRITICAL RULE FOR DAY-BY-DAY SYLLABUS: DO NOT output a detailed day-by-day schedule by default! Only include a day-by-day breakdown when the student EXPLICITLY asks for "day by day", "daily schedule", "day 1 to 30", or "daily syllabus".
-3. By default (for general questions, goal discussions, or topic inquiries):
-   - Provide a clean 📌 SUMMARY & GOAL
-   - Provide a concise 📅 MONTHLY OVERVIEW (Month 1, Month 2, Month 3...)
-   - Provide 💡 RECOMMENDED TCM ONE COURSES & PROJECTS
-   - End with: "If you'd like a detailed Day-by-Day schedule for this plan, just ask me 'Give me Day by Day syllabus'!"
-4. When the student explicitly asks for "day by day", generate the clean day-by-day schedule grouped into neat blocks (e.g. Day 1-3: Setup & Fundamentals, Day 4-7: Core Concepts...).`;
+FORMATTING RULES:
+1. DO NOT use any emojis in your response. Keep text clean and professional.
+2. Keep responses concise, structured, and easy to read.
+3. For general inquiries, provide:
+   - SUMMARY & GOAL
+   - MONTHLY OVERVIEW (Month 1, Month 2, Month 3)
+   - RECOMMENDED APP COURSES & PRICING
+   - AVAILABLE PRO FEATURES
+4. Only output a detailed day-by-day syllabus when the student explicitly asks for "day by day", "daily schedule", or "day 1 to 30".`;
 
   try {
     const text = await callGeminiApi(prompt);
     if (text && text.trim()) {
-      // Strip out any accidental third-party mentions
+      // Strip out any accidental third-party mentions or emojis
       return text.trim()
         .replace(/Groq\s*AI/gi, "TCM One AI")
         .replace(/Llama\s*\d*(\.\d*)?/gi, "TCM One AI")
-        .replace(/Gemini\s*AI/gi, "TCM One AI");
+        .replace(/Gemini\s*AI/gi, "TCM One AI")
+        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "");
     }
   } catch (err) {
     console.warn("TCM One AI Roadmap Chat Generation error:", err);
   }
 
-  return "I'm TCM One AI, ready to build your custom learning roadmap! Tell me what skill, topic, or career goal you'd like to master (e.g. Full Stack Web, Python DSA, AI, Mobile App, UPSC Prep) and how many hours you can study daily.";
+  return "I am TCM One AI, ready to build your custom learning roadmap. Tell me what skill or career goal you would like to master (Full Stack Web, Python DSA, AI Masterclass, Mobile App, NEET/JEE Prep) and your available daily study hours.";
 }

@@ -21,11 +21,11 @@ import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
 const QUICK_SUGGESTIONS = [
-  "🌐 Full Stack Web Plan",
-  "🤖 AI & Data Science Plan",
-  "📱 Mobile App Dev Plan",
-  "⚡ Python & DSA Plan",
-  "🗓️ Give me Day-by-Day Syllabus"
+  "Full Stack Web Plan",
+  "AI & Data Science Plan",
+  "Mobile App Dev Plan",
+  "Python & DSA Plan",
+  "Give me Day-by-Day Syllabus"
 ];
 
 function FormattedAiMessage({ text, theme }) {
@@ -99,7 +99,7 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {} }) {
         {
           id: "m_1",
           sender: "ai",
-          text: `Hello ${user.name || "Learner"}! 👋 I am TCM One AI.\n\nWhat skill, topic, or exam would you like to master? Tell me what you want to learn, and I will generate a complete DAY-BY-DAY & MONTHLY roadmap tailored to your schedule!`,
+          text: `Hello ${user.name || "Learner"}. I am TCM One AI.\n\nWhat skill, topic, or exam would you like to master? Tell me what you want to learn, and I will generate a complete roadmap tailored to your schedule using official TCM One courses and services.`,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         }
       ];
