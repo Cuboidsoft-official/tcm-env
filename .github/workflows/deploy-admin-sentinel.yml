@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: tcm-admin-sentinel-deploy
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
