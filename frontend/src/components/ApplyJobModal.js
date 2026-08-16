@@ -111,7 +111,7 @@ export default function ApplyJobModal({ visible, job, user = {}, token, onClose,
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.isDark ? "rgba(2, 6, 23, 0.75)" : "rgba(15, 23, 42, 0.55)" }]}>
           <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Sheet Handle */}
           <View style={styles.sheetHandleWrap}>
@@ -127,40 +127,40 @@ export default function ApplyJobModal({ visible, job, user = {}, token, onClose,
               </View>
               <Text style={[styles.modalSub, { color: theme.subtext }]}>{job.company || "TCM Partner"} • Salary: ₹{job.minSalary} – ₹{job.maxSalary} {job.salaryPeriod}</Text>
             </View>
-            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
+            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? theme.inputBg || "#1E263B" : "#F8FAFC" }]}>
               <Feather name="x" size={20} color={theme.text} />
             </Pressable>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.formScroll}>
             {/* 1. Full Name & Email */}
-            <Text style={styles.label}>Full Name *</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Full Name *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
               placeholder="e.g. Ankit Sharma"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.subtext}
               value={name}
               onChangeText={setName}
             />
 
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.subLabel}>Email Address *</Text>
+                <Text style={[styles.subLabel, { color: theme.subtext }]}>Email Address *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
                   placeholder="ankit@gmail.com"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.subtext}
                   keyboardType="email-address"
                   value={email}
                   onChangeText={setEmail}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.subLabel}>Phone Number</Text>
+                <Text style={[styles.subLabel, { color: theme.subtext }]}>Phone Number</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
                   placeholder="+91 9876543210"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.subtext}
                   keyboardType="phone-pad"
                   value={phone}
                   onChangeText={setPhone}
@@ -169,21 +169,21 @@ export default function ApplyJobModal({ visible, job, user = {}, token, onClose,
             </View>
 
             {/* 2. Portfolio / Github Link */}
-            <Text style={styles.label}>Portfolio / LinkedIn / GitHub Link</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Portfolio / LinkedIn / GitHub Link</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
               placeholder="https://github.com/your-username"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.subtext}
               value={portfolioUrl}
               onChangeText={setPortfolioUrl}
             />
 
             {/* 3. Resume Upload (Mandatory for Mentor View) */}
-            <View style={styles.resumeBox}>
+            <View style={[styles.resumeBox, { backgroundColor: theme.isDark ? "#3A1B1B" : "#FEF2F2", borderColor: theme.isDark ? "#991B1B" : "#FCA5A5" }]}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <MaterialCommunityIcons name="file-pdf-box" size={22} color="#EF4444" />
-                  <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: "#0F172A" }}>
+                  <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: theme.text }}>
                     Attach Resume (PDF / Doc) *
                   </Text>
                 </View>
@@ -195,33 +195,33 @@ export default function ApplyJobModal({ visible, job, user = {}, token, onClose,
               </View>
 
               {resumeName ? (
-                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", padding: 8, borderRadius: 8, borderWidth: 1, borderColor: "#E2E8F0" }}>
-                  <Feather name="check-circle" size={15} color="#166534" style={{ marginRight: 6 }} />
+                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : "#FFFFFF", padding: 8, borderRadius: 8, borderWidth: 1, borderColor: theme.border }}>
+                  <Feather name="check-circle" size={15} color="#10B981" style={{ marginRight: 6 }} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#0F172A" }} numberOfLines={1}>
+                    <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text }} numberOfLines={1}>
                       {resumeName}
                     </Text>
-                    <Text style={{ fontSize: 10, color: "#64748B" }}>{resumeSize} • Ready for Mentor</Text>
+                    <Text style={{ fontSize: 10, color: theme.subtext }}>{resumeSize} • Ready for Mentor</Text>
                   </View>
                 </View>
               ) : null}
 
-              <Text style={{ fontSize: 10.5, color: "#64748B", marginTop: 8 }}>or enter direct Resume Link below:</Text>
+              <Text style={{ fontSize: 10.5, color: theme.subtext, marginTop: 8 }}>or enter direct Resume Link below:</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: "#FFFFFF", marginTop: 4, marginBottom: 0 }]}
+                style={[styles.input, { backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : "#FFFFFF", borderColor: theme.border, color: theme.text, marginTop: 4, marginBottom: 0 }]}
                 placeholder="https://drive.google.com/file/d/..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subtext}
                 value={resumeUrl}
                 onChangeText={setResumeUrl}
               />
             </View>
 
             {/* 4. Note for Mentor */}
-            <Text style={styles.label}>Message / Note for Mentor</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Message / Note for Mentor</Text>
             <TextInput
-              style={[styles.input, { height: 75, textAlignVertical: "top" }]}
+              style={[styles.input, { backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text, height: 75, textAlignVertical: "top" }]}
               placeholder="Briefly explain your experience, key skills, and why you are a great fit..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.subtext}
               multiline
               numberOfLines={3}
               value={coverNote}
@@ -233,7 +233,7 @@ export default function ApplyJobModal({ visible, job, user = {}, token, onClose,
               onPress={handleSubmit}
               disabled={submitting}
               activeOpacity={0.85}
-              style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+              style={[styles.submitBtn, { backgroundColor: theme.primary }, submitting && { opacity: 0.6 }]}
             >
               {submitting ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
