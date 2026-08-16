@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
   Feather,
@@ -22,6 +22,7 @@ export default function SidebarDrawer({
   onOpenInstallPwa
 }) {
   const { theme } = useTheme();
+  const [premiumExpanded, setPremiumExpanded] = useState(true);
   const name = user.name || "Student User";
   const rawHandle = (user.handle && user.handle !== "ayushman" && user.handle !== "ayushman.dev")
     ? user.handle.replace(/^@/, "")
@@ -135,19 +136,77 @@ export default function SidebarDrawer({
                 active={activeItem === "Home"}
                 onPress={() => handleNavigate("Home")}
               />
-              <MenuItem
-                icon={<FontAwesome5 name="crown" size={16} color="#FFB800" />}
-                label="Premium Features ⭐"
-                active={activeItem === "Premium Features" || activeItem === "Go Premium" || activeItem === "Premium Features ⭐"}
-                onPress={() => {
-                  onClose();
-                  if (onOpenGetVerified) {
-                    onOpenGetVerified();
-                  } else {
-                    handleNavigate("Premium Features");
-                  }
-                }}
-              />
+              {/* Premium Features Collapsible Header */}
+              <Pressable
+                onPress={() => setPremiumExpanded(!premiumExpanded)}
+                style={({ pressed }) => [
+                  styles.menuItem,
+                  (activeItem === "Premium Features" || activeItem === "Go Premium") && { backgroundColor: theme.badgeBg },
+                  pressed && styles.pressed
+                ]}
+              >
+                <View style={styles.menuLeft}>
+                  <View style={styles.iconWrap}>
+                    <FontAwesome5 name="crown" size={15} color="#FFB800" />
+                  </View>
+                  <Text style={[styles.menuLabel, { color: theme.text, fontFamily: fonts.bold }]}>
+                    Premium Features ⭐
+                  </Text>
+                </View>
+
+                <View style={styles.menuRight}>
+                  <View style={{ backgroundColor: "#FFB80022", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: "#D97706" }}>PRO</Text>
+                  </View>
+                  <Feather name={premiumExpanded ? "chevron-up" : "chevron-down"} size={16} color={theme.primary} />
+                </View>
+              </Pressable>
+
+              {/* Nested Expandable Submenu Items */}
+              {premiumExpanded ? (
+                <View style={{ marginLeft: 18, paddingLeft: 10, borderLeftWidth: 2, borderLeftColor: theme.badgeBorder || (theme.isDark ? "#334155" : "#E2E8F0"), marginTop: 2, marginBottom: 6 }}>
+                  <SubMenuItem
+                    icon={<Ionicons name="sparkles" size={14} color="#FFB800" />}
+                    label="Feature Profile"
+                    badge="Verified"
+                    onPress={() => {
+                      onClose();
+                      if (onOpenGetVerified) onOpenGetVerified();
+                      else handleNavigate("Feature Profile");
+                    }}
+                  />
+                  <SubMenuItem
+                    icon={<Feather name="code" size={14} color={theme.primary} />}
+                    label="Get A Real Domain Project"
+                    badge="Live"
+                    onPress={() => {
+                      onClose();
+                      if (onOpenGetVerified) onOpenGetVerified();
+                      else handleNavigate("Real Domain Project");
+                    }}
+                  />
+                  <SubMenuItem
+                    icon={<MaterialCommunityIcons name="file-account-outline" size={15} color="#10B981" />}
+                    label="Build Your ATS Resume"
+                    badge="AI"
+                    onPress={() => {
+                      onClose();
+                      if (onOpenGetVerified) onOpenGetVerified();
+                      else handleNavigate("ATS Resume");
+                    }}
+                  />
+                  <SubMenuItem
+                    icon={<Feather name="cpu" size={14} color="#6366F1" />}
+                    label="Take A Lab Access"
+                    badge="Cloud"
+                    onPress={() => {
+                      onClose();
+                      if (onOpenGetVerified) onOpenGetVerified();
+                      else handleNavigate("Lab Access");
+                    }}
+                  />
+                </View>
+              ) : null}
               <MenuItem
                 icon={<Feather name="download" size={18} color={theme.primary} />}
                 label="Install TCM App (PWA)"
@@ -295,6 +354,39 @@ function MenuItem({ icon, label, badgeCount, active, onPress }) {
         ) : null}
         <Feather name="chevron-right" size={16} color={active ? theme.primary : theme.subtext} />
       </View>
+    </Pressable>
+  );
+}
+
+function SubMenuItem({ icon, label, badge, onPress }) {
+  const { theme } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        {
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingVertical: 8,
+          paddingHorizontal: 8,
+          borderRadius: 8,
+          marginBottom: 2
+        },
+        pressed && styles.pressed
+      ]}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, marginRight: 6 }}>
+        <View style={{ width: 18, alignItems: "center" }}>{icon}</View>
+        <Text style={{ fontFamily: fonts.medium, fontSize: 12.5, color: theme.subtext, flexShrink: 1 }} numberOfLines={1}>
+          {label}
+        </Text>
+      </View>
+      {badge ? (
+        <View style={{ backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : "#F1F5F9", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: theme.border }}>
+          <Text style={{ fontSize: 9, fontFamily: fonts.bold, color: theme.subtext }}>{badge}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
