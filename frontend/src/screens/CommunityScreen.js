@@ -675,13 +675,13 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
               paddingHorizontal: 14,
               paddingVertical: 8,
               borderRadius: 20,
-              backgroundColor: activeTabPill === "jobs" ? "#5B3CF5" : "#F1F5F9",
+              backgroundColor: activeTabPill === "jobs" ? theme.primary : (theme.isDark ? theme.inputBg || "#1E293B" : "#F1F5F9"),
               borderWidth: 1,
-              borderColor: activeTabPill === "jobs" ? "#5B3CF5" : "#E2E8F0"
+              borderColor: activeTabPill === "jobs" ? theme.primary : theme.border
             }}
           >
-            <Ionicons name="briefcase" size={13} color={activeTabPill === "jobs" ? "#FFFFFF" : "#5B3CF5"} style={{ marginRight: 5 }} />
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: activeTabPill === "jobs" ? "#FFFFFF" : "#475569" }}>
+            <Ionicons name="briefcase" size={13} color={activeTabPill === "jobs" ? "#FFFFFF" : theme.primary} style={{ marginRight: 5 }} />
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: activeTabPill === "jobs" ? "#FFFFFF" : theme.subtext }}>
               Job Feed ({jobPosts.length})
             </Text>
             <View style={{ backgroundColor: "#EF4444", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 10, marginLeft: 5 }}>
@@ -694,14 +694,14 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
           /* JOB FEED & HIRING DRIVES */
           <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 30 }}>
             {/* Header Action Banner */}
-            <View style={{ backgroundColor: "#F5F3FF", borderWidth: 1, borderColor: "#DDD6FE", borderRadius: 16, padding: 14, marginBottom: 16 }}>
+            <View style={{ backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : theme.badgeBg, borderWidth: 1, borderColor: theme.border, borderRadius: 16, padding: 14, marginBottom: 16 }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                 <View style={{ flex: 1, marginRight: 10 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Ionicons name="briefcase" size={18} color="#5B3CF5" />
-                    <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: "#0F172A" }}>Job Feed & Hiring Drives</Text>
+                    <Ionicons name="briefcase" size={18} color={theme.primary} />
+                    <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: theme.text }}>Job Feed & Hiring Drives</Text>
                   </View>
-                  <Text style={{ fontSize: 11.5, color: "#64748B", marginTop: 3 }}>
+                  <Text style={{ fontSize: 11.5, color: theme.subtext, marginTop: 3 }}>
                     Direct job openings posted by Mentors. AI Candidate Tracker auto-expires posts when full.
                   </Text>
                 </View>
@@ -713,7 +713,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      backgroundColor: "#5B3CF5",
+                      backgroundColor: theme.primary,
                       paddingHorizontal: 12,
                       paddingVertical: 8,
                       borderRadius: 20
@@ -742,6 +742,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
               </View>
             ) : (
               jobPosts.map((job) => {
+                const jId = String(job.id || job._id);
                 const isFilled = job.status === "filled" || Number(job.appliedCandidates || 0) >= Number(job.requiredCandidates || 1);
                 const appliedCount = job.appliedCandidates || 0;
                 const reqCount = job.requiredCandidates || 1;
@@ -752,10 +753,10 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                   <View
                     key={job.id}
                     style={{
-                      backgroundColor: "#FFFFFF",
+                      backgroundColor: theme.cardBg,
                       borderRadius: 16,
                       borderWidth: 1,
-                      borderColor: "#E2E8F0",
+                      borderColor: theme.border,
                       padding: 14,
                       marginBottom: 14,
                       position: "relative"
@@ -770,67 +771,83 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                         />
                         <View style={{ flex: 1 }}>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                            <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: "#0F172A" }}>{job.mentorName || "Mentor"}</Text>
-                            <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
-                              <Text style={{ fontSize: 9, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                            <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: theme.text }}>{job.mentorName || "Mentor"}</Text>
+                            <View style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                              <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: theme.primary }}>Mentor</Text>
                             </View>
                           </View>
-                          <Text style={{ fontSize: 10.5, color: "#64748B" }}>{job.company || "TCM Partner"}</Text>
+                          <Text style={{ fontSize: 10.5, color: theme.subtext }}>{job.company || "TCM Partner"}</Text>
                         </View>
                       </View>
 
-                      {/* Status Badge */}
-                      <View
-                        style={{
-                          paddingHorizontal: 8,
-                          paddingVertical: 3,
-                          borderRadius: 8,
-                          backgroundColor: isFilled ? "#FEE2E2" : "#DCFCE7",
-                          borderWidth: 1,
-                          borderColor: isFilled ? "#FCA5A5" : "#86EFAC"
-                        }}
-                      >
-                        <Text style={{ fontSize: 10, fontWeight: "700", color: isFilled ? "#991B1B" : "#166534" }}>
-                          {isFilled ? "🔴 HIRING CLOSED (FILLED)" : `🟢 ACTIVE (${appliedCount}/${reqCount} Filled)`}
-                        </Text>
+                      {/* Mentor Delete Action or Hiring Status Badge */}
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <View
+                          style={{
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 8,
+                            backgroundColor: isFilled ? (theme.isDark ? "#451A1A" : "#FEE2E2") : (theme.isDark ? "#064E3B" : "#DCFCE7"),
+                            borderWidth: 1,
+                            borderColor: isFilled ? "#FCA5A5" : "#86EFAC"
+                          }}
+                        >
+                          <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: isFilled ? "#EF4444" : (theme.isDark ? "#34D399" : "#166534") }}>
+                            {isFilled ? "🔴 CLOSED" : `🟢 ACTIVE (${appliedCount}/${reqCount})`}
+                          </Text>
+                        </View>
+
+                        {isMentor ? (
+                          <TouchableOpacity
+                            onPress={() => handleDeleteJob(jId, job.title)}
+                            style={{ padding: 6, borderRadius: 8, backgroundColor: theme.isDark ? "#451A1A" : "#FEE2E2" }}
+                          >
+                            <Feather name="trash-2" size={14} color="#EF4444" />
+                          </TouchableOpacity>
+                        ) : null}
                       </View>
                     </View>
 
-                    {/* Job Title & Salary */}
+                    {/* Job Title & Salary Info */}
                     <View style={{ marginTop: 10 }}>
-                      <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: "#0F172A" }}>{job.title}</Text>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F0EDFF", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
-                          <FontAwesome5 name="money-bill-wave" size={11} color="#5B3CF5" style={{ marginRight: 4 }} />
-                          <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#5B3CF5" }}>
+                      <Text style={{ fontSize: 15.5, fontFamily: fonts.bold, color: theme.text }}>{job.title}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: theme.badgeBg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                          <FontAwesome5 name="money-bill-wave" size={11} color={theme.primary} style={{ marginRight: 5 }} />
+                          <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.primary }}>
                             ₹{job.minSalary} – ₹{job.maxSalary} {job.salaryPeriod || "LPA"}
                           </Text>
                         </View>
 
-                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F1F5F9", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
-                          <Feather name="calendar" size={11} color="#475569" style={{ marginRight: 4 }} />
-                          <Text style={{ fontSize: 11, color: "#475569" }}>Start: {job.startDate || "Immediate"}</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : "#F1F5F9", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                          <Feather name="calendar" size={11} color={theme.subtext} style={{ marginRight: 4 }} />
+                          <Text style={{ fontSize: 11, color: theme.subtext }}>Start: {job.startDate || "Immediate"}</Text>
+                        </View>
+
+                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : "#F1F5F9", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                          <Feather name="map-pin" size={11} color={theme.subtext} style={{ marginRight: 4 }} />
+                          <Text style={{ fontSize: 11, color: theme.subtext }}>{job.location || "Remote"}</Text>
                         </View>
                       </View>
                     </View>
 
                     {/* AI Candidate Limit Progress Tracker Bar */}
-                    <View style={{ marginTop: 12, backgroundColor: "#F8FAFC", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "#F1F5F9" }}>
+                    <View style={{ marginTop: 12, backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#FAF9FE", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: theme.border }}>
                       <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-                        <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#334155" }}>
+                        <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.text }}>
                           AI Candidate Limit Tracker
                         </Text>
-                        <Text style={{ fontSize: 11, fontWeight: "700", color: isFilled ? "#DC2626" : "#5B3CF5" }}>
-                          {appliedCount} / {reqCount} Candidates Applied ({fillPercent}%)
+                        <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: isFilled ? "#EF4444" : theme.primary }}>
+                          {appliedCount} / {reqCount} Candidates ({fillPercent}%)
                         </Text>
                       </View>
 
-                      <View style={{ height: 6, width: "100%", backgroundColor: "#E2E8F0", borderRadius: 3, overflow: "hidden" }}>
+                      <View style={{ height: 6, width: "100%", backgroundColor: theme.isDark ? "#334155" : "#E2E8F0", borderRadius: 3, overflow: "hidden" }}>
                         <View
                           style={{
                             height: "100%",
                             width: `${fillPercent}%`,
-                            backgroundColor: isFilled ? "#EF4444" : "#5B3CF5",
+                            backgroundColor: isFilled ? "#EF4444" : theme.primary,
                             borderRadius: 3
                           }}
                         />
@@ -838,93 +855,50 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                     </View>
 
                     {/* Job Description */}
-                    <Text style={{ fontSize: 12.5, color: "#334155", marginTop: 10, lineHeight: 18 }}>
-                      {job.description}
-                    </Text>
+                    {job.description ? (
+                      <Text numberOfLines={3} style={{ fontSize: 12.5, color: theme.subtext, marginTop: 10, lineHeight: 18 }}>
+                        {job.description}
+                      </Text>
+                    ) : null}
 
                     {/* Banner Image Attachment */}
                     {isValidBanner ? (
-                      <Image source={{ uri: job.imageUrl }} style={{ width: "100%", height: 130, borderRadius: 10, marginTop: 10 }} resizeMode="cover" />
+                      <Image source={{ uri: job.imageUrl }} style={{ width: "100%", height: 135, borderRadius: 10, marginTop: 10 }} resizeMode="cover" />
                     ) : null}
 
                     {/* Document PDF Attachment Card */}
                     {job.documentUrl ? (
-                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#F1F5F9", padding: 10, borderRadius: 10, marginTop: 10 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : "#F1F5F9", padding: 10, borderRadius: 10, marginTop: 10, borderWidth: 1, borderColor: theme.border }}>
                         <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}>
                           <MaterialCommunityIcons name="file-pdf-box" size={24} color="#EF4444" style={{ marginRight: 8 }} />
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#0F172A" }} numberOfLines={1}>
+                            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text }} numberOfLines={1}>
                               {job.documentName || "Job_Description.pdf"}
                             </Text>
-                            <Text style={{ fontSize: 10, color: "#64748B" }}>{job.documentSize || "2.1 MB"} • PDF Attachment</Text>
+                            <Text style={{ fontSize: 10, color: theme.subtext }}>{job.documentSize || "2.1 MB"} • PDF Attachment</Text>
                           </View>
                         </View>
                         <Pressable
                           onPress={() => handleOpenDocReader(job.documentUrl, job.documentName)}
-                          style={{ backgroundColor: "#5B3CF5", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}
+                          style={{ backgroundColor: theme.primary, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}
                         >
                           <Text style={{ color: "#FFFFFF", fontSize: 11, fontFamily: fonts.bold }}>Read JD</Text>
                         </Pressable>
                       </View>
                     ) : null}
 
-
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <View style={{ flex: 1, marginRight: 8 }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                          <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: theme.text }}>{job.title}</Text>
-                          <View style={{ backgroundColor: "#DCFCE7", paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
-                            <Text style={{ color: "#166534", fontSize: 10, fontFamily: fonts.bold }}>{job.type || "Full-Time"}</Text>
-                          </View>
-                        </View>
-                        <Text style={{ fontSize: 12.5, fontFamily: fonts.semiBold, color: theme.primary, marginTop: 2 }}>{job.company}</Text>
-                      </View>
-
-                      {isMentor ? (
-                        <TouchableOpacity
-                          onPress={() => handleDeleteJob(jId, job.title)}
-                          style={{ padding: 6, borderRadius: 8, backgroundColor: "#FEE2E2" }}
-                        >
-                          <Feather name="trash-2" size={14} color="#DC2626" />
-                        </TouchableOpacity>
-                      ) : null}
-                    </View>
-
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 10, marginBottom: 12 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Feather name="map-pin" size={12} color={theme.subtext} />
-                        <Text style={{ fontSize: 11.5, color: theme.subtext }}>{job.location || "Remote"}</Text>
-                      </View>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Feather name="dollar-sign" size={12} color={theme.subtext} />
-                        <Text style={{ fontSize: 11.5, color: theme.subtext }}>{job.stipend || "Competitive"}</Text>
-                      </View>
-
-                      {job.applicantsCount !== undefined ? (
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                          <Feather name="users" size={12} color={theme.subtext} />
-                          <Text style={{ fontSize: 11.5, color: theme.subtext }}>{job.applicantsCount} Applicants</Text>
-                        </View>
-                      ) : null}
-                    </View>
-
-                    {job.description ? (
-                      <Text numberOfLines={2} style={{ fontSize: 12, color: theme.subtext, lineHeight: 17, marginBottom: 12 }}>
-                        {job.description}
-                      </Text>
-                    ) : null}
-
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.border }}>
+                    {/* Footer Actions & Apply Button */}
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: theme.border }}>
                       <Text style={{ fontSize: 10.5, color: theme.subtext }}>Posted by {job.postedBy || job.mentorName || "TCM Team"}</Text>
                       
                       {Array.isArray(job.applicants) && job.applicants.some((a) => String(a.userId || a.id) === currentUserIdStr) ? (
-                        <View style={{ backgroundColor: "#ECFDF5", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <View style={{ backgroundColor: theme.isDark ? "#064E3B" : "#ECFDF5", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}>
                           <Feather name="check-circle" size={12} color="#10B981" />
                           <Text style={{ color: "#10B981", fontFamily: fonts.bold, fontSize: 11 }}>Applied</Text>
                         </View>
-                      ) : job.status === "filled" ? (
-                        <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
-                          <Text style={{ color: "#6B7280", fontFamily: fonts.bold, fontSize: 11 }}>Hiring Closed</Text>
+                      ) : isFilled ? (
+                        <View style={{ backgroundColor: theme.isDark ? "#334155" : "#F3F4F6", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+                          <Text style={{ color: theme.subtext, fontFamily: fonts.bold, fontSize: 11 }}>Hiring Closed</Text>
                         </View>
                       ) : (
                         <TouchableOpacity
