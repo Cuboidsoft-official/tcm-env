@@ -644,7 +644,8 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   function renderMainCommunityScreen() {
     return (
       <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} showsVerticalScrollIndicator={false}>
-        {/* Top Tab Selectors */}
+        <View style={{ width: "100%", maxWidth: 1200, alignSelf: "center", flex: 1 }}>
+          {/* Top Tab Selectors */}
         <View style={{ flexDirection: "row", paddingHorizontal: 16, marginTop: 12, gap: 8 }}>
           <TouchableOpacity
             onPress={() => setActiveTabPill("channels")}
@@ -863,6 +864,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
         </View>
         </>
         )}
+        </View>
       </ScrollView>
     );
   }
