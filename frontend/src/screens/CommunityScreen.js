@@ -915,24 +915,31 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                     ) : null}
 
                     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.border }}>
-                      <Text style={{ fontSize: 10.5, color: theme.subtext }}>Posted by {job.postedBy || "TCM Team"}</Text>
-                      <TouchableOpacity
-                        onPress={() => openApplyJobModal(job)}
-                        disabled={isApplying}
-                        activeOpacity={0.85}
-                        style={{
-                          backgroundColor: "#5B3CF5",
-                          paddingHorizontal: 16,
-                          paddingVertical: 8,
-                          borderRadius: 10
-                        }}
-                      >
-                        {isApplying ? (
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : (
+                      <Text style={{ fontSize: 10.5, color: theme.subtext }}>Posted by {job.postedBy || job.mentorName || "TCM Team"}</Text>
+                      
+                      {Array.isArray(job.applicants) && job.applicants.some((a) => String(a.userId || a.id) === currentUserIdStr) ? (
+                        <View style={{ backgroundColor: "#ECFDF5", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                          <Feather name="check-circle" size={12} color="#10B981" />
+                          <Text style={{ color: "#10B981", fontFamily: fonts.bold, fontSize: 11 }}>Applied</Text>
+                        </View>
+                      ) : job.status === "filled" ? (
+                        <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+                          <Text style={{ color: "#6B7280", fontFamily: fonts.bold, fontSize: 11 }}>Hiring Closed</Text>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => setSelectedJobForApply(job)}
+                          activeOpacity={0.85}
+                          style={{
+                            backgroundColor: theme.primary,
+                            paddingHorizontal: 16,
+                            paddingVertical: 8,
+                            borderRadius: 10
+                          }}
+                        >
                           <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>Apply Now</Text>
-                        )}
-                      </TouchableOpacity>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
                 );
