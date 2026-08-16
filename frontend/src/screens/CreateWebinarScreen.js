@@ -157,7 +157,6 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
   }
 
   return (
-  return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Header Bar */}
       <View style={[styles.headerRow, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
