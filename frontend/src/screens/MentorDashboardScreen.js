@@ -557,19 +557,19 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           {/* Activity 4: Payouts & Salary */}
           <Pressable
             onPress={() => handleCardPress("Payouts", "Open separate payouts & salary page.")}
-            style={({ pressed }) => [styles.activityTouchCard, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.activityTouchCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
-            <View style={[styles.activityIconBox, { backgroundColor: "#ECF9E9" }]}>
-              <MaterialCommunityIcons name="wallet-outline" size={22} color="#2E7D32" />
+            <View style={[styles.activityIconBox, { backgroundColor: theme.badgeBg }]}>
+              <MaterialCommunityIcons name="wallet-outline" size={22} color={theme.primary} />
             </View>
 
             <View style={styles.activityCopy}>
-              <Text style={styles.activityTitle}>Payouts & Earnings</Text>
-              <Text style={styles.activitySub}>₹64,000 Withdrawable • Transferred in 24h</Text>
+              <Text style={[styles.activityTitle, { color: theme.text }]}>Payouts & Earnings</Text>
+              <Text style={[styles.activitySub, { color: theme.subtext }]}>{user.totalRevenue || "₹0.00"} Withdrawable • Transferred in 24h</Text>
             </View>
 
-            <View style={[styles.arrowCircle, { backgroundColor: "#ECF9E9" }]}>
-              <Feather name="arrow-right" size={16} color="#2E7D32" />
+            <View style={[styles.arrowCircle, { backgroundColor: theme.badgeBg }]}>
+              <Feather name="arrow-right" size={16} color={theme.primary} />
             </View>
           </Pressable>
 
@@ -1023,21 +1023,21 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
         {/* ============================================================ */}
         {/* 6. RECENT STUDENT TIMELINE */}
         {/* ============================================================ */}
-        <Text style={styles.sectionHeaderTitle}>Recent Activity Feed</Text>
+        <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Recent Activity Feed</Text>
 
         <View style={styles.timelineList}>
           {recentActivities.map((act) => (
-            <View key={act.id} style={styles.timelineItem}>
+            <View key={act.id} style={[styles.timelineItem, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <Image source={{ uri: act.studentAvatar }} style={styles.timelineAvatar} />
               <View style={styles.timelineContent}>
                 <View style={styles.timelineTopRow}>
-                  <Text style={styles.timelineStudentName}>{act.studentName}</Text>
-                  <View style={[styles.typeBadge, { backgroundColor: act.badgeBg }]}>
+                  <Text style={[styles.timelineStudentName, { color: theme.text }]}>{act.studentName}</Text>
+                  <View style={[styles.typeBadge, { backgroundColor: theme.isDark ? "#1E293B" : act.badgeBg }]}>
                     <Text style={[styles.typeBadgeText, { color: act.badgeColor }]}>{act.type}</Text>
                   </View>
                 </View>
-                <Text style={styles.timelineTitle}>{act.title}</Text>
-                <Text style={styles.timelineTime}>{act.time}</Text>
+                <Text style={[styles.timelineTitle, { color: theme.subtext }]}>{act.title}</Text>
+                <Text style={[styles.timelineTime, { color: theme.subtext }]}>{act.time}</Text>
               </View>
             </View>
           ))}
