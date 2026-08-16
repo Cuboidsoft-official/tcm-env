@@ -2022,45 +2022,29 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
           <ReadMoreText text={job.description || post.text} />
         </View>
 
-        {/* Side-by-Side Compact Image Grid with Full Preview on Tap */}
-        <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
-          <Pressable
-            onPress={() =>
-              onPreview &&
-              onPreview({
-                type: "image",
-                title: job.title || "Job Illustration",
-                subtitle: job.company || "TCM Hiring Partner",
-                imageUrl: isValidBanner ? job.imageUrl : require("../../assets/job_code_illustration.jpg")
-              })
-            }
-            style={({ pressed }) => [{ flex: 1, borderRadius: 12, overflow: "hidden" }, pressed && styles.pressed]}
-          >
-            <Image
-              source={isValidBanner ? { uri: job.imageUrl } : require("../../assets/job_code_illustration.jpg")}
-              style={{ width: "100%", height: 80, borderRadius: 12 }}
-              resizeMode="cover"
-            />
-          </Pressable>
-          <Pressable
-            onPress={() =>
-              onPreview &&
-              onPreview({
-                type: "image",
-                title: job.title || "Candidate Profile",
-                subtitle: job.company || "TCM Hiring Partner",
-                imageUrl: require("../../assets/job_profile_illustration.jpg")
-              })
-            }
-            style={({ pressed }) => [{ flex: 1, borderRadius: 12, overflow: "hidden" }, pressed && styles.pressed]}
-          >
-            <Image
-              source={require("../../assets/job_profile_illustration.jpg")}
-              style={{ width: "100%", height: 80, borderRadius: 12 }}
-              resizeMode="cover"
-            />
-          </Pressable>
-        </View>
+        {/* Job Banner Image (Only if user attached an image) */}
+        {isValidBanner ? (
+          <View style={{ marginTop: 10, borderRadius: 12, overflow: "hidden" }}>
+            <Pressable
+              onPress={() =>
+                onPreview &&
+                onPreview({
+                  type: "image",
+                  title: job.title || "Job Cover",
+                  subtitle: job.company || "TCM Hiring Partner",
+                  imageUrl: job.imageUrl
+                })
+              }
+              style={({ pressed }) => [pressed && styles.pressed]}
+            >
+              <Image
+                source={{ uri: job.imageUrl }}
+                style={{ width: "100%", height: 160, borderRadius: 12 }}
+                resizeMode="cover"
+              />
+            </Pressable>
+          </View>
+        ) : null}
 
         {/* JD PDF Attachment Reader Box */}
         {job.documentUrl ? (

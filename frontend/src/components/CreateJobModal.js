@@ -127,7 +127,7 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
         title: title.trim(),
         company: company.trim() || "TCM Hiring Partner",
         mentorName: user.name || "Mentor",
-        mentorAvatarUrl: user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+        mentorAvatarUrl: user.avatarUrl || user.avatar || "",
         mentorRole: user.role || "Senior Mentor",
         description: description.trim(),
         minSalary: minSalary.trim(),
@@ -136,7 +136,7 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
         requiredCandidates: reqCount,
         startDate: startDate.trim() || "Immediate",
         deadline: deadline.trim() || "Open until filled",
-        imageUrl: finalImageUrl || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600",
+        imageUrl: finalImageUrl || "",
         documentUrl: documentUrl.trim(),
         documentName: documentName.trim() || (documentUrl.trim() ? "Job_Description.pdf" : ""),
         documentSize: "2.1 MB"
@@ -183,30 +183,30 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.formScroll}>
             {/* 1. Job Title & Company */}
-            <Text style={styles.label}>Job Title *</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Job Title *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
               placeholder="e.g. Junior React Native Developer"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.subtext}
               value={title}
               onChangeText={setTitle}
             />
 
-            <Text style={styles.label}>Company / Organization Name</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Company / Organization Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
               placeholder="e.g. TCM Tech Studio"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.subtext}
               value={company}
               onChangeText={setCompany}
             />
 
             {/* 2. Job Description */}
-            <Text style={styles.label}>Job Description & Requirements *</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Job Description & Requirements *</Text>
             <TextInput
-              style={[styles.input, { height: 90, textAlignVertical: "top" }]}
+              style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text, height: 90, textAlignVertical: "top" }]}
               placeholder="Describe roles, responsibilities, required skills, tools, and eligibility..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.subtext}
               multiline
               numberOfLines={4}
               value={description}
@@ -214,24 +214,24 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
             />
 
             {/* 3. Salary Range */}
-            <Text style={styles.label}>Salary / Compensation Range</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Salary / Compensation Range</Text>
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.subLabel}>Min Salary (₹)</Text>
+                <Text style={[styles.subLabel, { color: theme.subtext }]}>Min Salary (₹)</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
                   placeholder="3,50,000"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.subtext}
                   value={minSalary}
                   onChangeText={setMinSalary}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.subLabel}>Max Salary (₹)</Text>
+                <Text style={[styles.subLabel, { color: theme.subtext }]}>Max Salary (₹)</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
                   placeholder="6,50,000"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.subtext}
                   value={maxSalary}
                   onChangeText={setMaxSalary}
                 />
@@ -239,7 +239,7 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
             </View>
 
             {/* Salary Period Select */}
-            <Text style={styles.subLabel}>Salary Type</Text>
+            <Text style={[styles.subLabel, { color: theme.subtext }]}>Salary Type</Text>
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
               {["LPA", "/ month", "Stipend / Fixed"].map((p) => (
                 <TouchableOpacity
@@ -247,31 +247,31 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
                   onPress={() => setSalaryPeriod(p)}
                   style={[
                     styles.periodPill,
-                    salaryPeriod === p && styles.periodPillActive
+                    { backgroundColor: salaryPeriod === p ? theme.primary : theme.badgeBg, borderColor: salaryPeriod === p ? theme.primary : theme.border }
                   ]}
                 >
-                  <Text style={[styles.periodPillText, salaryPeriod === p && styles.periodPillTextActive]}>{p}</Text>
+                  <Text style={[styles.periodPillText, { color: salaryPeriod === p ? "#FFFFFF" : theme.primary }]}>{p}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             {/* 4. Vacancies & AI Tracking Limit */}
-            <View style={styles.aiCard}>
+            <View style={[styles.aiCard, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Ionicons name="hardware-chip-outline" size={18} color="#5B3CF5" />
-                <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#5B3CF5" }}>
+                <Ionicons name="hardware-chip-outline" size={18} color={theme.primary} />
+                <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: theme.primary }}>
                   AI Candidate Tracker Settings
                 </Text>
               </View>
-              <Text style={{ fontSize: 11.5, color: "#475569", marginTop: 3 }}>
+              <Text style={{ fontSize: 11.5, color: theme.subtext, marginTop: 3 }}>
                 When candidate applications reach this number, AI automatically marks the job as EXPIRED / FILLED and closes applications.
               </Text>
 
-              <Text style={[styles.label, { marginTop: 10 }]}>Required Candidates (Vacancies Count) *</Text>
+              <Text style={[styles.label, { marginTop: 10, color: theme.text }]}>Required Candidates (Vacancies Count) *</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: "#FFFFFF" }]}
+                style={[styles.input, { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.text }]}
                 placeholder="e.g. 5"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subtext}
                 keyboardType="numeric"
                 value={requiredCandidates}
                 onChangeText={setRequiredCandidates}
@@ -281,21 +281,21 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
             {/* 5. Start Date & Deadline */}
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.subLabel}>Start Date</Text>
+                <Text style={[styles.subLabel, { color: theme.subtext }]}>Start Date</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
                   placeholder="Immediate / 1st Sept"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.subtext}
                   value={startDate}
                   onChangeText={setStartDate}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.subLabel}>Application Deadline</Text>
+                <Text style={[styles.subLabel, { color: theme.subtext }]}>Application Deadline</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
                   placeholder="30 Days"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.subtext}
                   value={deadline}
                   onChangeText={setDeadline}
                 />
@@ -303,13 +303,13 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
             </View>
 
             {/* 6. Image Banner Upload */}
-            <Text style={styles.label}>Job Cover Banner Image</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Job Cover Banner Image</Text>
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 12, alignItems: "center" }}>
-              <TouchableOpacity onPress={handlePickImage} style={styles.uploadBtn}>
-                <Feather name="image" size={16} color="#5B3CF5" />
-                <Text style={styles.uploadBtnText}>Upload Image</Text>
+              <TouchableOpacity onPress={handlePickImage} style={[styles.uploadBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+                <Feather name="image" size={16} color={theme.primary} />
+                <Text style={[styles.uploadBtnText, { color: theme.primary }]}>Upload Image</Text>
               </TouchableOpacity>
-              <Text style={{ fontSize: 11, color: "#64748B" }}>or enter Image URL</Text>
+              <Text style={{ fontSize: 11, color: theme.subtext }}>or enter Image URL</Text>
             </View>
             {imageUrl ? (
               <View style={styles.imagePreviewWrap}>
@@ -320,28 +320,28 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
               </View>
             ) : (
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
                 placeholder="https://images.unsplash.com/photo-..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subtext}
                 value={imageUrl}
                 onChangeText={setImageUrl}
               />
             )}
 
             {/* 7. Attachment Upload */}
-            <Text style={styles.label}>Attachment (PDF / Document Link)</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Attachment (PDF / Document Link)</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
               placeholder="Document URL e.g. https://drive.google.com/file/d/..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.subtext}
               value={documentUrl}
               onChangeText={setDocumentUrl}
             />
             {documentUrl ? (
               <TextInput
-                style={[styles.input, { marginTop: -6 }]}
+                style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text, marginTop: -6 }]}
                 placeholder="Document Display Name (e.g. Official_JD.pdf)"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subtext}
                 value={documentName}
                 onChangeText={setDocumentName}
               />

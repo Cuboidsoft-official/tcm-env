@@ -350,7 +350,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           <View style={styles.heroTopRow}>
             <View>
               <Text style={styles.greetingText}>Welcome back,</Text>
-              <Text style={styles.mentorNameText}>{user.name || "Rahul Sharma"}</Text>
+              <Text style={styles.mentorNameText}>{user.name || "Mentor"}</Text>
             </View>
 
             <View style={styles.heroBadgeIcon}>
@@ -360,13 +360,13 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
           <View style={styles.earningsWrap}>
             <Text style={styles.earningsLabel}>Monthly Earnings & Salary</Text>
-            <Text style={styles.earningsAmount}>₹85,400.00</Text>
+            <Text style={styles.earningsAmount}>{user.monthlyRevenue || "₹0.00"}</Text>
           </View>
 
           <View style={styles.heroBottomRow}>
             <View style={styles.withdrawableBox}>
               <Text style={styles.withdrawableLabel}>Withdrawable Salary</Text>
-              <Text style={styles.withdrawableVal}>₹64,000.00</Text>
+              <Text style={styles.withdrawableVal}>{user.totalRevenue || "₹0.00"}</Text>
             </View>
 
             <Pressable
@@ -387,56 +387,56 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           {/* Stat Card 1: Active Courses */}
           <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.kpiTopRow}>
-              <View style={[styles.kpiIconWrap, { backgroundColor: theme.isDark ? "#1E1B4B" : "#E8F5E9" }]}>
+              <View style={[styles.kpiIconWrap, { backgroundColor: theme.badgeBg }]}>
                 <MaterialCommunityIcons name="school-outline" size={20} color={theme.primary} />
               </View>
               <View style={[styles.growthTag, { backgroundColor: theme.badgeBg }]}>
-                <Text style={[styles.growthTagText, { color: theme.primary }]}>+12%</Text>
+                <Text style={[styles.growthTagText, { color: theme.primary }]}>Active</Text>
               </View>
             </View>
-            <Text style={[styles.kpiValue, { color: theme.text }]}>6</Text>
+            <Text style={[styles.kpiValue, { color: theme.text }]}>{(activeCourseList || []).length}</Text>
             <Text style={[styles.kpiLabel, { color: theme.subtext }]}>Active Courses</Text>
           </View>
 
           {/* Stat Card 2: 1-on-1 Sessions */}
           <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.kpiTopRow}>
-              <View style={[styles.kpiIconWrap, { backgroundColor: theme.isDark ? "#1E3A8A" : "#EAF5FF" }]}>
-                <Feather name="video" size={18} color={theme.isDark ? "#60A5FA" : "#2F79B9"} />
+              <View style={[styles.kpiIconWrap, { backgroundColor: theme.badgeBg }]}>
+                <Feather name="video" size={18} color={theme.primary} />
               </View>
-              <View style={[styles.growthTag, { backgroundColor: theme.isDark ? "#1E3A8A" : "#EAF5FF" }]}>
-                <Text style={[styles.growthTagText, { color: theme.isDark ? "#60A5FA" : "#2F79B9" }]}>98%</Text>
+              <View style={[styles.growthTag, { backgroundColor: theme.badgeBg }]}>
+                <Text style={[styles.growthTagText, { color: theme.primary }]}>Calls</Text>
               </View>
             </View>
-            <Text style={[styles.kpiValue, { color: theme.text }]}>48</Text>
+            <Text style={[styles.kpiValue, { color: theme.text }]}>{user.stats?.callsDone !== undefined ? user.stats.callsDone : (user.callsDone || 0)}</Text>
             <Text style={[styles.kpiLabel, { color: theme.subtext }]}>1-on-1 Calls Done</Text>
           </View>
 
           {/* Stat Card 3: Total Students */}
           <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.kpiTopRow}>
-              <View style={[styles.kpiIconWrap, { backgroundColor: theme.isDark ? "#064E3B" : "#ECF9E9" }]}>
-                <Feather name="users" size={18} color={theme.isDark ? "#34D399" : "#2E7D32"} />
+              <View style={[styles.kpiIconWrap, { backgroundColor: theme.badgeBg }]}>
+                <Feather name="users" size={18} color={theme.primary} />
               </View>
-              <View style={[styles.growthTag, { backgroundColor: theme.isDark ? "#064E3B" : "#ECF9E9" }]}>
-                <Text style={[styles.growthTagText, { color: theme.isDark ? "#34D399" : "#2E7D32" }]}>+45</Text>
+              <View style={[styles.growthTag, { backgroundColor: theme.badgeBg }]}>
+                <Text style={[styles.growthTagText, { color: theme.primary }]}>Students</Text>
               </View>
             </View>
-            <Text style={[styles.kpiValue, { color: theme.text }]}>1,420</Text>
+            <Text style={[styles.kpiValue, { color: theme.text }]}>{user.totalStudentsCount !== undefined ? user.totalStudentsCount : (user.studentsCount || 0)}</Text>
             <Text style={[styles.kpiLabel, { color: theme.subtext }]}>Enrolled Students</Text>
           </View>
 
           {/* Stat Card 4: Mentor Rating */}
           <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.kpiTopRow}>
-              <View style={[styles.kpiIconWrap, { backgroundColor: theme.isDark ? "#78350F" : "#FFF8EC" }]}>
+              <View style={[styles.kpiIconWrap, { backgroundColor: theme.badgeBg }]}>
                 <FontAwesome name="star" size={17} color="#E7A900" />
               </View>
-              <View style={[styles.growthTag, { backgroundColor: theme.isDark ? "#78350F" : "#FFF8EC" }]}>
-                <Text style={[styles.growthTagText, { color: "#E7A900" }]}>128 Rev.</Text>
+              <View style={[styles.growthTag, { backgroundColor: theme.badgeBg }]}>
+                <Text style={[styles.growthTagText, { color: "#E7A900" }]}>{user.reviewsCount || "0 Rev."}</Text>
               </View>
             </View>
-            <Text style={[styles.kpiValue, { color: theme.text }]}>4.9 ★</Text>
+            <Text style={[styles.kpiValue, { color: theme.text }]}>{user.rating ? `${user.rating} ★` : "5.0 ★"}</Text>
             <Text style={[styles.kpiLabel, { color: theme.subtext }]}>Overall Rating</Text>
           </View>
         </View>
@@ -720,17 +720,17 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <View>
-                  <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F172A" }}>Schedule Live Class Link</Text>
-                  <Text style={{ fontSize: 12, color: "#64748B" }}>Select Course, Syllabus Topic & Broadcast Class Link</Text>
+                  <Text style={{ fontSize: 18, fontWeight: "700", color: theme.text }}>Schedule Live Class Link</Text>
+                  <Text style={{ fontSize: 12, color: theme.subtext }}>Select Course, Syllabus Topic & Broadcast Class Link</Text>
                 </View>
-                <TouchableOpacity onPress={() => setScheduleModalOpen(false)} style={{ padding: 6, backgroundColor: "#F1F5F9", borderRadius: 20 }}>
-                  <Feather name="x" size={18} color="#64748B" />
+                <TouchableOpacity onPress={() => setScheduleModalOpen(false)} style={{ padding: 6, backgroundColor: theme.isDark ? "#1E293B" : "#F1F5F9", borderRadius: 20 }}>
+                  <Feather name="x" size={18} color={theme.subtext} />
                 </TouchableOpacity>
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false}>
                 {/* 1. SELECT CREATED COURSE */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>1. SELECT YOUR CREATED COURSE</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: theme.text, marginBottom: 6 }}>1. SELECT YOUR CREATED COURSE</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
                   {activeCourseList.map((course) => {
                     const isSelected = course.id === selectedCourseId;
@@ -746,16 +746,16 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                           paddingHorizontal: 14,
                           paddingVertical: 10,
                           borderRadius: 12,
-                          backgroundColor: isSelected ? "#0A6836" : "#F8FAFC",
+                          backgroundColor: isSelected ? theme.primary : theme.badgeBg,
                           borderWidth: 1,
-                          borderColor: isSelected ? "#0A6836" : "#E2E8F0",
+                          borderColor: isSelected ? theme.primary : theme.border,
                           marginRight: 8
                         }}
                       >
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: isSelected ? "#FFFFFF" : "#334155" }}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: isSelected ? "#FFFFFF" : theme.primary }}>
                           {course.title}
                         </Text>
-                        <Text style={{ fontSize: 10, color: isSelected ? "#DDD6FE" : "#94A3B8", marginTop: 2 }}>
+                        <Text style={{ fontSize: 10, color: isSelected ? "#E2E8F0" : theme.subtext, marginTop: 2 }}>
                           Category: {course.category || "TCM Academy"}
                         </Text>
                       </TouchableOpacity>
@@ -764,7 +764,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                 </ScrollView>
 
                 {/* 2. SELECT DAY-BY-DAY SYLLABUS SESSION */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>2. SELECT DAY-BY-DAY SYLLABUS SESSION</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: theme.text, marginBottom: 6 }}>2. SELECT DAY-BY-DAY SYLLABUS SESSION</Text>
                 <View style={{ marginBottom: 16 }}>
                   {currentSessions.map((sess, idx) => {
                     const topicText = sess.topic || sess.title || `Module ${idx + 1}`;
@@ -778,26 +778,26 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                           alignItems: "center",
                           padding: 12,
                           borderRadius: 12,
-                          backgroundColor: isSelected ? "#E8F5E9" : "#F8FAFC",
+                          backgroundColor: isSelected ? theme.badgeBg : (theme.isDark ? "#1E293B" : "#F8FAFC"),
                           borderWidth: 1,
-                          borderColor: isSelected ? "#0A6836" : "#E2E8F0",
+                          borderColor: isSelected ? theme.primary : theme.border,
                           marginBottom: 8
                         }}
                       >
-                        <View style={{ backgroundColor: isSelected ? "#0A6836" : "#E2E8F0", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 10 }}>
-                          <Text style={{ fontSize: 11, fontWeight: "700", color: isSelected ? "#FFFFFF" : "#64748B" }}>{sess.dayNum || `Day ${idx + 1}`}</Text>
+                        <View style={{ backgroundColor: isSelected ? theme.primary : theme.border, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 10 }}>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: isSelected ? "#FFFFFF" : theme.subtext }}>{sess.dayNum || `Day ${idx + 1}`}</Text>
                         </View>
-                        <Text style={{ flex: 1, fontSize: 13, fontWeight: isSelected ? "700" : "500", color: isSelected ? "#0A6836" : "#1E293B" }}>
+                        <Text style={{ flex: 1, fontSize: 13, fontWeight: isSelected ? "700" : "500", color: isSelected ? theme.primary : theme.text }}>
                           {topicText}
                         </Text>
-                        {isSelected && <MaterialCommunityIcons name="check-circle" size={18} color="#0A6836" />}
+                        {isSelected && <MaterialCommunityIcons name="check-circle" size={18} color={theme.primary} />}
                       </TouchableOpacity>
                     );
                   })}
                 </View>
 
                 {/* 3. SELECTABLE TIME SLOTS & CUSTOM TIME PICKER */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>3. SELECT TIME SLOT OR CUSTOM TIME</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: theme.text, marginBottom: 6 }}>3. SELECT TIME SLOT OR CUSTOM TIME</Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                   {timeSlots.map((slot) => {
                     const isSelected = !isCustomTime && slot === selectedTimeSlot;
@@ -812,12 +812,12 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                           paddingHorizontal: 12,
                           paddingVertical: 8,
                           borderRadius: 20,
-                          backgroundColor: isSelected ? "#0A6836" : "#F1F5F9",
+                          backgroundColor: isSelected ? theme.primary : theme.badgeBg,
                           borderWidth: 1,
-                          borderColor: isSelected ? "#0A6836" : "#CBD5E1"
+                          borderColor: isSelected ? theme.primary : theme.border
                         }}
                       >
-                        <Text style={{ fontSize: 12, fontWeight: "600", color: isSelected ? "#FFFFFF" : "#334155" }}>
+                        <Text style={{ fontSize: 12, fontWeight: "600", color: isSelected ? "#FFFFFF" : theme.primary }}>
                           {slot}
                         </Text>
                       </TouchableOpacity>
@@ -830,12 +830,12 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                       paddingHorizontal: 12,
                       paddingVertical: 8,
                       borderRadius: 20,
-                      backgroundColor: isCustomTime ? "#0A6836" : "#F1F5F9",
+                      backgroundColor: isCustomTime ? theme.primary : theme.badgeBg,
                       borderWidth: 1,
-                      borderColor: isCustomTime ? "#0A6836" : "#CBD5E1"
+                      borderColor: isCustomTime ? theme.primary : theme.border
                     }}
                   >
-                    <Text style={{ fontSize: 12, fontWeight: "600", color: isCustomTime ? "#FFFFFF" : "#334155" }}>
+                    <Text style={{ fontSize: 12, fontWeight: "600", color: isCustomTime ? "#FFFFFF" : theme.primary }}>
                       + Custom Time Slot
                     </Text>
                   </TouchableOpacity>
@@ -843,46 +843,50 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
                 {isCustomTime && (
                   <View style={{ marginBottom: 16 }}>
-                    <Text style={{ fontSize: 11, fontWeight: "600", color: "#0A6836", marginBottom: 4 }}>Enter Custom Class Schedule Time:</Text>
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: theme.primary, marginBottom: 4 }}>Enter Custom Class Schedule Time:</Text>
                     <TextInput
                       value={customTimeInput}
                       onChangeText={setCustomTimeInput}
-                      style={{ borderWidth: 1, borderColor: "#0A6836", borderRadius: 10, padding: 10, fontSize: 13, color: "#0F172A", backgroundColor: "#E8F5E9" }}
+                      style={{ borderWidth: 1, borderColor: theme.primary, borderRadius: 10, padding: 10, fontSize: 13, color: theme.text, backgroundColor: theme.badgeBg }}
                       placeholder="e.g. Today • 04:30 PM – 06:00 PM"
+                      placeholderTextColor={theme.subtext}
                     />
                   </View>
                 )}
 
                 {/* 4. LIVE CLASS MEETING URL */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>4. LIVE MEETING LINK (Jitsi / Zoom / Meet)</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: theme.text, marginBottom: 6 }}>4. LIVE MEETING LINK (Jitsi / Zoom / Meet)</Text>
                 <TextInput
                   value={meetingUrl}
                   onChangeText={setMeetingUrl}
-                  style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, padding: 12, fontSize: 13, marginBottom: 16, color: "#0F172A", backgroundColor: "#F8FAFC" }}
+                  style={{ borderWidth: 1, borderColor: theme.border, borderRadius: 12, padding: 12, fontSize: 13, marginBottom: 16, color: theme.text, backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC" }}
                   placeholder="https://meet.jit.si/tcm-live-fullstack"
+                  placeholderTextColor={theme.subtext}
                 />
 
                 {/* 5. RECORDED CLASS VIDEO URL */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>5. RECORDED CLASS VIDEO LINK (YouTube / Drive / MP4)</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: theme.text, marginBottom: 6 }}>5. RECORDED CLASS VIDEO LINK (YouTube / Drive / MP4)</Text>
                 <TextInput
                   value={recordedVideoUrl}
                   onChangeText={setRecordedVideoUrl}
-                  style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, padding: 12, fontSize: 13, marginBottom: 16, color: "#0F172A", backgroundColor: "#F8FAFC" }}
+                  style={{ borderWidth: 1, borderColor: theme.border, borderRadius: 12, padding: 12, fontSize: 13, marginBottom: 16, color: theme.text, backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC" }}
                   placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                  placeholderTextColor={theme.subtext}
                 />
 
                 {/* 6. OFFICIAL CLASS NOTES PDF DOCUMENT LINK */}
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#475569", marginBottom: 6 }}>6. OFFICIAL CLASS NOTES PDF LINK (Upload / Google Drive PDF)</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: theme.text, marginBottom: 6 }}>6. OFFICIAL CLASS NOTES PDF LINK (Upload / Google Drive PDF)</Text>
                 <TextInput
                   value={notesPdfUrl}
                   onChangeText={setNotesPdfUrl}
-                  style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, padding: 12, fontSize: 13, marginBottom: 20, color: "#0F172A", backgroundColor: "#F8FAFC" }}
+                  style={{ borderWidth: 1, borderColor: theme.border, borderRadius: 12, padding: 12, fontSize: 13, marginBottom: 20, color: theme.text, backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC" }}
                   placeholder="https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view"
+                  placeholderTextColor={theme.subtext}
                 />
 
                 <TouchableOpacity
                   onPress={handleBroadcastLink}
-                  style={{ backgroundColor: "#0A6836", borderRadius: 14, paddingVertical: 15, alignItems: "center", shadowColor: "#0A6836", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4, flexDirection: "row", justifyContent: "center" }}
+                  style={{ backgroundColor: theme.primary, borderRadius: 14, paddingVertical: 15, alignItems: "center", shadowColor: theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4, flexDirection: "row", justifyContent: "center" }}
                 >
                   <Feather name="send" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
                   <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>Save & Broadcast Resources</Text>

@@ -17,8 +17,10 @@ import * as DocumentPicker from "expo-document-picker";
 import { createWebinar } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 export default function CreateWebinarScreen({ session, user = {}, onBack, onWebinarCreated }) {
+  const { theme } = useTheme();
   const [eventType, setEventType] = useState("Webinar"); // Webinar | Event
   const [webinarType, setWebinarType] = useState("Free Webinar"); // Free Webinar | Paid Webinar
   const [price, setPrice] = useState("₹499");
@@ -155,100 +157,101 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
   }
 
   return (
-    <View style={styles.container}>
+  return (
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Header Bar */}
-      <View style={styles.headerRow}>
-        <Pressable onPress={onBack} style={styles.backBtn}>
-          <Feather name="arrow-left" size={20} color="#181725" />
+      <View style={[styles.headerRow, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+        <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <Feather name="arrow-left" size={20} color={theme.text} />
         </Pressable>
 
         <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerTitle}>Create Webinar / Event</Text>
-          <Text style={styles.headerSub}>Create a new webinar or event for your students</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Create Webinar / Event</Text>
+          <Text style={[styles.headerSub, { color: theme.subtext }]}>Create a new webinar or event for your students</Text>
         </View>
 
-        <Pressable onPress={() => handlePublish(true)} style={styles.draftBtn}>
-          <Text style={styles.draftBtnText}>Save Draft</Text>
+        <Pressable onPress={() => handlePublish(true)} style={[styles.draftBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+          <Text style={[styles.draftBtnText, { color: theme.primary }]}>Save Draft</Text>
         </Pressable>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* 2. Event Type Cards (Pro Cards) */}
         <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>Event Type</Text>
+          <Text style={[styles.fieldLabel, { color: theme.text }]}>Event Type</Text>
           <View style={styles.choiceGrid}>
             {/* Webinar Card */}
             <Pressable
               onPress={() => setEventType("Webinar")}
-              style={[styles.proCard, eventType === "Webinar" && styles.proCardActive]}
+              style={[styles.proCard, { backgroundColor: theme.cardBg, borderColor: eventType === "Webinar" ? theme.primary : theme.border }]}
             >
               <View style={styles.proCardTopRow}>
-                <View style={[styles.proIconBox, eventType === "Webinar" && styles.proIconBoxActive]}>
-                  <Feather name="video" size={16} color={eventType === "Webinar" ? "#5B3CF5" : "#7C7C9A"} />
+                <View style={[styles.proIconBox, { backgroundColor: eventType === "Webinar" ? theme.badgeBg : (theme.isDark ? "#1E293B" : "#F1F5F9") }]}>
+                  <Feather name="video" size={16} color={eventType === "Webinar" ? theme.primary : theme.subtext} />
                 </View>
-                <View style={[styles.proRadioOuter, eventType === "Webinar" && styles.proRadioOuterActive]}>
-                  {eventType === "Webinar" && <View style={styles.proRadioInner} />}
+                <View style={[styles.proRadioOuter, { borderColor: eventType === "Webinar" ? theme.primary : theme.border }]}>
+                  {eventType === "Webinar" && <View style={[styles.proRadioInner, { backgroundColor: theme.primary }]} />}
                 </View>
               </View>
-              <Text style={[styles.proCardTitle, eventType === "Webinar" && styles.proCardTitleActive]}>Webinar</Text>
-              <Text style={styles.proCardSub}>Live online session</Text>
+              <Text style={[styles.proCardTitle, { color: theme.text }]}>Webinar</Text>
+              <Text style={[styles.proCardSub, { color: theme.subtext }]}>Live online session</Text>
             </Pressable>
 
             {/* Event Card */}
             <Pressable
               onPress={() => setEventType("Event")}
-              style={[styles.proCard, eventType === "Event" && styles.proCardActive]}
+              style={[styles.proCard, { backgroundColor: theme.cardBg, borderColor: eventType === "Event" ? theme.primary : theme.border }]}
             >
               <View style={styles.proCardTopRow}>
-                <View style={[styles.proIconBox, eventType === "Event" && styles.proIconBoxActive]}>
-                  <Feather name="calendar" size={16} color={eventType === "Event" ? "#5B3CF5" : "#7C7C9A"} />
+                <View style={[styles.proIconBox, { backgroundColor: eventType === "Event" ? theme.badgeBg : (theme.isDark ? "#1E293B" : "#F1F5F9") }]}>
+                  <Feather name="calendar" size={16} color={eventType === "Event" ? theme.primary : theme.subtext} />
                 </View>
-                <View style={[styles.proRadioOuter, eventType === "Event" && styles.proRadioOuterActive]}>
-                  {eventType === "Event" && <View style={styles.proRadioInner} />}
+                <View style={[styles.proRadioOuter, { borderColor: eventType === "Event" ? theme.primary : theme.border }]}>
+                  {eventType === "Event" && <View style={[styles.proRadioInner, { backgroundColor: theme.primary }]} />}
                 </View>
               </View>
-              <Text style={[styles.proCardTitle, eventType === "Event" && styles.proCardTitleActive]}>Event</Text>
-              <Text style={styles.proCardSub}>In-person / Other</Text>
+              <Text style={[styles.proCardTitle, { color: theme.text }]}>Event</Text>
+              <Text style={[styles.proCardSub, { color: theme.subtext }]}>In-person / Other</Text>
             </Pressable>
           </View>
         </View>
 
         {/* 3. Webinar Type Cards (Pro Cards) */}
         <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>Webinar Type</Text>
+          <Text style={[styles.fieldLabel, { color: theme.text }]}>Webinar Type</Text>
           <View style={styles.choiceGrid}>
             {/* Free Webinar */}
             <Pressable
               onPress={() => setWebinarType("Free Webinar")}
-              style={[styles.proCard, webinarType === "Free Webinar" && styles.proCardActive]}
+              style={[styles.proCard, { backgroundColor: theme.cardBg, borderColor: webinarType === "Free Webinar" ? theme.primary : theme.border }]}
             >
               <View style={styles.proCardTopRow}>
-                <View style={[styles.proIconBox, webinarType === "Free Webinar" && styles.proIconBoxActive]}>
-                  <Feather name="gift" size={16} color={webinarType === "Free Webinar" ? "#5B3CF5" : "#7C7C9A"} />
+                <View style={[styles.proIconBox, { backgroundColor: webinarType === "Free Webinar" ? theme.badgeBg : (theme.isDark ? "#1E293B" : "#F1F5F9") }]}>
+                  <Feather name="gift" size={16} color={webinarType === "Free Webinar" ? theme.primary : theme.subtext} />
                 </View>
-                <View style={[styles.proRadioOuter, webinarType === "Free Webinar" && styles.proRadioOuterActive]}>
-                  {webinarType === "Free Webinar" && <View style={styles.proRadioInner} />}
+                <View style={[styles.proRadioOuter, { borderColor: webinarType === "Free Webinar" ? theme.primary : theme.border }]}>
+                  {webinarType === "Free Webinar" && <View style={[styles.proRadioInner, { backgroundColor: theme.primary }]} />}
                 </View>
               </View>
-              <Text style={[styles.proCardTitle, webinarType === "Free Webinar" && styles.proCardTitleActive]}>Free Webinar</Text>
-              <Text style={styles.proCardSub}>Open for all students</Text>
+              <Text style={[styles.proCardTitle, { color: theme.text }]}>Free Webinar</Text>
+              <Text style={[styles.proCardSub, { color: theme.subtext }]}>Open for all students</Text>
             </Pressable>
 
             {/* Paid Webinar */}
             <Pressable
               onPress={() => setWebinarType("Paid Webinar")}
-              style={[styles.proCard, webinarType === "Paid Webinar" && styles.proCardActive]}
+              style={[styles.proCard, { backgroundColor: theme.cardBg, borderColor: webinarType === "Paid Webinar" ? theme.primary : theme.border }]}
             >
               <View style={styles.proCardTopRow}>
-                <View style={[styles.proIconBox, webinarType === "Paid Webinar" && styles.proIconBoxActive]}>
-                  <Feather name="credit-card" size={16} color={webinarType === "Paid Webinar" ? "#5B3CF5" : "#7C7C9A"} />
+                <View style={[styles.proIconBox, { backgroundColor: webinarType === "Paid Webinar" ? theme.badgeBg : (theme.isDark ? "#1E293B" : "#F1F5F9") }]}>
+                  <Feather name="credit-card" size={16} color={webinarType === "Paid Webinar" ? theme.primary : theme.subtext} />
                 </View>
-                <View style={[styles.proRadioOuter, webinarType === "Paid Webinar" && styles.proRadioOuterActive]}>
-                  {webinarType === "Paid Webinar" && <View style={styles.proRadioInner} />}
+                <View style={[styles.proRadioOuter, { borderColor: webinarType === "Paid Webinar" ? theme.primary : theme.border }]}>
+                  {webinarType === "Paid Webinar" && <View style={[styles.proRadioInner, { backgroundColor: theme.primary }]} />}
                 </View>
               </View>
-              <Text style={[styles.proCardTitle, webinarType === "Paid Webinar" && styles.proCardTitleActive]}>Paid Webinar</Text>
-              <Text style={styles.proCardSub}>Paid registration required</Text>
+              <Text style={[styles.proCardTitle, { color: theme.text }]}>Paid Webinar</Text>
+              <Text style={[styles.proCardSub, { color: theme.subtext }]}>Paid registration required</Text>
             </Pressable>
           </View>
         </View>
@@ -256,16 +259,16 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
         {/* Price Input if Paid Webinar */}
         {webinarType === "Paid Webinar" ? (
           <View style={styles.fieldSection}>
-            <Text style={styles.fieldLabel}>Registration Fee (₹) *</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialCommunityIcons name="currency-inr" size={18} color="#5B3CF5" style={styles.inputIcon} />
+            <Text style={[styles.fieldLabel, { color: theme.text }]}>Registration Fee (₹) *</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border }]}>
+              <MaterialCommunityIcons name="currency-inr" size={18} color={theme.primary} style={styles.inputIcon} />
               <TextInput
                 value={price}
                 onChangeText={(t) => setPrice(t.startsWith("₹") ? t : `₹${t}`)}
                 placeholder="₹499"
-                placeholderTextColor="#A0A0BA"
+                placeholderTextColor={theme.subtext}
                 keyboardType="numeric"
-                style={styles.textInput}
+                style={[styles.textInput, { color: theme.text }]}
               />
             </View>
           </View>
@@ -273,40 +276,43 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
 
         {/* 4. Title Input */}
         <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>Title *</Text>
-          <View style={styles.inputWrapper}>
+          <Text style={[styles.fieldLabel, { color: theme.text }]}>Title *</Text>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border }]}>
             <TextInput
               value={title}
               onChangeText={(t) => t.length <= 100 && setTitle(t)}
               placeholder="Enter webinar title"
-              placeholderTextColor="#A0A0BA"
-              style={styles.textInput}
+              placeholderTextColor={theme.subtext}
+              style={[styles.textInput, { color: theme.text }]}
             />
-            <Text style={styles.charCounter}>{title.length}/100</Text>
+            <Text style={[styles.charCounter, { color: theme.subtext }]}>{title.length}/100</Text>
           </View>
         </View>
 
         {/* 5. Short Description */}
         <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>Short Description *</Text>
-          <View style={styles.textAreaWrapper}>
+          <Text style={[styles.fieldLabel, { color: theme.text }]}>Short Description *</Text>
+          <View style={[styles.textAreaWrapper, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border }]}>
             <TextInput
               value={description}
               onChangeText={(t) => t.length <= 200 && setDescription(t)}
               placeholder="Write a short description about this webinar..."
-              placeholderTextColor="#A0A0BA"
+              placeholderTextColor={theme.subtext}
               multiline
+              numberOfLines={4}
+              style={[styles.textAreaInput, { color: theme.text }]}
+            />
               numberOfLines={4}
               style={styles.textAreaInput}
             />
-            <Text style={styles.charCounterBottom}>{description.length}/200</Text>
+            <Text style={[styles.charCounterBottom, { color: theme.subtext }]}>{description.length}/200</Text>
           </View>
         </View>
 
         {/* 6. Banner Image Upload */}
         <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>Banner Image *</Text>
-          <Pressable onPress={pickBannerImage} style={styles.bannerPickerCard}>
+          <Text style={[styles.fieldLabel, { color: theme.text }]}>Banner Image *</Text>
+          <Pressable onPress={pickBannerImage} style={[styles.bannerPickerCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             {bannerUrl ? (
               <View style={styles.bannerPreviewWrap}>
                 <Image source={{ uri: bannerUrl }} style={styles.bannerImgPreview} />
@@ -317,11 +323,11 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
               </View>
             ) : (
               <View style={styles.uploadPlaceholderInner}>
-                <View style={styles.uploadIconBadge}>
-                  <Feather name="image" size={22} color="#5B3CF5" />
+                <View style={[styles.uploadIconBadge, { backgroundColor: theme.badgeBg }]}>
+                  <Feather name="image" size={22} color={theme.primary} />
                 </View>
-                <Text style={styles.uploadTitleText}>Upload Banner</Text>
-                <Text style={styles.uploadSubText}>Recommended size: 1280 x 720px (16:9){"\n"}JPG, PNG up to 5MB</Text>
+                <Text style={[styles.uploadTitleText, { color: theme.text }]}>Upload Banner</Text>
+                <Text style={[styles.uploadSubText, { color: theme.subtext }]}>Recommended size: 1280 x 720px (16:9){"\n"}JPG, PNG up to 5MB</Text>
               </View>
             )}
           </Pressable>
@@ -331,30 +337,30 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
         <View style={styles.fieldSection}>
           <View style={styles.learnHeaderRow}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <Text style={styles.fieldLabel}>What will you learn? *</Text>
-              <Feather name="info" size={13} color="#7C7C9A" />
+              <Text style={[styles.fieldLabel, { color: theme.text }]}>What will you learn? *</Text>
+              <Feather name="info" size={13} color={theme.subtext} />
             </View>
-            <Pressable onPress={handleAddPoint} style={styles.addPointBtn}>
-              <Feather name="plus" size={14} color="#5B3CF5" />
-              <Text style={styles.addPointBtnText}>Add Point</Text>
+            <Pressable onPress={handleAddPoint} style={[styles.addPointBtn, { backgroundColor: theme.badgeBg }]}>
+              <Feather name="plus" size={14} color={theme.primary} />
+              <Text style={[styles.addPointBtnText, { color: theme.primary }]}>Add Point</Text>
             </Pressable>
           </View>
 
           <View style={{ gap: 10, marginTop: 6 }}>
             {learningPoints.map((pt, idx) => (
-              <View key={idx} style={styles.pointInputRow}>
-                <View style={styles.pointNumBadge}>
-                  <Text style={styles.pointNumText}>{idx + 1}</Text>
+              <View key={idx} style={[styles.pointInputRow, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border }]}>
+                <View style={[styles.pointNumBadge, { backgroundColor: theme.badgeBg }]}>
+                  <Text style={[styles.pointNumText, { color: theme.primary }]}>{idx + 1}</Text>
                 </View>
                 <TextInput
                   value={pt}
                   onChangeText={(text) => handlePointChange(text, idx)}
                   placeholder="Add learning point"
-                  placeholderTextColor="#A0A0BA"
-                  style={styles.pointTextInput}
+                  placeholderTextColor={theme.subtext}
+                  style={[styles.pointTextInput, { color: theme.text }]}
                 />
                 <Pressable onPress={() => handleRemovePoint(idx)} style={styles.trashBtn}>
-                  <Feather name="trash-2" size={16} color="#9E9EBA" />
+                  <Feather name="trash-2" size={16} color={theme.subtext} />
                 </Pressable>
               </View>
             ))}
@@ -363,75 +369,75 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
 
         {/* 8. Date & Time (Calendar Picker) */}
         <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>Date & Time *</Text>
-          <Pressable onPress={() => setShowCalendarModal(true)} style={styles.selectWrapper}>
-            <Feather name="calendar" size={16} color="#5B3CF5" style={styles.inputIcon} />
-            <Text style={[styles.selectText, { color: "#181725", fontFamily: fonts.bold }]}>{dateTime}</Text>
-            <Feather name="chevron-right" size={16} color="#7C7C9A" />
+          <Text style={[styles.fieldLabel, { color: theme.text }]}>Date & Time *</Text>
+          <Pressable onPress={() => setShowCalendarModal(true)} style={[styles.selectWrapper, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border }]}>
+            <Feather name="calendar" size={16} color={theme.primary} style={styles.inputIcon} />
+            <Text style={[styles.selectText, { color: theme.text, fontFamily: fonts.bold }]}>{dateTime}</Text>
+            <Feather name="chevron-right" size={16} color={theme.subtext} />
           </Pressable>
         </View>
 
         {/* 9. Duration (Manual Input) */}
         <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>Duration *</Text>
-          <View style={styles.inputWrapper}>
-            <Feather name="clock" size={16} color="#7C7C9A" style={styles.inputIcon} />
+          <Text style={[styles.fieldLabel, { color: theme.text }]}>Duration *</Text>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border }]}>
+            <Feather name="clock" size={16} color={theme.subtext} style={styles.inputIcon} />
             <TextInput
               value={duration}
               onChangeText={setDuration}
               placeholder="e.g. 60 Mins, 1.5 Hours, 90 Mins"
-              placeholderTextColor="#A0A0BA"
-              style={styles.textInput}
+              placeholderTextColor={theme.subtext}
+              style={[styles.textInput, { color: theme.text }]}
             />
           </View>
         </View>
 
         {/* 10. Google Meet Link */}
         <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>Google Meet Link *</Text>
-          <View style={styles.inputWrapper}>
-            <Feather name="link" size={16} color="#7C7C9A" style={styles.inputIcon} />
+          <Text style={[styles.fieldLabel, { color: theme.text }]}>Google Meet Link *</Text>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border }]}>
+            <Feather name="link" size={16} color={theme.subtext} style={styles.inputIcon} />
             <TextInput
               value={meetLink}
               onChangeText={setMeetLink}
               placeholder="https://meet.google.com/xxx-xxxx-xxx"
-              placeholderTextColor="#A0A0BA"
+              placeholderTextColor={theme.subtext}
               autoCapitalize="none"
-              style={styles.textInput}
+              style={[styles.textInput, { color: theme.text }]}
             />
           </View>
-          <Text style={styles.helperText}>Paste Google Meet link for your live session</Text>
+          <Text style={[styles.helperText, { color: theme.subtext }]}>Paste Google Meet link for your live session</Text>
         </View>
 
         {/* 11. Attach Notes / Resources (PDF) */}
         <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>Attach Notes / Resources (PDF) (Optional)</Text>
-          <Pressable onPress={pickPdfResource} style={styles.pdfCardContainer}>
-            <View style={styles.pdfIconBadge}>
-              <Feather name="file-text" size={20} color="#5B3CF5" />
+          <Text style={[styles.fieldLabel, { color: theme.text }]}>Attach Notes / Resources (PDF) (Optional)</Text>
+          <Pressable onPress={pickPdfResource} style={[styles.pdfCardContainer, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <View style={[styles.pdfIconBadge, { backgroundColor: theme.badgeBg }]}>
+              <Feather name="file-text" size={20} color={theme.primary} />
             </View>
 
             <View style={{ flex: 1 }}>
-              <Text style={styles.pdfTitleText}>{pdfName || "Upload PDF"}</Text>
-              <Text style={styles.pdfSubText}>{pdfName ? "Attached PDF document" : "Upload notes or study material (PDF only)"}</Text>
+              <Text style={[styles.pdfTitleText, { color: theme.text }]}>{pdfName || "Upload PDF"}</Text>
+              <Text style={[styles.pdfSubText, { color: theme.subtext }]}>{pdfName ? "Attached PDF document" : "Upload notes or study material (PDF only)"}</Text>
             </View>
 
-            <Feather name="chevron-right" size={18} color="#7C7C9A" />
+            <Feather name="chevron-right" size={18} color={theme.subtext} />
           </Pressable>
         </View>
 
         {/* 12. Registration Limit */}
         <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>Registration Limit (Optional)</Text>
-          <View style={styles.inputWrapper}>
-            <Feather name="users" size={16} color="#7C7C9A" style={styles.inputIcon} />
+          <Text style={[styles.fieldLabel, { color: theme.text }]}>Registration Limit (Optional)</Text>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border }]}>
+            <Feather name="users" size={16} color={theme.subtext} style={styles.inputIcon} />
             <TextInput
               value={registrationLimit}
               onChangeText={setRegistrationLimit}
               placeholder="e.g. 200 (leave empty for unlimited)"
-              placeholderTextColor="#A0A0BA"
+              placeholderTextColor={theme.subtext}
               keyboardType="numeric"
-              style={styles.textInput}
+              style={[styles.textInput, { color: theme.text }]}
             />
           </View>
         </View>
@@ -440,7 +446,7 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
         <Pressable
           onPress={() => handlePublish(false)}
           disabled={submitting}
-          style={({ pressed }) => [styles.publishBtn, pressed && { opacity: 0.9 }]}
+          style={({ pressed }) => [styles.publishBtn, { backgroundColor: theme.primary }, pressed && { opacity: 0.9 }]}
         >
           {submitting ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
@@ -458,21 +464,21 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
         onRequestClose={() => setShowCalendarModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.calendarModalCard}>
+          <View style={[styles.calendarModalCard, { backgroundColor: theme.cardBg }]}>
             <View style={styles.calendarHeaderRow}>
               <View>
-                <Text style={styles.calendarTitleText}>Select Date & Time</Text>
-                <Text style={styles.calendarSubText}>August 2026</Text>
+                <Text style={[styles.calendarTitleText, { color: theme.text }]}>Select Date & Time</Text>
+                <Text style={[styles.calendarSubText, { color: theme.subtext }]}>August 2026</Text>
               </View>
-              <Pressable onPress={() => setShowCalendarModal(false)} style={styles.closeModalBtn}>
-                <Feather name="x" size={18} color="#181725" />
+              <Pressable onPress={() => setShowCalendarModal(false)} style={[styles.closeModalBtn, { backgroundColor: theme.isDark ? "#1E293B" : "#F1F5F9" }]}>
+                <Feather name="x" size={18} color={theme.subtext} />
               </Pressable>
             </View>
 
             {/* Calendar Days Header */}
             <View style={styles.weekDaysRow}>
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-                <Text key={d} style={styles.weekDayText}>{d}</Text>
+                <Text key={d} style={[styles.weekDayText, { color: theme.subtext }]}>{d}</Text>
               ))}
             </View>
 
@@ -484,9 +490,9 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
                   <Pressable
                     key={dayNum}
                     onPress={() => setSelectedDateNum(dayNum)}
-                    style={[styles.dayCell, isSelected && styles.dayCellActive]}
+                    style={[styles.dayCell, { backgroundColor: isSelected ? theme.primary : (theme.isDark ? "#1E293B" : "#F8FAFC") }]}
                   >
-                    <Text style={[styles.dayCellText, isSelected && styles.dayCellTextActive]}>{dayNum}</Text>
+                    <Text style={[styles.dayCellText, { color: isSelected ? "#FFFFFF" : theme.text }]}>{dayNum}</Text>
                   </Pressable>
                 );
               })}
@@ -495,10 +501,10 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
             {/* Interactive Clock Time Grid Picker */}
             <View style={{ marginTop: 12 }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                <Text style={styles.timeSectionLabel}>Select Session Time</Text>
-                <View style={styles.timeSelectedPill}>
-                  <Feather name="clock" size={12} color="#5B3CF5" style={{ marginRight: 4 }} />
-                  <Text style={styles.timeSelectedPillText}>{selectedTimeSlot}</Text>
+                <Text style={[styles.timeSectionLabel, { color: theme.text }]}>Select Session Time</Text>
+                <View style={[styles.timeSelectedPill, { backgroundColor: theme.badgeBg }]}>
+                  <Feather name="clock" size={12} color={theme.primary} style={{ marginRight: 4 }} />
+                  <Text style={[styles.timeSelectedPillText, { color: theme.primary }]}>{selectedTimeSlot}</Text>
                 </View>
               </View>
 
@@ -509,9 +515,9 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
                     <Pressable
                       key={tSlot}
                       onPress={() => setSelectedTimeSlot(tSlot)}
-                      style={[styles.timeChipCell, isTsSelected && styles.timeChipCellActive]}
+                      style={[styles.timeChipCell, { backgroundColor: isTsSelected ? theme.primary : theme.badgeBg, borderColor: isTsSelected ? theme.primary : theme.border }]}
                     >
-                      <Text style={[styles.timeChipCellText, isTsSelected && styles.timeChipCellTextActive]}>{tSlot}</Text>
+                      <Text style={[styles.timeChipCellText, { color: isTsSelected ? "#FFFFFF" : theme.primary }]}>{tSlot}</Text>
                     </Pressable>
                   );
                 })}
@@ -519,7 +525,7 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
             </View>
 
             {/* Confirm Button */}
-            <Pressable onPress={handleConfirmCalendarDate} style={styles.confirmDateBtn}>
+            <Pressable onPress={handleConfirmCalendarDate} style={[styles.confirmDateBtn, { backgroundColor: theme.primary }]}>
               <Text style={styles.confirmDateBtnText}>Set Date & Time →</Text>
             </Pressable>
           </View>

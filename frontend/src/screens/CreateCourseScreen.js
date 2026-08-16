@@ -17,6 +17,7 @@ import { generateSyllabusWithAI } from "../api/gemini";
 import { createCourse, updateCourse } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
@@ -27,6 +28,7 @@ function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694
 }
 
 export default function CreateCourseScreen({ session, user = {}, courseToEdit = null, onBack, onCourseCreated }) {
+  const { theme } = useTheme();
   const isEditing = Boolean(courseToEdit);
   // Locked Mentor Category (assigned during signup/profile)
   const assignedCategory = courseToEdit?.category || user.mentorCategory || user.category || "TCM Information Tech";
@@ -284,16 +286,16 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* 1. Header Bar */}
-      <View style={styles.topHeader}>
-        <Pressable onPress={onBack} style={styles.backBtn}>
-          <Feather name="chevron-left" size={24} color="#181725" />
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+        <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <Feather name="chevron-left" size={24} color={theme.text} />
         </Pressable>
 
-        <Text style={styles.headerTitle}>Create Course</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>{isEditing ? "Edit Course" : "Create Course"}</Text>
 
-        <Pressable onPress={handlePublishCourse} disabled={publishing} style={styles.publishHeaderBtn}>
+        <Pressable onPress={handlePublishCourse} disabled={publishing} style={[styles.publishHeaderBtn, { backgroundColor: theme.primary }]}>
           <Text style={styles.publishHeaderBtnText}>{publishing ? "Saving..." : "Publish"}</Text>
         </Pressable>
       </View>
@@ -302,23 +304,23 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
         {/* ============================================================ */}
         {/* 2. LOCKED CATEGORY CARD */}
         {/* ============================================================ */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.lockedHeaderRow}>
-            <Text style={styles.sectionHeading}>Your Assigned Specialization</Text>
-            <View style={styles.lockPill}>
-              <MaterialCommunityIcons name="lock-outline" size={12} color="#7C7C9A" style={{ marginRight: 3 }} />
-              <Text style={styles.lockPillText}>Locked</Text>
+            <Text style={[styles.sectionHeading, { color: theme.text }]}>Your Assigned Specialization</Text>
+            <View style={[styles.lockPill, { backgroundColor: theme.badgeBg }]}>
+              <MaterialCommunityIcons name="lock-outline" size={12} color={theme.subtext} style={{ marginRight: 3 }} />
+              <Text style={[styles.lockPillText, { color: theme.subtext }]}>Locked</Text>
             </View>
           </View>
-          <Text style={styles.inputSubLabel}>Category assigned during mentor registration (cannot be changed):</Text>
+          <Text style={[styles.inputSubLabel, { color: theme.subtext }]}>Category assigned during mentor registration (cannot be changed):</Text>
 
-          <View style={[styles.lockedCategoryBox, { backgroundColor: catMeta.bg, borderColor: catMeta.color }]}>
+          <View style={[styles.lockedCategoryBox, { backgroundColor: theme.isDark ? "#1E293B" : catMeta.bg, borderColor: catMeta.color }]}>
             <View style={[styles.catIconBox, { backgroundColor: catMeta.color }]}>
               <MaterialCommunityIcons name={catMeta.icon} size={22} color="#FFFFFF" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.catTitleText, { color: catMeta.color }]}>{catMeta.label}</Text>
-              <Text style={styles.catSubText}>Only courses for {catMeta.label} can be published from this account</Text>
+              <Text style={[styles.catSubText, { color: theme.subtext }]}>Only courses for {catMeta.label} can be published from this account</Text>
             </View>
             <Feather name="check-circle" size={18} color={catMeta.color} />
           </View>
@@ -327,43 +329,43 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
         {/* ============================================================ */}
         {/* 3. COURSE DETAILS & PRICING */}
         {/* ============================================================ */}
-        <View style={styles.card}>
-          <Text style={styles.sectionHeading}>Course Details & Pricing</Text>
+        <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <Text style={[styles.sectionHeading, { color: theme.text }]}>Course Details & Pricing</Text>
 
-          <Text style={styles.inputLabel}>Course Title *</Text>
+          <Text style={[styles.inputLabel, { color: theme.text }]}>Course Title *</Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
             placeholder="e.g. Advanced Full Stack AI Engineer 2026"
-            placeholderTextColor="#A0A0B8"
-            style={styles.textInput}
+            placeholderTextColor={theme.subtext}
+            style={[styles.textInput, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border, color: theme.text }]}
           />
 
-          <Text style={styles.inputLabel}>Subtitle / Description</Text>
+          <Text style={[styles.inputLabel, { color: theme.text }]}>Subtitle / Description</Text>
           <TextInput
             value={subtitle}
             onChangeText={setSubtitle}
             placeholder="e.g. Master PyTorch, LLMs, & Fullstack React Native"
-            placeholderTextColor="#A0A0B8"
-            style={styles.textInput}
+            placeholderTextColor={theme.subtext}
+            style={[styles.textInput, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border, color: theme.text }]}
           />
 
           {/* Level Selector */}
-          <Text style={styles.inputLabel}>Target Level</Text>
+          <Text style={[styles.inputLabel, { color: theme.text }]}>Target Level</Text>
           <View style={styles.pillsRow}>
             {levelsList.map((lvl) => (
               <Pressable
                 key={lvl}
                 onPress={() => setLevel(lvl)}
-                style={[styles.pill, level === lvl && styles.pillActive]}
+                style={[styles.pill, { backgroundColor: level === lvl ? theme.primary : theme.badgeBg, borderColor: level === lvl ? theme.primary : theme.border }]}
               >
-                <Text style={[styles.pillText, level === lvl && styles.pillTextActive]}>{lvl}</Text>
+                <Text style={[styles.pillText, { color: level === lvl ? "#FFFFFF" : theme.primary, fontFamily: level === lvl ? fonts.bold : fonts.medium }]}>{lvl}</Text>
               </Pressable>
             ))}
           </View>
 
           {/* Duration Selector */}
-          <Text style={styles.inputLabel}>Program Duration (e.g. 20 Days, 30 Days, 8 Weeks)</Text>
+          <Text style={[styles.inputLabel, { color: theme.text }]}>Program Duration (e.g. 20 Days, 30 Days, 8 Weeks)</Text>
           <View style={styles.pillsRow}>
             {durationOptions.map((dur) => {
               const isSel = dur === "Custom" ? isCustomDuration : (!isCustomDuration && duration === dur);
@@ -379,9 +381,9 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
                       setDuration(dur);
                     }
                   }}
-                  style={[styles.pill, isSel && styles.pillActive]}
+                  style={[styles.pill, { backgroundColor: isSel ? theme.primary : theme.badgeBg, borderColor: isSel ? theme.primary : theme.border }]}
                 >
-                  <Text style={[styles.pillText, isSel && styles.pillTextActive]}>{dur}</Text>
+                  <Text style={[styles.pillText, { color: isSel ? "#FFFFFF" : theme.primary, fontFamily: isSel ? fonts.bold : fonts.medium }]}>{dur}</Text>
                 </Pressable>
               );
             })}
@@ -396,38 +398,38 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
                   setDuration(text || "20 Days");
                 }}
                 placeholder="Type custom duration in days (e.g. 20 Days, 15 Days, 60 Days)"
-                placeholderTextColor="#A0A0B8"
-                style={styles.textInput}
+                placeholderTextColor={theme.subtext}
+                style={[styles.textInput, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border, color: theme.text }]}
               />
             </View>
           ) : null}
 
           {/* Price Input */}
-          <Text style={styles.inputLabel}>Course Price (₹)</Text>
+          <Text style={[styles.inputLabel, { color: theme.text }]}>Course Price (₹)</Text>
           <TextInput
             value={price}
             onChangeText={setPrice}
             placeholder="1,499"
-            placeholderTextColor="#A0A0B8"
+            placeholderTextColor={theme.subtext}
             keyboardType="numeric"
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border, color: theme.text }]}
           />
 
           {/* Cover Picture Section */}
-          <Text style={styles.inputLabel}>Course Cover Picture</Text>
-          <View style={styles.coverPreviewBox}>
+          <Text style={[styles.inputLabel, { color: theme.text }]}>Course Cover Picture</Text>
+          <View style={[styles.coverPreviewBox, { backgroundColor: theme.badgeBg }]}>
             <Image source={{ uri: safeImageUri(coverImageUrl) }} style={styles.coverImage} />
           </View>
 
           <View style={styles.coverActionsRow}>
-            <Pressable onPress={handlePickImage} style={styles.uploadImageBtn}>
+            <Pressable onPress={handlePickImage} style={[styles.uploadImageBtn, { backgroundColor: theme.primary }]}>
               <MaterialCommunityIcons name="image-search" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
               <Text style={styles.uploadImageBtnText}>Upload Image from Gallery</Text>
             </Pressable>
 
-            <Pressable onPress={() => setShowCustomImageInput((prev) => !prev)} style={styles.urlImageBtn}>
-              <MaterialCommunityIcons name="link-variant" size={15} color="#5B3CF5" style={{ marginRight: 4 }} />
-              <Text style={styles.urlImageBtnText}>URL</Text>
+            <Pressable onPress={() => setShowCustomImageInput((prev) => !prev)} style={[styles.urlImageBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
+              <MaterialCommunityIcons name="link-variant" size={15} color={theme.primary} style={{ marginRight: 4 }} />
+              <Text style={[styles.urlImageBtnText, { color: theme.primary }]}>URL</Text>
             </Pressable>
           </View>
 
@@ -437,19 +439,19 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
                 value={customImageInput}
                 onChangeText={setCustomImageInput}
                 placeholder="Paste Image URL (https://...)"
-                placeholderTextColor="#A0A0B8"
-                style={styles.textInput}
+                placeholderTextColor={theme.subtext}
+                style={[styles.textInput, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border, color: theme.text }]}
               />
-              <Pressable onPress={handleApplyCustomImage} style={styles.applyImageBtn}>
+              <Pressable onPress={handleApplyCustomImage} style={[styles.applyImageBtn, { backgroundColor: theme.primary }]}>
                 <Text style={styles.applyImageBtnText}>Apply Picture</Text>
               </Pressable>
             </View>
           ) : null}
 
-          <Text style={styles.inputSubLabel}>Or Choose Preset Banner:</Text>
+          <Text style={[styles.inputSubLabel, { color: theme.subtext }]}>Or Choose Preset Banner:</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetScroll}>
             {presetCovers.map((imgUrl, index) => (
-              <Pressable key={index} onPress={() => setCoverImageUrl(imgUrl)} style={styles.presetImageBtn}>
+              <Pressable key={index} onPress={() => setCoverImageUrl(imgUrl)} style={[styles.presetImageBtn, { borderColor: theme.border }]}>
                 <Image source={{ uri: safeImageUri(imgUrl) }} style={styles.presetImage} />
               </Pressable>
             ))}
@@ -459,7 +461,7 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
         {/* ============================================================ */}
         {/* 4. DEEP AI CURRICULUM GENERATOR CARD */}
         {/* ============================================================ */}
-        <View style={styles.aiGenCard}>
+        <View style={[styles.aiGenCard, { backgroundColor: theme.primary }]}>
           <View style={styles.aiHeaderRow}>
             <View style={styles.aiIconCircle}>
               <MaterialCommunityIcons name="sparkles" size={22} color="#FFFFFF" />
@@ -489,23 +491,23 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
         {/* ============================================================ */}
         {/* 5. EDITABLE SYLLABUS MODULES TREE */}
         {/* ============================================================ */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionHeading}>Course Curriculum ({modules.length} Modules)</Text>
-            <Pressable onPress={handleAddModule} style={styles.addModuleBtn}>
-              <Feather name="plus" size={14} color="#5B3CF5" style={{ marginRight: 4 }} />
-              <Text style={styles.addModuleBtnText}>Add Module</Text>
+            <Text style={[styles.sectionHeading, { color: theme.text }]}>Course Curriculum ({modules.length} Modules)</Text>
+            <Pressable onPress={handleAddModule} style={[styles.addModuleBtn, { backgroundColor: theme.badgeBg }]}>
+              <Feather name="plus" size={14} color={theme.primary} style={{ marginRight: 4 }} />
+              <Text style={[styles.addModuleBtnText, { color: theme.primary }]}>Add Module</Text>
             </Pressable>
           </View>
 
           {(modules || []).map((mod) => (
-            <View key={mod.id || Math.random().toString()} style={styles.moduleCard}>
+            <View key={mod.id || Math.random().toString()} style={[styles.moduleCard, { backgroundColor: theme.isDark ? "#1E293B" : "#F8F7FF", borderColor: theme.border }]}>
               {/* Module Header Title Input */}
               <View style={styles.modHeaderRow}>
                 <TextInput
                   value={mod.title || (mod.dayNum ? `${mod.dayNum}: ${mod.topic}` : "Day Module")}
                   onChangeText={(text) => handleUpdateModuleTitle(mod.id, text)}
-                  style={styles.modTitleInput}
+                  style={[styles.modTitleInput, { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.text }]}
                 />
                 <Pressable onPress={() => handleDeleteModule(mod.id)} style={styles.deleteModBtn}>
                   <Feather name="trash-2" size={16} color="#D32F2F" />
@@ -515,30 +517,30 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
               {/* Lessons List inside Module */}
               <View style={styles.lessonsContainer}>
                 {(mod.lessons || []).map((lesText, lesIdx) => (
-                  <View key={lesIdx} style={styles.lessonRow}>
-                    <MaterialCommunityIcons name="file-document-outline" size={15} color="#5B3CF5" style={{ marginRight: 8 }} />
+                  <View key={lesIdx} style={[styles.lessonRow, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                    <MaterialCommunityIcons name="file-document-outline" size={15} color={theme.primary} style={{ marginRight: 8 }} />
                     <TextInput
                       value={lesText}
                       onChangeText={(text) => handleUpdateLesson(mod.id, lesIdx, text)}
-                      style={styles.lessonInput}
+                      style={[styles.lessonInput, { color: theme.text }]}
                     />
                     <Pressable onPress={() => handleDeleteLesson(mod.id, lesIdx)} style={styles.deleteLesBtn}>
-                      <Feather name="x" size={15} color="#9E9EB2" />
+                      <Feather name="x" size={15} color={theme.subtext} />
                     </Pressable>
                   </View>
                 ))}
               </View>
 
               <Pressable onPress={() => handleAddLesson(mod.id)} style={styles.addLessonBtn}>
-                <Feather name="plus-circle" size={14} color="#5B3CF5" style={{ marginRight: 4 }} />
-                <Text style={styles.addLessonBtnText}>Add Lesson</Text>
+                <Feather name="plus-circle" size={14} color={theme.primary} style={{ marginRight: 4 }} />
+                <Text style={[styles.addLessonBtnText, { color: theme.primary }]}>Add Lesson</Text>
               </Pressable>
             </View>
           ))}
         </View>
 
         {/* 6. Publish Course Live Button */}
-        <Pressable onPress={handlePublishCourse} disabled={publishing} style={styles.bigPublishBtn}>
+        <Pressable onPress={handlePublishCourse} disabled={publishing} style={[styles.bigPublishBtn, { backgroundColor: theme.primary }]}>
           <MaterialCommunityIcons name="rocket-launch" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
           <Text style={styles.bigPublishBtnText}>{publishing ? "Publishing..." : "Publish Course Live"}</Text>
         </Pressable>
