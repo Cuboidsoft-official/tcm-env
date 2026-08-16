@@ -75,27 +75,48 @@ function renderAiFormattedResponse(rawText, theme = {}) {
 
   const renderInlineFormatted = (inlineStr, textStyle = textStyleMain) => {
     if (!inlineStr) return null;
-    const regex = /(\*\*.*?\*\*|`.*?`)/g;
-    const parts = inlineStr.split(regex);
+    // Strip leading header symbols or bullet hashes
+    let cleanStr = inlineStr.replace(/^#+\s*/, "").trim();
+    if (!cleanStr) return null;
+
+    const regex = /(\*\*.*?\*\*|`.*?`|\*.*?\*)/g;
+    const parts = cleanStr.split(regex);
 
     return parts.map((part, idx) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
-        const clean = part.slice(2, -2);
+      if (!part) return null;
+
+      // Bold text **text**
+      if (part.startsWith("**") && part.endsWith("**") && part.length >= 4) {
+        const clean = part.slice(2, -2).replace(/[\*#]/g, "").trim();
         return (
           <Text key={idx} style={[textStyle, { fontWeight: "700", color: theme?.text || (isDark ? "#FFFFFF" : "#0F172A") }]}>
             {clean}
           </Text>
         );
       }
-      if (part.startsWith("`") && part.endsWith("`")) {
+
+      // Code inline `code`
+      if (part.startsWith("`") && part.endsWith("`") && part.length >= 2) {
         const clean = part.slice(1, -1);
         return (
-          <Text key={idx} style={{ backgroundColor: isDark ? "#1E263B" : "#E2E8F0", color: theme?.primary || "#6366F1", fontFamily: "monospace", fontSize: 12, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+          <Text key={idx} style={{ backgroundColor: isDark ? "#1E263B" : "#E2E8F0", color: theme?.primary || "#6366F1", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace", fontSize: 12, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
             {clean}
           </Text>
         );
       }
-      const cleanPart = part.replace(/\*/g, "");
+
+      // Italic text *text*
+      if (part.startsWith("*") && part.endsWith("*") && part.length >= 2) {
+        const clean = part.slice(1, -1).replace(/[\*#]/g, "").trim();
+        return (
+          <Text key={idx} style={[textStyle, { fontStyle: "italic" }]}>
+            {clean}
+          </Text>
+        );
+      }
+
+      // Plain text: strip lingering raw * or # characters completely
+      const cleanPart = part.replace(/[\*#]/g, "");
       return <Text key={idx} style={textStyle}>{cleanPart}</Text>;
     });
   };
@@ -114,13 +135,14 @@ function renderAiFormattedResponse(rawText, theme = {}) {
         return;
       }
 
-      const isHeader = /^(\d+\.|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDDFF]|\u26A1|\u2B50|\uD83D\uDCDDA-Z|#+|\*)+/.test(trimmed) && (trimmed.includes("**") || trimmed.includes(":"));
+      const isHeader = /^#+\s+/.test(trimmed) || (trimmed.startsWith("**") && (trimmed.endsWith("**") || trimmed.includes(":")));
 
       if (isHeader) {
+        const headerText = trimmed.replace(/^#+\s*/, "");
         elements.push(
           <View key={`hdr_${keyCount++}`} style={{ marginTop: 6, marginBottom: 4 }}>
-            <Text style={{ fontSize: 13, fontWeight: "700", color: theme?.text || (isDark ? "#FFFFFF" : "#0F172A"), lineHeight: 19 }}>
-              {renderInlineFormatted(trimmed)}
+            <Text style={{ fontSize: 13.5, fontWeight: "700", color: theme?.text || (isDark ? "#FFFFFF" : "#0F172A"), lineHeight: 19 }}>
+              {renderInlineFormatted(headerText)}
             </Text>
           </View>
         );
@@ -1551,6 +1573,8 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    height: Platform.OS === "web" ? "100vh" : "100%",
+    maxHeight: Platform.OS === "web" ? "100vh" : "100%",
     backgroundColor: "#F8FAFC"
   },
   topHeader: {
@@ -2110,7 +2134,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9"
+    borderTopColor: "#F1F5F9",
+    width: "100%",
+    maxWidth: 1200,
+    alignSelf: "center"
   },
   joinRoomButton: {
     backgroundColor: "#5B3CF5",
@@ -2132,7 +2159,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9"
+    borderTopColor: "#F1F5F9",
+    width: "100%",
+    maxWidth: 1200,
+    alignSelf: "center",
+    paddingBottom: Platform.OS === "ios" ? 14 : 10
   },
   plusBtn: {
     width: 38,
