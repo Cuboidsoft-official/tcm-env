@@ -857,11 +857,10 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
               <Text style={[styles.rowSub, rowSubStyle]}>Free up local temporary media storage</Text>
             </View>
           </View>
-          <Text style={[styles.cacheSizeText, { color: activeAppTheme.subtext }]}>24.5 MB</Text>
         </TouchableOpacity>
       </View>
 
-      {/* 6.5. Referral Code Program (24-Hour Window) */}
+      {/* 6.5. Referral Code Program */}
       <View style={[styles.sectionCard, sectionCardStyle]}>
         <Text style={[styles.sectionHeader, sectionHeaderStyle]}>REFERRAL PROGRAM 🎁</Text>
         {user.referredBy ? (
@@ -871,24 +870,18 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                 <Feather name="check-circle" size={18} color="#10B981" />
               </View>
               <View>
-                <Text style={[styles.rowTitle, rowTitleStyle]}>Applied Referral Code</Text>
-                <Text style={[styles.rowSub, rowSubStyle]}>Code: {user.referredBy} • Reward active</Text>
+                <Text style={[styles.rowTitle, rowTitleStyle]}>Redeemed Referral Code</Text>
+                <Text style={[styles.rowSub, rowSubStyle]}>Code: {user.referredBy} • +25 TCM Coins Credited</Text>
               </View>
             </View>
             <View style={styles.appliedRefBadge}>
-              <Text style={styles.appliedRefText}>Applied</Text>
+              <Text style={styles.appliedRefText}>Redeemed</Text>
             </View>
           </View>
-        ) : isReferralWindowValid ? (
+        ) : (
           <View style={{ paddingVertical: 4 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
-              <Feather name="clock" size={15} color="#5B3CF5" style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: "#5B3CF5" }}>
-                24-Hour Registration Window: {timeRemainingStr}
-              </Text>
-            </View>
             <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: activeAppTheme.subtext, marginBottom: 12 }}>
-              Didn't add a referral code during sign up? Enter a friend's referral code within 24 hours of account creation to claim 10 TCM Coins!
+              Have a friend's referral code? Enter it below to claim +25 TCM Coins! (Can be redeemed once per account).
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <TextInput
@@ -905,7 +898,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                   borderWidth: 1,
                   borderColor: activeAppTheme.border
                 }}
-                placeholder="Referral Code (e.g. ANK25X)"
+                placeholder="Enter Referral Code (e.g. ANK25X)"
                 placeholderTextColor="#9CA3AF"
                 value={referralInput}
                 onChangeText={(txt) => setReferralInput(txt.toUpperCase())}
@@ -915,7 +908,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                 onPress={handleApplyReferral}
                 disabled={applyingReferral}
                 style={{
-                  backgroundColor: "#5B3CF5",
+                  backgroundColor: activeAppTheme.primary,
                   paddingHorizontal: 18,
                   paddingVertical: 11,
                   borderRadius: 10,
@@ -930,18 +923,6 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                 )}
               </TouchableOpacity>
             </View>
-          </View>
-        ) : (
-          <View style={{ paddingVertical: 4 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-              <Feather name="alert-circle" size={15} color="#EF4444" style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: "#EF4444" }}>
-                Referral Code Window Expired
-              </Text>
-            </View>
-            <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: activeAppTheme.subtext }}>
-              Referral codes can only be claimed within the first 24 hours of account registration.
-            </Text>
           </View>
         )}
       </View>

@@ -183,6 +183,13 @@ const userSchema = new mongoose.Schema(
       type: Array,
       default: []
     },
+    tcmCoins: {
+      type: Number,
+      default: 0
+    },
+    referralCode: {
+      type: String
+    },
     referredBy: {
       type: String,
       default: ""

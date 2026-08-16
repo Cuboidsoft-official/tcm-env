@@ -96,10 +96,20 @@ export function publicUser(user) {
       deletedCount: 0
     },
     progress: user.progress || 0,
+    tcmCoins: user.tcmCoins !== undefined ? user.tcmCoins : 0,
+    referralCode: getOrGenerateReferralCode(user),
     referredBy: user.referredBy || "",
     referralAppliedAt: user.referralAppliedAt || null,
     createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : user.createdAtIso || new Date().toISOString()
   };
+}
+
+export function getOrGenerateReferralCode(user) {
+  if (!user) return "TCM25X";
+  if (user.referralCode) return String(user.referralCode).toUpperCase();
+  const rawName = (user.name || user.email || "TCM").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const prefix = rawName.substring(0, 3).padEnd(3, "X");
+  return `${prefix}25X`.substring(0, 6);
 }
 
 function normalizeEmail(email = "") {

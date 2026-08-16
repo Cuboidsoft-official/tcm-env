@@ -5,7 +5,7 @@ import { CommunityPost } from "../models/CommunityPost.js";
 import { User } from "../models/User.js";
 import { ClassReview } from "../models/ClassReview.js";
 import { ExamResult } from "../models/ExamResult.js";
-import { publicUser } from "./auth.js";
+import { getOrGenerateReferralCode, publicUser } from "./auth.js";
 import { resolveMediaUrl } from "./uploads.js";
 
 export const profileRouter = express.Router();
@@ -822,7 +822,7 @@ profileRouter.get("/enrolled-students", requireAuth, async (req, res) => {
   }
 });
 
-// 5. Apply Referral Code within 24 hours of registration
+// 5. Apply Referral Code (One-time redemption per student account)
 profileRouter.post("/apply-referral", requireAuth, async (req, res) => {
   try {
     const memoryStore = req.app.locals.memoryStore;
@@ -834,30 +834,58 @@ profileRouter.post("/apply-referral", requireAuth, async (req, res) => {
 
     const cleanCode = referralCode.trim().toUpperCase();
     const userId = req.user._id?.toString() || req.user.id;
+    const REFERRER_REWARD = 50;
+    const REFERRED_REWARD = 25;
 
     if (memoryStore) {
-      const userInMem = memoryStore.users?.find((u) => String(u._id) === String(userId)) || memoryStore.user;
+      const usersList = memoryStore.users || [memoryStore.user].filter(Boolean);
+      const userInMem = usersList.find((u) => String(u._id) === String(userId)) || memoryStore.user;
       if (!userInMem) {
         return res.status(404).json({ message: "User not found." });
       }
 
       if (userInMem.referredBy) {
-        return res.status(400).json({ message: "Referral code has already been applied for this account." });
+        return res.status(400).json({ message: "You have already redeemed a referral code for this account." });
       }
 
-      const createdTime = userInMem.createdAt ? new Date(userInMem.createdAt).getTime() : (userInMem.createdAtIso ? new Date(userInMem.createdAtIso).getTime() : Date.now());
-      const hoursPassed = (Date.now() - createdTime) / (1000 * 60 * 60);
-
-      if (hoursPassed > 24) {
-        return res.status(400).json({ message: "Referral code can only be applied within 24 hours of account registration." });
+      const ownCode = getOrGenerateReferralCode(userInMem);
+      if (cleanCode === ownCode || (userInMem.handle && cleanCode === userInMem.handle.toUpperCase())) {
+        return res.status(400).json({ message: "You cannot apply your own referral code." });
       }
 
+      // Find Referrer User
+      const referrerUser = usersList.find((u) => {
+        const uCode = getOrGenerateReferralCode(u);
+        const uHandle = (u.handle || "").toUpperCase();
+        return uCode === cleanCode || uHandle === cleanCode || (u.referralCode && String(u.referralCode).toUpperCase() === cleanCode);
+      });
+
+      if (referrerUser) {
+        referrerUser.tcmCoins = (referrerUser.tcmCoins || 0) + REFERRER_REWARD;
+        if (req.app.locals.wallets && req.app.locals.wallets[String(referrerUser._id)]) {
+          const rWallet = req.app.locals.wallets[String(referrerUser._id)];
+          rWallet.tcmCoins = (rWallet.tcmCoins || 0) + REFERRER_REWARD;
+          rWallet.availableBalance = (rWallet.availableBalance || 0) + 100;
+          rWallet.totalEarned = (rWallet.totalEarned || 0) + 100;
+          rWallet.referrals = rWallet.referrals || [];
+          rWallet.referrals.unshift({
+            id: `ref_${Date.now()}`,
+            friendName: userInMem.name,
+            friendEmail: userInMem.email,
+            date: "Today",
+            status: "Converted",
+            convertedReward: "50 Coins + ₹100.00"
+          });
+        }
+      }
+
+      userInMem.tcmCoins = (userInMem.tcmCoins || 0) + REFERRED_REWARD;
       userInMem.referredBy = cleanCode;
       userInMem.referralAppliedAt = new Date().toISOString();
 
       return res.json({
         success: true,
-        message: `Referral code ${cleanCode} applied successfully! You earned 10 TCM Coins.`,
+        message: `Referral code ${cleanCode} applied! You earned +${REFERRED_REWARD} TCM Coins.${referrerUser ? ` Referrer ${referrerUser.name} earned +${REFERRER_REWARD} TCM Coins.` : ""}`,
         user: publicUser(userInMem)
       });
     }
@@ -868,23 +896,36 @@ profileRouter.post("/apply-referral", requireAuth, async (req, res) => {
     }
 
     if (dbUser.referredBy) {
-      return res.status(400).json({ message: "Referral code has already been applied for this account." });
+      return res.status(400).json({ message: "You have already redeemed a referral code for this account." });
     }
 
-    const createdTime = dbUser.createdAt ? new Date(dbUser.createdAt).getTime() : Date.now();
-    const hoursPassed = (Date.now() - createdTime) / (1000 * 60 * 60);
-
-    if (hoursPassed > 24) {
-      return res.status(400).json({ message: "Referral code can only be applied within 24 hours of account registration." });
+    const ownCode = getOrGenerateReferralCode(dbUser);
+    if (cleanCode === ownCode || (dbUser.handle && cleanCode === dbUser.handle.toUpperCase())) {
+      return res.status(400).json({ message: "You cannot apply your own referral code." });
     }
 
+    // Find Referrer in DB
+    const referrerUser = await User.findOne({
+      $or: [
+        { referralCode: cleanCode },
+        { handle: cleanCode.toLowerCase() },
+        { name: new RegExp(`^${cleanCode.substring(0, 3)}`, "i") }
+      ]
+    });
+
+    if (referrerUser) {
+      referrerUser.tcmCoins = (referrerUser.tcmCoins || 0) + REFERRER_REWARD;
+      await referrerUser.save();
+    }
+
+    dbUser.tcmCoins = (dbUser.tcmCoins || 0) + REFERRED_REWARD;
     dbUser.referredBy = cleanCode;
     dbUser.referralAppliedAt = new Date();
     await dbUser.save();
 
     return res.json({
       success: true,
-      message: `Referral code ${cleanCode} applied successfully! You earned 10 TCM Coins.`,
+      message: `Referral code ${cleanCode} applied! You earned +${REFERRED_REWARD} TCM Coins.${referrerUser ? ` Referrer ${referrerUser.name} earned +${REFERRER_REWARD} TCM Coins.` : ""}`,
       user: publicUser(dbUser)
     });
   } catch (error) {

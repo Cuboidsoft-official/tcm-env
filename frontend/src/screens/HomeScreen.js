@@ -1384,6 +1384,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
         )}
         {!activeChatUser && !activeDoubtRoom ? (
           <ActionDock
+            user={user}
             open={actionMenuOpen}
             setOpen={setActionMenuOpen}
             onAction={openComposer}
@@ -4604,17 +4605,17 @@ function DetailInputRow({ icon, label, placeholder, value, onChangeText, autoCap
   );
 }
 
-function ActionDock({ open, setOpen, onAction, tabs, activeTab, setActiveTab }) {
+function ActionDock({ user, open, setOpen, onAction, tabs, activeTab, setActiveTab }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const safeBottom = Math.max(8, insets?.bottom || 0);
+  const safeBottom = Math.max(6, insets?.bottom || 0);
 
   return (
     <View style={[styles.bottomDock, Platform.OS === "web" ? { position: "fixed", bottom: 10 } : { bottom: safeBottom }]}>
       <View style={styles.fabRow}>
         <Pressable onPress={() => onAction("post")} style={({ pressed }) => [styles.fab, pressed && styles.pressed]}>
           <LinearGradient colors={[theme.fabBg || theme.primary, theme.primaryDark || "#044324"]} style={styles.fabGradient}>
-            <Feather name="plus" size={26} color="#FFFFFF" />
+            <Feather name="plus" size={22} color="#FFFFFF" />
           </LinearGradient>
         </Pressable>
       </View>
@@ -4623,10 +4624,10 @@ function ActionDock({ open, setOpen, onAction, tabs, activeTab, setActiveTab }) 
         {tabs.map(({ key, icon }) => {
           const active = activeTab === key;
           let iconName = icon;
-          if (key === "Doubts") iconName = "message-square";
-          if (key === "Learn") iconName = "book-open";
-          if (key === "Community") iconName = "users";
           if (key === "Home") iconName = "home";
+          if (key === "Learn") iconName = "compass";
+          if (key === "Community") iconName = "users";
+          if (key === "Doubts") iconName = "message-circle";
           if (key === "Profile") iconName = "user";
 
           const activeColor = theme.primary;
@@ -4634,9 +4635,15 @@ function ActionDock({ open, setOpen, onAction, tabs, activeTab, setActiveTab }) 
 
           return (
             <Pressable key={key} onPress={() => setActiveTab(key)} style={({ pressed }) => [styles.tabItem, pressed && styles.pressed]}>
-              <Feather name={iconName} size={22} color={active ? activeColor : inactiveColor} />
+              {key === "Profile" && user?.avatarUrl ? (
+                <View style={{ width: 23, height: 23, borderRadius: 12, borderWidth: active ? 2 : 0, borderColor: activeColor, padding: 1, justifyContent: "center", alignItems: "center" }}>
+                  <Image source={{ uri: user.avatarUrl }} style={{ width: "100%", height: "100%", borderRadius: 12 }} />
+                </View>
+              ) : (
+                <Feather name={iconName} size={21} color={active ? activeColor : inactiveColor} />
+              )}
               <Text numberOfLines={1} style={[styles.tabLabel, { color: active ? activeColor : inactiveColor }, active && styles.tabLabelActive]}>{key}</Text>
-              {active ? <View style={[styles.activeTabLine, { backgroundColor: activeColor }]} /> : null}
+              {active ? <View style={[styles.activeTabDot, { backgroundColor: activeColor }]} /> : null}
             </Pressable>
           );
         })}
@@ -7380,20 +7387,20 @@ const styles = StyleSheet.create({
   },
   fabRow: {
     alignItems: "flex-end",
-    bottom: 84,
+    bottom: 68,
     position: "absolute",
-    right: 18,
+    right: 14,
     zIndex: 10
   },
   fab: {
-    borderRadius: 28,
-    height: 56,
-    width: 56,
+    borderRadius: 22,
+    height: 44,
+    width: 44,
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
     overflow: "hidden"
   },
   fabGradient: {
@@ -7407,44 +7414,46 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-around",
     backgroundColor: "#FFFFFF",
-    borderRadius: 28,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: "#F0EEF8",
-    paddingVertical: 8,
-    maxWidth: 540,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    maxWidth: 480,
     alignSelf: "center",
     width: "100%",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8
+    shadowRadius: 12,
+    elevation: 6
   },
   tabItem: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    paddingVertical: 6,
+    paddingVertical: 3,
     position: "relative"
   },
   tabLabel: {
     color: "#7C7C9A",
     fontFamily: fonts.medium,
-    fontSize: 10.5,
-    marginTop: 3,
+    fontSize: 9.5,
+    marginTop: 2,
+    letterSpacing: 0.1,
     textAlign: "center"
   },
   tabLabelActive: {
     color: colors.primary,
     fontFamily: fonts.bold
   },
-  activeTabLine: {
+  activeTabDot: {
     position: "absolute",
     bottom: 0,
-    width: 20,
-    height: 3,
-    backgroundColor: colors.primary,
-    borderRadius: 2
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary
   },
   placeholderCard: {
     ...shadow,
