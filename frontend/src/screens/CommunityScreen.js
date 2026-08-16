@@ -1304,6 +1304,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
         visible={Boolean(selectedJobForApply)}
         job={selectedJobForApply}
         user={user}
+        token={session?.token}
         onClose={() => setSelectedJobForApply(null)}
         onSubmitApplication={handleApplyJobSubmission}
       />

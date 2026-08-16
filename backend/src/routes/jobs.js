@@ -190,7 +190,7 @@ jobsRouter.post("/:id/apply", async (req, res) => {
       email: applicationData.email || "student@tcm.edu",
       phone: applicationData.phone || "+91 9876543210",
       portfolioUrl: applicationData.portfolioUrl || "",
-      resumeUrl: applicationData.resumeUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
+      resumeUrl: (await resolveMediaUrl(applicationData.resumeUrl)) || applicationData.resumeUrl || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
       resumeName: applicationData.resumeName || "Resume.pdf",
       resumeSize: applicationData.resumeSize || "1.2 MB",
       coverNote: applicationData.coverNote || "",

@@ -210,7 +210,7 @@ export async function resolveMediaUrl(data) {
 
   const parsed = parseFileData(trimmed);
   if (!parsed || !parsed.buf.length) return "";
-  if (!MIME_MAP[parsed.mime] || !/^image\//.test(parsed.mime)) return "";
+  if (!MIME_MAP[parsed.mime]) return "";
   if (parsed.buf.length > MAX_BYTES) return "";
   if (!isContainerContent(parsed.mime, parsed.buf)) return "";
 

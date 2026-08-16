@@ -15,11 +15,13 @@ import {
 } from "react-native";
 import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import { uploadFile } from "../api/client";
+import { fileToDataUri } from "../utils/fileUtils";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
-export default function ApplyJobModal({ visible, job, user = {}, onClose, onSubmitApplication }) {
+export default function ApplyJobModal({ visible, job, user = {}, token, onClose, onSubmitApplication }) {
   const { theme } = useTheme();
   const [name, setName] = useState(user.name || "");
   const [email, setEmail] = useState(user.email || "student@tcm.edu");
@@ -40,10 +42,25 @@ export default function ApplyJobModal({ visible, job, user = {}, onClose, onSubm
 
       if (!result.canceled && result.assets?.[0]) {
         const file = result.assets[0];
-        setResumeUrl(file.uri);
-        setResumeName(file.name || "Resume_Uploaded.pdf");
-        setResumeSize(file.size ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` : "1.5 MB");
-        Alert.alert("Resume Selected", `Attached: ${file.name}`);
+        try {
+          const dataUri = await fileToDataUri(file);
+          if (!dataUri) {
+            Alert.alert("Upload Failed", "Could not read the selected resume.");
+            return;
+          }
+          const res = await uploadFile(token, dataUri);
+          if (!res?.url) {
+            Alert.alert("Upload Failed", "Could not upload the resume. Please try again.");
+            return;
+          }
+          setResumeUrl(res.url);
+          setResumeName(file.name || "Resume_Uploaded.pdf");
+          setResumeSize(file.size ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` : "1.5 MB");
+          Alert.alert("Resume Selected", `Attached: ${file.name}`);
+        } catch (e) {
+          console.warn("Resume upload error:", e);
+          Alert.alert("Upload Failed", "Could not upload the resume. Please try again.");
+        }
       }
     } catch (e) {
       Alert.alert("File Notice", "You can also enter a direct PDF Google Drive/Dropbox resume URL below.");

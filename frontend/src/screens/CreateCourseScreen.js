@@ -14,7 +14,7 @@ import {
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { generateSyllabusWithAI } from "../api/gemini";
-import { createCourse, updateCourse } from "../api/client";
+import { createCourse, updateCourse, uploadImageToServer } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 
@@ -149,11 +149,18 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
 
       if (!result.canceled && result.assets && result.assets[0]?.uri) {
         const pickedUri = result.assets[0].uri;
-        const validCoverUri = pickedUri.startsWith("blob:")
-          ? "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80"
-          : pickedUri;
-        setCoverImageUrl(validCoverUri);
-        Alert.alert("Picture Uploaded", "Course cover picture updated successfully!");
+        try {
+          const hosted = await uploadImageToServer(session?.token, pickedUri, result.assets[0].mimeType || "image/jpeg");
+          if (!hosted) {
+            Alert.alert("Upload Failed", "Could not upload course cover picture. Please try again.");
+            return;
+          }
+          setCoverImageUrl(hosted);
+          Alert.alert("Picture Uploaded", "Course cover picture updated successfully!");
+        } catch (err) {
+          console.warn("Cover upload error:", err);
+          Alert.alert("Upload Failed", "Could not upload course cover picture. Please try again.");
+        }
       }
     } catch (err) {
       Alert.alert("Upload Error", "Could not select image from gallery.");

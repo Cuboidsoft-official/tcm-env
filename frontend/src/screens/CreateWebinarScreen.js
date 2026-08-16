@@ -14,9 +14,10 @@ import {
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import { createWebinar } from "../api/client";
+import { createWebinar, uploadFile, uploadImageToServer } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { fileToDataUri } from "../utils/fileUtils";
 
 export default function CreateWebinarScreen({ session, user = {}, onBack, onWebinarCreated }) {
   const [eventType, setEventType] = useState("Webinar"); // Webinar | Event
@@ -62,7 +63,18 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
       quality: 0.8
     });
     if (!result.canceled && result.assets?.[0]?.uri) {
-      setBannerUrl(result.assets[0].uri);
+      const pickedUri = result.assets[0].uri;
+      try {
+        const hosted = await uploadImageToServer(session?.token, pickedUri, result.assets[0].mimeType || "image/jpeg");
+        if (!hosted) {
+          Alert.alert("Upload Failed", "Could not upload banner image. Please try again.");
+          return;
+        }
+        setBannerUrl(hosted);
+      } catch (e) {
+        console.warn("Banner upload error:", e);
+        Alert.alert("Upload Failed", "Could not upload banner image. Please try again.");
+      }
     }
   }
 
@@ -75,9 +87,24 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
 
       if (!result.canceled && result.assets?.[0]) {
         const doc = result.assets[0];
-        setPdfName(doc.name || "Webinar_Notes.pdf");
-        setPdfUrl(doc.uri);
-        Alert.alert("Resource Attached", `Successfully attached "${doc.name}"`);
+        try {
+          const dataUri = await fileToDataUri(doc);
+          if (!dataUri) {
+            Alert.alert("Upload Failed", "Could not read the selected PDF.");
+            return;
+          }
+          const res = await uploadFile(session?.token, dataUri);
+          if (!res?.url) {
+            Alert.alert("Upload Failed", "Could not upload the PDF. Please try again.");
+            return;
+          }
+          setPdfUrl(res.url);
+          setPdfName(doc.name || "Webinar_Notes.pdf");
+          Alert.alert("Resource Attached", `Successfully attached "${doc.name}"`);
+        } catch (e) {
+          console.warn("PDF upload error:", e);
+          Alert.alert("Upload Failed", "Could not upload the PDF. Please try again.");
+        }
       }
     } catch (err) {
       console.warn("PDF Pick Error:", err);

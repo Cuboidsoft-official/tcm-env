@@ -1495,6 +1495,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
           visible={Boolean(selectedJobForApply)}
           job={selectedJobForApply}
           user={user}
+          token={session?.token}
           onClose={() => setSelectedJobForApply(null)}
           onSubmitApplication={async (payload) => {
             if (!selectedJobForApply) return;
