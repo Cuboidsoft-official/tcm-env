@@ -13,7 +13,7 @@ on:
 
 concurrency:
   group: tcm-web-sentinel-deploy
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read

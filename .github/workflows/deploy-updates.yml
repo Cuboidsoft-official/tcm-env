@@ -1,13 +1,10 @@
 name: Deploy OTA Updates (EAS Update)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "frontend/**"
-      - ".github/workflows/deploy-updates.yml"
   workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
 concurrency:
   group: eas-update
