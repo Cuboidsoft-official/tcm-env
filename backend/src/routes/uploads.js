@@ -102,9 +102,10 @@ function isContainerContent(mime, buf) {
 }
 
 function parseFileData(input) {
-  if (typeof input !== "string" || !input) return null;
+  if (typeof input !== "string" || !input.trim()) return null;
+  const trimmed = input.trim();
 
-  const dataUri = input.match(/^data:([^;,]+)(;base64)?,(.*)$/s);
+  const dataUri = trimmed.match(/^data:([^;,]+)(;base64)?,(.*)$/s);
   if (dataUri) {
     const mime = dataUri[1]?.toLowerCase();
     const payload = dataUri[3] ?? "";
@@ -112,9 +113,15 @@ function parseFileData(input) {
     return { mime, buf };
   }
 
-  const buf = Buffer.from(input, "base64");
-  const mime = guessMime(buf);
-  return mime ? { mime, buf } : null;
+  try {
+    const buf = Buffer.from(trimmed, "base64");
+    if (buf && buf.length > 10) {
+      const mime = guessMime(buf) || "image/jpeg";
+      return { mime, buf };
+    }
+  } catch (e) {}
+
+  return null;
 }
 
 function guessMime(buf) {

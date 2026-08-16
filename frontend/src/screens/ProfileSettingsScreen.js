@@ -434,6 +434,28 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
         selectedUri = `data:${asset.mimeType || "image/jpeg"};base64,${asset.base64}`;
       }
       setForm((prev) => ({ ...prev, avatarUrl: selectedUri }));
+      
+      setUpdating(true);
+      try {
+        let finalHosted = selectedUri;
+        if (session?.token) {
+          const hosted = await uploadImageToServer(session.token, selectedUri);
+          if (hosted) finalHosted = hosted;
+          const res = await updateProfile(session.token, { avatarUrl: finalHosted });
+          if (res?.user) {
+            setUser(res.user);
+            if (onUserUpdate) onUserUpdate(res.user);
+          }
+        } else {
+          setUser((prev) => ({ ...prev, avatarUrl: finalHosted }));
+          if (onUserUpdate) onUserUpdate({ ...user, avatarUrl: finalHosted });
+        }
+        Alert.alert("Profile Picture Updated!", "Your avatar image has been updated successfully.");
+      } catch (err) {
+        console.log("Avatar upload error:", err);
+      } finally {
+        setUpdating(false);
+      }
     }
   }
 

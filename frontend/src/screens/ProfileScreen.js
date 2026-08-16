@@ -228,6 +228,26 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
         selectedUri = `data:${asset.mimeType || "image/jpeg"};base64,${asset.base64}`;
       }
       setForm((prev) => ({ ...prev, avatarUrl: selectedUri }));
+      
+      setUpdating(true);
+      try {
+        let finalHosted = selectedUri;
+        if (session?.token) {
+          const hosted = await uploadImageToServer(session.token, selectedUri);
+          if (hosted) finalHosted = hosted;
+          const res = await updateProfile(session.token, { avatarUrl: finalHosted });
+          if (res?.user) {
+            setProfileUser(res.user);
+          }
+        } else {
+          setProfileUser((prev) => ({ ...prev, avatarUrl: finalHosted }));
+        }
+        Alert.alert("Profile Picture Updated!", "Your avatar image has been updated successfully.");
+      } catch (err) {
+        console.log("Avatar update error:", err);
+      } finally {
+        setUpdating(false);
+      }
     }
   }
 
@@ -379,7 +399,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
           <Pressable onPress={() => setAvatarEnlargedOpen(true)} style={({ pressed }) => pressed && { opacity: 0.85 }}>
             <ProfileAvatar name={profileUser.name} uri={profileUser.avatarUrl} size={90} />
           </Pressable>
-          <Pressable onPress={() => setEditModalOpen(true)} style={styles.cameraBadge}>
+          <Pressable onPress={pickImage} style={styles.cameraBadge}>
             <Ionicons name="camera" size={13} color="#FFFFFF" />
           </Pressable>
         </View>

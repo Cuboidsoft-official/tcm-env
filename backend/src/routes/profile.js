@@ -237,6 +237,11 @@ async function handleUpdateProfile(req, res) {
       return res.json({ user: publicUser(user) });
     }
 
+    let resolvedAvatarUrl = undefined;
+    if (avatarUrl !== undefined && typeof avatarUrl === "string" && avatarUrl.trim() !== "") {
+      resolvedAvatarUrl = (await resolveMediaUrl(avatarUrl)) || avatarUrl.trim();
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id || req.user.id,
       {
@@ -246,7 +251,7 @@ async function handleUpdateProfile(req, res) {
           ...(bio !== undefined && { bio: bio.trim() }),
           ...(location !== undefined && { location: location.trim() }),
           ...(website !== undefined && { website: website.trim() }),
-          ...(avatarUrl !== undefined && { avatarUrl: (await resolveMediaUrl(avatarUrl)) || (typeof avatarUrl === "string" ? avatarUrl.trim() : "") }),
+          ...(resolvedAvatarUrl !== undefined && { avatarUrl: resolvedAvatarUrl }),
           ...(mentorCategory !== undefined && { mentorCategory }),
           ...(yearsExperience !== undefined && { yearsExperience }),
           ...(Array.isArray(subjects) && { subjects }),
@@ -259,16 +264,23 @@ async function handleUpdateProfile(req, res) {
       { new: true }
     );
 
-    const resolvedAvatarUrl = (await resolveMediaUrl(avatarUrl)) || (typeof avatarUrl === "string" ? avatarUrl.trim() : "");
+    const finalAvatar = updatedUser.avatarUrl || resolvedAvatarUrl;
 
     // Also update Mentor collection in MongoDB
     try {
       await Mentor.updateMany(
-        { $or: [{ userId: String(req.user._id || req.user.id) }, { email: req.user.email }] },
+        {
+          $or: [
+            { userId: String(req.user._id || req.user.id) },
+            { email: req.user.email },
+            { name: req.user.name },
+            ...(updatedUser.name ? [{ name: updatedUser.name }] : [])
+          ]
+        },
         {
           $set: {
             ...(name && name.trim() && { name: name.trim() }),
-            ...(resolvedAvatarUrl && { avatarUrl: resolvedAvatarUrl }),
+            ...(finalAvatar && { avatarUrl: finalAvatar }),
             ...(mentorCategory && { mentorCategory }),
             ...(yearsExperience && { title: `${mentorCategory || "Mentor"} (${yearsExperience})` }),
             ...(Array.isArray(subjects) && { subjects })
@@ -277,13 +289,13 @@ async function handleUpdateProfile(req, res) {
       );
     } catch (mErr) {}
 
-    if (name || avatarUrl) {
+    if (name || finalAvatar) {
       await CommunityPost.updateMany(
         { authorId: req.user._id || req.user.id },
         {
           $set: {
             ...(name && { authorName: name.trim() }),
-            ...(avatarUrl && { authorAvatarUrl: avatarUrl.trim() })
+            ...(finalAvatar && { authorAvatarUrl: finalAvatar })
           }
         }
       );
