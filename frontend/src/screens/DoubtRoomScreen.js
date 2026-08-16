@@ -30,11 +30,13 @@ import {
   markDoubtRoomSolved,
   joinDoubtRoom,
   manageDoubtRoom,
-  uploadImageToServer
+  uploadImageToServer,
+  uploadFile
 } from "../api/client";
 import RoomDetailsScreen from "./RoomDetailsScreen";
 import { useTheme } from "../context/ThemeContext";
 import { fonts } from "../constants/fonts";
+import { fileToDataUri } from "../utils/fileUtils";
 
 function generateClientSmartFallback(query, category = "Academic") {
   const text = (query || "").toLowerCase().trim();
@@ -419,11 +421,20 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         input.onchange = (e) => {
           const file = e.target?.files?.[0];
           if (file) {
-            handleSendAttachment({
-              type: "doc",
-              driveUrl: "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
-              title: file.name || "Uploaded_Document.pdf"
-            });
+            const reader = new FileReader();
+            reader.onload = async () => {
+              try {
+                const res = await uploadFile(session?.token, reader.result);
+                handleSendAttachment({
+                  type: "doc",
+                  driveUrl: res?.url || "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
+                  title: file.name || "Uploaded_Document.pdf"
+                });
+              } catch (err) {
+                console.warn("Doc upload error:", err);
+              }
+            };
+            reader.readAsDataURL(file);
           }
         };
         input.click();
@@ -437,11 +448,26 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
       if (!result.canceled && result.assets?.[0]) {
         const doc = result.assets[0];
-        handleSendAttachment({
-          type: "doc",
-          driveUrl: "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
-          title: doc.name || "Device_Document.pdf"
-        });
+        try {
+          const dataUri = await fileToDataUri(doc);
+          if (!dataUri) {
+            Alert.alert("Upload Failed", "Could not read the selected document.");
+            return;
+          }
+          const res = await uploadFile(session?.token, dataUri);
+          if (!res?.url) {
+            Alert.alert("Upload Failed", "Could not upload the document. Please try again.");
+            return;
+          }
+          handleSendAttachment({
+            type: "doc",
+            driveUrl: res.url,
+            title: doc.name || "Device_Document.pdf"
+          });
+        } catch (e) {
+          console.warn("Doc upload error:", e);
+          Alert.alert("Upload Failed", "Could not upload the document. Please try again.");
+        }
       }
     } catch (e) {}
   }

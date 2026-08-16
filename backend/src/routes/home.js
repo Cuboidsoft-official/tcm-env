@@ -1392,7 +1392,7 @@ homeRouter.post("/courses", requireAuth, async (req, res) => {
     reviewsCount: "1",
     studentsCount: "1",
     duration,
-    imageUrl: imageUrl || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80",
+    imageUrl: (await resolveMediaUrl(imageUrl)) || imageUrl || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80",
     mentorId: mentorUserId,
     mentorName: req.user.name || "TCM Mentor",
     mentorRole: req.user.memberBadge || req.user.role || "TCM Educator",
@@ -1659,12 +1659,12 @@ homeRouter.post("/webinars", requireAuth, async (req, res) => {
     price: webinarType === "Free Webinar" ? "Free" : price ? (price.startsWith("₹") ? price : `₹${price}`) : "₹499",
     title,
     description,
-    bannerUrl: bannerUrl || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80",
+    bannerUrl: (await resolveMediaUrl(bannerUrl)) || bannerUrl || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80",
     learningPoints,
     dateTime: dateTime || "Today • 6:00 PM",
     duration: duration || "60 Mins",
     meetLink: meetLink || "https://meet.google.com/tcm-live-session",
-    pdfUrl,
+    pdfUrl: (await resolveMediaUrl(pdfUrl)) || pdfUrl || "",
     pdfName,
     registrationLimit,
     registeredStudentsCount: 1,
@@ -1725,9 +1725,7 @@ homeRouter.put("/courses/:courseId", requireAuth, async (req, res) => {
   if (duration) updateFields.duration = duration;
   if (level) updateFields.level = level;
   if (imageUrl) {
-    updateFields.imageUrl = imageUrl.startsWith("blob:")
-      ? "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80"
-      : imageUrl;
+    updateFields.imageUrl = (await resolveMediaUrl(imageUrl)) || imageUrl;
   }
   if (modules && Array.isArray(modules)) updateFields.modules = modules;
 
