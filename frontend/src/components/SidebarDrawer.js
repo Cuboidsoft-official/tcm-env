@@ -136,6 +136,19 @@ export default function SidebarDrawer({
                 onPress={() => handleNavigate("Home")}
               />
               <MenuItem
+                icon={<FontAwesome5 name="crown" size={16} color="#FFB800" />}
+                label="Premium Features ⭐"
+                active={activeItem === "Premium Features" || activeItem === "Go Premium" || activeItem === "Premium Features ⭐"}
+                onPress={() => {
+                  onClose();
+                  if (onOpenGetVerified) {
+                    onOpenGetVerified();
+                  } else {
+                    handleNavigate("Premium Features");
+                  }
+                }}
+              />
+              <MenuItem
                 icon={<Feather name="download" size={18} color={theme.primary} />}
                 label="Install TCM App (PWA)"
                 active={false}

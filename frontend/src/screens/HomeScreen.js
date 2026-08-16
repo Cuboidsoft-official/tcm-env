@@ -603,7 +603,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
       setActiveTab("Profile");
     } else if (itemKey === "Settings") {
       setActiveTab("ProfileSettings");
-    } else if (itemKey === "Go Premium" || itemKey === "Get Premium" || itemKey === "Get TCM Verified Pro") {
+    } else if (itemKey === "Go Premium" || itemKey === "Get Premium" || itemKey === "Get TCM Verified Pro" || itemKey === "Premium Features" || itemKey === "Premium Features ⭐") {
       setGetVerifiedModalOpen(true);
     } else if (itemKey === "Feedback" || itemKey === "Feedback & Suggestions") {
       setShowFeedbackModal(true);
