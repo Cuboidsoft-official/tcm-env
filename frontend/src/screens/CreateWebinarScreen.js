@@ -328,9 +328,6 @@ export default function CreateWebinarScreen({ session, user = {}, onBack, onWebi
               numberOfLines={4}
               style={[styles.textAreaInput, { color: theme.text }]}
             />
-              numberOfLines={4}
-              style={styles.textAreaInput}
-            />
             <Text style={[styles.charCounterBottom, { color: theme.subtext }]}>{description.length}/200</Text>
           </View>
         </View>
