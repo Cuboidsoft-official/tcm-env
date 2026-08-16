@@ -646,23 +646,23 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
       <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} showsVerticalScrollIndicator={false}>
         <View style={{ width: "100%", maxWidth: 1200, alignSelf: "center", flex: 1 }}>
           {/* Top Tab Selectors */}
-        <View style={{ flexDirection: "row", paddingHorizontal: 16, marginTop: 12, gap: 8 }}>
+        <View style={{ flexDirection: "row", paddingHorizontal: 12, marginTop: 10, gap: 6 }}>
           <TouchableOpacity
             onPress={() => setActiveTabPill("channels")}
             activeOpacity={0.8}
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              borderRadius: 20,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 16,
               backgroundColor: activeTabPill === "channels" ? theme.primary : (theme.isDark ? "#1E263B" : "#F1F5F9"),
               borderWidth: 1,
               borderColor: activeTabPill === "channels" ? theme.primary : theme.border
             }}
           >
-            <Feather name="users" size={13} color={activeTabPill === "channels" ? "#FFFFFF" : theme.primary} style={{ marginRight: 5 }} />
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: activeTabPill === "channels" ? "#FFFFFF" : theme.subtext }}>
+            <Feather name="users" size={12} color={activeTabPill === "channels" ? "#FFFFFF" : theme.primary} style={{ marginRight: 4 }} />
+            <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: activeTabPill === "channels" ? "#FFFFFF" : theme.subtext }}>
               Official Channels ({communities.length})
             </Text>
           </TouchableOpacity>
@@ -673,21 +673,18 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              borderRadius: 20,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 16,
               backgroundColor: activeTabPill === "jobs" ? theme.primary : (theme.isDark ? theme.inputBg || "#1E293B" : "#F1F5F9"),
               borderWidth: 1,
               borderColor: activeTabPill === "jobs" ? theme.primary : theme.border
             }}
           >
-            <Ionicons name="briefcase" size={13} color={activeTabPill === "jobs" ? "#FFFFFF" : theme.primary} style={{ marginRight: 5 }} />
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: activeTabPill === "jobs" ? "#FFFFFF" : theme.subtext }}>
+            <Ionicons name="briefcase" size={12} color={activeTabPill === "jobs" ? "#FFFFFF" : theme.primary} style={{ marginRight: 4 }} />
+            <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: activeTabPill === "jobs" ? "#FFFFFF" : theme.subtext }}>
               Job Feed ({jobPosts.length})
             </Text>
-            <View style={{ backgroundColor: "#EF4444", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 10, marginLeft: 5 }}>
-              <Text style={{ color: "#FFFFFF", fontSize: 9, fontWeight: "700" }}>AI</Text>
-            </View>
           </TouchableOpacity>
         </View>
 
@@ -757,21 +754,20 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
             )}
           </View>
         ) : (
-          /* OFFICIAL CHANNELS LIST */
           <>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 10, marginTop: 14, marginBottom: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, marginTop: 12, marginBottom: 10 }}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Feather name="award" size={16} color="#5B3CF5" style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: theme.text }}>Official Channels</Text>
+                <Feather name="award" size={15} color={theme.primary} style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: theme.text }}>Official Channels</Text>
               </View>
 
               <TouchableOpacity
                 onPress={() => setCreateCommModalOpen(true)}
                 activeOpacity={0.8}
-                style={styles.createChannelBtnPill}
+                style={[styles.createChannelBtnPill, { borderColor: theme.primary, backgroundColor: theme.badgeBg }]}
               >
-                <Feather name="plus" size={14} color="#5B3CF5" style={{ marginRight: 4 }} />
-                <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#5B3CF5" }}>Create Channel</Text>
+                <Feather name="plus" size={13} color={theme.primary} style={{ marginRight: 3 }} />
+                <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: theme.primary }}>Create Channel</Text>
               </TouchableOpacity>
             </View>
 
@@ -797,66 +793,68 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                 key={ch.id}
                 activeOpacity={0.85}
                 onPress={() => openChannel(ch)}
-                style={[styles.channelCardItem, { backgroundColor: theme.cardBg, borderColor: theme.border, padding: 10 }]}
+                style={[
+                  styles.channelCardItem,
+                  {
+                    backgroundColor: theme.cardBg,
+                    borderColor: theme.border,
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    borderRadius: 14,
+                    flexDirection: "row",
+                    alignItems: "center"
+                  }
+                ]}
               >
-                {/* Square Avatar Container */}
+                {/* Channel Icon / Avatar */}
                 <Image
                   source={{ uri: ch.coverImage || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=150" }}
-                  style={[styles.channelIconBox, { borderRadius: 12 }]}
+                  style={{ width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: theme.border }}
                 />
 
-                {/* Middle Details */}
-                <View style={{ flex: 1, marginLeft: 12, marginRight: 6 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: theme.text, marginRight: 4, flexShrink: 1 }} numberOfLines={1}>
+                {/* Main Info Col */}
+                <View style={{ flex: 1, marginLeft: 12, marginRight: 8, justifyContent: "center" }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: theme.text, flexShrink: 1 }} numberOfLines={1}>
                       {ch.name}
                     </Text>
                     {ch.isPremium ? (
-                      <MaterialCommunityIcons name="check-decagram" size={14} color="#5B3CF5" />
+                      <MaterialCommunityIcons name="check-decagram" size={14} color={theme.primary} />
+                    ) : null}
+                    {ch.privacy === "private" ? (
+                      <View style={{ paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, backgroundColor: theme.isDark ? "#7F1D1D" : "#FEE2E2", flexDirection: "row", alignItems: "center", gap: 3 }}>
+                        <Feather name="lock" size={9} color="#DC2626" />
+                        <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: "#DC2626" }}>Private</Text>
+                      </View>
                     ) : null}
                   </View>
 
-                  <Text style={{ fontSize: 11.5, fontFamily: fonts.regular, color: theme.subtext, marginTop: 2 }} numberOfLines={1}>
-                    {ch.description || `Official broadcast channel by ${ch.creatorName}`}
+                  <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: theme.subtext, marginTop: 3 }} numberOfLines={1}>
+                    {ch.category ? `${ch.category} • ` : ""}{ch.description || `Official broadcast channel by ${ch.creatorName || "TCM Mentor"}`}
                   </Text>
-
-                  {/* Tags & Counter Row */}
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
-                    <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: ch.privacy === "private" ? "#FEE2E2" : "#DCFCE7" }}>
-                      <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: ch.privacy === "private" ? "#991B1B" : "#166534" }}>
-                        {ch.privacy === "private" ? "🔒 Private Batch" : "🌐 Public"}
-                      </Text>
-                    </View>
-
-                    <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: theme.isDark ? "#1E293B" : "#E0F2FE" }}>
-                      <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: theme.isDark ? "#38BDF8" : "#0369A1" }}>
-                        {ch.category || "General"}
-                      </Text>
-                    </View>
-                  </View>
                 </View>
 
-                {/* Right Side Stats & Actions */}
-                <View style={{ alignItems: "flex-end", justifyContent: "center" }}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Feather name="users" size={11} color={theme.subtext} style={{ marginRight: 3 }} />
-                    <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.subtext }}>{ch.membersCount || 1}</Text>
+                {/* Right Column: Member Count & Action */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, backgroundColor: theme.badgeBg }}>
+                    <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.primary }}>
+                      {ch.membersCount || 1} {ch.membersCount === 1 ? "member" : "members"}
+                    </Text>
                   </View>
 
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 6 }}>
-                    {isMentor ? (
-                      <Pressable
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleDeleteCommunity(ch.id, ch.name);
-                        }}
-                        style={{ padding: 5, borderRadius: 6, backgroundColor: "#FEE2E2" }}
-                      >
-                        <Feather name="trash-2" size={12} color="#DC2626" />
-                      </Pressable>
-                    ) : null}
-                    <Feather name="chevron-right" size={16} color={theme.subtext} />
-                  </View>
+                  {isMentor ? (
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCommunity(ch.id, ch.name);
+                      }}
+                      style={{ padding: 6, borderRadius: 6, backgroundColor: theme.isDark ? "#7F1D1D" : "#FEE2E2" }}
+                    >
+                      <Feather name="trash-2" size={13} color="#DC2626" />
+                    </Pressable>
+                  ) : null}
+
+                  <Feather name="chevron-right" size={16} color={theme.subtext} />
                 </View>
               </TouchableOpacity>
             ))
@@ -1025,23 +1023,20 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                     </View>
                   ) : null}
 
-                  {/* Post Metrics Actions */}
+                  {/* Post Metrics Actions (Like & Share) */}
                   <View style={styles.metricsRow}>
                     <Pressable onPress={() => handleToggleLike(post.id)} style={styles.metricBtn}>
-                      <Ionicons name={isLiked ? "heart" : "heart-outline"} size={17} color={isLiked ? "#EAB308" : "#64748B"} />
-                      <Text style={[styles.metricText, isLiked && { color: "#EAB308", fontFamily: fonts.bold }]}>
-                        {post.metrics?.likes || 0}
+                      <Ionicons name={isLiked ? "heart" : "heart-outline"} size={17} color={isLiked ? "#EC4899" : "#64748B"} />
+                      <Text style={[styles.metricText, isLiked && { color: "#EC4899", fontFamily: fonts.bold }]}>
+                        {post.metrics?.likes !== undefined ? post.metrics.likes : (post.likes || 0)}
                       </Text>
                     </Pressable>
 
-                    <Pressable onPress={() => setActiveCommentPostId(post.id)} style={styles.metricBtn}>
-                      <Feather name="message-circle" size={16} color="#64748B" />
-                      <Text style={styles.metricText}>{post.metrics?.comments || 0}</Text>
-                    </Pressable>
+                    {/* COMMENT BUTTON REMOVED AS REQUESTED BY USER */}
 
                     <Pressable onPress={() => handleShare(post)} style={styles.metricBtn}>
-                      <Feather name="share-2" size={16} color="#64748B" />
-                      <Text style={styles.metricText}>{post.metrics?.shares || 0}</Text>
+                      <Feather name="share-2" size={16} color={theme.primary} />
+                      <Text style={[styles.metricText, { color: theme.primary, fontFamily: fonts.bold }]}>Share</Text>
                     </Pressable>
 
                     {(isMentor || post.isSelf || String(post.authorId) === String(session?.user?.id) || String(post.authorId) === String(session?.user?._id) || (session?.user?.name && post.authorName === session.user.name)) && (

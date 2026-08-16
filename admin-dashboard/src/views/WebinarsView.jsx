@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
 import { IconWebinars, IconCross } from '../components/Icons';
 
-export function WebinarsView({ search }) {
-  const [webinars, setWebinars] = useState([
-    { id: 'w1', title: 'Cracking System Design Interviews', speaker: 'Ayushman Chaurasiya', date: 'Tomorrow, 7:00 PM', attendees: 142 },
-    { id: 'w2', title: 'Data Science & AI Career Roadmap 2026', speaker: 'Priya Verma', date: 'Fri, 6:00 PM', attendees: 98 },
-    { id: 'w3', title: 'Mastering React Native for Mobile Dev', speaker: 'Ankit Sharma', date: 'Sat, 5:00 PM', attendees: 210 }
-  ]);
+export function WebinarsView({ search = '' }) {
+  const [webinars, setWebinars] = useState([]);
 
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');

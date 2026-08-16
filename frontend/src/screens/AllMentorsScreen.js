@@ -58,17 +58,17 @@ export default function AllMentorsScreen({ session, onBack, onSelectMentor }) {
   const filteredMentors = mentors.filter((m) => {
     const catMatch =
       activeCategory === "all" ||
-      m.category?.toLowerCase().includes(activeCategory) ||
-      m.role?.toLowerCase().includes(activeCategory);
+      String(m.category || "").toLowerCase().includes(activeCategory) ||
+      String(m.role || "").toLowerCase().includes(activeCategory);
 
     if (!searchQuery.trim()) return catMatch;
 
     const q = searchQuery.toLowerCase();
     const queryMatch =
-      m.name?.toLowerCase().includes(q) ||
-      m.role?.toLowerCase().includes(q) ||
-      m.category?.toLowerCase().includes(q) ||
-      m.bio?.toLowerCase().includes(q);
+      String(m.name || "").toLowerCase().includes(q) ||
+      String(m.role || "").toLowerCase().includes(q) ||
+      String(m.category || "").toLowerCase().includes(q) ||
+      String(m.bio || "").toLowerCase().includes(q);
 
     return catMatch && queryMatch;
   });
@@ -146,7 +146,7 @@ export default function AllMentorsScreen({ session, onBack, onSelectMentor }) {
                   {/* Top Avatar & Badge Row */}
                   <View style={styles.cardHeader}>
                     <View style={styles.avatarWrap}>
-                      {mentor.avatarUrl && !mentor.avatarUrl.includes("photo-1507003211169-0a1dd7228f2d") && !(Platform.OS === "web" && typeof mentor.avatarUrl === "string" && mentor.avatarUrl.startsWith("file://")) ? (
+                      {mentor.avatarUrl && typeof mentor.avatarUrl === "string" && mentor.avatarUrl.trim().length > 5 ? (
                         <Image source={{ uri: mentor.avatarUrl }} style={[styles.avatarImg, { borderColor: theme.border }]} />
                       ) : (
                         <View style={[styles.avatarImg, { backgroundColor: theme.primary, alignItems: "center", justifyContent: "center", borderColor: theme.border }]}>
@@ -179,23 +179,23 @@ export default function AllMentorsScreen({ session, onBack, onSelectMentor }) {
                         <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
                       </View>
                       {mentor.isPremium ? (
-                        <MaterialCommunityIcons name="check-decagram" size={15} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                        <MaterialCommunityIcons name="check-decagram" size={15} color={theme.primary} style={{ marginLeft: 2 }} />
                       ) : null}
                     </View>
 
-                    <Text style={styles.mentorRole} numberOfLines={1}>{mentor.role}</Text>
-                    <Text style={styles.mentorBio} numberOfLines={2}>{mentor.bio}</Text>
+                    <Text style={[styles.mentorRole, { color: theme.primary }]} numberOfLines={1}>{mentor.role}</Text>
+                    <Text style={[styles.mentorBio, { color: theme.subtext }]} numberOfLines={2}>{mentor.bio || "Experienced educator providing personalized 1-on-1 mentorship."}</Text>
 
                     <View style={styles.experienceRow}>
-                      <Feather name="award" size={12} color="#7C7C9A" />
-                      <Text style={styles.expText}>{mentor.experience}</Text>
+                      <Feather name="award" size={12} color={theme.subtext} />
+                      <Text style={[styles.expText, { color: theme.subtext }]}>{mentor.experience || "5+ Yrs Exp"}</Text>
                     </View>
                   </View>
 
                   {/* Action Button */}
                   <Pressable
                     onPress={() => (onSelectMentor ? onSelectMentor(mentor.id) : Alert.alert(mentor.name, mentor.role))}
-                    style={({ pressed }) => [styles.viewProfileBtn, pressed && styles.pressed]}
+                    style={({ pressed }) => [styles.viewProfileBtn, { backgroundColor: theme.primary }, pressed && styles.pressed]}
                   >
                     <Text style={styles.viewProfileBtnText}>View Full Profile →</Text>
                   </Pressable>

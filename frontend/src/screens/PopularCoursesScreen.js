@@ -3,6 +3,7 @@ import {
   Alert,
   Dimensions,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,14 +15,18 @@ import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons
 import { getPopularCoursesDetails } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
-export default function PopularCoursesScreen({ session, onBack, onNotifications, onSelectCourse }) {
+export default function PopularCoursesScreen({ session, onBack, onSelectCourse }) {
+  const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showFilterBottomSheet, setShowFilterBottomSheet] = useState(false);
+  const [sortBy, setSortBy] = useState("popularity"); // 'popularity' | 'rating' | 'price'
 
   useEffect(() => {
     loadDetails();
@@ -64,51 +69,66 @@ export default function PopularCoursesScreen({ session, onBack, onNotifications,
   const coursesList = payload.courses || [];
   const statsList = payload.stats || [];
 
-  const filteredCourses = coursesList.filter((item) => {
-    const matchesCat = activeCategory === "all" || item.category === activeCategory;
-    if (!searchQuery.trim()) return matchesCat;
-    const q = searchQuery.toLowerCase();
-    const matchesQuery = item.title.toLowerCase().includes(q) || item.subtitle.toLowerCase().includes(q) || item.instructor.toLowerCase().includes(q);
-    return matchesCat && matchesQuery;
-  });
+  const filteredCourses = coursesList
+    .filter((item) => {
+      const matchesCat = activeCategory === "all" || item.category === activeCategory;
+      if (!searchQuery.trim()) return matchesCat;
+      const q = searchQuery.toLowerCase();
+      const matchesQuery = item.title.toLowerCase().includes(q) || item.subtitle.toLowerCase().includes(q) || (item.instructor && item.instructor.toLowerCase().includes(q));
+      return matchesCat && matchesQuery;
+    })
+    .sort((a, b) => {
+      if (sortBy === "rating") {
+        return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
+      }
+      if (sortBy === "price") {
+        const pA = parseFloat(String(a.price).replace(/[^0-9.]/g, "")) || 0;
+        const pB = parseFloat(String(b.price).replace(/[^0-9.]/g, "")) || 0;
+        return pA - pB;
+      }
+      const rA = parseInt(String(a.reviews || "0").replace(/[^0-9]/g, "")) || 0;
+      const rB = parseInt(String(b.reviews || "0").replace(/[^0-9]/g, "")) || 0;
+      return rB - rA;
+    });
 
   return (
-    <View style={styles.container}>
-      {/* 1. Top Header Bar */}
-      <View style={styles.topHeader}>
-        <View style={styles.headerLeft}>
-          <Pressable onPress={onBack} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#181725" />
-          </Pressable>
-          <View style={styles.titleWrap}>
-            <Text style={styles.screenTitle}>All Popular Courses</Text>
-            <Text style={styles.screenSub}>Explore live, expert-led programs and grow your skills</Text>
-          </View>
+    <View style={[styles.container, { backgroundColor: theme.bg || colors.bg }]}>
+      {/* 1. Top Header Bar (Flush 52px height, NO notification bell) */}
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg || colors.card, borderColor: theme.border || colors.border }]}>
+        <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.cardBg || colors.card, borderColor: theme.border || colors.border }]}>
+          <Feather name="arrow-left" size={18} color={theme.text || colors.ink} />
+        </Pressable>
+
+        <View style={styles.titleWrap}>
+          <Text style={[styles.screenTitle, { color: theme.text || colors.ink }]}>Popular Courses</Text>
+          <Text style={[styles.screenSub, { color: theme.subtext || colors.muted }]} numberOfLines={1}>
+            Live, expert-led programs & courses
+          </Text>
         </View>
 
-        <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", "You have course updates."))} style={styles.headerIconBtn}>
-          <Feather name="bell" size={18} color="#181725" />
-          <View style={styles.notifDot} />
-        </Pressable>
-      </View>
-
-      {/* 2. Floating Search Bar with Filter */}
-      <View style={styles.searchBoxCard}>
-        <Feather name="search" size={18} color="#8A879F" style={{ marginRight: 10 }} />
-        <TextInput
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search courses, skills or mentors..."
-          placeholderTextColor="#8A879F"
-          style={styles.searchInput}
-        />
-        {searchQuery ? (
-          <Pressable onPress={() => setSearchQuery("")} style={{ marginRight: 6 }}>
-            <Feather name="x" size={16} color="#8A879F" />
-          </Pressable>
-        ) : null}
-        <Pressable onPress={() => Alert.alert("Filter Courses", "Filter by Category, Difficulty & Rating")} style={styles.filterBtn}>
-          <MaterialCommunityIcons name="tune-variant" size={18} color="#181725" />
+        {/* Top Header Filter Icon Button */}
+        <Pressable
+          onPress={() => setShowFilterBottomSheet(true)}
+          style={[
+            styles.filterHeaderBtn,
+            {
+              backgroundColor: (searchQuery.trim() || activeCategory !== 'all')
+                ? (theme.isDark ? '#064E3B' : colors.mint)
+                : (theme.cardBg || colors.card),
+              borderColor: (searchQuery.trim() || activeCategory !== 'all')
+                ? colors.primary
+                : (theme.border || colors.border)
+            }
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="tune-variant"
+            size={18}
+            color={(searchQuery.trim() || activeCategory !== 'all') ? colors.primary : (theme.text || colors.ink)}
+          />
+          {(searchQuery.trim() || activeCategory !== 'all') ? (
+            <View style={styles.activeFilterDot} />
+          ) : null}
         </Pressable>
       </View>
 
@@ -121,25 +141,38 @@ export default function PopularCoursesScreen({ session, onBack, onNotifications,
               <Pressable
                 key={cat.id}
                 onPress={() => setActiveCategory(cat.id)}
-                style={[styles.categoryPill, isActive && styles.categoryPillActive]}
+                style={[
+                  styles.categoryPill,
+                  { backgroundColor: theme.isDark ? "#1E263B" : "#F4F3FA", borderColor: theme.border },
+                  isActive && { backgroundColor: theme.primary, borderColor: theme.primary }
+                ]}
               >
-                <MaterialCommunityIcons name={cat.icon} size={15} color={isActive ? "#FFFFFF" : "#5B3CF5"} style={{ marginRight: 5 }} />
-                <Text style={[styles.categoryPillText, isActive && styles.categoryPillTextActive]}>{cat.name}</Text>
+                <MaterialCommunityIcons name={cat.icon} size={15} color={isActive ? "#FFFFFF" : theme.primary} style={{ marginRight: 5 }} />
+                <Text style={[styles.categoryPillText, { color: theme.subtext }, isActive && { color: "#FFFFFF", fontFamily: fonts.bold }]}>{cat.name}</Text>
               </Pressable>
             );
           })}
         </ScrollView>
 
-        {/* 4. Popular Right Now Header Row */}
+        {/* 4. Popular Right Now Header Row with Real Sorting */}
         <View style={styles.sectionHeaderRow}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Feather name="trending-up" size={16} color="#FF6B00" />
-            <Text style={styles.sectionTitle}>Popular Right Now</Text>
+            <Feather name="trending-up" size={15} color="#FF6B00" />
+            <Text style={[styles.sectionTitle, { color: theme.text || colors.ink }]}>Popular Courses</Text>
           </View>
-          <Pressable onPress={() => Alert.alert("Sort Courses", "Sorting options: Popularity, Rating, Price Low-High")} style={styles.sortRow}>
-            <Text style={styles.sortLabel}>Sort by </Text>
-            <Text style={styles.sortVal}>Popularity</Text>
-            <Feather name="chevron-down" size={14} color="#5B3CF5" style={{ marginLeft: 2 }} />
+          <Pressable
+            onPress={() => {
+              if (sortBy === "popularity") setSortBy("rating");
+              else if (sortBy === "rating") setSortBy("price");
+              else setSortBy("popularity");
+            }}
+            style={styles.sortRow}
+          >
+            <Text style={[styles.sortLabel, { color: theme.subtext || colors.muted }]}>Sort by </Text>
+            <Text style={[styles.sortVal, { color: theme.primary || colors.primary }]}>
+              {sortBy === "rating" ? "Rating (High)" : sortBy === "price" ? "Price (Low)" : "Popularity"}
+            </Text>
+            <Feather name="chevron-down" size={13} color={theme.primary || colors.primary} style={{ marginLeft: 2 }} />
           </Pressable>
         </View>
 
@@ -149,92 +182,201 @@ export default function PopularCoursesScreen({ session, onBack, onNotifications,
             <Pressable
               key={course.id}
               onPress={() => onSelectCourse ? onSelectCourse(course.id) : Alert.alert(course.title, `Opening course details...`)}
-              style={styles.courseCard}
+              style={[styles.courseCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             >
               {/* Thumbnail Left */}
               <View style={styles.thumbnailWrap}>
                 <Image source={{ uri: course.image }} style={styles.thumbnailImg} />
                 <View style={styles.liveBadge}>
-                  <Text style={styles.liveBadgeText}>{(course.badge || "LIVE").replace(/[^a-zA-Z0-9\s]/g, "").trim()}</Text>
+                  <Text style={styles.liveBadgeText}>
+                    {String(course.badge || "LIVE").replace(/[\u1F600-\u1F64F\u1F300-\u1F5FF\u1F680-\u1F6FF\u1F1E0-\u1F1FF\u2600-\u26FF\u2700-\u27BF]/g, "").trim() || "LIVE"}
+                  </Text>
                 </View>
               </View>
 
               {/* Content Right */}
               <View style={styles.courseContentCol}>
                 <View style={styles.cardTopRow}>
-                  <Text style={styles.courseTitle} numberOfLines={1}>{course.title}</Text>
+                  <Text style={[styles.courseTitle, { color: theme.text }]} numberOfLines={1}>{course.title}</Text>
                   <View style={styles.ratingRow}>
                     <FontAwesome name="star" size={11} color="#FFB800" />
-                    <Text style={styles.ratingText}>{course.rating}</Text>
-                    <Text style={styles.reviewsText}>({course.reviews})</Text>
+                    <Text style={[styles.ratingText, { color: theme.text }]}>{course.rating}</Text>
+                    <Text style={[styles.reviewsText, { color: theme.subtext }]}>({course.reviews})</Text>
                   </View>
                 </View>
 
-                <Text style={styles.courseSub} numberOfLines={1}>{course.subtitle}</Text>
+                <Text style={[styles.courseSub, { color: theme.subtext }]} numberOfLines={1}>{course.subtitle}</Text>
 
                 {/* Instructor Row */}
                 <View style={styles.instructorRow}>
                   <Image source={{ uri: course.instructorAvatar }} style={styles.instructorAvatar} />
                   <View style={styles.instructorTextWrap}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                      <Text style={styles.instructorName}>{course.instructor}</Text>
-                      <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
-                        <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#D97706" }}>Mentor</Text>
+                      <Text style={[styles.instructorName, { color: theme.text }]}>{course.instructor}</Text>
+                      <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 }}>
+                        <Text style={{ fontSize: 9.5, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
                       </View>
                       {course.isPremium ? (
-                        <MaterialCommunityIcons name="check-decagram" size={13} color="#5B3CF5" style={{ marginLeft: 2 }} />
+                        <MaterialCommunityIcons name="check-decagram" size={13} color={theme.primary} style={{ marginLeft: 2 }} />
                       ) : null}
                     </View>
-                    <Text style={styles.instructorRole}>{course.instructorRole}</Text>
+                    <Text style={[styles.instructorRole, { color: theme.subtext }]}>{course.instructorRole}</Text>
                   </View>
 
                   <View style={styles.priceCol}>
-                    <Text style={styles.priceText}>{course.price}</Text>
-                    <Text style={styles.originalPriceText}>{course.originalPrice}</Text>
+                    <Text style={[styles.priceText, { color: theme.primary }]}>{course.price}</Text>
+                    <Text style={[styles.originalPriceText, { color: theme.subtext }]}>{course.originalPrice}</Text>
                   </View>
                 </View>
 
                 {/* Meta Row (Live classes, Learners, Discount badge) */}
                 <View style={styles.cardBottomRow}>
                   <View style={styles.metaLeft}>
-                    <Feather name="calendar" size={11} color="#7C7C9A" />
-                    <Text style={styles.metaText}>{course.type}</Text>
-                    <Text style={styles.metaDot}>•</Text>
-                    <Feather name="users" size={11} color="#7C7C9A" />
-                    <Text style={styles.metaText}>{course.learners}</Text>
+                    <Feather name="calendar" size={11} color={theme.subtext} />
+                    <Text style={[styles.metaText, { color: theme.subtext }]}>{course.type}</Text>
+                    <Text style={[styles.metaDot, { color: theme.subtext }]}>•</Text>
+                    <Feather name="users" size={11} color={theme.subtext} />
+                    <Text style={[styles.metaText, { color: theme.subtext }]}>{course.learners}</Text>
                   </View>
 
-                  <View style={styles.discountPill}>
-                    <Text style={styles.discountPillText}>{course.discount}</Text>
+                  <View style={[styles.discountPill, { backgroundColor: theme.badgeBg }]}>
+                    <Text style={[styles.discountPillText, { color: theme.primary }]}>{course.discount}</Text>
                   </View>
                 </View>
               </View>
             </Pressable>
           ))
         ) : (
-          <View style={styles.emptyPopularCard}>
-            <MaterialCommunityIcons name="magnify-remove-outline" size={32} color="#7C7C9A" />
-            <Text style={styles.emptyPopularTitle}>No Courses Found</Text>
-            <Text style={styles.emptyPopularSub}>No courses match "{searchQuery}". Try selecting another category or clear search.</Text>
-            <Pressable onPress={() => { setSearchQuery(""); setActiveCategory("all"); }} style={styles.clearSearchBtn}>
+          <View style={[styles.emptyPopularCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <MaterialCommunityIcons name="magnify-remove-outline" size={32} color={theme.subtext} />
+            <Text style={[styles.emptyPopularTitle, { color: theme.text }]}>No Courses Found</Text>
+            <Text style={[styles.emptyPopularSub, { color: theme.subtext }]}>No courses match "{searchQuery}". Try selecting another category or clear search.</Text>
+            <Pressable onPress={() => { setSearchQuery(""); setActiveCategory("all"); }} style={[styles.clearSearchBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}>
               <Text style={styles.clearSearchText}>Reset Filters</Text>
             </Pressable>
           </View>
         )}
 
         {/* 6. Summary Stats Highlights Bar */}
-        <View style={styles.statsBar}>
+        <View style={[styles.statsBar, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {statsList.map((st) => (
             <View key={st.id} style={styles.statItemCol}>
-              <View style={[styles.statIconWrap, { backgroundColor: st.bg }]}>
-                <MaterialCommunityIcons name={st.icon} size={18} color={st.color} />
+              <View style={[styles.statIconWrap, { backgroundColor: theme.isDark ? "#1E263B" : st.bg }]}>
+                <MaterialCommunityIcons name={st.icon} size={18} color={theme.isDark ? theme.primary : st.color} />
               </View>
-              <Text style={styles.statValText}>{st.title}</Text>
-              <Text style={styles.statSubText}>{st.sub}</Text>
+              <Text style={[styles.statValText, { color: theme.text }]}>{st.title}</Text>
+              <Text style={[styles.statSubText, { color: theme.subtext }]}>{st.sub}</Text>
             </View>
           ))}
         </View>
       </ScrollView>
+
+      {/* 7. Filter Bottom Sheet Modal (Search & Category Concept) */}
+      <Modal visible={showFilterBottomSheet} animationType="slide" transparent onRequestClose={() => setShowFilterBottomSheet(false)}>
+        <Pressable
+          style={styles.sheetOverlay}
+          onPress={() => setShowFilterBottomSheet(false)}
+        >
+          <Pressable
+            style={[styles.sheetContainer, { backgroundColor: theme.cardBg || colors.card, borderColor: theme.border || colors.border }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.sheetHandle} />
+
+            {/* Title Header */}
+            <View style={styles.sheetHeaderRow}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <MaterialCommunityIcons name="tune-variant" size={20} color={colors.primary} />
+                <Text style={[styles.modalTitle, { color: theme.text || colors.ink }]}>
+                  Search & Filter Courses
+                </Text>
+              </View>
+
+              <Pressable onPress={() => setShowFilterBottomSheet(false)} style={{ padding: 4 }}>
+                <Feather name="x" size={20} color={theme.subtext || colors.muted} />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
+              {/* SECTION 1: SEARCH BAR CONCEPT */}
+              <Text style={[styles.sheetSectionLabel, { color: theme.text || colors.ink }]}>
+                Search Course or Mentor
+              </Text>
+              <View style={[styles.sheetSearchWrap, { backgroundColor: theme.bg || colors.bg, borderColor: theme.border || colors.border }]}>
+                <Feather name="search" size={17} color={colors.muted} style={{ marginRight: 8 }} />
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search courses, skills or mentors..."
+                  placeholderTextColor={colors.muted}
+                  style={[styles.sheetSearchInput, { color: theme.text || colors.ink }]}
+                />
+                {searchQuery ? (
+                  <Pressable onPress={() => setSearchQuery('')}>
+                    <Feather name="x-circle" size={17} color={colors.muted} />
+                  </Pressable>
+                ) : null}
+              </View>
+
+              {/* SECTION 2: CATEGORY SELECTION */}
+              <View style={styles.sheetSectionHeader}>
+                <Text style={[styles.sheetSectionLabel, { color: theme.text || colors.ink, marginBottom: 0 }]}>
+                  Course Category
+                </Text>
+                {activeCategory !== 'all' && (
+                  <Pressable onPress={() => setActiveCategory('all')}>
+                    <Text style={{ fontSize: 11, fontFamily: 'Poppins_600SemiBold', color: colors.primary }}>Reset Category</Text>
+                  </Pressable>
+                )}
+              </View>
+
+              <View style={styles.sheetCategoryGrid}>
+                {categoriesList.map((cat) => {
+                  const isSelected = activeCategory === cat.id;
+                  return (
+                    <Pressable
+                      key={cat.id}
+                      onPress={() => setActiveCategory(cat.id)}
+                      style={[
+                        styles.sheetCategoryChip,
+                        {
+                          backgroundColor: isSelected ? colors.primary : (theme.bg || '#F1F5F9'),
+                          borderColor: isSelected ? colors.primary : (theme.border || '#E2E8F0')
+                        }
+                      ]}
+                    >
+                      <MaterialCommunityIcons name={cat.icon} size={14} color={isSelected ? '#FFFFFF' : colors.primary} style={{ marginRight: 4 }} />
+                      <Text style={[styles.sheetCategoryChipText, { color: isSelected ? '#FFFFFF' : (theme.text || colors.ink) }]}>
+                        {cat.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {/* BOTTOM SHEET FOOTER ACTIONS */}
+            <View style={[styles.sheetFooterRow, { borderTopColor: theme.border || colors.border }]}>
+              <Pressable
+                onPress={() => {
+                  setSearchQuery('');
+                  setActiveCategory('all');
+                }}
+                style={[styles.sheetResetBtn, { borderColor: theme.border || colors.border }]}
+              >
+                <Text style={[styles.sheetResetBtnText, { color: theme.subtext || colors.muted }]}>Reset All</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setShowFilterBottomSheet(false)}
+                style={[styles.sheetApplyBtn, { backgroundColor: colors.primary }]}
+              >
+                <Text style={styles.sheetApplyBtnText}>Apply Filters</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -246,79 +388,51 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F7FF"
   },
 
-  // Top Header
+  // Top Header (Flush 52px height)
   topHeader: {
+    height: 52,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#F0EFFF",
-    ...shadow.soft
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    flex: 1
+    paddingHorizontal: 14,
+    borderBottomWidth: 1
   },
   backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#F4F3FA",
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    borderWidth: 1
   },
   titleWrap: {
-    flex: 1
+    flex: 1,
+    marginLeft: 10
   },
   screenTitle: {
     fontFamily: fonts.bold,
-    fontSize: 21,
-    color: "#181725"
+    fontSize: 15
   },
   screenSub: {
     fontFamily: fonts.regular,
-    fontSize: 11,
-    color: "#7C7C9A",
-    marginTop: 1
+    fontSize: 10
   },
-  headerIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#F4F3FA",
+  filterHeaderBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     position: "relative"
   },
-  notifDot: {
+  activeFilterDot: {
     position: "absolute",
-    top: 8,
-    right: 9,
+    top: 5,
+    right: 5,
     width: 7,
     height: 7,
-    borderRadius: 4,
-    backgroundColor: "#5B3CF5"
-  },
-
-  // Search Box
-  searchBoxCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: "#F0EFFF",
-    ...shadow.soft
+    borderRadius: 3.5,
+    backgroundColor: "#EF4444"
   },
   searchInput: {
     flex: 1,
@@ -365,7 +479,7 @@ const styles = StyleSheet.create({
   },
   categoryPillText: {
     fontFamily: fonts.semiBold,
-    fontSize: 12,
+    fontSize: 11,
     color: "#181725"
   },
   categoryPillTextActive: {
@@ -377,11 +491,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12
+    marginBottom: 10
   },
   sectionTitle: {
     fontFamily: fonts.bold,
-    fontSize: 16,
+    fontSize: 13,
     color: "#181725"
   },
   sortRow: {
@@ -390,12 +504,12 @@ const styles = StyleSheet.create({
   },
   sortLabel: {
     fontFamily: fonts.regular,
-    fontSize: 12,
+    fontSize: 11,
     color: "#7C7C9A"
   },
   sortVal: {
     fontFamily: fonts.bold,
-    fontSize: 12,
+    fontSize: 11,
     color: "#5B3CF5"
   },
 
@@ -403,18 +517,18 @@ const styles = StyleSheet.create({
   courseCard: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 12,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 10,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#F0EFFF",
-    gap: 12,
+    gap: 10,
     ...shadow.soft
   },
   thumbnailWrap: {
-    width: 90,
-    height: 90,
-    borderRadius: 14,
+    width: 84,
+    height: 84,
+    borderRadius: 12,
     overflow: "hidden",
     position: "relative"
   },
@@ -424,12 +538,12 @@ const styles = StyleSheet.create({
   },
   liveBadge: {
     position: "absolute",
-    top: 6,
-    left: 6,
+    top: 5,
+    left: 5,
     backgroundColor: "rgba(0, 0, 0, 0.65)",
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
     paddingVertical: 2,
-    borderRadius: 6
+    borderRadius: 5
   },
   liveBadgeText: {
     fontFamily: fonts.bold,
@@ -449,7 +563,7 @@ const styles = StyleSheet.create({
   },
   courseTitle: {
     fontFamily: fonts.bold,
-    fontSize: 14,
+    fontSize: 12.5,
     color: "#181725",
     flex: 1
   },
@@ -460,40 +574,40 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontFamily: fonts.bold,
-    fontSize: 11,
+    fontSize: 10.5,
     color: "#181725"
   },
   reviewsText: {
     fontFamily: fonts.regular,
-    fontSize: 10,
+    fontSize: 9.5,
     color: "#7C7C9A"
   },
   courseSub: {
     fontFamily: fonts.regular,
-    fontSize: 11,
+    fontSize: 10,
     color: "#7C7C9A",
     marginTop: 1,
-    marginBottom: 6
+    marginBottom: 4
   },
 
   instructorRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 6
+    marginBottom: 4
   },
   instructorAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginRight: 6
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    marginRight: 5
   },
   instructorTextWrap: {
     flex: 1
   },
   instructorName: {
     fontFamily: fonts.bold,
-    fontSize: 11,
+    fontSize: 10.5,
     color: "#181725"
   },
   instructorRole: {
@@ -506,16 +620,15 @@ const styles = StyleSheet.create({
   },
   priceText: {
     fontFamily: fonts.bold,
-    fontSize: 14,
+    fontSize: 12,
     color: "#181725"
   },
   originalPriceText: {
     fontFamily: fonts.regular,
-    fontSize: 10,
+    fontSize: 9.5,
     color: "#9A9A9A",
     textDecorationLine: "line-through"
   },
-
   cardBottomRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -576,17 +689,17 @@ const styles = StyleSheet.create({
     marginBottom: 14
   },
   clearSearchBtn: {
-    backgroundColor: "#F0EDFF",
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E5E1FF"
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   clearSearchText: {
-    fontFamily: fonts.semiBold,
+    fontFamily: fonts.bold,
     fontSize: 12,
-    color: "#5B3CF5"
+    color: "#FFFFFF"
   },
 
   // Stats Bar
@@ -625,5 +738,113 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: "#7C7C9A",
     textAlign: "center"
+  },
+
+  /* FILTER BOTTOM SHEET STYLES */
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'flex-end'
+  },
+  sheetContainer: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 30,
+    maxHeight: '84%'
+  },
+  sheetHandle: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#94A3B8',
+    alignSelf: 'center',
+    marginBottom: 12
+  },
+  modalTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 16
+  },
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16
+  },
+  sheetSectionLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    marginBottom: 8
+  },
+  sheetSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8
+  },
+  sheetSearchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    marginBottom: 20
+  },
+  sheetSearchInput: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: fonts.regular
+  },
+  sheetCategoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20
+  },
+  sheetCategoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20
+  },
+  sheetCategoryChipText: {
+    fontSize: 12,
+    fontFamily: fonts.medium
+  },
+  sheetFooterRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+    paddingTop: 14,
+    borderTopWidth: 1
+  },
+  sheetResetBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  sheetResetBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: 13
+  },
+  sheetApplyBtn: {
+    flex: 2,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  sheetApplyBtnText: {
+    color: '#FFFFFF',
+    fontFamily: fonts.bold,
+    fontSize: 13
   }
 });

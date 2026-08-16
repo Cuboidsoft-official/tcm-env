@@ -51,23 +51,19 @@ export function createVisualSeedData(passwordHash = "") {
     role: "partner",
     isApproved: true,
     avatarUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=300&q=80",
-    partnerCategory: "TCM One Partner Institute",
+    partnerCategory: "TCM Partner Institute",
     location: "Bilaspur, Chhattisgarh",
-    rating: 4.6,
-    reviewsCount: "128 Reviews",
-    totalRevenue: "₹48,750",
-    monthlyRevenue: "₹18,250",
-    totalStudentsCount: 56,
-    activeMentorsCount: 8,
-    contactNumber: "+91 98765 43210",
-    existingCourses: ["Full Stack Development", "Python Programming", "Web Development"],
+    rating: 5.0,
+    reviewsCount: "0 Reviews",
+    totalRevenue: "₹0",
+    monthlyRevenue: "₹0",
+    totalStudentsCount: 0,
+    activeMentorsCount: 0,
+    contactNumber: "",
+    existingCourses: [],
     verified: true,
-    memberBadge: "TCM One Partner Institute",
-    recentStudents: [
-      { id: "s1", name: "Aman Verma", course: "Full Stack Development", date: "20 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" },
-      { id: "s2", name: "Priya Sahu", course: "Python Programming", date: "18 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120" },
-      { id: "s3", name: "Rohit Patel", course: "Web Development", date: "15 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120" }
-    ]
+    memberBadge: "TCM Partner Institute",
+    recentStudents: []
   };
 
   const stories = [

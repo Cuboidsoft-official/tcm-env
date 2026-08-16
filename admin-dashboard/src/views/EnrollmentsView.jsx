@@ -2,64 +2,7 @@ import React, { useState } from 'react';
 import { IconUsers, IconCourses, IconMentor, IconCheck } from '../components/Icons';
 
 export function EnrollmentsView({ enrollmentsData = {}, mentors = [], search = '' }) {
-  const [enrollmentsList, setEnrollmentsList] = useState(enrollmentsData.enrollments || [
-    {
-      id: 'enr-101',
-      studentName: 'Aman Verma',
-      studentEmail: 'aman.verma@gmail.com',
-      studentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
-      courseTitle: 'Full Stack MERN Development Masterclass',
-      coursePrice: '₹4,999',
-      enrolledDate: '14 May 2025',
-      progressPercent: 85,
-      completedModules: '17 / 20 Modules',
-      status: 'In Progress',
-      assignedMentorName: 'Ayushman Sharma',
-      assignedMentorTitle: 'Senior Full Stack Architect'
-    },
-    {
-      id: 'enr-102',
-      studentName: 'Priya Sahu',
-      studentEmail: 'priya.sahu@yahoo.com',
-      studentAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-      courseTitle: 'Python & Machine Learning Zero to Hero',
-      coursePrice: '₹3,499',
-      enrolledDate: '10 Apr 2025',
-      progressPercent: 100,
-      completedModules: '15 / 15 Modules (Certified)',
-      status: 'Completed',
-      assignedMentorName: 'Neha Gupta',
-      assignedMentorTitle: 'AI & ML Specialist'
-    },
-    {
-      id: 'enr-103',
-      studentName: 'Rohit Patel',
-      studentEmail: 'rohit.patel@outlook.com',
-      studentAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-      courseTitle: 'React Native Mobile App Architecture',
-      coursePrice: '₹5,999',
-      enrolledDate: '02 Jun 2025',
-      progressPercent: 40,
-      completedModules: '8 / 20 Modules',
-      status: 'In Progress',
-      assignedMentorName: 'Ayushman Sharma',
-      assignedMentorTitle: 'Senior Full Stack Architect'
-    },
-    {
-      id: 'enr-104',
-      studentName: 'Kavya Singh',
-      studentEmail: 'kavya.singh@gmail.com',
-      studentAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100',
-      courseTitle: 'Full Stack MERN Development Masterclass',
-      coursePrice: '₹4,999',
-      enrolledDate: '18 May 2025',
-      progressPercent: 65,
-      completedModules: '13 / 20 Modules',
-      status: 'In Progress',
-      assignedMentorName: 'Vikramaditya Roy',
-      assignedMentorTitle: 'Cloud DevOps Architect'
-    }
-  ]);
+  const enrollmentsList = Array.isArray(enrollmentsData?.enrollments) ? enrollmentsData.enrollments : [];
 
   const [selectedMentorMap, setSelectedMentorMap] = useState({});
 
@@ -70,10 +13,16 @@ export function EnrollmentsView({ enrollmentsData = {}, mentors = [], search = '
     item.assignedMentorName?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const totalRev = filtered.reduce((sum, item) => {
+    const rawPrice = String(item.coursePrice || item.price || '0').replace(/[^0-9]/g, '');
+    return sum + (parseInt(rawPrice, 10) || 0);
+  }, 0);
+
+  const avgProg = filtered.length > 0
+    ? (filtered.reduce((sum, item) => sum + (item.progressPercent || 0), 0) / filtered.length).toFixed(1) + '%'
+    : '0%';
+
   const handleReassignMentor = (enrollmentId, newMentorName) => {
-    setEnrollmentsList((prev) =>
-      prev.map((e) => (e.id === enrollmentId ? { ...e, assignedMentorName: newMentorName } : e))
-    );
     alert(`Mentor assigned to ${newMentorName} for enrollment #${enrollmentId}!`);
   };
 
@@ -94,15 +43,15 @@ export function EnrollmentsView({ enrollmentsData = {}, mentors = [], search = '
           <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0A6836', marginTop: '2px' }}>
             {filtered.length} Purchases
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#059669', marginTop: '2px' }}>₹19,496 Total Course Revenue</div>
+          <div style={{ fontSize: '0.72rem', color: '#059669', marginTop: '2px' }}>₹{totalRev.toLocaleString('en-IN')} Total Course Revenue</div>
         </div>
 
         <div className="glass-panel" style={{ padding: '1rem', borderLeft: '4px solid #F59E0B' }}>
           <div style={{ fontSize: '0.78rem', color: '#475569' }}>Avg Course Completion</div>
           <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#D97706', marginTop: '2px' }}>
-            72.5% Completed
+            {avgProg} Completed
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#B45309', marginTop: '2px' }}>High Student Engagement Rate</div>
+          <div style={{ fontSize: '0.72rem', color: '#B45309', marginTop: '2px' }}>Student Engagement Metric</div>
         </div>
 
         <div className="glass-panel" style={{ padding: '1rem', borderLeft: '4px solid #8B5CF6' }}>
@@ -119,10 +68,10 @@ export function EnrollmentsView({ enrollmentsData = {}, mentors = [], search = '
           <div>
             <div className="section-title">
               <IconCourses style={{ color: 'var(--accent-primary)' }} />
-              <span>Student Purchased Courses, Progress & Mentor Assignments ({filtered.length})</span>
+              <span>Student Enrolled Courses, Progress & Mentor Assignments ({filtered.length})</span>
             </div>
             <p style={{ color: '#64748B', fontSize: '0.78rem', marginTop: '2px' }}>
-              Track course completion %, purchased courses per student, and assign/reassign mentors.
+              Track course completion %, enrolled courses per student, and assign/reassign mentors.
             </p>
           </div>
         </div>

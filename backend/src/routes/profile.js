@@ -960,17 +960,19 @@ profileRouter.post("/apply-referral", requireAuth, async (req, res) => {
 
     if (referrerUser) {
       referrerUser.tcmCoins = (referrerUser.tcmCoins || 0) + REFERRER_REWARD;
+      referrerUser.walletBalance = (referrerUser.walletBalance || 0) + 100;
       await referrerUser.save();
     }
 
     dbUser.tcmCoins = (dbUser.tcmCoins || 0) + REFERRED_REWARD;
+    dbUser.walletBalance = (dbUser.walletBalance || 0) + 50;
     dbUser.referredBy = cleanCode;
     dbUser.referralAppliedAt = new Date();
     await dbUser.save();
 
     return res.json({
       success: true,
-      message: `Referral code ${cleanCode} applied! You earned +${REFERRED_REWARD} TCM Coins.${referrerUser ? ` Referrer ${referrerUser.name} earned +${REFERRER_REWARD} TCM Coins.` : ""}`,
+      message: `Referral code ${cleanCode} applied! You earned +${REFERRED_REWARD} TCM Coins & ₹50 Welcome Cashback.${referrerUser ? ` Referrer ${referrerUser.name} earned +${REFERRER_REWARD} TCM Coins & ₹100 Reward.` : ""}`,
       user: publicUser(dbUser)
     });
   } catch (error) {

@@ -16,7 +16,7 @@ import {
   View
 } from "react-native";
 import { Feather, FontAwesome, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { addWalletMoney, convertCoinsToCash, convertReferralBonus, getWallet, withdrawWalletFunds } from "../api/client";
+import { addWalletMoney, applyReferralCode, convertCoinsToCash, convertReferralBonus, getWallet, withdrawWalletFunds } from "../api/client";
 import { Linking } from "react-native";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
@@ -79,73 +79,36 @@ export default function WalletScreen({ session, user = {}, onBack }) {
   const [inputReferralCode, setInputReferralCode] = useState("");
   const [appliedReferral, setAppliedReferral] = useState(false);
 
-  function handleApplyReferralCode() {
+  async function handleApplyReferralCode() {
     const code = inputReferralCode.trim().toUpperCase();
     if (!code) {
-      Alert.alert("Referral Code Required", "Please enter a valid referral code to claim 20 coins.");
+      Alert.alert("Referral Code Required", "Please enter a valid referral code to claim your bonus.");
       return;
     }
     if (appliedReferral) {
-      Alert.alert("Already Claimed", "You have already applied a referral code.");
+      Alert.alert("Already Claimed", "You have already applied a referral code for this account.");
       return;
     }
-    setAppliedReferral(true);
 
-    setWalletData((prev) => {
-      const newCoins = prev.tcmCoins + 20;
-      let newBalance = prev.availableBalance;
-      let newTotal = prev.totalBalance;
-      let finalCoins = newCoins;
-      const extraTx = [];
+    try {
+      const res = await applyReferralCode(session?.token, code);
+      if (res?.success) {
+        setAppliedReferral(true);
+        setInputReferralCode("");
+        Alert.alert("Referral Applied! 🎉", res.message || `Referral code ${code} applied successfully!`);
 
-      if (newCoins >= 500) {
-        const convertMultiplier = Math.floor(newCoins / 500);
-        const coinsDeducted = convertMultiplier * 500;
-        const cashAdded = convertMultiplier * 100;
-        finalCoins = newCoins - coinsDeducted;
-        newBalance += cashAdded;
-        newTotal += cashAdded;
-
-        extraTx.push({
-          id: `tx_autoconv_${Date.now()}`,
-          type: "credit",
-          title: "Auto Coins Conversion",
-          subtitle: `Auto-converted 500 Coins to ₹${cashAdded.toFixed(2)} Cash`,
-          amount: `+ ₹${cashAdded.toFixed(2)}`,
-          date: "Just now",
-          icon: "gift",
-          iconBg: "#ECFDF5",
-          iconColor: "#10B981"
-        });
+        try {
+          const fresh = await getWallet(session?.token);
+          if (fresh?.wallet) {
+            setWalletData(fresh.wallet);
+          }
+        } catch (e) {}
+      } else {
+        Alert.alert("Referral Error", res?.message || "Could not apply referral code.");
       }
-
-      return {
-        ...prev,
-        tcmCoins: finalCoins,
-        availableBalance: newBalance,
-        totalBalance: newTotal,
-        transactions: [
-          ...extraTx,
-          {
-            id: `tx_ref_applied_${Date.now()}`,
-            type: "credit",
-            title: "Referral Code Bonus",
-            subtitle: `Applied referral code ${code} (+20 Coins)`,
-            amount: "+ 20 Coins",
-            date: "Just now",
-            icon: "star",
-            iconBg: "#FEF3C7",
-            iconColor: "#D97706"
-          },
-          ...prev.transactions
-        ]
-      };
-    });
-
-    Alert.alert(
-      "Referral Bonus Added! 🎉",
-      `Referral code ${code} applied successfully!\n\n+20 TCM Coins added to your wallet.`
-    );
+    } catch (err) {
+      Alert.alert("Referral Error", err?.message || "Could not apply referral code.");
+    }
   }
 
   function handleCopyReferral() {

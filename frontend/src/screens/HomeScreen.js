@@ -1015,7 +1015,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
 
   const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen);
 
-  const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard);
+  const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard || activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community");
 
   return (
     <SwipeBackWrapper onBack={activeBackAction} enabled={Boolean(activeBackAction)}>
@@ -1296,7 +1296,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
               />
             }
           >
-            <View style={[styles.page, { width: contentWidth }]}>
+            <View style={[styles.page, { width: (activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community") ? "100%" : contentWidth }]}>
               {!targetUserProfile && (activeTab === "Learn" || (activeTab === "Community" && isCommChannelOpen)) ? null : (
                 <Header
                   user={user}
@@ -1447,7 +1447,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
           </View>
           </ScrollView>
         )}
-        {!activeChatUser && !activeDoubtRoom ? (
+        {!activeChatUser && !activeDoubtRoom && !selectedCourseId && !selectedMentorId && !showMentorDashboard && !showPartnerDashboard && !showDiscoverPartnersScreen && !selectedPartnerForPreview && !showCreateCourseScreen && !showCreateWebinarScreen ? (
           <ActionDock
             user={user}
             open={actionMenuOpen}

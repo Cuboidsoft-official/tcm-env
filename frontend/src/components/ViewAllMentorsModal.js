@@ -47,12 +47,13 @@ export default function ViewAllMentorsModal({ visible, session, onClose, onSelec
   }
 
   const filteredMentors = mentors.filter((m) => {
+    if (m.isApproved === false) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
-      m.name?.toLowerCase().includes(q) ||
-      m.role?.toLowerCase().includes(q) ||
-      m.category?.toLowerCase().includes(q)
+      String(m.name || "").toLowerCase().includes(q) ||
+      String(m.role || "").toLowerCase().includes(q) ||
+      String(m.category || "").toLowerCase().includes(q)
     );
   });
 
@@ -103,12 +104,12 @@ export default function ViewAllMentorsModal({ visible, session, onClose, onSelec
                     onClose();
                     if (onSelectMentor) onSelectMentor(mentor.id);
                   }}
-                  style={styles.mentorCard}
+                  style={[styles.mentorCard, { backgroundColor: theme.isDark ? "#1E263B" : "#F9F8FF", borderColor: theme.border }]}
                 >
-                  {mentor.avatarUrl && !mentor.avatarUrl.includes("photo-1507003211169-0a1dd7228f2d") && !(Platform.OS === "web" && typeof mentor.avatarUrl === "string" && mentor.avatarUrl.startsWith("file://")) ? (
+                  {mentor.avatarUrl && typeof mentor.avatarUrl === "string" && mentor.avatarUrl.trim().length > 5 ? (
                     <Image source={{ uri: mentor.avatarUrl }} style={styles.avatarImg} />
                   ) : (
-                    <View style={[styles.avatarImg, { backgroundColor: "#5B3CF5", alignItems: "center", justifyContent: "center" }]}>
+                    <View style={[styles.avatarImg, { backgroundColor: theme.primary, alignItems: "center", justifyContent: "center" }]}>
                       <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: "#FFFFFF" }}>
                         {(mentor.name || "M").split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2)}
                       </Text>
@@ -116,25 +117,25 @@ export default function ViewAllMentorsModal({ visible, session, onClose, onSelec
                   )}
                   <View style={styles.infoCol}>
                     <View style={styles.nameRow}>
-                      <Text style={styles.mentorName}>{mentor.name}</Text>
-                      <MaterialCommunityIcons name="check-decagram" size={15} color="#5B3CF5" style={{ marginLeft: 3 }} />
+                      <Text style={[styles.mentorName, { color: theme.text }]}>{mentor.name}</Text>
+                      <MaterialCommunityIcons name="check-decagram" size={15} color={theme.primary} style={{ marginLeft: 3 }} />
                     </View>
 
-                    <Text style={styles.mentorRole}>{mentor.role}</Text>
+                    <Text style={[styles.mentorRole, { color: theme.primary }]}>{mentor.role}</Text>
 
-                    <View style={styles.badgePill}>
-                      <Text style={styles.badgeText}>{mentor.category || "TCM Mentor"}</Text>
+                    <View style={[styles.badgePill, { backgroundColor: theme.badgeBg }]}>
+                      <Text style={[styles.badgeText, { color: theme.primary }]}>{mentor.category || "TCM Mentor"}</Text>
                     </View>
                   </View>
 
                   <View style={styles.actionRightCol}>
                     <View style={styles.ratingRow}>
                       <FontAwesome name="star" size={11} color="#FFB800" />
-                      <Text style={styles.ratingText}>{mentor.rating}</Text>
+                      <Text style={[styles.ratingText, { color: theme.text }]}>{mentor.rating}</Text>
                     </View>
-                    <Text style={styles.expText}>{mentor.experience}</Text>
+                    <Text style={[styles.expText, { color: theme.subtext }]}>{mentor.experience || "5+ Yrs Exp"}</Text>
 
-                    <View style={styles.viewProfileSmallBtn}>
+                    <View style={[styles.viewProfileSmallBtn, { backgroundColor: theme.primary }]}>
                       <Text style={styles.viewProfileSmallText}>Profile →</Text>
                     </View>
                   </View>

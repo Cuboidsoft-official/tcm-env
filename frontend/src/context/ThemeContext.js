@@ -129,16 +129,16 @@ export const themesList = [
 ];
 
 const ThemeContext = createContext({
-  currentTheme: "Night",
-  theme: themesList[1],
+  currentTheme: "Day",
+  theme: themesList[2],
   changeTheme: () => {},
   themesList
 });
 
 export function ThemeProvider({ children }) {
-  const [currentTheme, setCurrentTheme] = useState("Night");
+  const [currentTheme, setCurrentTheme] = useState("Day");
 
-  const activeTheme = themesList.find((t) => t.id === currentTheme) || themesList[0];
+  const activeTheme = themesList.find((t) => t.id === currentTheme) || themesList[2];
 
   function changeTheme(themeId) {
     if (themesList.some((t) => t.id === themeId)) {

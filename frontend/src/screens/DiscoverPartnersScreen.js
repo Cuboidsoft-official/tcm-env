@@ -30,6 +30,7 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
   const [selectedCity, setSelectedCity] = useState('All Cities');
   const [selectedFilterPill, setSelectedFilterPill] = useState('All');
   const [partnersList, setPartnersList] = useState([]);
+  const [showFilterBottomSheet, setShowFilterBottomSheet] = useState(false);
 
   // Request partner modal state
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -38,14 +39,14 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
   const [reqNote, setReqNote] = useState('');
 
   useEffect(() => {
-    // Fetch live onboarded partners from backend
+    // Fetch live onboarded partners from backend database
     getPublicPartners()
       .then((partners) => {
-        if (partners && Array.isArray(partners) && partners.length > 0) {
+        if (partners && Array.isArray(partners)) {
           const formatted = partners.map((p, idx) => ({
             id: p.id || p._id || `backend-${idx}`,
             instituteName: p.instituteName || p.name,
-            partnerCategory: p.partnerCategory || 'IT Partner',
+            partnerCategory: p.partnerCategory || 'TCM Partner Institute',
             categoryType: (p.partnerCategory || '').toLowerCase().includes('gov') ? 'gov' : (p.partnerCategory || '').toLowerCase().includes('academic') ? 'academics' : 'it',
             tagline: p.bio || 'TCM Accredited Partner Institute',
             location: p.location || 'Bilaspur, Chhattisgarh',
@@ -53,31 +54,27 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
             gmbLink: p.gmbLink || '',
             heroCover: p.heroCover || 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800',
             distance: '1.5 km',
-            rating: p.rating || 4.6,
-            reviewsCount: p.reviewsCount || '120 Reviews',
-            fee: p.labFee || (p.totalRevenue ? 'Partner Verified' : '₹0 - ₹100 /hr'),
+            rating: p.rating !== undefined ? p.rating : 5.0,
+            reviewsCount: p.reviewsCount || '0 Reviews',
+            fee: p.labFee || 'Free',
             feeLabel: 'Lab Access Fee',
             status: 'Available',
             statusBg: colors.primaryLight,
             statusColor: colors.primary,
-            photosCount: `${p.galleryPhotos?.length || 10} Photos`,
+            photosCount: `${p.galleryPhotos?.length || 0} Photos`,
             avatarText: (p.instituteName || p.name || 'PI').slice(0, 2).toUpperCase(),
             avatarBg: '#0A6836',
             avatarUrl: p.avatarUrl || 'https://images.unsplash.com/photo-1562774053-701939374585?w=500',
             image: p.avatarUrl || 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=500',
-            galleryPhotos: p.galleryPhotos?.length ? p.galleryPhotos : [
-              'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=500',
-              'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500',
-              'https://images.unsplash.com/photo-1562774053-701939374585?w=500'
-            ],
+            galleryPhotos: p.galleryPhotos || [],
             badges: [
               { text: 'Lab Access', icon: 'desktop-outline', bg: colors.mint, color: colors.primary },
               { text: 'Verified', icon: 'checkmark-circle-outline', bg: colors.blueSoft, color: '#0284C7' },
               { text: 'TCM Support', icon: 'ribbon-outline', bg: colors.yellowSoft, color: '#D97706' }
             ],
-            contactNumber: p.contactNumber || '+91 98765 43210',
+            contactNumber: p.contactNumber || '',
             email: p.email,
-            existingCourses: Array.isArray(p.existingCourses) ? p.existingCourses : ['Full Stack Development', 'Python Programming'],
+            existingCourses: Array.isArray(p.existingCourses) ? p.existingCourses : [],
             bio: p.bio || 'Accredited partner institute providing facilities and certified courses.'
           }));
 
@@ -129,7 +126,7 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg || colors.bg }]}>
-      {/* 1. Header (Flush 52px height, NO notification bell) */}
+      {/* 1. Header (Flush 52px height) */}
       <View style={[styles.header, { borderBottomColor: theme.border || colors.border, backgroundColor: theme.bg || colors.bg }]}>
         <TouchableOpacity onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.cardBg || colors.card, borderColor: theme.border || colors.border }]}>
           <Feather name="arrow-left" size={18} color={theme.text || colors.ink} />
@@ -141,6 +138,31 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
             Find the best institutions & partners near you
           </Text>
         </View>
+
+        {/* Top Header Filter Icon Button */}
+        <TouchableOpacity
+          onPress={() => setShowFilterBottomSheet(true)}
+          style={[
+            styles.filterHeaderBtn,
+            {
+              backgroundColor: (selectedCity !== 'All Cities' || searchQuery.trim() || activeCategory !== 'all')
+                ? (theme.isDark ? '#064E3B' : colors.mint)
+                : (theme.cardBg || colors.card),
+              borderColor: (selectedCity !== 'All Cities' || searchQuery.trim() || activeCategory !== 'all')
+                ? colors.primary
+                : (theme.border || colors.border)
+            }
+          ]}
+        >
+          <Ionicons
+            name="options-outline"
+            size={18}
+            color={(selectedCity !== 'All Cities' || searchQuery.trim() || activeCategory !== 'all') ? colors.primary : (theme.text || colors.ink)}
+          />
+          {(selectedCity !== 'All Cities' || searchQuery.trim() || activeCategory !== 'all') ? (
+            <View style={styles.activeFilterDot} />
+          ) : null}
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -181,82 +203,7 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
           })}
         </View>
 
-        {/* 3. CITY WISE FILTER HORIZONTAL BAR */}
-        <View style={styles.cityFilterSection}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-            <Ionicons name="location-sharp" size={13} color={colors.primary} />
-            <Text style={[styles.cityFilterHeaderLabel, { color: colors.muted }]}>Filter by City:</Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cityPillsScroll}>
-            {CITIES.map((city) => {
-              const isSelected = selectedCity === city;
-              return (
-                <TouchableOpacity
-                  key={city}
-                  onPress={() => setSelectedCity(city)}
-                  style={[
-                    styles.cityPill,
-                    {
-                      backgroundColor: isSelected ? colors.primary : (theme.cardBg || colors.card),
-                      borderColor: isSelected ? colors.primary : (theme.border || colors.border)
-                    }
-                  ]}
-                >
-                  <Ionicons name="location-outline" size={12} color={isSelected ? '#FFFFFF' : colors.primary} style={{ marginRight: 3 }} />
-                  <Text style={[styles.cityPillText, { color: isSelected ? '#FFFFFF' : (theme.text || colors.ink) }]}>{city}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* 4. Search Bar + Filter Button */}
-        <View style={styles.searchRow}>
-          <View style={[styles.searchInputWrap, { backgroundColor: theme.cardBg || colors.card, borderColor: theme.border || colors.border }]}>
-            <Ionicons name="search-outline" size={17} color={colors.muted} style={{ marginRight: 6 }} />
-            <TextInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search by name, course, or location..."
-              placeholderTextColor={colors.muted}
-              style={[styles.searchInput, { color: theme.text || colors.ink }]}
-            />
-            {searchQuery ? (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={16} color={colors.muted} />
-              </TouchableOpacity>
-            ) : null}
-          </View>
-
-          <TouchableOpacity style={[styles.filterBtn, { backgroundColor: colors.mint, borderColor: colors.badgeBorder }]}>
-            <Ionicons name="options-outline" size={17} color={colors.primary} style={{ marginRight: 4 }} />
-            <Text style={[styles.filterBtnText, { color: colors.primary }]}>Filters</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 5. Horizontal Filter Pills */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterPillsScroll}>
-          {['All', 'Location ∨', 'Distance ∨', 'Courses', 'Ratings ∨', 'Availability', 'Sort ⇅'].map((pill) => {
-            const isSelected = selectedFilterPill === pill;
-            return (
-              <TouchableOpacity
-                key={pill}
-                onPress={() => setSelectedFilterPill(pill)}
-                style={[
-                  styles.filterPill,
-                  {
-                    backgroundColor: isSelected ? colors.primary : (theme.cardBg || colors.card),
-                    borderColor: isSelected ? colors.primary : (theme.border || colors.border)
-                  }
-                ]}
-              >
-                <Text style={[styles.filterPillText, { color: isSelected ? '#FFFFFF' : (theme.text || colors.ink) }]}>{pill}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* 6. Partner Cards List */}
+        {/* 3. Partner Cards List */}
         <View style={styles.partnersListWrap}>
           {filteredPartners.length === 0 ? (
             <View style={[styles.emptyWrap, { backgroundColor: theme.cardBg || colors.card, borderColor: theme.border || colors.border }]}>
@@ -432,6 +379,153 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
             <TouchableOpacity onPress={handleSendRequest} style={[styles.modalActionBtn, { backgroundColor: colors.primary, marginTop: 10 }]}>
               <Text style={styles.modalActionBtnText}>Submit Request</Text>
             </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* 8. Filter Bottom Sheet Modal (Search & Location / City Concept) */}
+      <Modal visible={showFilterBottomSheet} animationType="slide" transparent onRequestClose={() => setShowFilterBottomSheet(false)}>
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowFilterBottomSheet(false)}
+          style={styles.sheetOverlay}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[
+              styles.sheetContainer,
+              { backgroundColor: theme.cardBg || colors.card, borderColor: theme.border || colors.border }
+            ]}
+          >
+            <View style={styles.sheetHandle} />
+
+            {/* Title Header */}
+            <View style={styles.sheetHeaderRow}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="options" size={20} color={colors.primary} />
+                <Text style={[styles.modalTitle, { color: theme.text || colors.ink, marginBottom: 0 }]}>
+                  Search & Filter Partners
+                </Text>
+              </View>
+
+              <TouchableOpacity onPress={() => setShowFilterBottomSheet(false)} style={{ padding: 4 }}>
+                <Feather name="x" size={20} color={theme.subtext || colors.muted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              {/* SECTION 1: SEARCH BAR CONCEPT */}
+              <Text style={[styles.sheetSectionLabel, { color: theme.text || colors.ink }]}>
+                Search Institute or Course
+              </Text>
+              <View style={[styles.sheetSearchWrap, { backgroundColor: theme.bg || colors.bg, borderColor: theme.border || colors.border }]}>
+                <Ionicons name="search-outline" size={18} color={colors.muted} style={{ marginRight: 8 }} />
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search by institute name, course, or location..."
+                  placeholderTextColor={colors.muted}
+                  style={[styles.sheetSearchInput, { color: theme.text || colors.ink }]}
+                />
+                {searchQuery ? (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <Ionicons name="close-circle" size={18} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+
+              {/* SECTION 2: LOCATION / CITY SELECTION CONCEPT */}
+              <View style={styles.sheetSectionHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="location-sharp" size={16} color={colors.primary} />
+                  <Text style={[styles.sheetSectionLabel, { color: theme.text || colors.ink, marginBottom: 0 }]}>
+                    Select Location / City
+                  </Text>
+                </View>
+                {selectedCity !== 'All Cities' && (
+                  <TouchableOpacity onPress={() => setSelectedCity('All Cities')}>
+                    <Text style={{ fontSize: 11, fontFamily: 'Poppins_600SemiBold', color: colors.primary }}>Reset Location</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={styles.sheetCityGrid}>
+                {CITIES.map((city) => {
+                  const isSelected = selectedCity === city;
+                  return (
+                    <TouchableOpacity
+                      key={city}
+                      onPress={() => setSelectedCity(city)}
+                      style={[
+                        styles.sheetCityChip,
+                        {
+                          backgroundColor: isSelected ? colors.primary : (theme.bg || '#F1F5F9'),
+                          borderColor: isSelected ? colors.primary : (theme.border || '#E2E8F0')
+                        }
+                      ]}
+                    >
+                      <Ionicons name="location-outline" size={13} color={isSelected ? '#FFFFFF' : colors.primary} style={{ marginRight: 4 }} />
+                      <Text style={[styles.sheetCityChipText, { color: isSelected ? '#FFFFFF' : (theme.text || colors.ink) }]}>
+                        {city}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* SECTION 3: CATEGORY TYPE CONCEPT */}
+              <Text style={[styles.sheetSectionLabel, { color: theme.text || colors.ink }]}>
+                Partner Type Category
+              </Text>
+              <View style={styles.sheetCategoryRow}>
+                {[
+                  { id: 'all', title: 'All Partners' },
+                  { id: 'it', title: 'IT Partners' },
+                  { id: 'gov', title: 'Gov Institutes' },
+                  { id: 'academics', title: 'Academics' }
+                ].map((cat) => {
+                  const isSelected = activeCategory === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      onPress={() => setActiveCategory(cat.id)}
+                      style={[
+                        styles.sheetCategoryChip,
+                        {
+                          backgroundColor: isSelected ? colors.primary : (theme.bg || '#F1F5F9'),
+                          borderColor: isSelected ? colors.primary : (theme.border || '#E2E8F0')
+                        }
+                      ]}
+                    >
+                      <Text style={[styles.sheetCategoryText, { color: isSelected ? '#FFFFFF' : (theme.text || colors.ink) }]}>
+                        {cat.title}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {/* BOTTOM SHEET FOOTER ACTIONS */}
+            <View style={[styles.sheetFooterRow, { borderTopColor: theme.border || colors.border }]}>
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchQuery('');
+                  setSelectedCity('All Cities');
+                  setActiveCategory('all');
+                }}
+                style={[styles.sheetResetBtn, { borderColor: theme.border || colors.border }]}
+              >
+                <Text style={[styles.sheetResetBtnText, { color: theme.subtext || colors.muted }]}>Reset All</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setShowFilterBottomSheet(false)}
+                style={[styles.sheetApplyBtn, { backgroundColor: colors.primary }]}
+              >
+                <Text style={styles.sheetApplyBtnText}>Apply Filters</Text>
+              </TouchableOpacity>
+            </View>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
@@ -841,5 +935,123 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_400Regular',
     fontSize: 12,
     marginBottom: 10
+  },
+
+  /* HEADER FILTER BUTTON */
+  filterHeaderBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative'
+  },
+  activeFilterDot: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#EF4444'
+  },
+
+  /* FILTER BOTTOM SHEET STYLES */
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16
+  },
+  sheetSectionLabel: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
+    marginBottom: 8
+  },
+  sheetSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8
+  },
+  sheetSearchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    marginBottom: 20
+  },
+  sheetSearchInput: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Poppins_400Regular'
+  },
+  sheetCityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20
+  },
+  sheetCityChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20
+  },
+  sheetCityChipText: {
+    fontSize: 12,
+    fontFamily: 'Poppins_500Medium'
+  },
+  sheetCategoryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20
+  },
+  sheetCategoryChip: {
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20
+  },
+  sheetCategoryText: {
+    fontSize: 12,
+    fontFamily: 'Poppins_500Medium'
+  },
+  sheetFooterRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+    paddingTop: 14,
+    borderTopWidth: 1
+  },
+  sheetResetBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  sheetResetBtnText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13
+  },
+  sheetApplyBtn: {
+    flex: 2,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  sheetApplyBtnText: {
+    color: '#FFFFFF',
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 13
   }
 });

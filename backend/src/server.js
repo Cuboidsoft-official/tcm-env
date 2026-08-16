@@ -118,20 +118,60 @@ async function ensureDefaultPartner() {
         memberBadge: "TCM Partner Institute",
         partnerCategory: "TCM Partner Institute",
         location: "Bilaspur, Chhattisgarh",
-        contactNumber: "+91 98765 43210",
-        totalRevenue: "₹48,750",
-        monthlyRevenue: "₹18,250",
-        totalStudentsCount: 56,
-        activeMentorsCount: 8,
-        rating: 4.6,
-        reviewsCount: "128 Reviews",
-        existingCourses: ["Full Stack Development", "Python Programming", "Web Development"],
+        contactNumber: "",
+        totalRevenue: "₹0",
+        monthlyRevenue: "₹0",
+        totalStudentsCount: 0,
+        activeMentorsCount: 0,
+        rating: 5.0,
+        reviewsCount: "0 Reviews",
+        existingCourses: [],
         avatarUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=300&q=80"
       });
       console.log("Created default partner user (partner@tcm.com)");
+    } else {
+      if (existing.totalRevenue === "₹48,750" || existing.monthlyRevenue === "₹18,250" || existing.totalStudentsCount === 56) {
+        existing.totalRevenue = "₹0";
+        existing.monthlyRevenue = "₹0";
+        existing.totalStudentsCount = 0;
+        existing.activeMentorsCount = 0;
+        existing.rating = 5.0;
+        existing.reviewsCount = "0 Reviews";
+        existing.existingCourses = [];
+        existing.enrolledCourses = [];
+        await existing.save();
+        console.log("Cleaned seed stats on partner@tcm.com in MongoDB");
+      }
     }
   } catch (e) {
     console.warn("Could not auto-create partner user in MongoDB:", e.message);
+  }
+}
+
+async function cleanDatabaseSeeds() {
+  try {
+    // 1. Strip fake auto-generated enrolledCourses from any user documents created by schema defaults
+    await User.updateMany(
+      { "enrolledCourses.coursePrice": "₹4,999", "enrolledCourses.enrolledDate": "14 May 2025" },
+      { $set: { enrolledCourses: [] } }
+    );
+    // 2. Clean partner stats
+    await User.updateMany(
+      { email: "partner@tcm.com", totalRevenue: "₹48,750" },
+      {
+        $set: {
+          totalRevenue: "₹0",
+          monthlyRevenue: "₹0",
+          totalStudentsCount: 0,
+          activeMentorsCount: 0,
+          rating: 5.0,
+          reviewsCount: "0 Reviews",
+          existingCourses: []
+        }
+      }
+    );
+  } catch (e) {
+    console.warn("Seed cleanup check error:", e.message);
   }
 }
 
@@ -140,6 +180,7 @@ async function start() {
     await connectDatabase();
     await ensureDefaultAdmin();
     await ensureDefaultPartner();
+    await cleanDatabaseSeeds();
     try {
       const { hydratePushTokens } = await import("./services/pushNotificationService.js");
       await hydratePushTokens();

@@ -24,6 +24,7 @@ import { useTheme } from "../context/ThemeContext";
 export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoom }) {
   const [activeTab, setActiveTab] = useState("chats"); // "chats" | "doubts"
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchInput, setShowSearchInput] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [doubts, setDoubts] = useState([]);
   const [doubtRooms, setDoubtRooms] = useState([]);
@@ -232,7 +233,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center", flex: 1 }}>
+      <View style={{ width: "100%", alignSelf: "center", flex: 1, paddingHorizontal: Platform.OS === "web" ? 16 : 8 }}>
         {/* 1. Main Section Header (No Duplicate App Header) */}
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>All Chats</Text>
@@ -253,28 +254,39 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
             <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>Create Room</Text>
           </Pressable>
 
+          <Pressable
+            onPress={() => {
+              setShowSearchInput(!showSearchInput);
+              if (showSearchInput) setSearchQuery("");
+            }}
+            style={[styles.compactRefreshBtn, { backgroundColor: showSearchInput ? theme.primary : (theme.isDark ? "#1E263B" : "#F0EDFF") }]}
+          >
+            <Feather name="search" size={14} color={showSearchInput ? "#FFFFFF" : theme.primary} />
+          </Pressable>
+
           <Pressable onPress={() => fetchConversations()} style={[styles.compactRefreshBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F0EDFF" }]}>
             <Feather name="refresh-cw" size={14} color={theme.primary} />
           </Pressable>
         </View>
       </View>
 
-      {/* 2. Compact Search Bar */}
-      <View style={[styles.searchWrap, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-        <Feather name="search" size={15} color={theme.subtext} style={{ marginRight: 8 }} />
-        <TextInput
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search by name, role, or message..."
-          placeholderTextColor={theme.subtext}
-          style={[styles.searchInput, { color: theme.text }]}
-        />
-        {searchQuery ? (
-          <Pressable onPress={() => setSearchQuery("")}>
+      {/* 2. Toggled Search Bar */}
+      {showSearchInput ? (
+        <View style={[styles.searchWrap, { backgroundColor: theme.cardBg, borderColor: theme.border, marginTop: 8, marginBottom: 8 }]}>
+          <Feather name="search" size={15} color={theme.subtext} style={{ marginRight: 8 }} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search by name, role, or message..."
+            placeholderTextColor={theme.subtext}
+            autoFocus
+            style={[styles.searchInput, { color: theme.text }]}
+          />
+          <Pressable onPress={() => { setSearchQuery(""); setShowSearchInput(false); }}>
             <Feather name="x-circle" size={15} color={theme.subtext} />
           </Pressable>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
 
       {/* 3. Small Compact Segmented Tabs */}
       <View style={[styles.tabContainer, { backgroundColor: theme.isDark ? "#1E263B" : "#EFEFFF" }]}>
@@ -288,7 +300,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
             color={activeTab === "chats" ? theme.primary : theme.subtext}
             style={{ marginRight: 5 }}
           />
-          <Text style={[styles.smallTabText, { color: activeTab === "chats" ? (theme.isDark ? "#C7D2FE" : "#5B3CF5") : theme.subtext }, activeTab === "chats" && styles.smallTabTextActive]}>
+          <Text style={[styles.smallTabText, { color: activeTab === "chats" ? theme.primary : theme.subtext }, activeTab === "chats" && [styles.smallTabTextActive, { color: theme.primary }]]}>
             Chats ({conversations.length})
           </Text>
         </Pressable>
@@ -303,7 +315,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
             color={activeTab === "doubts" ? theme.primary : theme.subtext}
             style={{ marginRight: 5 }}
           />
-          <Text style={[styles.smallTabText, { color: activeTab === "doubts" ? (theme.isDark ? "#C7D2FE" : "#5B3CF5") : theme.subtext }, activeTab === "doubts" && styles.smallTabTextActive]}>
+          <Text style={[styles.smallTabText, { color: activeTab === "doubts" ? theme.primary : theme.subtext }, activeTab === "doubts" && [styles.smallTabTextActive, { color: theme.primary }]]}>
             Doubts ({doubts.length})
           </Text>
         </Pressable>
@@ -380,106 +392,122 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
         </ScrollView>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          {/* COLLABORATIVE DOUBT ROOMS SECTION */}
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Collaborative Doubt Rooms 💬</Text>
-            <View style={[styles.roomCountPill, { backgroundColor: theme.badgeBg }]}>
-              <Text style={[styles.roomCountText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>{doubtRooms.length} Active</Text>
-            </View>
-          </View>
-
-          {doubtRooms.map((roomItem) => (
-            <Pressable
-              key={roomItem.roomId}
-              onPress={() => handleSelectRoom(roomItem)}
-              style={[styles.doubtRoomCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-            >
-              <View style={styles.roomAvatarWrap}>
-                <Image source={{ uri: roomItem.assignedMentor?.avatarUrl }} style={[styles.roomMentorAvatar, { borderColor: theme.border }]} />
-                <View style={[styles.onlineBadgeDot, { borderColor: theme.cardBg }]} />
+          {/* Active Doubt Rooms Section */}
+          {doubtRooms.length > 0 ? (
+            <>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Active Doubt Rooms</Text>
+                <View style={[styles.roomCountPill, { backgroundColor: theme.badgeBg }]}>
+                  <Text style={[styles.roomCountText, { color: theme.primary }]}>{doubtRooms.length} Rooms</Text>
+                </View>
               </View>
 
-              <View style={styles.roomMainCol}>
-                <View style={styles.roomTitleRow}>
-                  <Text style={[styles.roomTitleText, { color: theme.text }]} numberOfLines={1}>{roomItem.title}</Text>
-                  
-                  <View style={[styles.roomIdTag, { backgroundColor: roomItem.isPrivate ? (theme.isDark ? "#7F1D1D" : "#FEE2E2") : theme.badgeBg }]}>
-                    <Text style={[styles.roomIdTagText, { color: roomItem.isPrivate ? "#DC2626" : (theme.isDark ? "#C7D2FE" : "#5B3CF5") }]}>
-                      {roomItem.isPrivate ? "🔒 Private" : roomItem.roomId}
+              {doubtRooms.map((roomItem) => (
+                <Pressable
+                  key={roomItem.roomId}
+                  onPress={() => handleSelectRoom(roomItem)}
+                  style={[styles.doubtRoomCard, { backgroundColor: theme.cardBg, borderColor: theme.border, paddingVertical: 12, paddingHorizontal: 14 }]}
+                >
+                  <View style={styles.roomAvatarWrap}>
+                    <Image source={{ uri: roomItem.assignedMentor?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" }} style={[styles.roomMentorAvatar, { borderColor: theme.border }]} />
+                    <View style={[styles.onlineBadgeDot, { borderColor: theme.cardBg }]} />
+                  </View>
+
+                  <View style={styles.roomMainCol}>
+                    <View style={styles.roomTitleRow}>
+                      <Text style={[styles.roomTitleText, { color: theme.text }]} numberOfLines={1}>{roomItem.title}</Text>
+                      {roomItem.isPrivate ? (
+                        <View style={[styles.roomIdTag, { backgroundColor: theme.isDark ? "#7F1D1D" : "#FEE2E2", flexDirection: "row", alignItems: "center", gap: 3 }]}>
+                          <Feather name="lock" size={10} color="#DC2626" />
+                          <Text style={[styles.roomIdTagText, { color: "#DC2626" }]}>Private</Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.roomIdTag, { backgroundColor: theme.badgeBg }]}>
+                          <Text style={[styles.roomIdTagText, { color: theme.primary }]}>{roomItem.roomId}</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <Text style={[styles.roomSubInfoText, { color: theme.subtext }]} numberOfLines={1}>
+                      Mentor: {roomItem.assignedMentor?.name || "TCM Mentor"} • {roomItem.membersCount || "1.2K"} Members • {roomItem.onlineCount || 86} Online
                     </Text>
                   </View>
-                </View>
 
-                <Text style={[styles.roomSubInfoText, { color: theme.subtext }]}>
-                  Assigned Mentor: <Text style={{ fontWeight: "700", color: theme.text }}>{roomItem.assignedMentor?.name}</Text> ({roomItem.assignedMentor?.role})
-                </Text>
+                  <Feather name="chevron-right" size={18} color={theme.subtext} style={{ marginLeft: 6 }} />
+                </Pressable>
+              ))}
+            </>
+          ) : null}
 
-                <View style={styles.roomMetaRow}>
-                  <Text style={[styles.roomMembersText, { color: theme.subtext }]}>{roomItem.membersCount || "1.2K"} Members • <Text style={{ color: "#10B981" }}>🟢 {roomItem.onlineCount || 86} Online</Text></Text>
-                  <View style={[styles.joinRoomBtn, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }]}>
-                    <Text style={[styles.joinRoomText, { color: theme.isDark ? "#C7D2FE" : "#5B3CF5" }]}>Enter Room &gt;</Text>
-                  </View>
+          {/* Individual Q&A Doubts Section */}
+          {doubts.length > 0 ? (
+            <>
+              <View style={[styles.sectionHeaderRow, { marginTop: doubtRooms.length > 0 ? 16 : 0 }]}>
+                <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>Individual Questions & Doubts</Text>
+                <View style={[styles.roomCountPill, { backgroundColor: theme.badgeBg }]}>
+                  <Text style={[styles.roomCountText, { color: theme.primary }]}>{doubts.length} Questions</Text>
                 </View>
               </View>
-            </Pressable>
-          ))}
 
+              {doubts.map((doubt) => {
+                let statusBg = theme.isDark ? "#064E3B" : "#E8F5E9";
+                let statusColor = theme.isDark ? "#34D399" : "#2E7D32";
+                if (doubt.status !== "Resolved") {
+                  statusBg = theme.isDark ? "#1E1B4B" : "#F0EDFF";
+                  statusColor = theme.isDark ? "#A78BFA" : "#5B3CF5";
+                }
+
+                return (
+                  <Pressable
+                    key={doubt.id}
+                    onPress={() => Alert.alert("Doubt Details", `Question: ${doubt.title}\nStatus: ${doubt.status}`)}
+                    style={[styles.doubtCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+                  >
+                    <View style={styles.doubtTopRow}>
+                      <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
+                        <Text style={[styles.statusPillText, { color: statusColor }]}>{doubt.status}</Text>
+                      </View>
+                      <Text style={[styles.doubtSubjectText, { color: theme.subtext }]}>{doubt.subject}</Text>
+                    </View>
+
+                    <Text style={[styles.doubtTitle, { color: theme.text }]} numberOfLines={2}>{doubt.title}</Text>
+
+                    <View style={styles.doubtFooterRow}>
+                      <View style={styles.doubtAuthorRow}>
+                        <Image source={{ uri: doubt.authorAvatar }} style={styles.doubtAuthorAvatar} />
+                        <Text style={[styles.doubtAuthorName, { color: theme.text }]}>{doubt.authorName}</Text>
+                        <Text style={[styles.doubtTimeAgo, { color: theme.subtext }]}>• {doubt.createdAt}</Text>
+                      </View>
+
+                      <View style={[styles.repliesCountBadge, { backgroundColor: theme.badgeBg }]}>
+                        <Feather name="message-square" size={11} color={theme.primary} style={{ marginRight: 4 }} />
+                        <Text style={[styles.repliesCountText, { color: theme.primary }]}>{doubt.repliesCount} Replies</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </>
+          ) : null}
+
+          {/* Loading Indicator */}
           {loadingDoubts ? (
             <View style={styles.loadingBox}>
               <ActivityIndicator size="small" color="#5B3CF5" />
               <Text style={styles.loadingText}>Loading Q&A doubts & rooms...</Text>
             </View>
-          ) : doubts.length === 0 ? (
+          ) : null}
+
+          {/* Empty State ONLY if BOTH doubtRooms and doubts are 0 */}
+          {!loadingDoubts && doubtRooms.length === 0 && doubts.length === 0 ? (
             <View style={[styles.emptyBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <View style={[styles.emptyIconCircle, { backgroundColor: theme.badgeBg }]}>
                 <Feather name="help-circle" size={24} color={theme.primary} />
               </View>
-              <Text style={[styles.emptyTitle, { color: theme.text }]}>No Doubts Posted Yet</Text>
-              <Text style={[styles.emptySub, { color: theme.subtext }]}>Ask a doubt and get instant help from mentors & peers!</Text>
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>No Doubt Rooms or Questions Yet</Text>
+              <Text style={[styles.emptySub, { color: theme.subtext }]}>Create a doubt room or post a question to get instant help from mentors & peers.</Text>
             </View>
-          ) : (
-            doubts.map((doubt) => {
-              let statusBg = theme.isDark ? "#451A03" : "#FFF3E0";
-              let statusColor = theme.isDark ? "#FB923C" : "#EF6C00";
-              if (doubt.status === "Resolved") {
-                statusBg = theme.isDark ? "#064E3B" : "#E8F5E9";
-                statusColor = theme.isDark ? "#34D399" : "#2E7D32";
-              } else if (doubt.status === "Answered") {
-                statusBg = theme.isDark ? "#1E1B4B" : "#F0EDFF";
-                statusColor = theme.isDark ? "#A78BFA" : "#5B3CF5";
-              }
-
-              return (
-                <Pressable
-                  key={doubt.id}
-                  onPress={() => Alert.alert("Doubt Details", `Question: ${doubt.title}\nStatus: ${doubt.status}`)}
-                  style={[styles.doubtCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-                >
-                  <View style={styles.doubtTopRow}>
-                    <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
-                      <Text style={[styles.statusPillText, { color: statusColor }]}>{doubt.status}</Text>
-                    </View>
-                    <Text style={[styles.doubtSubjectText, { color: theme.subtext }]}>{doubt.subject}</Text>
-                  </View>
-
-                  <Text style={[styles.doubtTitle, { color: theme.text }]}>{doubt.title}</Text>
-
-                  <View style={styles.doubtFooterRow}>
-                    <View style={styles.doubtAuthorRow}>
-                      <Image source={{ uri: doubt.authorAvatar }} style={styles.doubtAuthorAvatar} />
-                      <Text style={[styles.doubtAuthorName, { color: theme.text }]}>{doubt.authorName}</Text>
-                      <Text style={[styles.doubtTimeAgo, { color: theme.subtext }]}>• {doubt.createdAt}</Text>
-                    </View>
-
-                    <View style={[styles.repliesCountBadge, { backgroundColor: theme.badgeBg }]}>
-                      <Feather name="message-square" size={11} color={theme.primary} style={{ marginRight: 4 }} />
-                      <Text style={[styles.repliesCountText, { color: theme.primary }]}>{doubt.repliesCount} Replies</Text>
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            })
-          )}
+          ) : null}
         </ScrollView>
       )}
       </View>

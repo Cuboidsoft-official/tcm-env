@@ -492,13 +492,22 @@ export function getChatMessages(token, targetUserId) {
   });
 }
 
-export function sendChatMessage(token, { targetUserId, text }) {
+export function sendChatMessage(token, { targetUserId, text, mediaType, mediaUrl, driveLink, fileName }) {
   return request("/chat/send", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`
     },
-    body: JSON.stringify({ targetUserId, text })
+    body: JSON.stringify({ targetUserId, text, mediaType, mediaUrl, driveLink, fileName })
+  });
+}
+
+export function deleteChatMessage(token, messageId) {
+  return request(`/chat/messages/${messageId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
   });
 }
 
@@ -576,6 +585,15 @@ export function updateCourse(token, courseId, courseData) {
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify(courseData)
+  });
+}
+
+export function deleteCourse(token, courseId) {
+  return request(`/home/courses/${courseId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
   });
 }
 

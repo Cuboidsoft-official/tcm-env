@@ -176,7 +176,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
           <View style={styles.heroTopRow}>
             {/* Mentor Image */}
             <View style={styles.mentorImgWrap}>
-              {data.avatarUrl && !data.avatarUrl.includes("photo-1507003211169-0a1dd7228f2d") && !(Platform.OS === "web" && typeof data.avatarUrl === "string" && data.avatarUrl.startsWith("file://")) ? (
+              {data.avatarUrl && typeof data.avatarUrl === "string" && data.avatarUrl.trim().length > 5 ? (
                 <Image source={{ uri: data.avatarUrl }} style={[styles.mentorImg, { borderColor: theme.border }]} />
               ) : (
                 <View style={[styles.mentorInitialsWrap, { backgroundColor: theme.primary, borderColor: theme.border }]}>

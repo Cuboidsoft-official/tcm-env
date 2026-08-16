@@ -1361,6 +1361,10 @@ homeRouter.post("/post/:postId/comment/:commentId/like", requireAuth, async (req
 });
 
 homeRouter.post("/courses", requireAuth, async (req, res) => {
+  if (req.user.role === "mentor" && req.user.isApproved === false) {
+    return res.status(403).json({ message: "Your mentor account is pending admin approval. You cannot add courses until approved." });
+  }
+
   const memoryStore = req.app.locals.memoryStore;
   const {
     title,
@@ -1768,6 +1772,63 @@ homeRouter.put("/courses/:courseId", requireAuth, async (req, res) => {
   updatePopularItem(memoryStore?.learn?.popularCourses);
 
   return res.json({ message: "Course updated successfully!", course: updatedCourse || memoryCourse || { id: courseId, ...updateFields } });
+});
+
+homeRouter.delete("/courses/:courseId", requireAuth, async (req, res) => {
+  if (req.user.role === "mentor" && req.user.isApproved === false) {
+    return res.status(403).json({ message: "Your mentor account is pending admin approval. You cannot delete courses until approved." });
+  }
+
+  try {
+    const { courseId } = req.params;
+    const memoryStore = req.app.locals.memoryStore;
+
+    // 1. Delete from MongoDB Database if present
+    try {
+      const query = { $or: [{ customId: courseId }, { id: courseId }] };
+      if (mongoose.Types.ObjectId.isValid(courseId)) {
+        query.$or.unshift({ _id: courseId });
+      }
+      await Course.deleteOne(query);
+    } catch (e) {
+      console.warn("Course.deleteOne error:", e);
+    }
+
+    // 2. Remove from MemoryStore & App Locals
+    if (Array.isArray(req.app.locals.globalCourses)) {
+      req.app.locals.globalCourses = req.app.locals.globalCourses.filter(
+        (c) => String(c.id || c._id || c.customId) !== String(courseId)
+      );
+    }
+    if (Array.isArray(req.app.locals.globalPopularCourses)) {
+      req.app.locals.globalPopularCourses = req.app.locals.globalPopularCourses.filter(
+        (c) => String(c.id || c._id || c.customId) !== String(courseId)
+      );
+    }
+    if (memoryStore) {
+      if (Array.isArray(memoryStore.courses)) {
+        memoryStore.courses = memoryStore.courses.filter(
+          (c) => String(c.id || c._id || c.customId) !== String(courseId)
+        );
+      }
+      if (memoryStore.learn) {
+        if (Array.isArray(memoryStore.learn.explore)) {
+          memoryStore.learn.explore = memoryStore.learn.explore.filter(
+            (c) => String(c.id || c._id || c.customId) !== String(courseId)
+          );
+        }
+        if (Array.isArray(memoryStore.learn.popularCourses)) {
+          memoryStore.learn.popularCourses = memoryStore.learn.popularCourses.filter(
+            (c) => String(c.id || c._id || c.customId) !== String(courseId)
+          );
+        }
+      }
+    }
+
+    return res.json({ success: true, message: "Course deleted successfully.", deletedId: courseId });
+  } catch (err) {
+    return res.status(500).json({ message: "Could not delete course", error: err.message });
+  }
 });
 
 homeRouter.get("/course/:courseId", async (req, res) => {
@@ -2508,7 +2569,7 @@ homeRouter.get("/course/:courseId", async (req, res) => {
 });
 
 homeRouter.get("/continue-learning", requireAuth, async (req, res) => {
-  const userId = req.user?.id || "seed-user";
+  const userId = req.user?.id || req.user?._id || "seed-user";
   if (!req.app.locals.userReflections) {
     req.app.locals.userReflections = {};
   }
@@ -2520,10 +2581,43 @@ homeRouter.get("/continue-learning", requireAuth, async (req, res) => {
     lastCompletedClass: null
   };
 
-  // 1. Fetch real mentor created courses from MongoDB & Memory
+  // 1. Query user enrolled/allocated courses from MongoDB or memoryStore
+  let dbUser = null;
+  try {
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      dbUser = await User.findById(userId).lean();
+    }
+  } catch (e) {}
+
+  const currentUser = dbUser || req.user || {};
+  let enrolledList = currentUser.enrolledCourses || currentUser.allocatedCourses || [];
+
+  // Check memoryStore user enrolledCourses as fallback
+  if ((!enrolledList || enrolledList.length === 0) && req.app.locals.memoryStore?.users) {
+    const memUser = req.app.locals.memoryStore.users.find(
+      (u) => String(u._id || u.id) === String(userId) || (u.email && u.email === currentUser.email)
+    );
+    if (memUser && Array.isArray(memUser.enrolledCourses) && memUser.enrolledCourses.length > 0) {
+      enrolledList = memUser.enrolledCourses;
+    }
+  }
+
+  if (!Array.isArray(enrolledList) || enrolledList.length === 0) {
+    return res.json({
+      noEnrolledCourses: true,
+      courseTitle: "",
+      enrolledCourses: [],
+      reflection: userReflectionState,
+      userProgress: { courseProgress: 0, dayStreak: 0, xpPoints: 0, certificates: 0 },
+      learningJourney: [],
+      whatsNext: []
+    });
+  }
+
+  // 2. Student has actual enrolled courses
   let allCourses = (req.app.locals.memoryStore?.courses || []).concat(req.app.locals.globalCourses || []);
   try {
-    const dbCourses = await Course.find().sort({ createdAt: -1 }).lean();
+    const dbCourses = await Course.find().lean();
     dbCourses.forEach((dbC) => {
       if (!allCourses.some((c) => String(c.id || c.customId || c._id) === String(dbC.customId || dbC.id || dbC._id))) {
         allCourses.push(dbC);
@@ -2531,19 +2625,14 @@ homeRouter.get("/continue-learning", requireAuth, async (req, res) => {
     });
   } catch (e) {}
 
-  // 2. Pick active real mentor course
-  if (allCourses.length === 0) {
-    return res.json({
-      noEnrolledCourses: true,
-      courseTitle: "",
-      reflection: { reflectionRequired: false, reflectionSubmitted: false, nextClassUnlocked: true },
-      userProgress: { courseProgress: 0, dayStreak: 0, xpPoints: 0, certificates: 0 },
-      learningJourney: [],
-      whatsNext: []
-    });
-  }
+  const targetEnrolled = enrolledList[0];
+  const targetId = targetEnrolled.courseId || targetEnrolled.id;
 
-  const activeCourse = allCourses[0];
+  const activeCourse = allCourses.find((c) => String(c.id || c.customId || c._id) === String(targetId)) || {
+    id: targetId,
+    title: targetEnrolled.courseTitle || targetEnrolled.title || "Enrolled Course",
+    subtitle: targetEnrolled.subtitle || "Active Enrolled Program"
+  };
 
   const rawModules = activeCourse.modules && activeCourse.modules.length > 0
     ? activeCourse.modules

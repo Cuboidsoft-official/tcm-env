@@ -190,9 +190,9 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
     setShowPaymentModal(true);
   }
 
-  function handlePaymentComplete(purchasedCourse) {
+  function handlePaymentComplete(enrolledCourseData) {
     setIsEnrolledState(true);
-    Alert.alert("Course Unlocked! 🎉", `Congratulations! You now have full lifetime access to "${purchasedCourse?.title || "the course"}".`);
+    Alert.alert("Course Unlocked! 🎉", `Congratulations! You now have full lifetime access to "${enrolledCourseData?.title || "the course"}".`);
   }
 
   function handleShare() {
@@ -406,92 +406,100 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
     );
   }
 
+  const displayMentorName = courseData.mentorName || courseData.instructor || courseData.mentor?.name || "TCM Expert Educator";
+  const displayMentorRole = courseData.mentorRole || courseData.instructorRole || courseData.mentor?.role || "Senior Lead Mentor";
+  const displayMentorAvatar = safeImageUri(courseData.mentorAvatarUrl || courseData.mentorAvatar || courseData.instructorAvatar || courseData.mentor?.avatarUrl || courseData.mentor?.avatar, "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150");
+  const displayMentorId = courseData.mentorId || courseData.mentor?._id || courseData.mentor?.id || "m1";
+
   function renderSalaryInsightsCard() {
     const salary = aiInsights?.salaryInsights;
     if (!salary) return null;
 
+    const avgSalaryVal = stripEmojis(salary.avgSalary || "₹6.5L – ₹18.0L /yr");
+    const growthVal = stripEmojis(salary.growthRate || "+32% YoY High Growth");
+
     return (
-      <View style={[styles.sectionContainer, themedSurface]}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Salary & Career Prospects</Text>
-        <View style={[styles.sleekSalaryCard, themedSurface]}>
-          <View style={styles.sleekSalaryTop}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <View style={[styles.sleekSalaryIcon, { backgroundColor: theme.badgeBg }]}>
-                <MaterialCommunityIcons name="currency-inr" size={14} color={theme.primary} />
+      <View style={[styles.sectionContainer, themedSurface, { padding: 0, overflow: "hidden" }]}>
+        {/* Header Gradient */}
+        <LinearGradient
+          colors={theme.isDark ? ["#1E1B4B", "#0F172A"] : ["#0A6836", "#14532D"]}
+          style={{ paddingHorizontal: 16, paddingVertical: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255, 255, 255, 0.2)", alignItems: "center", justifyContent: "center" }}>
+              <MaterialCommunityIcons name="trending-up" size={20} color="#FFFFFF" />
+            </View>
+            <View>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: "#FFFFFF" }}>Career & Salary Spectrum</Text>
+              <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: "rgba(255, 255, 255, 0.8)" }}>Live Industry Benchmarks & Growth Insights</Text>
+            </View>
+          </View>
+          <View style={{ backgroundColor: "rgba(255, 255, 255, 0.2)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <MaterialCommunityIcons name="sparkles" size={11} color="#FFD700" />
+            <Text style={{ fontFamily: fonts.bold, fontSize: 10, color: "#FFFFFF" }}>AI Verified</Text>
+          </View>
+        </LinearGradient>
+
+        <View style={{ padding: 14, gap: 14 }}>
+          {/* Top 2 Salary Metric Cards */}
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <View style={[{ flex: 1, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: theme.border }, themedSoftSurface]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <MaterialCommunityIcons name="cash-multiple" size={16} color={theme.primary} />
+                <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: theme.subtext }}>Avg Starting CTC</Text>
               </View>
-              <Text style={[styles.sleekSalaryTitle, { color: theme.text }]}>Salary & Hiring Insights</Text>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 16, color: theme.primary }}>{avgSalaryVal}</Text>
             </View>
-            <View style={[styles.miniAiPill, { backgroundColor: theme.badgeBg }]}>
-              <MaterialCommunityIcons name="sparkles" size={9} color={theme.primary} />
-              <Text style={[styles.miniAiPillText, { color: theme.primary }]}>AI</Text>
+
+            <View style={[{ flex: 1, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: theme.border }, themedSoftSurface]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <MaterialCommunityIcons name="chart-line-variant" size={16} color="#16A34A" />
+                <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: theme.subtext }}>Industry Demand</Text>
+              </View>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 16, color: "#16A34A" }}>{growthVal}</Text>
             </View>
           </View>
 
-          {/* Metrics Row */}
-          <View style={[styles.sleekMetricsRow, themedSoftSurface]}>
-            <View style={styles.sleekMetricCol}>
-              <Text style={[styles.sleekMetricLabel, { color: theme.subtext }]}>Avg Starting CTC</Text>
-              <Text style={[styles.sleekMetricVal, { color: theme.primary }]}>{stripEmojis(salary.avgSalary || "₹6.5L – ₹18.0L /yr")}</Text>
-            </View>
-            <View style={[styles.sleekMetricDivider, { backgroundColor: theme.border }]} />
-            <View style={styles.sleekMetricCol}>
-              <Text style={[styles.sleekMetricLabel, { color: theme.subtext }]}>Market Demand</Text>
-              <Text style={[styles.sleekMetricVal, { color: "#2E7D32" }]}>{stripEmojis(salary.growthRate || "+28% YoY")}</Text>
-            </View>
-          </View>
-
-          {/* Companies with Logos */}
+          {/* Hiring Partners Carousel */}
           {salary.hiringCompanies && salary.hiringCompanies.length > 0 ? (
-            <View style={{ marginTop: 10 }}>
-              <Text style={styles.sleekSectionSubLabel}>Top Hiring Companies:</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 6, paddingTop: 4 }}>
+            <View>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: theme.text, marginBottom: 8 }}>Top Hiring Partners:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 8 }}>
                 {salary.hiringCompanies.map((comp, cIdx) => (
-                  <View key={cIdx} style={styles.sleekCompanyChip}>
+                  <View key={cIdx} style={[{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: theme.border }, themedSoftSurface]}>
                     <Image
                       source={{ uri: getCompanyLogoUrl(comp) }}
-                      style={styles.sleekCompanyLogo}
+                      style={{ width: 20, height: 20, borderRadius: 4 }}
                       resizeMode="contain"
                     />
-                    <Text style={styles.sleekCompanyText}>{stripEmojis(comp)}</Text>
+                    <Text style={{ fontFamily: fonts.semiBold, fontSize: 12, color: theme.text }}>{stripEmojis(comp)}</Text>
                   </View>
                 ))}
               </ScrollView>
             </View>
           ) : null}
 
-          {/* Target Career Roles */}
+          {/* Target Job Roles */}
           {salary.careerRoles && salary.careerRoles.length > 0 ? (
-            <View style={{ marginTop: 10 }}>
-              <Text style={styles.sleekSectionSubLabel}>Target Roles:</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 3 }}>
+            <View>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: theme.text, marginBottom: 6 }}>Target Roles:</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                 {salary.careerRoles.map((role, rIdx) => (
-                  <View key={rIdx} style={styles.sleekRoleTag}>
-                    <Text style={styles.sleekRoleTagText}>{stripEmojis(role)}</Text>
+                  <View key={rIdx} style={{ backgroundColor: theme.badgeBg, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}>
+                    <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: theme.primary }}>💼 {stripEmojis(role)}</Text>
                   </View>
                 ))}
               </View>
             </View>
           ) : null}
-        </View>
-      </View>
-    );
-  }
 
-  if (loading) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.bg }]}>
-        <View style={[styles.headerRow, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
-          <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.badgeBg }]}>
-            <Feather name="arrow-left" size={20} color={theme.text} />
-          </Pressable>
-          <View style={styles.headerTitleWrap}>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>Course Details</Text>
-            <Text style={[styles.headerSub, { color: theme.subtext }]}>Fetching live data...</Text>
+          {/* Bottom Career Support Footer */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: theme.isDark ? "#1E293B" : "#ECFDF5", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: theme.isDark ? "#334155" : "#A7F3D0" }}>
+            <MaterialCommunityIcons name="check-decagram" size={16} color="#10B981" />
+            <Text style={{ flex: 1, fontFamily: fonts.medium, fontSize: 11, color: theme.isDark ? "#6EE7B7" : "#047857" }}>
+              Includes 1-on-1 Resume Review, Live Mock Interviews & TCM Placement Network Support
+            </Text>
           </View>
-        </View>
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 60 }}>
-          <ActivityIndicator size="large" color={theme.primary} />
-          <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: theme.subtext, marginTop: 12 }}>Loading Course Details...</Text>
         </View>
       </View>
     );
@@ -623,25 +631,24 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Lead Mentor & Instructor</Text>
           <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}>
             <Image
-              source={{ uri: safeImageUri(courseData.mentorAvatarUrl || courseData.mentorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150") }}
-              style={{ width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: theme.primary }}
+              source={{ uri: displayMentorAvatar }}
+              style={{ width: 54, height: 54, borderRadius: 27, borderWidth: 2, borderColor: theme.primary }}
             />
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: theme.text }}>{courseData.mentorName || "Rahul Sharma"}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: theme.text }}>{displayMentorName}</Text>
                 <MaterialCommunityIcons name="check-decagram" size={15} color={theme.primary} />
               </View>
-              <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: theme.subtext }}>{courseData.mentorRole || "Full Stack Lead Mentor"}</Text>
+              <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: theme.subtext }}>{displayMentorRole}</Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 }}>
                 <FontAwesome name="star" size={11} color="#FFB800" />
-                <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: theme.text }}>4.9</Text>
-                <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: theme.subtext }}>(1.2K Reviews)</Text>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: theme.text }}>{courseData.mentorRating || "4.9"}</Text>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: theme.subtext }}>({courseData.mentorReviews || courseData.reviews || "1.2K"} Reviews)</Text>
               </View>
             </View>
             <TouchableOpacity
               onPress={() => {
-                const targetMId = courseData.mentorId || "m1";
-                if (onSelectMentor) onSelectMentor(targetMId);
+                if (onSelectMentor) onSelectMentor(displayMentorId);
                 else if (onBack) onBack();
               }}
               activeOpacity={0.8}
@@ -1622,6 +1629,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderTopWidth: 1,
     borderTopColor: "#F0EFFF",
+    zIndex: 999,
+    elevation: 10,
     ...shadow.soft
   },
   priceCol: {},

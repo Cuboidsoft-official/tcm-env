@@ -416,25 +416,31 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                 <Text style={{ fontSize: 10, fontWeight: "700", color: theme.subtext }}>Student</Text>
               </View>
             )}
-            {profileUser.verified ? (
-              <TouchableOpacity
-                onPress={() => setGetVerifiedModalOpen(true)}
-                activeOpacity={0.85}
-                style={[styles.verifiedPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}
-              >
-                <MaterialCommunityIcons name="check-decagram" size={13} color={theme.primary} />
-                <Text style={[styles.verifiedPillText, { color: theme.primary }]}>Verified</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                onPress={() => setGetVerifiedModalOpen(true)}
-                activeOpacity={0.85}
-                style={[styles.getVerifiedPill, { backgroundColor: theme.primary }]}
-              >
-                <Ionicons name="sparkles" size={11} color="#FFFFFF" />
-                <Text style={styles.getVerifiedPillText}>Get Verified</Text>
-              </TouchableOpacity>
-            )}
+            {(function() {
+              const isStudentUser = !(profileUser.isMentor || profileUser.role?.toLowerCase().includes("mentor") || profileUser.role === "partner" || profileUser.role === "admin");
+              const isVerifiedBadgeActive = isStudentUser
+                ? Boolean(profileUser.verified && (profileUser.isPremium || profileUser.isPro || profileUser.hasVerifiedSubscription))
+                : Boolean(profileUser.verified);
+              return isVerifiedBadgeActive ? (
+                <TouchableOpacity
+                  onPress={() => setGetVerifiedModalOpen(true)}
+                  activeOpacity={0.85}
+                  style={[styles.verifiedPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}
+                >
+                  <MaterialCommunityIcons name="check-decagram" size={13} color={theme.primary} />
+                  <Text style={[styles.verifiedPillText, { color: theme.primary }]}>Verified</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => setGetVerifiedModalOpen(true)}
+                  activeOpacity={0.85}
+                  style={[styles.getVerifiedPill, { backgroundColor: theme.primary }]}
+                >
+                  <Ionicons name="sparkles" size={11} color="#FFFFFF" />
+                  <Text style={styles.getVerifiedPillText}>Get Verified</Text>
+                </TouchableOpacity>
+              );
+            })()}
           </View>
 
           <View style={styles.handleRow}>

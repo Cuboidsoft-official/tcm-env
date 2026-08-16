@@ -92,6 +92,12 @@ async function checkIsMutualFriend(req, userId, targetUserId) {
 
   if (tId === "m1" || uId === "m1" || uId === tId) return true;
 
+  // Channels / Doubts / Broadcasters / Mentors / Admins are always authorized
+  const isChannelOrRoom = tId.startsWith("comm") || tId.startsWith("community") || tId.startsWith("chan") || tId.startsWith("room") || tId.startsWith("NEET-") || tId.startsWith("JEE-");
+  const isUserMentorOrAdmin = req?.user?.role === "mentor" || req?.user?.role === "admin" || req?.user?.isMentor;
+
+  if (isChannelOrRoom || isUserMentorOrAdmin) return true;
+
   const gStore = req.app.locals.globalFriendStore || {};
   if (gStore[`${uId}_${tId}`] || gStore[`${tId}_${uId}`]) return true;
 
@@ -333,7 +339,7 @@ chatRouter.post("/send", requireAuth, async (req, res) => {
       senderAvatar: userAvatar,
       text: text.trim() || (driveLink ? `📁 Google Drive Doc: ${fileName || "Shared File"}` : "📷 Shared Image"),
       mediaType: mediaType || (driveLink ? "document" : mediaUrl ? "image" : null),
-      mediaUrl: typeof mediaUrl === "string" && /^(https?:\/\/|\/uploads\/|data:image\/|data:video\/)/i.test(mediaUrl.trim()) ? mediaUrl.trim() : null,
+      mediaUrl: typeof mediaUrl === "string" && mediaUrl.trim() ? mediaUrl.trim() : null,
       driveLink: driveLink || null,
       fileName: fileName || null,
       time: timeStr,
@@ -411,5 +417,35 @@ chatRouter.post("/send", requireAuth, async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ message: err.message });
+  }
+});
+
+chatRouter.delete("/messages/:messageId", requireAuth, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    // 1. Remove from in-memory globalChatStore
+    const store = getGlobalChatStore(req);
+    Object.keys(store).forEach((key) => {
+      if (store[key] && Array.isArray(store[key].messages)) {
+        store[key].messages = store[key].messages.filter(
+          (m) => String(m.id || m._id) !== String(messageId)
+        );
+      }
+    });
+
+    // 2. Remove from MongoDB ChatMessage collection
+    try {
+      await ChatMessage.deleteMany({
+        $or: [
+          { _id: messageId },
+          { id: messageId }
+        ]
+      });
+    } catch (e) {}
+
+    return res.json({ success: true, message: "Message deleted successfully." });
+  } catch (err) {
+    return res.status(500).json({ message: "Could not delete message." });
   }
 });

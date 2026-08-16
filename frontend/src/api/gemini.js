@@ -100,29 +100,31 @@ export async function generateSyllabusWithAI(courseTitle, category = "TCM One In
   }
   totalDays = Math.min(Math.max(totalDays, 5), 45);
 
-  const prompt = `You are Google Gemini AI acting as Senior Curriculum Architect at TCM One Academy. Design an IN-DEPTH, highly specific, DAY-BY-DAY day-wise curriculum for a course titled "${courseTitle}" under category "${category}" planned for a total duration of "${totalDays} Days".
+  const titleLower = (courseTitle || "").toLowerCase();
 
-CRITICAL REQUIREMENTS:
-1. Generate EXACTLY ${totalDays} Day-by-Day modules. Title each module clearly starting with "Day 1:", "Day 2:", "Day 3:", ..., "Day ${totalDays}:".
-2. Every day module MUST contain 2 to 3 detailed practical lessons 100% SPECIFIC to "${courseTitle}". Mention specific tools, libraries, or frameworks of "${courseTitle}".
+  const prompt = `You are Groq AI acting as Lead Curriculum Architect & Senior Staff Engineer at TCM One Academy.
+Design an EXTREMELY DETAILED, RESEARCH-GRADE, DEEP DAY-BY-DAY CURRICULUM for a course titled "${courseTitle}" under category "${category}" planned for a total duration of "${totalDays} Days".
+
+CRITICAL QUALITY INSTRUCTIONS FOR GRANULAR SUB-TOPICS:
+1. Generate EXACTLY ${totalDays} Day-by-Day modules. Every module title MUST be comprehensive and specific, starting with "Day 1:", "Day 2:", ..., "Day ${totalDays}:".
+2. DO NOT output generic high-level summaries. You MUST specify exact sub-topics, tags, frameworks, libraries, HTML/CSS elements, API methods, and practical labs!
+3. Granularity Rules based on Topic:
+   - If Web Development / MERN / Full Stack: Break down into HTML5 semantics (<header>, <nav>, <section>, <article>, <footer>, Forms, Input Validation, Media tags, Accessibility), CSS3 (Box Model, Flexbox [justify-content, align-items], CSS Grid [grid-template-columns, gap], Media Queries), CSS Frameworks (Bootstrap 5 Grid System & Components / Tailwind CSS Utilities), Modern JavaScript ES6+ (Arrow Functions, Destructuring, Promises, Async/Await, DOM Selection, Event Delegation), React.js (JSX, Props, useState, useEffect, Custom Hooks, Context API, React Router v6), Node.js & Express (Routing, Custom Middleware, JWT Bearer Auth, Bcrypt Password Encryption, Multer Uploads), MongoDB & Mongoose (Schemas, CRUD, .populate(), Aggregation Pipelines $match/$group, Indexing), and Cloud Deployment (Vercel, Render, CI/CD).
+   - If Python / DSA: Break down into Python syntax, Functions, OOP (Classes, Inheritance, Polymorphism), Arrays, Strings, Linked Lists, Stacks, Queues, Hash Maps, Trees (BST, Traversal), Graphs (BFS, DFS), Dynamic Programming (Memoization, Tabulation).
+   - If AI / Machine Learning: Break down into NumPy arrays, Pandas DataFrames, EDA, Matplotlib, Supervised Learning, Classification, Decision Trees, K-Means, Neural Networks, PyTorch/TensorFlow, CNNs, Transformers, RAG & LLMs.
+   - If Mobile App Dev: Break down into React Native / Flutter components, Flexbox layouts, Navigation (Stack, Tabs), Native Device APIs (Camera, Location, Push Notifications), State Management, Local Storage (AsyncStorage/SQLite), App Store & Play Store publishing.
+4. Each day module MUST contain 3 IN-DEPTH, PRACTICAL LESSONS specifying exact tools, methods, syntax, and hands-on coding labs!
 
 Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational text):
 {
   "modules": [
     {
       "id": "m1",
-      "title": "Day 1: ${courseTitle} Foundations & Tooling Setup",
+      "title": "Day 1: [Detailed Industry Topic Title specifying exact technologies/frameworks]",
       "lessons": [
-        "Lesson 1.1: Tooling & Environment Configuration",
-        "Lesson 1.2: Essential Fundamentals & Core Syntax"
-      ]
-    },
-    {
-      "id": "m2",
-      "title": "Day 2: ${courseTitle} Core Architecture & Logic",
-      "lessons": [
-        "Lesson 2.1: Key Architectural Patterns",
-        "Lesson 2.2: Live API & State Management"
+        "Lesson 1.1: [Granular Subtopic 1 listing specific tags, methods, libraries]",
+        "Lesson 1.2: [Granular Subtopic 2 listing specific concepts, syntax, patterns]",
+        "Lesson 1.3: Hands-on Lab: [Specific practical building exercise & code lab]"
       ]
     }
   ]
@@ -142,41 +144,417 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
       }
     }
   } catch (error) {
-    console.warn("Google Gemini Syllabus Generation failed, using dynamic N-Day fallback:", error);
+    console.warn("Groq AI Syllabus Generation failed, using dynamic research fallback:", error);
   }
 
-  // Dynamic N-Day Fallback Engine for all selected days (Day 1 to Day N)
-  const dayTopicTemplates = [
-    "Environment Setup & Tooling Configuration",
-    "Core Foundations & Basic Architecture",
-    "Essential Concepts & Practical Syntax",
-    "Hands-on Component & Interface Design",
-    "State Management & Data Flow Architecture",
-    "API Connectivity & Asynchronous Data Fetching",
-    "Backend Routing & Middleware Configuration",
-    "Database Modeling & Schemas Design",
-    "Authentication & Security Authorization",
-    "Real-time Data Communication & WebSockets",
-    "Error Handling & Boundary Strategies",
-    "Automated Testing & Integration Suites",
-    "Performance Tuning & Memory Optimization",
-    "Cloud Hosting & DevOps Pipeline Setup",
-    "Production Capstone Architecture & Deployment"
-  ];
+  // Deep Domain-Specific Research Fallback Curriculums
+  let researchTemplates = [];
+
+  if (titleLower.includes("mern") || titleLower.includes("full stack") || titleLower.includes("web") || titleLower.includes("frontend") || titleLower.includes("backend")) {
+    researchTemplates = [
+      {
+        title: "HTML5 Foundations & Semantic Web Structure",
+        lessons: [
+          "Lesson 1: Semantic Tags (<header>, <nav>, <main>, <article>, <section>, <footer>) & Page Layouts",
+          "Lesson 2: HTML Forms, Input Types (email, date, color, select, textarea) & Native Validations",
+          "Lesson 3: Hands-on Lab: Building an Accessible Semantic Web Document with Form Controls"
+        ]
+      },
+      {
+        title: "HTML5 Advanced Media, Audio/Video & Accessibility",
+        lessons: [
+          "Lesson 1: Embedding Media with <audio>, <video>, <canvas>, SVG & iFrames",
+          "Lesson 2: Web Accessibility (WCAG, ARIA Roles, Screen Reader Support & Tab Indexing)",
+          "Lesson 3: Hands-on Lab: Creating a Responsive Multi-Media Dashboard Page"
+        ]
+      },
+      {
+        title: "CSS3 Fundamentals, Box Model & Typography",
+        lessons: [
+          "Lesson 1: CSS Selectors (Element, Class, ID, Attribute, Pseudo-classes :hover, :nth-child)",
+          "Lesson 2: CSS Box Model (margin, padding, border, content, box-sizing: border-box)",
+          "Lesson 3: Hands-on Lab: Designing Modern Typographic Cards & Custom Utility Classes"
+        ]
+      },
+      {
+        title: "CSS Flexbox Layout System & Navigation Design",
+        lessons: [
+          "Lesson 1: Flex Container Properties (display: flex, flex-direction, justify-content, align-items)",
+          "Lesson 2: Flex Item Mechanics (flex-grow, flex-shrink, flex-basis, align-self)",
+          "Lesson 3: Hands-on Lab: Building a Fully Responsive Header Bar & Flexbox Product Grid"
+        ]
+      },
+      {
+        title: "CSS Grid Architecture & Responsive Media Queries",
+        lessons: [
+          "Lesson 1: Grid Grid Layout (grid-template-columns, grid-template-rows, gap, grid-area)",
+          "Lesson 2: Responsive Breakpoints with Media Queries (@media max-width: 768px, 1024px)",
+          "Lesson 3: Hands-on Lab: Constructing a Fluid Multi-Column Dashboard Layout for Mobile & Web"
+        ]
+      },
+      {
+        title: "CSS Frameworks: Bootstrap 5 & Component Library Integration",
+        lessons: [
+          "Lesson 1: Bootstrap 5 Grid System (container, row, col-md-6, col-lg-4) & Spacing Utilities",
+          "Lesson 2: Bootstrap UI Components (Navbar, Cards, Modals, Badges, Buttons, Forms & Tooltips)",
+          "Lesson 3: Hands-on Lab: Rapid Prototyping an Admin Dashboard with Bootstrap 5"
+        ]
+      },
+      {
+        title: "Modern CSS Utilities: Tailwind CSS Setup & Custom Variables",
+        lessons: [
+          "Lesson 1: Tailwind CSS Utility-First Styling (Flex, Grid, Padding, Dark Mode Variant)",
+          "Lesson 2: Custom CSS Variables (var(--primary)) & Dark/Light Theme Switching",
+          "Lesson 3: Hands-on Lab: Building a Sleek Glassmorphism SaaS Hero Section with Tailwind"
+        ]
+      },
+      {
+        title: "Modern JavaScript (ES6+) Syntax & Core Logic",
+        lessons: [
+          "Lesson 1: Variable Scoping (const vs let vs var), Template Literals & Arrow Functions",
+          "Lesson 2: Object & Array Destructuring, Spread Operator (...), Rest Parameters & Default Values",
+          "Lesson 3: Hands-on Lab: Writing Modular Utility Functions & Object Manipulations"
+        ]
+      },
+      {
+        title: "DOM Manipulation & Interactive Event Handling",
+        lessons: [
+          "Lesson 1: Document Object Model Selection (document.querySelector, querySelectorAll)",
+          "Lesson 2: Event Listeners (click, submit, keydown), Event Bubbling & Delegation",
+          "Lesson 3: Hands-on Lab: Building an Interactive Dynamic Todo App with LocalStorage Sync"
+        ]
+      },
+      {
+        title: "Asynchronous JavaScript, Promises & Fetch API",
+        lessons: [
+          "Lesson 1: Callbacks, Event Loop, Microtask Queue & JavaScript Promises",
+          "Lesson 2: Async/Await Syntax, Fetch API (GET/POST Requests) & Error Handling (try/catch)",
+          "Lesson 3: Hands-on Lab: Building a Live Weather & News Aggregator Widget via Public APIs"
+        ]
+      },
+      {
+        title: "Advanced JavaScript Array Methods & Functional Logic",
+        lessons: [
+          "Lesson 1: Functional Iterators (map(), filter(), reduce(), find(), every(), some())",
+          "Lesson 2: Closures, Lexical Scope, Higher-Order Functions & Pure Functions",
+          "Lesson 3: Hands-on Lab: Filtering, Sorting & Aggregating Complex JSON Data Arrays"
+        ]
+      },
+      {
+        title: "React.js Core Architecture & JSX Templating",
+        lessons: [
+          "Lesson 1: Virtual DOM vs Real DOM, React Reconciliation & Component Hierarchy",
+          "Lesson 2: Functional Components, JSX Syntax Rules, Props & Conditional Rendering",
+          "Lesson 3: Hands-on Lab: Initializing a React Vite App & Modular Component Library"
+        ]
+      },
+      {
+        title: "React Hooks Deep Dive: useState & useEffect",
+        lessons: [
+          "Lesson 1: Local Component State Management with useState Hook & Immutable Updates",
+          "Lesson 2: Side Effects & Lifecycle Management with useEffect Hook & Dependency Arrays",
+          "Lesson 3: Hands-on Lab: Fetching Live API Data, Loading Spinners & Error State Handling"
+        ]
+      },
+      {
+        title: "Advanced React Hooks & Performance Tuning",
+        lessons: [
+          "Lesson 1: DOM References with useRef Hook & Storing Mutable Non-render Values",
+          "Lesson 2: Memoization & Performance Optimization with useMemo & useCallback Hooks",
+          "Lesson 3: Hands-on Lab: Building a High-Performance Search Filter Component"
+        ]
+      },
+      {
+        title: "React State Architecture: Context API & Global State",
+        lessons: [
+          "Lesson 1: React Context API (createContext, useContext) & Provider Pattern Setup",
+          "Lesson 2: Global State vs Local State (Auth State, Theme State, Cart State Management)",
+          "Lesson 3: Hands-on Lab: Implementing a Dark/Light Theme Switcher & Global User Context"
+        ]
+      },
+      {
+        title: "Single Page Application Routing: React Router v6",
+        lessons: [
+          "Lesson 1: BrowserRouter, Routes, Route, Link & NavLink Active Styles",
+          "Lesson 2: Dynamic URL Parameters (useParams), Programmatic Navigation (useNavigate) & Protected Routes",
+          "Lesson 3: Hands-on Lab: Building Multi-page E-Commerce Navigation with Shopping Cart"
+        ]
+      },
+      {
+        title: "Node.js Core Runtime & Express.js Server Architecture",
+        lessons: [
+          "Lesson 1: Node.js Non-Blocking I/O, Event Loop, CommonJS vs ES Modules (import/export)",
+          "Lesson 2: Express.js App Setup, HTTP Server Initialization & Basic Route Handlers",
+          "Lesson 3: Hands-on Lab: Building a Basic Node.js Express REST API Server"
+        ]
+      },
+      {
+        title: "Express RESTful API Design & Custom Middleware",
+        lessons: [
+          "Lesson 1: REST API Standards (GET, POST, PUT, DELETE), Status Codes & Response Payloads",
+          "Lesson 2: Express Middleware (express.json(), CORS, Custom Logger, Global Error Handler)",
+          "Lesson 3: Hands-on Lab: Building a RESTful API Endpoints for Resource Management"
+        ]
+      },
+      {
+        title: "Backend Security, JWT Authentication & Password Hashing",
+        lessons: [
+          "Lesson 1: Password Encryption using bcryptjs Hashing & Salt Rounds",
+          "Lesson 2: JSON Web Tokens (JWT) Generation (jwt.sign()), Bearer Auth Middleware & Payload Verification",
+          "Lesson 3: Hands-on Lab: Implementing Complete User Signup, Login & Protected Route Auth"
+        ]
+      },
+      {
+        title: "Database Engineering: MongoDB & Mongoose Schemas",
+        lessons: [
+          "Lesson 1: NoSQL Document Database Concepts & MongoDB Atlas Cloud Cluster Configuration",
+          "Lesson 2: Mongoose Models, Schemas, Field Types (String, Number, Date, ObjectId) & Validations",
+          "Lesson 3: Hands-on Lab: Connecting Express Server to MongoDB & Defining Schema Models"
+        ]
+      },
+      {
+        title: "Mongoose CRUD Operations & Relational Population",
+        lessons: [
+          "Lesson 1: Mongoose Queries (find(), findOne(), findByIdAndUpdate(), deleteOne())",
+          "Lesson 2: Document Relationships & Relational Joins using Mongoose .populate()",
+          "Lesson 3: Hands-on Lab: Creating User-Post Relational Data Models with Population"
+        ]
+      },
+      {
+        title: "Mongoose Aggregation Pipelines & Query Indexing",
+        lessons: [
+          "Lesson 1: Mongoose Aggregation Pipeline Stages ($match, $group, $sort, $project, $unwind)",
+          "Lesson 2: MongoDB Database Indexing for High-Speed Read Performance & Unique Constraints",
+          "Lesson 3: Hands-on Lab: Building Analytics Aggregation Queries for User Statistics"
+        ]
+      },
+      {
+        title: "File Uploads, Cloud Storage & Multer Integration",
+        lessons: [
+          "Lesson 1: Multipart Form Data Handling with Multer Backend Middleware",
+          "Lesson 2: Uploading Images & Assets to Cloudinary / AWS S3 & Storing Hosted URLs in MongoDB",
+          "Lesson 3: Hands-on Lab: Building User Profile Picture Upload Feature in React & Express"
+        ]
+      },
+      {
+        title: "Full Stack MERN Capstone Integration & Deployment",
+        lessons: [
+          "Lesson 1: Connecting React Frontend Axios Client with Express Backend APIs",
+          "Lesson 2: Production Environment Variables (.env), CORS Setup & Deployment to Vercel/Render",
+          "Lesson 3: Hands-on Lab: Deploying Production-Ready Full Stack MERN Application Live"
+        ]
+      }
+    ];
+  } else if (titleLower.includes("python") || titleLower.includes("dsa") || titleLower.includes("data structure") || titleLower.includes("algorithm")) {
+    researchTemplates = [
+      {
+        title: "Python Syntax & Foundations",
+        lessons: [
+          "Lesson 1: Python Data Types (int, float, str, bool, list, dict, set, tuple) & Input/Output",
+          "Lesson 2: Control Flow (if-elif-else, match-case, for/while loops, break/continue)",
+          "Lesson 3: Hands-on Lab: Building Command-Line Utilities & Logic Calculators in Python"
+        ]
+      },
+      {
+        title: "Python Functions & Modular Programming",
+        lessons: [
+          "Lesson 1: Functions (*args, **kwargs, lambda expressions, map(), filter(), zip())",
+          "Lesson 2: Python Modules, Packages, File I/O (open(), read(), write(), json parsing)",
+          "Lesson 3: Hands-on Lab: Building File Parser & Data Transformation Scripts"
+        ]
+      },
+      {
+        title: "Object-Oriented Programming (OOP) in Python",
+        lessons: [
+          "Lesson 1: Classes, Objects, __init__ Constructor, Instance vs Class Attributes",
+          "Lesson 2: Inheritance, Method Overriding, Encapsulation, Polymorphism & Abstract Base Classes",
+          "Lesson 3: Hands-on Lab: Designing Object-Oriented Banking System Architecture"
+        ]
+      },
+      {
+        title: "Data Structures: Dynamic Arrays & String Manipulation",
+        lessons: [
+          "Lesson 1: Array Mechanics, Memory Allocation, Time & Space Complexity (Big O Notation)",
+          "Lesson 2: String Slicing, Pattern Matching, Two Pointers Technique & Sliding Window Patterns",
+          "Lesson 3: Hands-on Lab: Solving LeetCode Array Problems (Two Sum, Container With Most Water)"
+        ]
+      },
+      {
+        title: "Data Structures: Linked Lists (Singly & Doubly)",
+        lessons: [
+          "Lesson 1: Singly Linked List Node Architecture, Insertion, Deletion & Traversal",
+          "Lesson 2: Doubly Linked Lists & Fast & Slow Pointers (Cycle Detection, Middle of Linked List)",
+          "Lesson 3: Hands-on Lab: Implementing Linked List Reversal & Merge Two Sorted Lists"
+        ]
+      },
+      {
+        title: "Data Structures: Stacks, Queues & Monotonic Stack",
+        lessons: [
+          "Lesson 1: Stack LIFO Operations (Array & Linked List implementation, Valid Parentheses)",
+          "Lesson 2: Queue FIFO Operations, Deque, Circular Queue & Monotonic Stack Pattern",
+          "Lesson 3: Hands-on Lab: Implementing Min-Stack & Next Greater Element Algorithms"
+        ]
+      },
+      {
+        title: "Data Structures: Hash Tables & Hash Maps",
+        lessons: [
+          "Lesson 1: Hashing Mechanics, Hash Functions, Collision Resolution (Chaining vs Open Addressing)",
+          "Lesson 2: Frequency Maps, Prefix Sum Arrays & Subarray Sum Equals K Pattern",
+          "Lesson 3: Hands-on Lab: Solving Group Anagrams & Longest Consecutive Sequence"
+        ]
+      },
+      {
+        title: "Algorithms: Sorting & Searching Algorithms",
+        lessons: [
+          "Lesson 1: Binary Search on Sorted Arrays & Search Space Division",
+          "Lesson 2: Sorting Algorithms (Bubble, Insertion, MergeSort, QuickSort, Space/Time Analysis)",
+          "Lesson 3: Hands-on Lab: Implementing Custom QuickSort & Search in Rotated Sorted Array"
+        ]
+      },
+      {
+        title: "Data Structures: Binary Trees & Binary Search Trees (BST)",
+        lessons: [
+          "Lesson 1: Binary Tree Node Architecture, Depth-First Traversals (In-order, Pre-order, Post-order)",
+          "Lesson 2: Level-Order Traversal (BFS), Binary Search Tree Insertion, Deletion & Search",
+          "Lesson 3: Hands-on Lab: Validating BST, Lowest Common Ancestor & Tree Diameter"
+        ]
+      },
+      {
+        title: "Data Structures: Graphs & Graph Traversal Algorithms",
+        lessons: [
+          "Lesson 1: Graph Representation (Adjacency Matrix & Adjacency List)",
+          "Lesson 2: Graph Traversal: Breadth-First Search (BFS) & Depth-First Search (DFS)",
+          "Lesson 3: Hands-on Lab: Cycle Detection in Directed/Undirected Graphs & Connected Components"
+        ]
+      },
+      {
+        title: "Advanced Algorithms: Graph Shortest Path & Topological Sort",
+        lessons: [
+          "Lesson 1: Dijkstra's Algorithm for Shortest Path in Weighted Graphs",
+          "Lesson 2: Topological Sort (Kahn's Algorithm BFS & DFS Course Schedule Pattern)",
+          "Lesson 3: Hands-on Lab: Solving Course Schedule & Network Delay Time Problems"
+        ]
+      },
+      {
+        title: "Dynamic Programming (DP): Recursion & Memoization",
+        lessons: [
+          "Lesson 1: Recursion Trees, Overlapping Subproblems & Optimal Substructure",
+          "Lesson 2: Top-Down DP with Memoization vs Bottom-Up DP with Tabulation",
+          "Lesson 3: Hands-on Lab: Solving Climbing Stairs, Coin Change & House Robber Problems"
+        ]
+      }
+    ];
+  } else if (titleLower.includes("ai") || titleLower.includes("machine learning") || titleLower.includes("data science")) {
+    researchTemplates = [
+      {
+        title: "Python for Data Science: NumPy Multidimensional Arrays",
+        lessons: [
+          "Lesson 1: NumPy ndarrays, Vectorized Operations, Broadcasting & Array Slicing",
+          "Lesson 2: Matrix Operations, Linear Algebra Math (Dot Product, Matrix Inversion, Eigenvalues)",
+          "Lesson 3: Hands-on Lab: High-Speed Mathematical Computations on Numeric Datasets"
+        ]
+      },
+      {
+        title: "Data Wrangling & Analysis with Pandas DataFrames",
+        lessons: [
+          "Lesson 1: Pandas Series & DataFrames, Loading CSV/Excel/JSON Data, Indexing & Filtering",
+          "Lesson 2: Data Cleaning: Handling Missing Values (Imputation), Deduplication, GroupBy & Merging",
+          "Lesson 3: Hands-on Lab: Cleaning Real-world Messy E-Commerce & Financial Datasets"
+        ]
+      },
+      {
+        title: "Exploratory Data Analysis (EDA) & Visualization",
+        lessons: [
+          "Lesson 1: Matplotlib & Seaborn Visualizations (Histograms, Scatter Plots, Box Plots, Heatmaps)",
+          "Lesson 2: Feature Engineering, Correlation Matrices, Outlier Detection & Normalization (StandardScaler)",
+          "Lesson 3: Hands-on Lab: Performing Comprehensive EDA on Housing Price Prediction Dataset"
+        ]
+      },
+      {
+        title: "Supervised Learning: Regression Algorithms",
+        lessons: [
+          "Lesson 1: Simple & Multiple Linear Regression, Cost Function (MSE), Gradient Descent Math",
+          "Lesson 2: Polynomial Regression, Overfitting vs Underfitting, Ridge & Lasso Regularization",
+          "Lesson 3: Hands-on Lab: Building & Evaluating Real Estate Price Prediction Model in Scikit-Learn"
+        ]
+      },
+      {
+        title: "Supervised Learning: Classification Algorithms",
+        lessons: [
+          "Lesson 1: Logistic Regression, Decision Boundaries, Sigmoid Activation, Confusion Matrix & ROC-AUC",
+          "Lesson 2: Decision Trees, Random Forest Ensembles, Hyperparameter Tuning (GridSearchCV)",
+          "Lesson 3: Hands-on Lab: Constructing Customer Churn Classification System"
+        ]
+      },
+      {
+        title: "Unsupervised Learning: Clustering & Dimensionality Reduction",
+        lessons: [
+          "Lesson 1: K-Means Clustering, Elbow Method, Silhouette Score & Hierarchical Clustering",
+          "Lesson 2: Principal Component Analysis (PCA) for Dimensionality Reduction & Variance Retention",
+          "Lesson 3: Hands-on Lab: Segmenting E-commerce Customers with K-Means & PCA"
+        ]
+      },
+      {
+        title: "Deep Learning Foundations: Artificial Neural Networks (ANN)",
+        lessons: [
+          "Lesson 1: Perceptrons, Multi-Layer Perceptron (MLP), Activation Functions (ReLU, Sigmoid, Softmax)",
+          "Lesson 2: Forward Propagation, Cross-Entropy Loss, Backpropagation Math & Optimizer Tuning (Adam)",
+          "Lesson 3: Hands-on Lab: Training Deep Neural Network in PyTorch / TensorFlow"
+        ]
+      },
+      {
+        title: "Computer Vision: Convolutional Neural Networks (CNN)",
+        lessons: [
+          "Lesson 1: Image Tensors, Convolutional Layers, Pooling Layers (MaxPool) & Feature Maps",
+          "Lesson 2: Transfer Learning using Pre-trained Architectures (ResNet, VGG16, MobileNet)",
+          "Lesson 3: Hands-on Lab: Building Medical Image Classifier for Disease Detection"
+        ]
+      },
+      {
+        title: "Natural Language Processing (NLP) & Text Embeddings",
+        lessons: [
+          "Lesson 1: Text Preprocessing: Tokenization, Stopword Removal, Lemmatization, TF-IDF & Word2Vec",
+          "Lesson 2: Recurrent Neural Networks (RNN), LSTMs & Sequence Modeling",
+          "Lesson 3: Hands-on Lab: Building Sentiment Analysis Model for Product Reviews"
+        ]
+      },
+      {
+        title: "Generative AI: Transformers, LLMs & RAG Architecture",
+        lessons: [
+          "Lesson 1: Transformer Architecture, Self-Attention Mechanism & Encoder-Decoder Models",
+          "Lesson 2: Retrieval-Augmented Generation (RAG), Vector Databases (FAISS/Pinecone) & LangChain",
+          "Lesson 3: Hands-on Lab: Building Enterprise AI Chatbot querying Private Documents"
+        ]
+      }
+    ];
+  }
 
   const fallbackModules = [];
+  const templateCount = researchTemplates.length;
+
   for (let d = 1; d <= totalDays; d++) {
-    const templateIdx = (d - 1) % dayTopicTemplates.length;
-    const dayTopic = dayTopicTemplates[templateIdx];
-    fallbackModules.push({
-      id: `day_${d}_${Date.now()}`,
-      title: `Day ${d}: ${dayTopic} for ${courseTitle}`,
-      lessons: [
-        `Lesson ${d}.1: ${dayTopic} Theory & Core Concepts`,
-        `Lesson ${d}.2: Live Practical Hands-on Implementation`,
-        `Lesson ${d}.3: Day ${d} Doubts Clearance & Practice Code`
-      ]
-    });
+    let tItem = null;
+    if (templateCount > 0) {
+      tItem = researchTemplates[(d - 1) % templateCount];
+    }
+
+    if (tItem) {
+      fallbackModules.push({
+        id: `m_${d}_${Date.now()}`,
+        title: `Day ${d}: ${tItem.title}`,
+        lessons: tItem.lessons.map((l) => (l.startsWith("Lesson") ? l : `Lesson ${d}: ${l}`))
+      });
+    } else {
+      fallbackModules.push({
+        id: `day_${d}_${Date.now()}`,
+        title: `Day ${d}: Advanced ${courseTitle} Practical Module ${d}`,
+        lessons: [
+          `Lesson ${d}.1: Deep Dive into Core Technical Architecture & Syntax for ${courseTitle}`,
+          `Lesson ${d}.2: Hands-on Code Implementation, Debugging & Performance Optimization`,
+          `Lesson ${d}.3: Live Hands-on Lab: Building Production Component for Day ${d}`
+        ]
+      });
+    }
   }
 
   return fallbackModules;

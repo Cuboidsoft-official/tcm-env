@@ -2,44 +2,7 @@ import React, { useState } from 'react';
 import { IconMentor } from '../components/Icons';
 
 export function MentorAssignmentsView({ enrollmentsData = {}, mentors = [], search = '' }) {
-  const [list, setList] = useState(enrollmentsData.enrollments || [
-    {
-      id: 'enr-101',
-      studentName: 'Aman Verma',
-      studentEmail: 'aman.verma@gmail.com',
-      studentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
-      courseTitle: 'Full Stack MERN Development Masterclass',
-      assignedMentorName: 'Ayushman Sharma',
-      assignedMentorTitle: 'Senior Full Stack Architect'
-    },
-    {
-      id: 'enr-102',
-      studentName: 'Priya Sahu',
-      studentEmail: 'priya.sahu@yahoo.com',
-      studentAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-      courseTitle: 'Python & Machine Learning Zero to Hero',
-      assignedMentorName: 'Neha Gupta',
-      assignedMentorTitle: 'AI & ML Specialist'
-    },
-    {
-      id: 'enr-103',
-      studentName: 'Rohit Patel',
-      studentEmail: 'rohit.patel@outlook.com',
-      studentAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-      courseTitle: 'React Native Mobile App Architecture',
-      assignedMentorName: 'Ayushman Sharma',
-      assignedMentorTitle: 'Senior Full Stack Architect'
-    },
-    {
-      id: 'enr-104',
-      studentName: 'Kavya Singh',
-      studentEmail: 'kavya.singh@gmail.com',
-      studentAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100',
-      courseTitle: 'Full Stack MERN Development Masterclass',
-      assignedMentorName: 'Vikramaditya Roy',
-      assignedMentorTitle: 'Cloud DevOps Architect'
-    }
-  ]);
+  const list = Array.isArray(enrollmentsData?.enrollments) ? enrollmentsData.enrollments : [];
 
   const [selectedMentorMap, setSelectedMentorMap] = useState({});
 

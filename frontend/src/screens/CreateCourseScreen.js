@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -27,49 +27,88 @@ function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694
   return url;
 }
 
+function normalizeCourseModules(modArray, fallbackTitle = "Core Course Topic") {
+  if (!Array.isArray(modArray) || modArray.length === 0) {
+    return [
+      {
+        id: "m1",
+        title: "Day 1: Environment Setup & Foundations",
+        lessons: [
+          "Lesson 1.1: Tooling & IDE Configuration",
+          "Lesson 1.2: Essential Building Blocks",
+          "Lesson 1.3: Hands-on Lab: Building Live Feature"
+        ]
+      }
+    ];
+  }
+
+  return modArray.map((m, idx) => {
+    if (typeof m === "string") {
+      return {
+        id: `m_${idx + 1}_${Date.now()}`,
+        title: m.startsWith("Day") || m.startsWith("Module") ? m : `Day ${idx + 1}: ${m}`,
+        lessons: [
+          `Lesson ${idx + 1}.1: Fundamentals of ${m}`,
+          `Lesson ${idx + 1}.2: Practical Lab & Application Development`,
+          `Lesson ${idx + 1}.3: Code Review & Doubt Clearance`
+        ]
+      };
+    }
+
+    const modTitle = m.title || m.name || (m.dayNum ? `${m.dayNum}: ${m.topic || m.title || fallbackTitle}` : `Day ${idx + 1}: ${m.topic || fallbackTitle}`);
+
+    let rawLessons = Array.isArray(m.lessons) && m.lessons.length > 0 ? m.lessons : [];
+    if (rawLessons.length === 0 && m.subtopics && Array.isArray(m.subtopics)) {
+      rawLessons = m.subtopics;
+    }
+    if (rawLessons.length === 0 && m.description) {
+      rawLessons = [m.description];
+    }
+
+    const lessons = rawLessons.length > 0
+      ? rawLessons.map((l, lIdx) => (typeof l === "string" ? l : (l.title || l.name || `Lesson ${idx + 1}.${lIdx + 1}: Core Concept`)))
+      : [
+          `Lesson ${idx + 1}.1: ${modTitle.replace(/^Day \d+:\s*/i, "")} Fundamentals`,
+          `Lesson ${idx + 1}.2: Practical Implementation & Coding Lab`,
+          `Lesson ${idx + 1}.3: Live Doubts & Practice Problem`
+        ];
+
+    return {
+      id: m.id || `m_${idx + 1}_${Date.now()}`,
+      title: modTitle,
+      lessons
+    };
+  });
+}
+
 export default function CreateCourseScreen({ session, user = {}, courseToEdit = null, onBack, onCourseCreated }) {
   const { theme } = useTheme();
   const isEditing = Boolean(courseToEdit);
-  // Locked Mentor Category (assigned during signup/profile)
   const assignedCategory = courseToEdit?.category || user.mentorCategory || user.category || "TCM Information Tech";
   
   const [title, setTitle] = useState(courseToEdit?.title || "");
   const [subtitle, setSubtitle] = useState(courseToEdit?.subtitle || "");
   const [level, setLevel] = useState(courseToEdit?.level || "All Levels");
-  const [price, setPrice] = useState((courseToEdit?.price || "1,499").replace("₹", ""));
+  const [price, setPrice] = useState(String(courseToEdit?.price || "1,499").replace("₹", "").trim());
   const [duration, setDuration] = useState(courseToEdit?.duration || "20 Days");
   const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [customDuration, setCustomDuration] = useState(courseToEdit?.duration || "");
   const [coverImageUrl, setCoverImageUrl] = useState(safeImageUri(courseToEdit?.imageUrl || courseToEdit?.image));
   const [customImageInput, setCustomImageInput] = useState("");
   const [showCustomImageInput, setShowCustomImageInput] = useState(false);
-  
-  // Syllabus State (Normalize modules array containing lessons)
-  const initialModules = (courseToEdit?.modules && courseToEdit.modules.length > 0)
-    ? courseToEdit.modules.map((m, idx) => ({
-        id: m.id || `m_${idx + 1}_${Date.now()}`,
-        title: m.title || (m.dayNum ? `${m.dayNum}: ${m.topic}` : `Day ${idx + 1}: ${m.topic || "Core Topic"}`),
-        lessons: Array.isArray(m.lessons) && m.lessons.length > 0
-          ? m.lessons
-          : [
-              `Lesson ${idx + 1}.1: Introduction & Fundamentals`,
-              `Lesson ${idx + 1}.2: Live Coding & Application Setup`,
-              `Lesson ${idx + 1}.3: Hands-on Practice & Q&A`
-            ]
-      }))
-    : [
-        {
-          id: "m1",
-          title: "Day 1: Environment Setup & Foundations",
-          lessons: [
-            "Lesson 1.1: Tooling & IDE Configuration",
-            "Lesson 1.2: Essential Building Blocks",
-            "Lesson 1.3: Hands-on Lab: Building Live Feature"
-          ]
-        }
-      ];
+  const [modules, setModules] = useState(() => normalizeCourseModules(courseToEdit?.modules, courseToEdit?.title));
 
-  const [modules, setModules] = useState(initialModules);
+  useEffect(() => {
+    if (courseToEdit) {
+      setTitle(courseToEdit.title || "");
+      setSubtitle(courseToEdit.subtitle || "");
+      setLevel(courseToEdit.level || "All Levels");
+      setPrice(String(courseToEdit.price || "1,499").replace("₹", "").trim());
+      setDuration(courseToEdit.duration || "20 Days");
+      setCoverImageUrl(safeImageUri(courseToEdit.imageUrl || courseToEdit.image));
+      setModules(normalizeCourseModules(courseToEdit.modules, courseToEdit.title));
+    }
+  }, [courseToEdit]);
 
   const [generatingAI, setGeneratingAI] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -251,6 +290,11 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
 
   // Publish / Update Course to Backend
   async function handlePublishCourse() {
+    if (!isEditing && user.role === "mentor" && user.isApproved === false) {
+      Alert.alert("Pending Admin Approval ⏳", "Your mentor account is pending admin approval. You cannot publish courses until approved.");
+      return;
+    }
+
     if (!title.trim()) {
       Alert.alert("Title Required", "Please enter a course title.");
       return;
@@ -272,7 +316,7 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
         modules
       };
 
-      const targetCourseId = courseToEdit?.id || courseToEdit?._id || courseToEdit?.customId;
+      const targetCourseId = courseToEdit?.id || courseToEdit?._id || courseToEdit?.customId || courseToEdit?.courseId || `c_${Date.now()}`;
 
       if (session?.token) {
         if (isEditing && targetCourseId) {
@@ -308,6 +352,30 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {user.role === "mentor" && user.isApproved === false ? (
+          <View style={{
+            backgroundColor: theme.isDark ? "#361D00" : "#FFF8E1",
+            borderColor: "#FFB300",
+            borderWidth: 1.5,
+            borderRadius: 16,
+            padding: 14,
+            marginBottom: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12
+          }}>
+            <MaterialCommunityIcons name="clock-alert-outline" size={26} color="#FF8F00" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: theme.isDark ? "#FFE082" : "#B78103" }}>
+                Pending Admin Approval ⏳
+              </Text>
+              <Text style={{ fontSize: 11, color: theme.isDark ? "#FFECB3" : "#5D4037", marginTop: 2, lineHeight: 15 }}>
+                Your mentor account is pending admin approval. You cannot publish courses until your account is approved.
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         {/* ============================================================ */}
         {/* 2. LOCKED CATEGORY CARD */}
         {/* ============================================================ */}

@@ -2,48 +2,7 @@ import React, { useState } from 'react';
 import { IconMentor, IconCross, IconCheck } from '../components/Icons';
 
 export function PartnerTicketsView({ search = '' }) {
-  const [tickets, setTickets] = useState([
-    {
-      id: 'TCK-8801',
-      partnerName: 'Future Tech Institute',
-      email: 'partner@futuretech.com',
-      subject: 'Lab Fee Settlement & Hardware Upgrade Query',
-      category: 'Billing & Payments',
-      priority: 'High',
-      date: '11 Aug 2026, 10:30 AM',
-      status: 'Open',
-      message: 'Hello Admin Team, We have registered 20 new students for weekend lab access. Kindly verify the lab fee settlement and update the GMB location directions link on our profile.',
-      replies: [
-        { author: 'Admin Support', text: 'Thank you for raising the ticket. Our team is inspecting the GMB link and fee settlement.', date: '11 Aug 2026, 11:00 AM' }
-      ]
-    },
-    {
-      id: 'TCK-8802',
-      partnerName: 'Bilaspur IT Academy',
-      email: 'contact@bilaspurit.edu.in',
-      subject: 'New Course Batch Onboarding Request',
-      category: 'Course Onboarding',
-      priority: 'Medium',
-      date: '10 Aug 2026, 03:15 PM',
-      status: 'In Progress',
-      message: 'We would like to add Python Full Stack to our existing courses list. Please enable mentor assignment for our students.',
-      replies: []
-    },
-    {
-      id: 'TCK-8803',
-      partnerName: 'Raipur Digital College',
-      email: 'info@raipurdigital.org',
-      subject: 'Profile Cover Photo Update Issue',
-      category: 'Profile & Media',
-      priority: 'Low',
-      date: '08 Aug 2026, 01:00 PM',
-      status: 'Resolved',
-      message: 'Hero cover photo update was showing error previously. Resolved after uploading high res image.',
-      replies: [
-        { author: 'Admin Support', text: 'Verified and resolved.', date: '08 Aug 2026, 02:30 PM' }
-      ]
-    }
-  ]);
+  const [tickets, setTickets] = useState([]);
 
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [replyText, setReplyText] = useState('');

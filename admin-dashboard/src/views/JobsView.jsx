@@ -6,7 +6,7 @@ export function JobsView({ jobs, onCreateJob, onDeleteJob, search }) {
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [location, setLocation] = useState('Remote');
-  const [stipend, setStipend] = useState('₹45,000 / month');
+  const [stipend, setStipend] = useState('');
   const [type, setType] = useState('Full-Time');
   const [description, setDescription] = useState('');
 

@@ -13,7 +13,7 @@ import {
   View
 } from "react-native";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { getMentorCourses, scheduleLiveClassLink, createJobPost, getJobPosts, getMentorJobPosts, updateJobPost, updateJobApplicantStatus, deleteJobPost, allocateCourseToStudent, updateCourseSchedule } from "../api/client";
+import { getMentorCourses, getProfile, scheduleLiveClassLink, createJobPost, getJobPosts, getMentorJobPosts, updateJobPost, updateJobApplicantStatus, deleteJobPost, allocateCourseToStudent, updateCourseSchedule, deleteCourse } from "../api/client";
 import MentorReviewsModal from "../components/MentorReviewsModal";
 import CreateJobModal from "../components/CreateJobModal";
 import JobApplicantsModal from "../components/JobApplicantsModal";
@@ -26,6 +26,57 @@ const { width } = Dimensions.get("window");
 
 export default function MentorDashboardScreen({ session, user = {}, onBack, onNavigateActivity, onEditCourse }) {
   const { theme } = useTheme();
+  const [liveApprovedStatus, setLiveApprovedStatus] = useState(null);
+
+  useEffect(() => {
+    loadMentorCourses();
+    loadJobs();
+    refreshLiveProfile();
+  }, [session?.token]);
+
+  async function refreshLiveProfile() {
+    if (!session?.token) return;
+    try {
+      const p = await getProfile(session.token);
+      if (p) {
+        if (p.isApproved !== undefined) setLiveApprovedStatus(Boolean(p.isApproved));
+        else if (p.user && p.user.isApproved !== undefined) setLiveApprovedStatus(Boolean(p.user.isApproved));
+      }
+    } catch (e) {
+      // quiet fallback
+    }
+  }
+
+  // Mentor Account Admin Approval Guard
+  const isExplicitlyPending =
+    liveApprovedStatus === false ||
+    user.isApproved === false ||
+    user.status === "pending" ||
+    user.approvalStatus === "pending" ||
+    session?.user?.isApproved === false ||
+    session?.user?.status === "pending";
+
+  const isApproved = Boolean(
+    user.role === "admin" ||
+    liveApprovedStatus === true ||
+    user.isApproved === true ||
+    session?.user?.isApproved === true ||
+    user.status === "approved" ||
+    session?.user?.status === "approved" ||
+    !isExplicitlyPending
+  );
+
+  function checkApprovalGuard(actionName = "This feature") {
+    if (!isApproved) {
+      Alert.alert(
+        "Account Verification Required",
+        `Your mentor profile is currently under review by TCM Administration. ${actionName} will be enabled once your account is verified.`
+      );
+      return false;
+    }
+    return true;
+  }
+
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
   const [sessionName, setSessionName] = useState("Full Stack Web Dev - Session 1");
@@ -45,6 +96,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   const [allocating, setAllocating] = useState(false);
 
   async function handleAllocateCourse() {
+    if (!checkApprovalGuard("Course allocation")) return;
     if (!studentEmailInput || !studentEmailInput.trim()) {
       Alert.alert("Input Required ⚠️", "Please enter the student's email address or student ID.");
       return;
@@ -112,6 +164,41 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
     }
   }
 
+  async function handleDeleteCourse(course) {
+    if (!checkApprovalGuard("Course deletion")) return;
+    if (!course) return;
+    const courseTitle = course.title || "Course";
+    const courseId = course.id || course._id || course.customId;
+
+    Alert.alert(
+      "Delete Course 🗑️",
+      `Are you sure you want to delete "${courseTitle}"? This action will permanently remove the course.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              if (session?.token && courseId) {
+                const res = await deleteCourse(session.token, courseId);
+                if (res?.success) {
+                  setMentorCourses((prev) => prev.filter((c) => String(c.id || c._id || c.customId) !== String(courseId)));
+                  Alert.alert("Course Deleted 🎉", `"${courseTitle}" was removed successfully.`);
+                  return;
+                }
+              }
+              setMentorCourses((prev) => prev.filter((c) => String(c.id || c._id || c.customId) !== String(courseId)));
+              Alert.alert("Course Deleted", `"${courseTitle}" was removed.`);
+            } catch (err) {
+              Alert.alert("Error", err?.message || "Could not delete course.");
+            }
+          }
+        }
+      ]
+    );
+  }
+
   // Weekly Engagement Activity Chart Data (Mon - Sun)
   const weeklyData = [
     { day: "Mon", percent: 75, hours: "6h" },
@@ -153,11 +240,6 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   const [customTimeInput, setCustomTimeInput] = useState("Today • 04:30 PM – 06:00 PM");
   const [recordedVideoUrl, setRecordedVideoUrl] = useState("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   const [notesPdfUrl, setNotesPdfUrl] = useState("https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view");
-
-  useEffect(() => {
-    loadMentorCourses();
-    loadJobs();
-  }, [session?.token]);
 
   async function loadJobs() {
     try {
@@ -315,6 +397,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
   ];
 
   function handleCardPress(activityName, description) {
+    if (!checkApprovalGuard(activityName)) return;
     if (onNavigateActivity) {
       onNavigateActivity(activityName);
     } else {
@@ -332,13 +415,71 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
         <Text style={[styles.headerTitle, { color: theme.text }]}>Dashboard</Text>
 
-        <View style={[styles.statusPill, { backgroundColor: theme.isDark ? "#064E3B" : "#ECF9E9", borderColor: theme.border }]}>
-          <View style={styles.greenDot} />
-          <Text style={[styles.statusPillText, { color: theme.isDark ? "#34D399" : "#2E7D32" }]}>Active Mentor</Text>
-        </View>
+        {isApproved ? (
+          <View style={[styles.statusPill, { backgroundColor: theme.isDark ? "#064E3B" : "#ECF9E9", borderColor: theme.border }]}>
+            <View style={styles.greenDot} />
+            <Text style={[styles.statusPillText, { color: theme.isDark ? "#34D399" : "#2E7D32" }]}>Active Mentor</Text>
+          </View>
+        ) : (
+          <View style={[styles.statusPill, { backgroundColor: theme.isDark ? "#361D00" : "#FFF8E1", borderColor: "#F59E0B" }]}>
+            <MaterialCommunityIcons name="shield-clock-outline" size={13} color="#D97706" style={{ marginRight: 4 }} />
+            <Text style={[styles.statusPillText, { color: theme.isDark ? "#FBBF24" : "#B45309", fontWeight: "700" }]}>Verification Pending</Text>
+          </View>
+        )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* ============================================================ */}
+        {/* 1. PENDING ADMIN APPROVAL CORPORATE LOCK BANNER */}
+        {/* ============================================================ */}
+        {!isApproved ? (
+          <View style={{
+            backgroundColor: theme.isDark ? "#1E1B4B" : "#F0FDF4",
+            borderColor: theme.isDark ? "#4338CA" : "#A7F3D0",
+            borderWidth: 1.5,
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 20,
+            flexDirection: "row",
+            alignItems: "flex-start",
+            gap: 14,
+            ...shadow.soft
+          }}>
+            <View style={{
+              width: 42,
+              height: 42,
+              borderRadius: 12,
+              backgroundColor: theme.isDark ? "#312E81" : "#047857",
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: "#047857",
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: 0.25,
+              shadowRadius: 5,
+              elevation: 3
+            }}>
+              <MaterialCommunityIcons name="shield-clock-outline" size={24} color="#FFFFFF" />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <View style={{ backgroundColor: theme.isDark ? "#312E81" : "#D1FAE5", paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5 }}>
+                  <Text style={{ color: theme.isDark ? "#A5B4FC" : "#047857", fontFamily: fonts.bold, fontSize: 9, letterSpacing: 0.4 }}>
+                    VERIFICATION IN PROGRESS
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text || colors.ink }}>
+                Mentor Account Verification Pending
+              </Text>
+              <Text style={{ fontSize: 11, fontFamily: fonts.regular, color: theme.subtext || colors.muted, marginTop: 4, lineHeight: 17 }}>
+                Your mentor profile is currently under review by TCM Administration. Access to dashboard features—including course publishing, live class scheduling, student management, and payouts—will be automatically unlocked upon approval.
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         {/* ============================================================ */}
         {/* 2. HERO OVERVIEW GRADIENT CARD */}
         {/* ============================================================ */}
@@ -527,6 +668,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           {/* Activity 3: Post a Job / Hiring Drive */}
           <Pressable
             onPress={() => {
+              if (!checkApprovalGuard("Job posting")) return;
               setJobToEdit(null);
               setCreateJobModalOpen(true);
             }}
@@ -548,7 +690,10 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
           {/* Activity 3: Student Reviews & Feedbacks */}
           <Pressable
-            onPress={() => setReviewsModalOpen(true)}
+            onPress={() => {
+              if (!checkApprovalGuard("Student reviews")) return;
+              setReviewsModalOpen(true);
+            }}
             style={({ pressed }) => [styles.activityTouchCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={[styles.activityIconBox, { backgroundColor: theme.isDark ? "#78350F" : "#FFF8EC" }]}>
@@ -586,7 +731,10 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
           {/* Activity 5: Schedule Daily Live Class Link (Session-Wise) */}
           <Pressable
-            onPress={() => setScheduleModalOpen(true)}
+            onPress={() => {
+              if (!checkApprovalGuard("Live class scheduling")) return;
+              setScheduleModalOpen(true);
+            }}
             style={({ pressed }) => [styles.activityTouchCard, { borderColor: theme.primary, backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }, pressed && styles.pressed]}
           >
             <View style={[styles.activityIconBox, { backgroundColor: theme.primary }]}>
@@ -605,7 +753,10 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
 
           {/* Activity 6: Allocate Course to Student (Admin / Mentor) */}
           <Pressable
-            onPress={() => setAllocateModalOpen(true)}
+            onPress={() => {
+              if (!checkApprovalGuard("Course allocation")) return;
+              setAllocateModalOpen(true);
+            }}
             style={({ pressed }) => [styles.activityTouchCard, { borderColor: "#10B981", backgroundColor: theme.isDark ? "#064E3B" : "#ECFDF5" }, pressed && styles.pressed]}
           >
             <View style={[styles.activityIconBox, { backgroundColor: "#10B981" }]}>
@@ -630,6 +781,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           <Text style={{ fontSize: 16, fontWeight: "700", color: theme.text }}>My Created Courses ({activeCourseList.length})</Text>
           <TouchableOpacity
             onPress={() => {
+              if (!checkApprovalGuard("Course creation")) return;
               if (onNavigateActivity) onNavigateActivity("Add Courses");
             }}
             style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
@@ -668,6 +820,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                   {/* MANAGE SCHEDULE & SHIFT DATES BUTTON */}
                   <TouchableOpacity
                     onPress={() => {
+                      if (!checkApprovalGuard("Schedule management")) return;
                       setSelectedCourseForSchedule(course);
                       setCourseStatus(course.status || "Active");
                       setNextClassDate(course.nextClassDate || "Tomorrow");
@@ -693,6 +846,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                   {/* EDIT COURSE BUTTON */}
                   <TouchableOpacity
                     onPress={() => {
+                      if (!checkApprovalGuard("Course editing")) return;
                       if (onEditCourse) {
                         onEditCourse(course);
                       } else if (onNavigateActivity) {
@@ -715,6 +869,25 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                   >
                     <Feather name="edit-3" size={13} color={theme.primary} />
                     <Text style={{ fontSize: 11, fontWeight: "700", color: theme.primary }}>Edit</Text>
+                  </TouchableOpacity>
+
+                  {/* DELETE COURSE BUTTON */}
+                  <TouchableOpacity
+                    onPress={() => handleDeleteCourse(course)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                      backgroundColor: theme.isDark ? "#3B1419" : "#FEE2E2",
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: theme.isDark ? "#991B1B" : "#FCA5A5"
+                    }}
+                  >
+                    <Feather name="trash-2" size={13} color="#EF4444" />
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#EF4444" }}>Delete</Text>
                   </TouchableOpacity>
                 </View>
               </View>

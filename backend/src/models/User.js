@@ -89,7 +89,7 @@ const userSchema = new mongoose.Schema(
     },
     verified: {
       type: Boolean,
-      default: true
+      default: false
     },
     memberBadge: {
       type: String,
@@ -199,20 +199,7 @@ const userSchema = new mongoose.Schema(
     },
     enrolledCourses: {
       type: Array,
-      default: [
-        {
-          id: "enr-101",
-          courseId: "c1",
-          courseTitle: "Full Stack MERN Development Masterclass",
-          coursePrice: "₹4,999",
-          enrolledDate: "14 May 2025",
-          progressPercent: 85,
-          completedModules: "17 / 20 Modules",
-          status: "In Progress",
-          assignedMentorName: "Ayushman Sharma",
-          assignedMentorTitle: "Senior Full Stack Architect"
-        }
-      ]
+      default: []
     }
   },
   { timestamps: true }

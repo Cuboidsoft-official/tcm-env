@@ -138,7 +138,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
   const [popularCourses, setPopularCourses] = useState(initialPopular);
   const [aiExamModalVisible, setAiExamModalVisible] = useState(false);
   const [continueLearningList, setContinueLearningList] = useState(
-    safeLearn.continueLearning?.length ? safeLearn.continueLearning : defaultContinueLearning
+    safeLearn.continueLearning?.length ? safeLearn.continueLearning : []
   );
 
   async function handleSaveExamResult(resultData) {
@@ -166,21 +166,27 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
     try {
       if (session?.token) {
         const data = await getContinueLearningDetails(session.token);
-        if (data && data.courseTitle) {
-          setContinueLearningList([
-            {
-              id: data.courseId || "c_active",
-              title: data.courseTitle,
-              subtitle: `Mentor: ${data.mentorName || "Mentor"} • Live Batch Ready`,
-              progress: data.userProgress?.courseProgress || 0,
-              icon: "code-tags",
-              iconColor: "#0A6836",
-              bgColor: "#E8F5E9"
-            }
-          ]);
+        if (data && !data.noEnrolledCourses && (data.enrolledCourses?.length || data.courseTitle)) {
+          setContinueLearningList(
+            data.enrolledCourses && data.enrolledCourses.length > 0
+              ? data.enrolledCourses
+              : [
+                  {
+                    id: data.courseId || "c_active",
+                    title: data.courseTitle,
+                    subtitle: `Mentor: ${data.mentorName || "Mentor"} • Live Batch Ready`,
+                    progress: data.userProgress?.courseProgress || 0,
+                    icon: "code-tags",
+                    iconColor: "#0A6836",
+                    bgColor: "#E8F5E9"
+                  }
+                ]
+          );
         } else {
           setContinueLearningList([]);
         }
+      } else {
+        setContinueLearningList([]);
       }
     } catch (e) {
       setContinueLearningList([]);
@@ -230,7 +236,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
   const filteredCourses = popularCourses.filter((c) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
-    return c.title?.toLowerCase().includes(q) || c.tags?.toLowerCase().includes(q);
+    return String(c.title || "").toLowerCase().includes(q) || String(c.tags || "").toLowerCase().includes(q);
   });
 
   const { theme } = useTheme();
@@ -455,9 +461,9 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       )}
 
-      {/* ALL PARTNERS & COLLABORATORS CARD SECTION */}
+      {/* OUR TRUSTED PARTNERS CARD - Compact Vector Illustration */}
       <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitleText, { color: theme.text }]}>All Partners & Collaborators</Text>
+        <Text style={[styles.sectionTitleText, { color: theme.text }]}>Trusted Partners & Collaborators</Text>
         <Pressable onPress={() => (onOpenDiscoverPartners ? onOpenDiscoverPartners() : Alert.alert("Discover Partners", "Opening all partners list..."))}>
           <Text style={[styles.viewAllText, { color: theme.primary }]}>View All →</Text>
         </Pressable>
@@ -466,45 +472,84 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
       <Pressable
         onPress={() => (onOpenDiscoverPartners ? onOpenDiscoverPartners() : Alert.alert("Discover Partners", "Opening all partners list..."))}
         style={({ pressed }) => [
-          styles.partnersCollabCard,
-          { backgroundColor: theme.isDark ? "#064E3B25" : colors.lavender, borderColor: colors.lavenderLine },
-          pressed && styles.pressed
+          {
+            backgroundColor: theme.isDark ? "#1E1B4B20" : "#F0EDFF",
+            borderRadius: 16,
+            padding: 12,
+            borderWidth: 1,
+            borderColor: theme.isDark ? "#4338CA40" : "#C7D2FE",
+            marginBottom: 20,
+            ...shadow.soft
+          },
+          pressed && { opacity: 0.92 }
         ]}
       >
-        <View style={styles.collabHeaderInfo}>
-          <View style={[styles.collabBadge, { backgroundColor: colors.mint }]}>
-            <MaterialCommunityIcons name="shield-check" size={13} color={colors.primary} style={{ marginRight: 4 }} />
-            <Text style={{ color: colors.primary, fontFamily: fonts.bold, fontSize: 10 }}>ACCREDITED NETWORK</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          {/* Compact Vector Art Emblem Left */}
+          <View style={{
+            width: 44,
+            height: 44,
+            borderRadius: 14,
+            backgroundColor: "#5B3CF5",
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: "#5B3CF5",
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.25,
+            shadowRadius: 5,
+            elevation: 3
+          }}>
+            <MaterialCommunityIcons name="domain" size={24} color="#FFFFFF" />
           </View>
-          <Text style={[styles.collabTitle, { color: theme.text }]}>Verified IT Labs, Colleges & Govt Institutions</Text>
-          <Text style={[styles.collabSub, { color: theme.subtext }]}>
-            Access high-speed computer labs, research facilities, government public hubs, and campus training centers near you.
-          </Text>
+
+          {/* Right Vector Info Wrap */}
+          <View style={{ flex: 1 }}>
+            {/* Top Badges Row */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
+              <View style={{ backgroundColor: theme.isDark ? "#312E81" : "#E0E7FF", paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 4 }}>
+                <Text style={{ color: "#4F46E5", fontFamily: fonts.bold, fontSize: 8.5, letterSpacing: 0.3 }}>
+                  ACCREDITED NETWORK
+                </Text>
+              </View>
+            </View>
+
+            <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: theme.text || colors.ink, marginBottom: 1 }}>
+              Trusted Partners & Collaborators
+            </Text>
+            <Text style={{ fontSize: 10, fontFamily: fonts.regular, color: theme.subtext || colors.muted }} numberOfLines={1}>
+              Verified IT labs & campus centers near you.
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.collabPreviewRow}>
-          <View style={styles.avatarGroupRow}>
-            <View style={[styles.miniAvatarCircle, { backgroundColor: "#0F172A" }]}>
-              <Text style={styles.miniAvatarText}>FT</Text>
-            </View>
-            <View style={[styles.miniAvatarCircle, { backgroundColor: "#1E293B", marginLeft: -8 }]}>
-              <Text style={styles.miniAvatarText}>CC</Text>
-            </View>
-            <View style={[styles.miniAvatarCircle, { backgroundColor: "#044324", marginLeft: -8 }]}>
-              <Text style={styles.miniAvatarText}>DS</Text>
-            </View>
-            <View style={[styles.miniAvatarCircle, { backgroundColor: "#4F46E5", marginLeft: -8 }]}>
-              <Text style={styles.miniAvatarText}>GP</Text>
-            </View>
+        {/* Compact Footer Vector Action Row (No Overflow!) */}
+        <View style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          backgroundColor: theme.cardBg || colors.card,
+          borderRadius: 10,
+          paddingHorizontal: 10,
+          paddingVertical: 7,
+          marginTop: 10,
+          borderWidth: 1,
+          borderColor: theme.border || colors.border
+        }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5, flex: 1, marginRight: 6 }}>
+            <MaterialCommunityIcons name="office-building-marker-outline" size={14} color="#5B3CF5" />
+            <Text style={{ fontSize: 10, fontFamily: fonts.semiBold, color: theme.text || colors.ink }} numberOfLines={1}>
+              50+ Colleges • IT Labs • Hubs
+            </Text>
           </View>
 
-          <View style={[styles.explorePartnersBtn, { backgroundColor: colors.primary }]}>
-            <Text style={styles.explorePartnersBtnText}>Discover Partners →</Text>
+          <View style={{ backgroundColor: "#5B3CF5", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 3 }}>
+            <Text style={{ fontSize: 10.5, fontFamily: fonts.bold, color: "#FFFFFF" }}>Explore</Text>
+            <Feather name="arrow-right" size={11} color="#FFFFFF" />
           </View>
         </View>
       </Pressable>
 
-      {/* TCM AI EXAMINATIONS & ADAPTIVE SKILL TESTS CARD */}
+      {/* TCM AI EXAMINATIONS CARD - Vector Illustration Concept */}
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionTitleText, { color: theme.text }]}>TCM AI Examinations</Text>
         <Pressable onPress={() => setAiExamModalVisible(true)}>
@@ -516,53 +561,81 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         onPress={() => setAiExamModalVisible(true)}
         style={({ pressed }) => [
           {
-            backgroundColor: theme.cardBg,
-            borderRadius: 18,
-            padding: 16,
+            backgroundColor: theme.isDark ? "#064E3B18" : "#ECFDF5",
+            borderRadius: 16,
+            padding: 14,
             borderWidth: 1,
-            borderColor: theme.border,
+            borderColor: theme.isDark ? "#05966940" : "#A7F3D0",
             marginBottom: 20,
-            ...shadow.sm
+            ...shadow.soft
           },
           pressed && { opacity: 0.92 }
         ]}
       >
-        {/* Top Badge */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: theme.badgeBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
-            <MaterialCommunityIcons name="brain" size={14} color={theme.primary} />
-            <Text style={{ color: theme.primary, fontFamily: fonts.bold, fontSize: 10.5, letterSpacing: 0.5 }}>
-              AI ADAPTIVE EVALUATION
-            </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          {/* Vector Art Emblem Left */}
+          <View style={{
+            width: 52,
+            height: 52,
+            borderRadius: 16,
+            backgroundColor: colors.primary,
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 6,
+            elevation: 4
+          }}>
+            <MaterialCommunityIcons name="head-lightbulb-outline" size={28} color="#FFFFFF" />
           </View>
 
-          <View style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
-            <Text style={{ color: theme.primary, fontFamily: fonts.bold, fontSize: 10 }}>ON-DEMAND</Text>
+          {/* Right Vector Info Wrap */}
+          <View style={{ flex: 1 }}>
+            {/* Top Badges Row */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <View style={{ backgroundColor: theme.isDark ? "#064E3B" : colors.mint, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5 }}>
+                <Text style={{ color: colors.primary, fontFamily: fonts.bold, fontSize: 9, letterSpacing: 0.3 }}>
+                  AI EVALUATION
+                </Text>
+              </View>
+              <View style={{ backgroundColor: theme.isDark ? "#1E293B" : "#E2E8F0", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 }}>
+                <Text style={{ color: theme.subtext || colors.muted, fontFamily: fonts.bold, fontSize: 8.5 }}>ON-DEMAND</Text>
+              </View>
+            </View>
+
+            <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text || colors.ink, marginBottom: 2 }}>
+              TCM AI Skill Examinations & Scorecards
+            </Text>
+            <Text style={{ fontSize: 10.5, fontFamily: fonts.regular, color: theme.subtext || colors.muted }} numberOfLines={1}>
+              10-minute adaptive test with instant AI scorecard & certificate.
+            </Text>
           </View>
         </View>
 
-        {/* Content Info */}
-        <View style={{ marginBottom: 14 }}>
-          <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: theme.text, marginBottom: 4 }}>
-            TCM AI Skill Examinations & Scorecards
-          </Text>
-          <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: theme.subtext, lineHeight: 18 }}>
-            Take personalized assessments tailored to your NEET, JEE, Govt Exams, Coding or Business skills with real-time AI hints & instant verified certificates.
-          </Text>
-        </View>
-
-        {/* Action Row */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: theme.bg, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: theme.border }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Feather name="clock" size={14} color={theme.primary} />
-            <Text style={{ fontSize: 12, fontFamily: fonts.semiBold, color: theme.text }}>
-              6 Mins • 10 MCQs • AI Hints
+        {/* Footer Vector Action Row */}
+        <View style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          backgroundColor: theme.cardBg || colors.card,
+          borderRadius: 10,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          marginTop: 12,
+          borderWidth: 1,
+          borderColor: theme.border || colors.border
+        }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <MaterialCommunityIcons name="clock-fast" size={15} color={colors.primary} />
+            <Text style={{ fontSize: 10.5, fontFamily: fonts.semiBold, color: theme.text || colors.ink }}>
+              6 Mins • 10 MCQs • Instant Result
             </Text>
           </View>
 
-          <View style={{ backgroundColor: theme.primary, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#FFFFFF" }}>Start Exam</Text>
-            <Feather name="arrow-right" size={13} color="#FFFFFF" />
+          <View style={{ backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#FFFFFF" }}>Start Exam</Text>
+            <Feather name="arrow-right" size={12} color="#FFFFFF" />
           </View>
         </View>
       </Pressable>
@@ -629,7 +702,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContent}>
             {expertMentors.map((mentor) => {
               const mAvatar = (user?.role === "mentor" || user?.isMentor) ? (user.avatarUrl || mentor.avatarUrl) : mentor.avatarUrl;
-              const hasRealAvatar = mAvatar && !mAvatar.includes("photo-1507003211169-0a1dd7228f2d") && !(Platform.OS === "web" && typeof mAvatar === "string" && mAvatar.startsWith("file://"));
+              const hasRealAvatar = Boolean(mAvatar && typeof mAvatar === "string" && mAvatar.trim().length > 5);
               const initials = (mentor.name || "Mentor").split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "M";
 
               return (

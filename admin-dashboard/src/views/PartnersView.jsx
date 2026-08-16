@@ -20,17 +20,17 @@ export function PartnersView({ partners, onCreatePartner, onUpdatePartner, onDel
     'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500',
     'https://images.unsplash.com/photo-1562774053-701939374585?w=500'
   ]);
-  const [contactNumber, setContactNumber] = useState('+91 98765 43210');
-  const [totalRevenue, setTotalRevenue] = useState('₹48,750');
-  const [monthlyRevenue, setMonthlyRevenue] = useState('₹18,250');
-  const [totalStudentsCount, setTotalStudentsCount] = useState('56');
-  const [activeMentorsCount, setActiveMentorsCount] = useState('8');
-  const [rating, setRating] = useState('4.6');
-  const [reviewsCount, setReviewsCount] = useState('128 Reviews');
-  const [labFee, setLabFee] = useState('₹0 - ₹100 /hr');
-  const [timings, setTimings] = useState('9:00 AM - 8:00 PM');
-  const [existingCourses, setExistingCourses] = useState('Full Stack Development, Python Programming, Web Development');
-  const [bio, setBio] = useState('Leading technical educational institute offering TCM One certified courses.');
+  const [contactNumber, setContactNumber] = useState('');
+  const [totalRevenue, setTotalRevenue] = useState('₹0');
+  const [monthlyRevenue, setMonthlyRevenue] = useState('₹0');
+  const [totalStudentsCount, setTotalStudentsCount] = useState('0');
+  const [activeMentorsCount, setActiveMentorsCount] = useState('0');
+  const [rating, setRating] = useState('5.0');
+  const [reviewsCount, setReviewsCount] = useState('0 Reviews');
+  const [labFee, setLabFee] = useState('Free');
+  const [timings, setTimings] = useState('9:00 AM - 6:00 PM');
+  const [existingCourses, setExistingCourses] = useState('');
+  const [bio, setBio] = useState('Educational Institute');
 
   const filtered = partners.filter((p) =>
     (p.instituteName || p.name)?.toLowerCase().includes(search.toLowerCase()) ||
@@ -98,15 +98,15 @@ export function PartnersView({ partners, onCreatePartner, onUpdatePartner, onDel
     setHeroCover(partner.heroCover || 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800');
     setAvatarUrl(partner.avatarUrl || 'https://images.unsplash.com/photo-1562774053-701939374585?w=500');
     setGalleryPhotos(Array.isArray(partner.galleryPhotos) ? partner.galleryPhotos : typeof partner.galleryPhotos === 'string' ? partner.galleryPhotos.split(',').map(s => s.trim()).filter(Boolean) : []);
-    setContactNumber(partner.contactNumber || '+91 98765 43210');
-    setTotalRevenue(partner.totalRevenue || '₹48,750');
-    setMonthlyRevenue(partner.monthlyRevenue || '₹18,250');
-    setTotalStudentsCount(String(partner.totalStudentsCount || 56));
-    setActiveMentorsCount(String(partner.activeMentorsCount || 8));
-    setRating(String(partner.rating || 4.6));
-    setReviewsCount(partner.reviewsCount || '128 Reviews');
-    setLabFee(partner.labFee || '₹0 - ₹100 /hr');
-    setTimings(partner.timings || '9:00 AM - 8:00 PM');
+    setContactNumber(partner.contactNumber || '');
+    setTotalRevenue(partner.totalRevenue || '₹0');
+    setMonthlyRevenue(partner.monthlyRevenue || '₹0');
+    setTotalStudentsCount(String(partner.totalStudentsCount || 0));
+    setActiveMentorsCount(String(partner.activeMentorsCount || 0));
+    setRating(String(partner.rating || 5.0));
+    setReviewsCount(partner.reviewsCount || '0 Reviews');
+    setLabFee(partner.labFee || 'Free');
+    setTimings(partner.timings || '9:00 AM - 6:00 PM');
     setExistingCourses(Array.isArray(partner.existingCourses) ? partner.existingCourses.join(', ') : (partner.existingCourses || ''));
     setBio(partner.bio || '');
   };
@@ -531,10 +531,10 @@ export function PartnersView({ partners, onCreatePartner, onUpdatePartner, onDel
                       )}
                     </td>
                     <td>
-                      <div style={{ color: '#34D399', fontWeight: '600' }}>{partner.totalRevenue || '₹48,750'}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Fee: {partner.labFee || '₹0 - ₹100 /hr'}</div>
+                      <div style={{ color: '#34D399', fontWeight: '600' }}>{partner.totalRevenue || '₹0'}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Fee: {partner.labFee || 'Free'}</div>
                     </td>
-                    <td>⭐ {partner.rating || 4.6} ({partner.reviewsCount || '128 Reviews'})</td>
+                    <td>⭐ {partner.rating || 5.0} ({partner.reviewsCount || '0 Reviews'})</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.4rem' }}>
                         <button

@@ -880,7 +880,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
             activeOpacity={0.85}
           >
             <View style={styles.mentorAvatarWrap}>
-              {room.assignedMentor.avatarUrl && !room.assignedMentor.avatarUrl.includes("photo-1507003211169-0a1dd7228f2d") && !(Platform.OS === "web" && typeof room.assignedMentor.avatarUrl === "string" && room.assignedMentor.avatarUrl.startsWith("file://")) ? (
+              {room.assignedMentor.avatarUrl && typeof room.assignedMentor.avatarUrl === "string" && room.assignedMentor.avatarUrl.trim().length > 5 ? (
                 <Image source={{ uri: room.assignedMentor.avatarUrl }} style={styles.mentorAvatar} />
               ) : (
                 <View style={[styles.mentorAvatar, { backgroundColor: "#5B3CF5", alignItems: "center", justifyContent: "center" }]}>

@@ -12,107 +12,32 @@ import {
   View
 } from "react-native";
 import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
-import { getCategoryCourses } from "../api/client";
+import { getCategoryCourses, getAllMentors } from "../api/client";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
-const comingSoonBatches = {
-  inform: [
-    {
-      id: "cs_inf1",
-      tag: "⏳ LAUNCHING SOON",
-      title: "AI & LLM Application Engineering 2026",
-      subtitle: "LangChain • RAG • Vector DBs • OpenAI & Gemini APIs",
-      date: "Starts 15th Aug 2026",
-      image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=500&q=80",
-      cardBg: "#F0EDFF"
-    },
-    {
-      id: "cs_inf2",
-      tag: "⚡ UPCOMING BATCH",
-      title: "Cloud Native Microservices Bootcamp",
-      subtitle: "Golang • gRPC • Kubernetes • Distributed Systems",
-      date: "Starts 1st Sept 2026",
-      image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80",
-      cardBg: "#EBF5FF"
-    }
-  ],
-  academy: [
-    {
-      id: "cs_ac1",
-      tag: "⏳ LAUNCHING SOON",
-      title: "NEET Organic Chemistry Booster 2026",
-      subtitle: "Mechanisms • Reactions • Mock Tests • Top Faculty",
-      date: "Starts 20th Aug 2026",
-      image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=500&q=80",
-      cardBg: "#EAF7EC"
-    },
-    {
-      id: "cs_ac2",
-      tag: "⚡ UPCOMING BATCH",
-      title: "JEE Mathematics Problem Solving 360°",
-      subtitle: "Calculus • Algebra • Geometry • Previous 15 Yrs Papers",
-      date: "Starts 1st Sept 2026",
-      image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=500&q=80",
-      cardBg: "#EBF5FF"
-    }
-  ],
-  govt: [
-    {
-      id: "cs_gv1",
-      tag: "⏳ LAUNCHING SOON",
-      title: "UPSC Answer Writing & CSAT Masterclass",
-      subtitle: "GS Papers 1-4 • Daily Answer Practice • Evaluation",
-      date: "Starts 25th Aug 2026",
-      image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=500&q=80",
-      cardBg: "#FFF8EC"
-    },
-    {
-      id: "cs_gv2",
-      tag: "⚡ UPCOMING BATCH",
-      title: "SSC CGL Tier II Complete Selection Batch",
-      subtitle: "Maths • English • Computer Knowledge • Speed Mocks",
-      date: "Starts 5th Sept 2026",
-      image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=500&q=80",
-      cardBg: "#EBF5FF"
-    }
-  ],
-  career: [
-    {
-      id: "cs_cr1",
-      tag: "⏳ LAUNCHING SOON",
-      title: "Full Stack Placement Track (Assured Drives)",
-      subtitle: "Frontend • Backend • Mock Interviews • Hiring Partners",
-      date: "Starts 10th Sept 2026",
-      image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=500&q=80",
-      cardBg: "#EBF5FF"
-    }
-  ]
-};
-
 const categoryDetails = {
   inform: {
     id: "inform",
-    badge: "🔥 MOST POPULAR BATCHES 2026",
+    badge: "FEATURED CATEGORY",
     badgeBg: "#EEECFE",
     badgeColor: "#5B3CF5",
-    title: "TCM One Inform Tech",
+    title: "TCM Information Tech",
     subtitle: "Full Stack Web Dev, Python, AI/ML & DevOps",
     categoryKey: "TCM Information Tech",
     icon: "play",
     iconBg: "#EEECFE",
     iconColor: "#5B3CF5",
     heroImage: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1000",
-    tickerText: "🔥 TCM ONE INFORM TECH: Live Interactive Batches 2026 • Full Stack MERN • DevOps & K8s • System Design • 100% Placement Guidance • Daily Live Doubt Clearance",
     banners: [
       {
         id: "b_inf1",
-        tag: "🔴 LIVE BATCH 2026",
+        tag: "LIVE BATCH",
         title: "Full Stack MERN\nMastery Batch",
-        subtitle: "React • Node.js • Express • MongoDB • Redux",
+        subtitle: "React • Node.js • Express • MongoDB",
         buttonText: "Explore Batch →",
         image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80",
         cardBg: "#F0EDFF",
@@ -120,422 +45,82 @@ const categoryDetails = {
       },
       {
         id: "b_inf2",
-        tag: "⚡ DEVOPS & CLOUD",
+        tag: "DEVOPS & CLOUD",
         title: "Docker, K8s &\nAWS Masterclass",
-        subtitle: "CI/CD • Kubernetes • Terraform • Microservices",
+        subtitle: "CI/CD • Kubernetes • Terraform",
         buttonText: "Join DevOps →",
         image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80",
         cardBg: "#EBF5FF",
         borderColor: "#D6EAFF"
-      },
-      {
-        id: "b_inf3",
-        tag: "🚀 SYSTEM DESIGN",
-        title: "System Design &\nArchitecture",
-        subtitle: "HLD • LLD • Scalable Backend • Redis • Kafka",
-        buttonText: "Learn Design →",
-        image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80",
-        cardBg: "#F6F4FF",
-        borderColor: "#EBE5FF"
-      }
-    ],
-    courses: [
-      {
-        id: "inf_1",
-        title: "Full Stack MERN Developer 2026",
-        tags: "React, Node.js, Express, MongoDB, Redux",
-        rating: "4.9",
-        reviews: "1.4K",
-        lessons: "36 Live Classes",
-        image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=500&q=80"
-      },
-      {
-        id: "inf_2",
-        title: "DevOps, Docker & Kubernetes Masterclass",
-        tags: "Docker, K8s, CI/CD, AWS, Terraform",
-        rating: "4.8",
-        reviews: "920",
-        lessons: "28 Lessons",
-        image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80"
-      },
-      {
-        id: "inf_3",
-        title: "System Design & Microservices",
-        tags: "HLD, LLD, Scalable Backend, Redis, Kafka",
-        rating: "4.9",
-        reviews: "1.2K",
-        lessons: "30 Lessons",
-        image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=500&q=80"
-      },
-      {
-        id: "inf_4",
-        title: "DSA in Java & C++ (Zero to Hero)",
-        tags: "Trees, Graphs, DP, Dynamic Programming",
-        rating: "4.9",
-        reviews: "1.8K",
-        lessons: "42 Lessons",
-        image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=500&q=80"
-      }
-    ],
-    mentors: [
-      {
-        id: "m1",
-        name: "Rahul Dev",
-        role: "Senior Tech Lead @ TCM",
-        exp: "8+ Yrs Exp",
-        rating: "4.9",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80"
-      },
-      {
-        id: "m3",
-        name: "Aman Verma",
-        role: "Frontend Architect",
-        exp: "7+ Yrs Exp",
-        rating: "4.8",
-        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80"
       }
     ]
   },
-
   academy: {
     id: "academy",
     badge: "ACADEMIC EXCELLENCE",
     badgeBg: "#EAF7EC",
     badgeColor: "#2E7D32",
-    title: "TCM One Academy",
-    subtitle: "NEET, JEE Main & Advanced, Board Exams & Specialized Academic Batches",
+    title: "TCM Academy",
+    subtitle: "NEET, JEE Main & Board Exam Preparation",
     icon: "school",
     iconBg: "#EAF7EC",
     iconColor: "#2E7D32",
-    tickerText: "TCM ONE ACADEMY: NEET Ultimate Crash Course 2026 • JEE Main & Advanced Rank Booster • Class 12th Board Exam Topper Batch • 5000+ MCQs & Mock Tests",
     banners: [
       {
         id: "b_ac1",
-        tag: "NEET 2026 LIVE",
-        title: "NEET Ultimate\nCrash Course 2026",
-        subtitle: "Physics • Chemistry • Biology • 5000+ MCQs & Mock Tests",
+        tag: "NEET LIVE",
+        title: "NEET Ultimate\nCrash Course",
+        subtitle: "Physics • Chemistry • Biology",
         buttonText: "Join NEET Batch →",
         image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=600&q=80",
         cardBg: "#EAF7EC",
         borderColor: "#D2EBD5"
-      },
-      {
-        id: "b_ac2",
-        tag: "JEE MAIN & ADV",
-        title: "JEE Rank Booster\nBatch 2026",
-        subtitle: "Advanced Maths • Physics • Organic Chemistry • IITian Mentors",
-        buttonText: "Enroll for JEE →",
-        image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80",
-        cardBg: "#EBF5FF",
-        borderColor: "#D6EAFF"
-      },
-      {
-        id: "b_ac3",
-        tag: "BOARD TOPPER",
-        title: "Class 12th Board\nPhysics & Maths",
-        subtitle: "NCERT Complete Coverage • 10-Yr Solved Papers",
-        buttonText: "Start Learning →",
-        image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=600&q=80",
-        cardBg: "#FFF8EC",
-        borderColor: "#FEE8C6"
-      }
-    ],
-    courses: [
-      {
-        id: "ac_1",
-        title: "NEET Ultimate Crash Course 2026",
-        tags: "Physics, Chemistry, Biology, 5000+ MCQs",
-        rating: "4.9",
-        reviews: "3.2K",
-        lessons: "50 Live Classes",
-        image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=500&q=80"
-      },
-      {
-        id: "ac_2",
-        title: "JEE Main & Advanced Rank Booster",
-        tags: "Advanced Maths, Physics, Organic Chem",
-        rating: "4.9",
-        reviews: "2.8K",
-        lessons: "45 Live Classes",
-        image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=500&q=80"
-      },
-      {
-        id: "ac_3",
-        title: "Class 12th Board Exam Topper Batch",
-        tags: "NCERT Complete Coverage, Sample Papers",
-        rating: "4.8",
-        reviews: "1.9K",
-        lessons: "32 Lessons",
-        image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=500&q=80"
-      },
-      {
-        id: "ac_4",
-        title: "Foundation Science for Class 9th & 10th",
-        tags: "Physics, Chemistry, Biology Foundations",
-        rating: "4.7",
-        reviews: "1.1K",
-        lessons: "25 Lessons",
-        image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=500&q=80"
-      }
-    ],
-    mentors: [
-      {
-        id: "m_neet",
-        name: "Dr. Aakash Verma",
-        role: "NEET Specialist & Biology HOD",
-        exp: "10+ Yrs Exp",
-        rating: "4.9",
-        avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=200&q=80"
-      },
-      {
-        id: "m_jee",
-        name: "Prof. Vikram Sharma",
-        role: "IITian • JEE Physics Expert",
-        exp: "12+ Yrs Exp",
-        rating: "4.9",
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80"
       }
     ]
   },
-
   govt: {
     id: "govt",
-    badge: "GOVT EXAM PREP",
+    badge: "GOVERNMENT EXAMS",
     badgeBg: "#FFF8EC",
     badgeColor: "#E7A900",
-    title: "TCM One Government",
-    subtitle: "UPSC Civil Services, SSC CGL & CHSL, Banking, Railways & Govt Competition Exams",
+    title: "TCM Government",
+    subtitle: "UPSC, SSC CGL, Banking & Govt Exams",
     icon: "bank",
     iconBg: "#FFF8EC",
     iconColor: "#E7A900",
-    tickerText: "TCM ONE GOVERNMENT: UPSC CSE 2026 Foundation Batch • SSC CGL Tier I & II Complete Course • IBPS PO / SBI PO Banking Special • Railway RRB NTPC • Daily Current Affairs & Mock Tests",
     banners: [
       {
         id: "b_gv1",
-        tag: "UPSC CSE 2026",
-        title: "UPSC Civil Services\nTarget 2026",
-        subtitle: "GS Paper I-IV • CSAT • Essay Writing • Optional Subjects",
-        buttonText: "Join UPSC Batch →",
-        image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80",
-        cardBg: "#FFF8EC",
-        borderColor: "#FEE8C6"
-      },
-      {
-        id: "b_gv2",
-        tag: "SSC CGL & CHSL",
-        title: "SSC CGL Complete\nSelection Batch 2026",
-        subtitle: "Quantitative Aptitude • Reasoning • English • General Awareness",
-        buttonText: "Enroll for SSC →",
-        image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=600&q=80",
-        cardBg: "#EBF5FF",
-        borderColor: "#D6EAFF"
-      },
-      {
-        id: "b_gv3",
-        tag: "BANKING & RAILWAYS",
-        title: "SBI PO & IBPS\nBanking Special",
-        subtitle: "Data Interpretation • Puzzles • Financial Awareness • Mock Tests",
-        buttonText: "Start Prep →",
-        image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80",
-        cardBg: "#EAF7EC",
-        borderColor: "#D2EBD5"
-      }
-    ],
-    courses: [
-      {
-        id: "gv_1",
-        title: "UPSC Civil Services IAS/IPS Foundation 2026",
-        tags: "GS 1-4, CSAT, Daily Current Affairs & Answer Writing",
-        rating: "4.9",
-        id: "gv_2",
-        title: "SSC CGL & CHSL Complete Target Batch",
-        tags: "Quant, Reasoning, English, General Awareness",
-        rating: "4.9",
-        reviews: "3.8K",
-        lessons: "50 Live Classes",
-        image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=500&q=80"
-      },
-      {
-        id: "gv_3",
-        title: "Bank PO (SBI PO & IBPS PO) Masterclass",
-        tags: "Advanced Puzzles, DI, Banking Awareness, Mocks",
-        rating: "4.8",
-        reviews: "2.9K",
-        lessons: "40 Live Classes",
-        image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=500&q=80"
-      },
-      {
-        id: "gv_4",
-        title: "Railway RRB NTPC & Group D Crash Course",
-        tags: "General Science, Mathematics, Reasoning",
-        rating: "4.7",
-        reviews: "2.1K",
-        lessons: "30 Lessons",
-        image: "https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=500&q=80"
-      }
-    ],
-    mentors: [
-      {
-        id: "m_upsc",
-        name: "Dr. Rajeshwar Sen",
-        role: "Ex-IAS • UPSC Polity & Mains HOD",
-        exp: "15+ Yrs Exp",
-        rating: "4.9",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80"
-      },
-      {
-        id: "m_bank",
-        name: "Vikramaditya Singh",
-        role: "Ex-Bank Manager • Quant Expert",
-        exp: "11+ Yrs Exp",
-        rating: "4.9",
-        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80"
-      }
-    ]
-  },
-  guide: {
-    id: "govt",
-    badge: "🏛️ GOVT EXAM PREP",
-    badgeBg: "#FFF8EC",
-    badgeColor: "#E7A900",
-    title: "TCM One Government",
-    subtitle: "UPSC Civil Services, SSC CGL & CHSL, Banking, Railways & Govt Competition Exams",
-    icon: "bank",
-    iconBg: "#FFF8EC",
-    iconColor: "#E7A900",
-    tickerText: "🏛️ TCM ONE GOVERNMENT: UPSC CSE 2026 Foundation Batch • SSC CGL Tier I & II Complete Course • IBPS PO / SBI PO Banking Special • Railway RRB NTPC • Daily Current Affairs & Mock Tests",
-    banners: [
-      {
-        id: "b_gv1",
-        tag: "🏛️ UPSC CSE 2026",
-        title: "UPSC Civil Services\nTarget 2026",
-        subtitle: "GS Paper I-IV • CSAT • Essay Writing • Optional Subjects",
+        tag: "UPSC CSE Target",
+        title: "UPSC Civil Services\nFoundation Batch",
+        subtitle: "GS Paper I-IV • CSAT • Essay",
         buttonText: "Join UPSC Batch →",
         image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80",
         cardBg: "#FFF8EC",
         borderColor: "#FEE8C6"
       }
-    ],
-    courses: [
-      {
-        id: "gv_1",
-        title: "UPSC Civil Services IAS/IPS Foundation 2026",
-        tags: "GS 1-4, CSAT, Daily Current Affairs & Answer Writing",
-        rating: "4.9",
-        reviews: "4.2K",
-        lessons: "60 Live Classes",
-        image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=500&q=80"
-      }
-    ],
-    mentors: [
-      {
-        id: "m_upsc",
-        name: "Dr. Rajeshwar Sen",
-        role: "Ex-IAS • UPSC Polity & Mains HOD",
-        exp: "15+ Yrs Exp",
-        rating: "4.9",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80"
-      }
     ]
   },
-
   career: {
     id: "career",
-    badge: "🔵 PLACEMENT & INTERNSHIP HUB",
+    badge: "CAREER & PLACEMENT",
     badgeBg: "#EBF5FF",
     badgeColor: "#2F79B9",
-    title: "TCM One Career",
-    subtitle: "Internships, Direct Job Openings, Off-Campus Drives & Placement Guarantee",
+    title: "TCM Career",
+    subtitle: "Internships & Hiring Drives",
     icon: "briefcase",
     iconBg: "#EBF5FF",
     iconColor: "#2F79B9",
-    tickerText: "🔵 TCM ONE CAREER: TCM One Placement Guarantee Batch (Assured 5+ Interviews, CTC ₹6-18 LPA) • Remote React Internships • Direct Job Referrals to 150+ Hiring Partners",
     banners: [
       {
         id: "b_cr1",
-        tag: "💼 PLACEMENT GUARANTEE",
-        title: "TCM Placement\nGuarantee Batch",
-        subtitle: "Assured 5+ Tech Interviews • CTC ₹6-18 LPA • Top MNCs",
+        tag: "PLACEMENT TRACK",
+        title: "TCM Placement\nTrack Batch",
+        subtitle: "Tech Interviews • Hiring Partners",
         buttonText: "Apply Now →",
         image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=600&q=80",
         cardBg: "#EBF5FF",
         borderColor: "#D6EAFF"
-      },
-      {
-        id: "b_cr2",
-        tag: "🌐 REMOTE INTERNSHIP",
-        title: "React Frontend\nDeveloper Intern",
-        subtitle: "3 Months • Stipend ₹25,000/mo • PPO Opportunity",
-        buttonText: "Apply Intern →",
-        image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80",
-        cardBg: "#F0EDFF",
-        borderColor: "#E5E1FF"
-      },
-      {
-        id: "b_cr3",
-        tag: "🚀 DIRECT HIRING",
-        title: "Backend Node.js\nSoftware Engineer",
-        subtitle: "Full-Time • Bangalore • CTC ₹8-12 LPA • Hiring Now",
-        buttonText: "View Jobs →",
-        image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=600&q=80",
-        cardBg: "#EAF7EC",
-        borderColor: "#D2EBD5"
-      }
-    ],
-    courses: [
-      {
-        id: "cr_1",
-        title: "TCM Placement Guarantee Batch 2026",
-        tags: "Assured 5+ Interviews, CTC ₹6-18 LPA",
-        rating: "4.9",
-        reviews: "1.6K",
-        lessons: "Full Bootcamp",
-        image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=500&q=80"
-      },
-      {
-        id: "cr_2",
-        title: "Frontend React Developer Internship",
-        tags: "Remote • Stipend ₹25,000/mo • 3 Months",
-        rating: "4.8",
-        reviews: "450 Applied",
-        lessons: "Active Hiring",
-        image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=500&q=80"
-      },
-      {
-        id: "cr_3",
-        title: "Backend Node.js Software Engineer",
-        tags: "Full-Time • Bangalore • CTC ₹8-12 LPA",
-        rating: "4.9",
-        reviews: "320 Applied",
-        lessons: "Hiring Now",
-        image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=500&q=80"
-      },
-      {
-        id: "cr_4",
-        title: "Data Analyst & AI Intern Drive",
-        tags: "Hybrid • Gurgaon • Stipend ₹20,000/mo",
-        rating: "4.7",
-        reviews: "600 Applied",
-        lessons: "Off-Campus Drive",
-        image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=500&q=80"
-      }
-    ],
-    mentors: [
-      {
-        id: "m_hr",
-        name: "Rohan Malhotra",
-        role: "Head of Placements @ TCM",
-        exp: "9+ Yrs Exp",
-        rating: "4.9",
-        avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=200&q=80"
-      },
-      {
-        id: "m1",
-        name: "Rahul Dev",
-        role: "Technical Hiring Lead",
-        exp: "8+ Yrs Exp",
-        rating: "4.9",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80"
       }
     ]
   }
@@ -544,16 +129,14 @@ const categoryDetails = {
 export default function ExploreTcmCategoryScreen({ session, categoryKey = "inform", onBack, onSelectCourse, onSelectUser }) {
   const { theme } = useTheme();
   const cat = categoryDetails[categoryKey] || categoryDetails.inform;
-  const comingSoonList = comingSoonBatches[categoryKey] || comingSoonBatches.inform;
   const [realCourses, setRealCourses] = useState([]);
+  const [realMentors, setRealMentors] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
-  // Animated Ticker Marquee for moving header text
-  const tickerAnim = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     fetchCategoryRealCourses();
+    fetchCategoryRealMentors();
   }, [session?.token, categoryKey]);
 
   async function fetchCategoryRealCourses() {
@@ -572,19 +155,81 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
     }
   }
 
-  useEffect(() => {
-    tickerAnim.setValue(0);
-    const animation = Animated.loop(
-      Animated.timing(tickerAnim, {
-        toValue: -width * 1.5,
-        duration: 12000,
-        easing: Easing.linear,
-        useNativeDriver: true
-      })
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [categoryKey]);
+  async function fetchCategoryRealMentors() {
+    try {
+      const res = await getAllMentors(session?.token);
+      if (res && Array.isArray(res.mentors)) {
+        setRealMentors(res.mentors);
+      } else {
+        setRealMentors([]);
+      }
+    } catch (err) {
+      setRealMentors([]);
+    }
+  }
+
+  const categoryMentors = realMentors.filter((m) => {
+    const catStr = String(m.category || "").toLowerCase();
+    const roleStr = String(m.role || "").toLowerCase();
+    const bioStr = String(m.bio || "").toLowerCase();
+    const nameStr = String(m.name || "").toLowerCase();
+    const key = String(categoryKey || "").toLowerCase();
+
+    if (key === "inform") {
+      return (
+        catStr.includes("inform") ||
+        catStr.includes("tech") ||
+        catStr.includes("it") ||
+        roleStr.includes("developer") ||
+        roleStr.includes("tech") ||
+        roleStr.includes("software") ||
+        roleStr.includes("frontend") ||
+        roleStr.includes("backend") ||
+        roleStr.includes("fullstack") ||
+        roleStr.includes("engineer") ||
+        roleStr.includes("architect") ||
+        roleStr.includes("code") ||
+        bioStr.includes("tech") ||
+        bioStr.includes("code") ||
+        nameStr.includes("tech")
+      );
+    }
+    if (key === "academy") {
+      return (
+        catStr.includes("academy") ||
+        catStr.includes("academic") ||
+        roleStr.includes("neet") ||
+        roleStr.includes("jee") ||
+        roleStr.includes("physics") ||
+        roleStr.includes("chemistry") ||
+        roleStr.includes("biology") ||
+        roleStr.includes("math") ||
+        roleStr.includes("teacher") ||
+        roleStr.includes("faculty")
+      );
+    }
+    if (key === "govt") {
+      return (
+        catStr.includes("govt") ||
+        catStr.includes("government") ||
+        roleStr.includes("upsc") ||
+        roleStr.includes("ssc") ||
+        roleStr.includes("civil") ||
+        roleStr.includes("ias") ||
+        roleStr.includes("bank")
+      );
+    }
+    if (key === "career") {
+      return (
+        catStr.includes("career") ||
+        catStr.includes("placement") ||
+        roleStr.includes("placement") ||
+        roleStr.includes("hr") ||
+        roleStr.includes("hiring")
+      );
+    }
+    return catStr.includes(key) || roleStr.includes(key);
+  });
 
   function handleScrollBanner(event) {
     const slide = Math.round(event.nativeEvent.contentOffset.x / (width - 40));
@@ -618,28 +263,6 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
 
         <View style={[styles.categoryIconWrap, { backgroundColor: theme.isDark ? "#1E1B4B" : cat.iconBg }]}>
           <MaterialCommunityIcons name={cat.icon} size={22} color={theme.isDark ? "#A78BFA" : cat.iconColor} />
-        </View>
-      </View>
-
-      {/* 🌟 Moving Text Header Announcement Ticker Bar */}
-      <View style={[styles.tickerContainer, themedSurface]}>
-        <View style={[styles.tickerBadge, { backgroundColor: theme.badgeBg }]}>
-          <MaterialCommunityIcons name="bullhorn-outline" size={14} color={theme.primary} />
-          <Text style={[styles.tickerBadgeText, { color: theme.primary }]}>INFO</Text>
-        </View>
-        <View style={styles.tickerClip}>
-          <Animated.Text
-            style={[
-              styles.tickerText,
-              {
-                color: theme.subtext,
-                transform: [{ translateX: tickerAnim }]
-              }
-            ]}
-            numberOfLines={1}
-          >
-            {cat.tickerText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {cat.tickerText}
-          </Animated.Text>
         </View>
       </View>
 
@@ -740,79 +363,58 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
             </View>
           </>
         ) : (
-          <>
-            {/* Empty State Card when no mentor has uploaded courses in this category */}
-            <View style={[styles.emptyCoursesCard, themedSoftSurface]}>
-              <View style={[styles.emptyIconWrap, { backgroundColor: theme.badgeBg }]}>
-                <MaterialCommunityIcons name="book-open-page-variant-outline" size={30} color={theme.primary} />
-              </View>
-              <Text style={[styles.emptyTitle, { color: theme.text }]}>No Live Courses Published Yet</Text>
-              <Text style={[styles.emptySub, { color: theme.subtext }]}>
-                Mentors have not published live courses in {cat.title} yet. Pre-register for upcoming batches below or create a course if you are a mentor!
-              </Text>
+          <View style={[styles.emptyCoursesCard, themedSoftSurface]}>
+            <View style={[styles.emptyIconWrap, { backgroundColor: theme.badgeBg }]}>
+              <MaterialCommunityIcons name="book-open-page-variant-outline" size={30} color={theme.primary} />
             </View>
-
-            {/* Coming Soon & Pre-Registration Batches Carousel */}
-            <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Upcoming Batches & Coming Soon</Text>
-              <Text style={[styles.totalCountText, { color: theme.subtext }]}>{comingSoonList.length} Upcoming</Text>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContent}>
-              {comingSoonList.map((batch) => (
-                <View key={batch.id} style={[styles.comingSoonCard, theme.isDark ? themedSurface : { backgroundColor: batch.cardBg }]}>
-                  <Image source={{ uri: batch.image }} style={styles.comingSoonImg} />
-                  <View style={styles.comingSoonBody}>
-                    <View style={[styles.comingSoonTagPill, { backgroundColor: theme.badgeBg }]}>
-                      <Text style={[styles.comingSoonTagText, { color: theme.primary }]}>{batch.tag}</Text>
-                    </View>
-                    <Text numberOfLines={2} style={[styles.comingSoonTitle, { color: theme.text }]}>{batch.title}</Text>
-                    <Text numberOfLines={1} style={[styles.comingSoonSub, { color: theme.subtext }]}>{batch.subtitle}</Text>
-                    <Text style={styles.comingSoonDate}>📅 {batch.date}</Text>
-
-                    <Pressable
-                      onPress={() => Alert.alert("Pre-Registered! 🎉", `You will be notified immediately when a mentor launches "${batch.title.replace('\n', ' ')}" live!`)}
-                      style={styles.notifyBtn}
-                    >
-                      <Feather name="bell" size={13} color="#FFFFFF" style={{ marginRight: 5 }} />
-                      <Text style={styles.notifyBtnText}>Notify Me / Pre-Register</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          </>
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>No Live Courses Published Yet</Text>
+            <Text style={[styles.emptySub, { color: theme.subtext }]}>
+              Mentors have not published live courses in {cat.title} yet.
+            </Text>
+          </View>
         )}
 
-        {/* 4. Dedicated Mentors Section */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Top Mentors & Advisors</Text>
-          <Text style={[styles.totalCountText, { color: theme.subtext }]}>{cat.mentors.length} Mentors</Text>
+        {/* 4. Dedicated Real Category Mentors Section */}
+        <View style={[styles.sectionHeaderRow, { marginTop: 20 }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>{cat.title} Mentors</Text>
+          <Text style={[styles.totalCountText, { color: theme.subtext }]}>{categoryMentors.length} Available</Text>
         </View>
 
-        <View style={styles.mentorsRow}>
-          {cat.mentors.map((mentor) => (
-            <Pressable
-              key={mentor.id}
-              onPress={() => (onSelectUser ? onSelectUser({ id: mentor.id, name: mentor.name, role: mentor.role }) : Alert.alert(mentor.name, mentor.role))}
-              style={({ pressed }) => [styles.mentorCard, themedSurface, pressed && styles.pressed]}
-            >
-              <Image source={{ uri: mentor.avatar }} style={styles.mentorAvatar} />
-              <View style={styles.mentorContent}>
-                <Text style={[styles.mentorName, { color: theme.text }]}>{mentor.name}</Text>
-                <Text style={[styles.mentorRole, { color: theme.subtext }]}>{mentor.role}</Text>
-                <View style={styles.mentorMeta}>
-                  <View style={styles.ratingRow}>
-                    <FontAwesome name="star" size={11} color="#FFB800" />
-                    <Text style={[styles.ratingText, { color: theme.text }]}>{mentor.rating}</Text>
+        {categoryMentors.length > 0 ? (
+          <View style={styles.mentorsRow}>
+            {categoryMentors.map((mentor) => (
+              <Pressable
+                key={mentor.id || mentor._id}
+                onPress={() => (onSelectUser ? onSelectUser({ id: mentor.id || mentor._id, name: mentor.name, role: mentor.role }) : Alert.alert(mentor.name, mentor.role || "Mentor"))}
+                style={({ pressed }) => [styles.mentorCard, themedSurface, pressed && styles.pressed]}
+              >
+                <Image source={{ uri: mentor.avatar || mentor.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200" }} style={styles.mentorAvatar} />
+                <View style={styles.mentorContent}>
+                  <Text style={[styles.mentorName, { color: theme.text }]}>{mentor.name}</Text>
+                  <Text style={[styles.mentorRole, { color: theme.subtext }]}>{mentor.role || "Mentor"}</Text>
+                  <View style={styles.mentorMeta}>
+                    <View style={styles.ratingRow}>
+                      <FontAwesome name="star" size={11} color="#FFB800" />
+                      <Text style={[styles.ratingText, { color: theme.text }]}>{mentor.rating || "4.9"}</Text>
+                    </View>
+                    <Text style={[styles.expText, { color: theme.primary }]}>{mentor.exp || mentor.experience || "Verified Mentor"}</Text>
                   </View>
-                  <Text style={[styles.expText, { color: theme.primary }]}>{mentor.exp}</Text>
                 </View>
-              </View>
-              <Feather name="chevron-right" size={16} color="#9E9EB2" />
-            </Pressable>
-          ))}
-        </View>
+                <Feather name="chevron-right" size={16} color="#9E9EB2" />
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <View style={[styles.emptyCoursesCard, themedSoftSurface, { marginTop: 6 }]}>
+            <View style={[styles.emptyIconWrap, { backgroundColor: theme.badgeBg }]}>
+              <MaterialCommunityIcons name="account-search-outline" size={28} color={theme.primary} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>No Mentors Available</Text>
+            <Text style={[styles.emptySub, { color: theme.subtext }]}>
+              There are currently no active mentors listed under {cat.title}.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </View>
   );

@@ -210,7 +210,7 @@ adminRouter.get("/stats", requireAdmin, async (req, res) => {
         approvedMentorsCount,
         coursesCount: courses.length,
         jobsCount: jobs.length,
-        webinarsCount: 5,
+        webinarsCount: (memoryStore.webinars || []).length,
         postsCount: posts.length
       });
     }
@@ -346,15 +346,19 @@ adminRouter.patch("/mentors/:id/approve", requireAdmin, async (req, res) => {
 
     if (memoryStore) {
       const users = memoryStore.users || [];
-      const user = users.find((u) => String(u._id || u.id) === String(id));
+      const user = users.find((u) => String(u._id || u.id) === String(id) || String(u.email || "").toLowerCase() === String(id).toLowerCase());
       if (user) {
         user.isApproved = true;
+        user.status = "approved";
+        user.approvalStatus = "approved";
       }
 
       const mentors = memoryStore.mentors || [];
-      const mentor = mentors.find((m) => String(m._id || m.id || m.userId) === String(id));
+      const mentor = mentors.find((m) => String(m._id || m.id || m.userId) === String(id) || String(m.email || "").toLowerCase() === String(id).toLowerCase());
       if (mentor) {
         mentor.isApproved = true;
+        mentor.status = "approved";
+        mentor.approvalStatus = "approved";
       }
 
       return res.json({
@@ -365,8 +369,10 @@ adminRouter.patch("/mentors/:id/approve", requireAdmin, async (req, res) => {
       });
     }
 
-    await User.findByIdAndUpdate(id, { isApproved: true });
-    await Mentor.updateMany({ $or: [{ _id: id }, { userId: id }] }, { isApproved: true });
+    try {
+      await User.updateMany({ $or: [{ _id: id }, { email: id }] }, { isApproved: true, status: "approved", approvalStatus: "approved" });
+      await Mentor.updateMany({ $or: [{ _id: id }, { userId: id }, { email: id }] }, { isApproved: true, status: "approved", approvalStatus: "approved" });
+    } catch (e) {}
 
     res.json({
       success: true,
@@ -654,15 +660,15 @@ adminRouter.post("/partners", requireAdmin, async (req, res) => {
       instituteName,
       email,
       password,
-      partnerCategory = "TCM One Partner Institute",
+      partnerCategory = "TCM Partner Institute",
       location = "Bilaspur, Chhattisgarh",
-      contactNumber = "+91 98765 43210",
-      totalRevenue = "₹48,750",
-      monthlyRevenue = "₹18,250",
-      totalStudentsCount = 56,
-      activeMentorsCount = 8,
-      rating = 4.6,
-      reviewsCount = "128 Reviews",
+      contactNumber = "",
+      totalRevenue = "₹0",
+      monthlyRevenue = "₹0",
+      totalStudentsCount = 0,
+      activeMentorsCount = 0,
+      rating = 5.0,
+      reviewsCount = "0 Reviews",
       existingCourses,
       bio
     } = req.body;
@@ -838,30 +844,26 @@ adminRouter.get("/enrollments", requireAdmin, async (req, res) => {
       students = users.filter((u) => u.role === "student" || !u.role || u.role === "member");
       mentors = users.filter((u) => u.role === "mentor").concat(memoryStore.mentors || []);
       courses = memoryStore.courses || [];
-    } else {
-      students = await User.find({ role: { $in: ["student", "member"] } });
-      mentors = await User.find({ role: "mentor" });
-      courses = await Course.find();
     }
+    try {
+      const dbStudents = await User.find({ role: { $in: ["student", "member"] } }).lean();
+      const dbMentors = await User.find({ role: "mentor" }).lean();
+      dbStudents.forEach((dbS) => {
+        if (!students.some((s) => String(s._id || s.id) === String(dbS._id || dbS.id))) {
+          students.push(dbS);
+        }
+      });
+      dbMentors.forEach((dbM) => {
+        if (!mentors.some((m) => String(m._id || m.id) === String(dbM._id || dbM.id))) {
+          mentors.push(dbM);
+        }
+      });
+    } catch (dbErr) {}
 
     const realEnrollments = [];
 
     students.forEach((stu, sIdx) => {
-      const stuEnrolled = Array.isArray(stu.enrolledCourses) && stu.enrolledCourses.length > 0
-        ? stu.enrolledCourses
-        : [
-            {
-              id: `enr-${stu._id || stu.id || sIdx}`,
-              courseTitle: "Full Stack MERN Development Masterclass",
-              coursePrice: "₹4,999",
-              enrolledDate: stu.createdAt ? new Date(stu.createdAt).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }) : "14 May 2025",
-              progressPercent: stu.progress !== undefined ? stu.progress : 75,
-              completedModules: `${Math.round((stu.progress || 75) / 5)} / 20 Modules`,
-              status: (stu.progress || 75) === 100 ? "Completed" : "In Progress",
-              assignedMentorName: mentors[sIdx % (mentors.length || 1)]?.name || "Ayushman Sharma",
-              assignedMentorTitle: mentors[sIdx % (mentors.length || 1)]?.mentorCategory || "Senior Architect"
-            }
-          ];
+      const stuEnrolled = Array.isArray(stu.enrolledCourses) ? stu.enrolledCourses : [];
 
       stuEnrolled.forEach((enr, eIdx) => {
         realEnrollments.push({
@@ -871,14 +873,14 @@ adminRouter.get("/enrollments", requireAdmin, async (req, res) => {
           studentEmail: stu.email || "learner@tcm.com",
           studentAvatar: stu.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
           courseId: enr.courseId || `c-${eIdx}`,
-          courseTitle: enr.courseTitle || "Full Stack MERN Masterclass",
-          coursePrice: enr.coursePrice || "₹4,999",
-          enrolledDate: enr.enrolledDate || "14 May 2025",
-          progressPercent: enr.progressPercent !== undefined ? enr.progressPercent : (stu.progress || 75),
-          completedModules: enr.completedModules || "15 / 20 Modules",
+          courseTitle: enr.courseTitle || "Enrolled Course",
+          coursePrice: enr.coursePrice || "₹0",
+          enrolledDate: enr.enrolledDate || (stu.createdAt ? new Date(stu.createdAt).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }) : "Today"),
+          progressPercent: enr.progressPercent !== undefined ? enr.progressPercent : 0,
+          completedModules: enr.completedModules || "0 / 20 Modules",
           status: enr.status || "In Progress",
-          assignedMentorName: enr.assignedMentorName || mentors[0]?.name || "Ayushman Sharma",
-          assignedMentorTitle: enr.assignedMentorTitle || "Senior Mentor"
+          assignedMentorName: enr.assignedMentorName || "Unassigned",
+          assignedMentorTitle: enr.assignedMentorTitle || "Educator"
         });
       });
     });

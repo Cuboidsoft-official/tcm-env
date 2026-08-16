@@ -11,13 +11,17 @@ export function UsersView({ users, onUpdateUser, onDeleteUser, search }) {
   const [editRole, setEditRole] = useState('student');
   const [editApproved, setEditApproved] = useState(true);
   const [editBadge, setEditBadge] = useState('');
+  const [editCoins, setEditCoins] = useState(0);
+  const [editWalletBalance, setEditWalletBalance] = useState(0);
 
   const filteredUsers = users.filter((u) => {
     const q = search.toLowerCase();
     const matchesSearch =
       u.name?.toLowerCase().includes(q) ||
       u.email?.toLowerCase().includes(q) ||
-      u.role?.toLowerCase().includes(q);
+      u.role?.toLowerCase().includes(q) ||
+      (u.referralCode && u.referralCode.toLowerCase().includes(q)) ||
+      (u.referredBy && u.referredBy.toLowerCase().includes(q));
 
     if (!matchesSearch) return false;
     if (roleFilter && u.role !== roleFilter) return false;
@@ -31,6 +35,8 @@ export function UsersView({ users, onUpdateUser, onDeleteUser, search }) {
     setEditRole(user.role || 'student');
     setEditApproved(user.isApproved !== false);
     setEditBadge(user.memberBadge || '');
+    setEditCoins(user.tcmCoins || 0);
+    setEditWalletBalance(user.walletBalance || 0);
   };
 
   const handleSaveEdit = (e) => {
@@ -41,7 +47,9 @@ export function UsersView({ users, onUpdateUser, onDeleteUser, search }) {
       email: editEmail,
       role: editRole,
       isApproved: editApproved,
-      memberBadge: editBadge
+      memberBadge: editBadge,
+      tcmCoins: Number(editCoins),
+      walletBalance: Number(editWalletBalance)
     });
     setEditingUser(null);
   };
@@ -56,7 +64,7 @@ export function UsersView({ users, onUpdateUser, onDeleteUser, search }) {
               <span>Registered Accounts Directory ({filteredUsers.length})</span>
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>
-              Manage and edit all registered students, mentors, partners, and administrators.
+              Manage, verify, edit referral codes, and adjust wallet balances for all registered accounts.
             </p>
           </div>
 
@@ -92,14 +100,23 @@ export function UsersView({ users, onUpdateUser, onDeleteUser, search }) {
                 <input type="email" className="form-input" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} required />
               </div>
 
-              <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Role</label>
-                <select className="form-input" value={editRole} onChange={(e) => setEditRole(e.target.value)}>
-                  <option value="student">Student</option>
-                  <option value="mentor">Mentor</option>
-                  <option value="partner">Partner</option>
-                  <option value="admin">Admin</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Role</label>
+                  <select className="form-input" value={editRole} onChange={(e) => setEditRole(e.target.value)}>
+                    <option value="student">Student</option>
+                    <option value="mentor">Mentor</option>
+                    <option value="partner">Partner</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Approval Status</label>
+                  <select className="form-input" value={editApproved ? 'true' : 'false'} onChange={(e) => setEditApproved(e.target.value === 'true')}>
+                    <option value="true">Approved / Active</option>
+                    <option value="false">Pending Approval</option>
+                  </select>
+                </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: '1rem' }}>
@@ -107,12 +124,15 @@ export function UsersView({ users, onUpdateUser, onDeleteUser, search }) {
                 <input type="text" className="form-input" value={editBadge} onChange={(e) => setEditBadge(e.target.value)} placeholder="e.g. Certified Mentor" />
               </div>
 
-              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                <label className="form-label">Approval Status</label>
-                <select className="form-input" value={editApproved ? 'true' : 'false'} onChange={(e) => setEditApproved(e.target.value === 'true')}>
-                  <option value="true">Approved / Active</option>
-                  <option value="false">Pending Approval</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Wallet Balance (₹)</label>
+                  <input type="number" className="form-input" value={editWalletBalance} onChange={(e) => setEditWalletBalance(e.target.value)} min="0" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">TCM Coins</label>
+                  <input type="number" className="form-input" value={editCoins} onChange={(e) => setEditCoins(e.target.value)} min="0" />
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
@@ -134,15 +154,17 @@ export function UsersView({ users, onUpdateUser, onDeleteUser, search }) {
                 <th>User Account</th>
                 <th>Email</th>
                 <th>Role</th>
-                <th>Approval Status</th>
-                <th>Member Badge</th>
+                <th>Referral Code</th>
+                <th>Referred By</th>
+                <th>Wallet / Coins</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                     No user accounts found.
                   </td>
                 </tr>
@@ -158,7 +180,7 @@ export function UsersView({ users, onUpdateUser, onDeleteUser, search }) {
                         />
                         <div>
                           <div style={{ fontWeight: '600', color: 'white' }}>{user.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>ID: {user.id || user._id}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{user.memberBadge || 'TCM Member'}</div>
                         </div>
                       </div>
                     </td>
@@ -167,11 +189,21 @@ export function UsersView({ users, onUpdateUser, onDeleteUser, search }) {
                       <span className={`role-pill ${user.role}`}>{user.role}</span>
                     </td>
                     <td>
+                      <code style={{ background: 'rgba(91,60,245,0.15)', color: '#A78BFA', padding: '2px 6px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                        {user.referralCode || (user.name ? `${user.name.substring(0, 3).toUpperCase()}25X` : '—')}
+                      </code>
+                    </td>
+                    <td style={{ fontSize: '0.82rem', color: user.referredBy ? '#34D399' : 'var(--text-dim)' }}>
+                      {user.referredBy ? `🎁 ${user.referredBy}` : '—'}
+                    </td>
+                    <td style={{ fontWeight: '600', color: '#10B981', fontSize: '0.85rem' }}>
+                      ₹{user.walletBalance || 0} <span style={{ color: '#F59E0B', fontSize: '0.78rem', marginLeft: '4px' }}>({user.tcmCoins || 0} Coins)</span>
+                    </td>
+                    <td>
                       <span className={`mentor-badge ${user.isApproved !== false ? 'approved' : 'pending'}`}>
-                        {user.isApproved !== false ? 'Approved / Active' : 'Pending Review'}
+                        {user.isApproved !== false ? 'Active' : 'Pending'}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{user.memberBadge || 'TCM Member'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.4rem' }}>
                         <button

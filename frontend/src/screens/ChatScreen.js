@@ -22,7 +22,7 @@ import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@exp
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import { getChatMessages, sendChatMessage, sendFriendRequest, sendFriendRequestAction, uploadFile } from "../api/client";
+import { deleteChatMessage, getChatMessages, sendChatMessage, sendFriendRequest, sendFriendRequestAction, uploadFile } from "../api/client";
 import { fileToDataUri } from "../utils/fileUtils";
 import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
@@ -122,12 +122,23 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
   const isUserMentor = Boolean(
     userRole.includes("mentor") ||
+    userRole.includes("admin") ||
     session?.user?.isMentor ||
     user?.isMentor ||
     currentUserIdStr.startsWith("m") ||
     currentUserIdStr === "seed-user" ||
-    !session?.token ||
-    (initialTargetUser && String(initialTargetUser.creatorId) === currentUserIdStr)
+    !session?.token
+  );
+
+  const isChannelOwner = Boolean(
+    initialTargetUser &&
+    currentUserIdStr &&
+    (
+      String(initialTargetUser.creatorId || "") === currentUserIdStr ||
+      String(initialTargetUser.createdById || "") === currentUserIdStr ||
+      String(initialTargetUser.authorId || "") === currentUserIdStr ||
+      (initialTargetUser.creatorName && initialTargetUser.creatorName === (session?.user?.name || user?.name))
+    )
   );
 
   const isChannelChat = Boolean(
@@ -138,10 +149,65 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
     String(targetUserId).startsWith("comm-") ||
     String(targetUserId).startsWith("community-")
   );
+
+  const canPostInChannel = Boolean(
+    !isChannelChat ? isUserMentor : (isChannelOwner || userRole.includes("admin") || !session?.token)
+  );
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [likedMessageIds, setLikedMessageIds] = useState(new Set());
+  const [msgLikesCounts, setMsgLikesCounts] = useState({});
+
+  function handleToggleMessageLike(msgId, defaultCount = 0) {
+    const key = String(msgId);
+    setLikedMessageIds((prev) => {
+      const next = new Set(prev);
+      const isCurrentlyLiked = next.has(key);
+      if (isCurrentlyLiked) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+
+      setMsgLikesCounts((countsPrev) => {
+        const current = countsPrev[key] !== undefined ? countsPrev[key] : (defaultCount || 0);
+        return {
+          ...countsPrev,
+          [key]: isCurrentlyLiked ? Math.max(0, current - 1) : current + 1
+        };
+      });
+
+      return next;
+    });
+  }
+
+  function handleDeleteMessage(msgId) {
+    if (!msgId) return;
+    Alert.alert(
+      "Delete Message 🗑️",
+      "Are you sure you want to delete this message? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setMessages((prev) => prev.filter((m, idx) => String(m.id || `msg_${idx}`) !== String(msgId)));
+            if (session?.token) {
+              try {
+                await deleteChatMessage(session.token, msgId);
+              } catch (e) {
+                console.warn("Delete message failed on server:", e);
+              }
+            }
+          }
+        }
+      ]
+    );
+  }
+
   const [isMutual, setIsMutual] = useState(
     initialTargetUser?.friendStatus === "friends" ||
     (initialTargetUser?.id ? String(initialTargetUser.id) === "m1" : targetUserId === "m1")
@@ -303,7 +369,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
     const textToSend = customText || inputText;
     if (!textToSend.trim()) return;
 
-    if (!isMutual && currentTarget.id !== "m1") {
+    if (!isChannelChat && !canPostInChannel && !isMutual && currentTarget.id !== "m1") {
       Alert.alert(
         "Friends Only Chat",
         `You must be mutual friends with ${currentTarget.name} to send direct messages. Send a friend request first!`
@@ -657,7 +723,18 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                     </View>
                     <Text style={[styles.channelPostTime, { color: theme.subtext }]}>{msg.time || "Just now"}</Text>
                   </View>
-                  <FontAwesome5 name="thumbtack" size={12} color={theme.subtext} />
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <FontAwesome5 name="thumbtack" size={12} color={theme.subtext} />
+                    {(isMe || canPostInChannel) && (
+                      <TouchableOpacity
+                        onPress={() => handleDeleteMessage(msg.id || `msg_${index}`)}
+                        style={{ padding: 4 }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Feather name="trash-2" size={15} color="#EF4444" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
 
                 {/* Rich Photo Attachment */}
@@ -700,26 +777,66 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                   <Text style={[styles.channelPostText, { color: theme.text }]}>{msg.text}</Text>
                 ) : null}
 
-                {/* Bottom WhatsApp Channel Reactions & Share Bar */}
-                <View style={[styles.channelPostFooter, { borderTopColor: theme.border }]}>
-                  <TouchableOpacity style={[styles.channelPostActionBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
-                    <Feather name="heart" size={15} color={theme.subtext} style={{ marginRight: 5 }} />
-                    <Text style={[styles.channelPostActionText, { color: theme.subtext }]}>{msg.likesCount || 24}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={[styles.channelPostActionBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}>
-                    <Feather name="message-square" size={15} color={theme.subtext} style={{ marginRight: 5 }} />
-                    <Text style={[styles.channelPostActionText, { color: theme.subtext }]}>{msg.commentsCount || 5}</Text>
-                  </TouchableOpacity>
-
+                {/* Bottom Reactions & Share Bar */}
+                <View style={[styles.channelPostFooter, { borderTopColor: theme.border, justifyContent: "flex-start", gap: 12 }]}>
+                  {/* LIKE BUTTON */}
                   <TouchableOpacity
-                    onPress={() => {
-                      Share.share({
-                        title: currentTarget.name,
-                        message: `${currentTarget.name}: ${msg.text || "Check out this update on TCM"}`
-                      });
+                    onPress={() => handleToggleMessageLike(msg.id || index, msg.likesCount || 0)}
+                    activeOpacity={0.8}
+                    style={[
+                      styles.channelPostActionBtn,
+                      {
+                        backgroundColor: likedMessageIds.has(String(msg.id || index)) ? (theme.isDark ? "#831843" : "#FCE7F3") : (theme.isDark ? "#1E263B" : "#F8FAFC"),
+                        borderColor: likedMessageIds.has(String(msg.id || index)) ? "#EC4899" : theme.border,
+                        borderWidth: 1
+                      }
+                    ]}
+                  >
+                    <Feather
+                      name="heart"
+                      size={15}
+                      color={likedMessageIds.has(String(msg.id || index)) ? "#EC4899" : theme.subtext}
+                      style={{ marginRight: 5 }}
+                    />
+                    <Text
+                      style={[
+                        styles.channelPostActionText,
+                        {
+                          color: likedMessageIds.has(String(msg.id || index)) ? "#EC4899" : theme.subtext,
+                          fontFamily: likedMessageIds.has(String(msg.id || index)) ? fonts.bold : fonts.medium
+                        }
+                      ]}
+                    >
+                      {msgLikesCounts[String(msg.id || index)] !== undefined
+                        ? msgLikesCounts[String(msg.id || index)]
+                        : (msg.likesCount || 0)}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* COMMENT BUTTON REMOVED AS REQUESTED BY USER */}
+
+                  {/* SHARE BUTTON */}
+                  <TouchableOpacity
+                    onPress={async () => {
+                      const shareMsgText = `${currentTarget.name || "TCM Channel"}: ${msg.text || "Check out this update on TCM"}`;
+                      try {
+                        await Share.share({
+                          title: currentTarget.name || "TCM Channel Update",
+                          message: shareMsgText
+                        });
+                      } catch (err) {
+                        Alert.alert("Share Channel Update", shareMsgText);
+                      }
                     }}
-                    style={[styles.channelPostActionBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC" }]}
+                    activeOpacity={0.8}
+                    style={[
+                      styles.channelPostActionBtn,
+                      {
+                        backgroundColor: theme.isDark ? "#1E263B" : "#F8FAFC",
+                        borderColor: theme.border,
+                        borderWidth: 1
+                      }
+                    ]}
                   >
                     <Feather name="share-2" size={15} color={theme.primary} style={{ marginRight: 5 }} />
                     <Text style={[styles.channelPostActionText, { color: theme.primary, fontFamily: fonts.bold }]}>Share</Text>
@@ -796,6 +913,15 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                 <View style={styles.msgTimeRow}>
                   <Text style={[styles.msgTimeText, isMe ? styles.msgTimeMe : [styles.msgTimeOther, { color: theme.subtext }]]}>{msg.time}</Text>
                   {isMe ? <Feather name="check" size={11} color="rgba(255,255,255,0.7)" style={{ marginLeft: 3 }} /> : null}
+                  {(isMe || isUserMentor) && (
+                    <TouchableOpacity
+                      onPress={() => handleDeleteMessage(msg.id || `msg_${index}`)}
+                      style={{ marginLeft: 6 }}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Feather name="trash-2" size={12} color={isMe ? "rgba(255,255,255,0.75)" : "#EF4444"} />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
@@ -823,7 +949,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
       {/* 3. Input Footer Bar */}
       {isChannelChat ? (
-        isUserMentor ? (
+        canPostInChannel ? (
           <View style={[styles.inputFooter, { backgroundColor: theme.cardBg, borderTopColor: theme.border }]}>
             <Pressable onPress={() => setShowAttachModal(true)} style={[styles.attachBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F4F3FA" }]}>
               <Feather name="paperclip" size={20} color={theme.primary} />
@@ -860,7 +986,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
           }}>
             <Feather name="shield" size={16} color={theme.primary} style={{ marginRight: 8 }} />
             <Text style={{ fontSize: 12.5, color: theme.isDark ? "#C7D2FE" : "#4338CA", fontFamily: fonts.medium, flex: 1 }}>
-              Broadcast Channel • Only Verified Mentors can post announcements here.
+              Broadcast Channel • Only the Channel Owner can post announcements here.
             </Text>
           </View>
         )
