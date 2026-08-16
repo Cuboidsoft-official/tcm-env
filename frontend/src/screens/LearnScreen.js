@@ -112,22 +112,7 @@ const defaultTopCategories = [
   }
 ];
 
-const defaultExpertMentors = [
-  {
-    id: "m1",
-    name: "Rahul Sharma",
-    role: "TCM Information Tech Mentor",
-    badge: "TCM Mentor",
-    badgeBg: "#E8F5E9",
-    badgeColor: "#0A6836",
-    cardBg: "#F6F4FF",
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-    verified: true,
-    rating: "5.0",
-    reviews: "1",
-    experience: "5+ Yrs Exp"
-  }
-];
+const defaultExpertMentors = [];
 
 function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=640&q=80") {
   if (!url || typeof url !== "string") return fallback;

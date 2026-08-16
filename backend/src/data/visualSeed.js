@@ -143,99 +143,12 @@ export function createVisualSeedData(passwordHash = "") {
     }
   ];
 
-  const mentors = [
-    {
-      _id: "mentor-ankit",
-      name: "Ankit Sharma",
-      title: "Full Stack Developer",
-      rating: 4.8,
-      learners: 1200,
-      avatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=160&q=80",
-      skills: ["React", "Node.js", "MongoDB"],
-      isApproved: true
-    },
-    {
-      _id: "mentor-priya",
-      name: "Priya Verma",
-      title: "Data Science Expert",
-      rating: 4.9,
-      learners: 980,
-      avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80",
-      skills: ["Python", "ML", "Analytics"],
-      isApproved: true
-    },
-    {
-      _id: "mentor-rohit",
-      name: "Rohit Singh",
-      title: "DSA & System Design",
-      rating: 4.7,
-      learners: 750,
-      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&q=80",
-      skills: ["DSA", "Java", "System Design"],
-      isApproved: true
-    }
-  ];
+  const mentors = [];
 
   const learn = {
-    heroBanners: [
-      {
-        id: "b1",
-        tag: "NEW BATCH",
-        title: "Full Stack\nDevelopment",
-        subtitle: "Live Classes • Projects • Placement Support",
-        buttonText: "Explore Course →",
-        image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80"
-      },
-      {
-        id: "b2",
-        tag: "POPULAR",
-        title: "Data Science\n& AI Masterclass",
-        subtitle: "Python • Pandas • Machine Learning • LLMs",
-        buttonText: "Join Batch →",
-        image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80"
-      },
-      {
-        id: "b3",
-        tag: "ADVANCED",
-        title: "System Design\n& Architecture",
-        subtitle: "HLD • LLD • Scalable Backend • Microservices",
-        buttonText: "Start Learning →",
-        image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80"
-      }
-    ],
+    heroBanners: [],
     continueLearning: [],
-    popularCourses: [
-      {
-        id: "p1",
-        title: "Full Stack Web Development",
-        tags: "HTML, CSS, JS, React, Node.js",
-        rating: "4.8",
-        reviews: "1.2K",
-        lessons: "32 Lessons",
-        image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=500&q=80",
-        bookmarked: false
-      },
-      {
-        id: "p2",
-        title: "Data Science with Python",
-        tags: "Python, Pandas, NumPy, ML",
-        rating: "4.7",
-        reviews: "856",
-        lessons: "28 Lessons",
-        image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=500&q=80",
-        bookmarked: true
-      },
-      {
-        id: "p3",
-        title: "Machine Learning A-Z",
-        tags: "ML, Deep Learning, Python",
-        rating: "4.9",
-        reviews: "642",
-        lessons: "24 Lessons",
-        image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80",
-        bookmarked: false
-      }
-    ],
+    popularCourses: [],
     topCategories: [
       {
         id: "cat1",
