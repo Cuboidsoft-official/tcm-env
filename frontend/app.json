@@ -23,7 +23,9 @@
       "fallbackToCacheTimeout": 0
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "in.thecodemunk.app",
+      "buildNumber": "2"
     },
     "android": {
       "package": "com.tcm.app",

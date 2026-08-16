@@ -1,0 +1,179 @@
+name: Build iOS & Submit to TestFlight
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: build-ios
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 120
+    env:
+      EXPO_PUBLIC_API_URL: ${{ vars.TCM_API_URL || 'https://api.thecodemunk.in/api' }}
+      EXPO_UPDATES_CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'preview' }}
+      EXPO_NO_TELEMETRY: 1
+      CI: 1
+      IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+      IOS_DIST_CERT_P12: ${{ secrets.IOS_DIST_CERT_P12 }}
+      IOS_DIST_CERT_PASS: ${{ secrets.IOS_DIST_CERT_PASS }}
+      IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+      IOS_ASC_KEY_ID: ${{ secrets.IOS_ASC_KEY_ID }}
+      IOS_ASC_ISSUER_ID: ${{ secrets.IOS_ASC_ISSUER_ID }}
+      IOS_ASC_KEY_P8: ${{ secrets.IOS_ASC_KEY_P8 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compute app version
+        run: echo "APP_VERSION=$(node -e "console.log(require('./frontend/app.json').expo.version)")" >> "$GITHUB_ENV"
+
+      - name: Verify app version matches release tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$TAG_VERSION" != "$APP_VERSION" ]; then
+            echo "::error::Release tag ${GITHUB_REF_NAME} does not match frontend/app.json version ${APP_VERSION}. Bump version (and buildNumber) in app.json before tagging."
+            exit 1
+          fi
+          echo "tag ${GITHUB_REF_NAME} matches app.json version ${APP_VERSION}"
+
+      - name: Check iOS signing secrets
+        run: |
+          set -euo pipefail
+          for v in IOS_TEAM_ID IOS_DIST_CERT_P12 IOS_DIST_CERT_PASS IOS_PROVISIONING_PROFILE IOS_ASC_KEY_ID IOS_ASC_ISSUER_ID IOS_ASC_KEY_P8; do
+            if [ -z "${!v:-}" ]; then
+              echo "::error::$v secret is not set — configure Apple signing credentials first"
+              exit 1
+            fi
+          done
+          echo "all iOS signing secrets present"
+
+      - name: Prebuild native iOS project
+        working-directory: frontend
+        run: npx expo prebuild --platform ios
+
+      - name: Import distribution certificate into keychain
+        run: |
+          set -euo pipefail
+          echo "$IOS_DIST_CERT_P12" | base64 -D > /tmp/dist-cert.p12
+          KEYCHAIN=build.keychain
+          security create-keychain -p "" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "" "$KEYCHAIN"
+          security import /tmp/dist-cert.p12 -k "$KEYCHAIN" -P "$IOS_DIST_CERT_PASS" -A -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" "$KEYCHAIN" >/dev/null
+          security default-keychain -s "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN"
+          rm -f /tmp/dist-cert.p12
+
+      - name: Install App Store provisioning profile
+        run: |
+          set -euo pipefail
+          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILE_DIR"
+          PROFILE_PATH="$PROFILE_DIR/tcm-dist.mobileprovision"
+          echo "$IOS_PROVISIONING_PROFILE" | base64 -D > "$PROFILE_PATH"
+          security cms -D -i "$PROFILE_PATH" -o /tmp/profile.plist
+          IOS_PROFILE_UUID="$(plutil -extract UUID raw -o - /tmp/profile.plist)"
+          echo "IOS_PROFILE_UUID=$IOS_PROFILE_UUID" >> "$GITHUB_ENV"
+          echo "installed provisioning profile $IOS_PROFILE_UUID"
+
+      - name: Build unsigned verification (app bundle id)
+        run: |
+          set -euo pipefail
+          BUNDLE_ID="$(node -e "console.log(require('./frontend/app.json').expo.ios.bundleIdentifier)")"
+          echo "BUNDLE_ID=$BUNDLE_ID" >> "$GITHUB_ENV"
+          echo "bundle id: $BUNDLE_ID"
+          grep -qi "$BUNDLE_ID" /tmp/profile.plist || {
+            echo "::error::Provisioning profile does not cover bundle id $BUNDLE_ID"
+            exit 1
+          }
+          echo "provisioning profile covers $BUNDLE_ID"
+
+      - name: Archive iOS app
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          WS="$(ls -d *.xcworkspace | head -1)"
+          SCHEME="$(xcodebuild -list -workspace "$WS" 2>/dev/null | awk '/Schemes:/{getline; print; exit}' | sed 's/^ *//')"
+          echo "workspace: $WS scheme: $SCHEME"
+          xcodebuild -workspace "$WS" -scheme "$SCHEME" -configuration Release \
+            -archivePath "$(pwd)/../../build/TCM.xcarchive" archive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$IOS_TEAM_ID" \
+            PROVISIONING_PROFILE="$IOS_PROFILE_UUID" \
+            -allowProvisioningUpdates
+
+      - name: Export App Store .ipa
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          mkdir -p ../../build/ipa
+          cat > /tmp/exportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store</string>
+            <key>teamID</key><string>$IOS_TEAM_ID</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>uploadSymbols</key><true/>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key><string>$IOS_PROFILE_UUID</string>
+            </dict>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath ../build/TCM.xcarchive \
+            -exportPath ../build/ipa \
+            -exportOptionsPlist /tmp/exportOptions.plist
+          IPAS="$(ls ../build/ipa/*.ipa)"
+          test -s "$IPAS"
+          echo "IPA: $IPAS ($(stat -f%z "$IPAS") bytes)"
+
+      - name: Upload iOS build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tcm-ios-${{ env.APP_VERSION }}
+          path: |
+            build/ipa/
+            build/TCM.xcarchive/dSYMs/
+          if-no-files-found: ignore
+
+      - name: Submit to TestFlight (tag push)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/private_keys" "$HOME/.appstoreconnect/private_keys"
+          echo "$IOS_ASC_KEY_P8" | base64 -D > "$HOME/private_keys/AuthKey_$IOS_ASC_KEY_ID.p8"
+          cp "$HOME/private_keys/AuthKey_$IOS_ASC_KEY_ID.p8" "$HOME/.appstoreconnect/private_keys/"
+          IPAS="$(ls build/ipa/*.ipa)"
+          xcrun altool --upload-app -f "$IPAS" -t ios \
+            --apiKey "$IOS_ASC_KEY_ID" \
+            --apiIssuer "$IOS_ASC_ISSUER_ID"
+          echo "submitted $IPAS to TestFlight"
