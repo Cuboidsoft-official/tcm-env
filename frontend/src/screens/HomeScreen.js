@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  BackHandler,
   Dimensions,
   Easing,
   Image,
@@ -313,6 +314,19 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("Home");
+  const [navHistoryStack, setNavHistoryStack] = useState([]);
+
+  function changeTab(newTab) {
+    if (!newTab || newTab === activeTab) return;
+    setNavHistoryStack((prev) => [...prev, activeTab]);
+    setActiveTab(newTab);
+    setActiveDrawerItem(newTab);
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.history) {
+      try {
+        window.history.pushState({ tab: newTab }, "", "");
+      } catch (e) {}
+    }
+  }
   const [activeCategory, setActiveCategory] = useState("");
   const [search, setSearch] = useState("");
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
@@ -899,9 +913,27 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
     if (showCommunityScreen) return () => setShowCommunityScreen(false);
     if (showWalletScreen) return () => setShowWalletScreen(false);
     if (showMentorDashboard) return () => setShowMentorDashboard(false);
+    if (showPartnerDashboard) return () => setShowPartnerDashboard(false);
+    if (showDiscoverPartnersScreen) return () => setShowDiscoverPartnersScreen(false);
+    if (selectedPartnerForPreview) return () => setSelectedPartnerForPreview(null);
     if (showCreateCourseScreen) return () => { setCourseToEdit(null); setShowCreateCourseScreen(false); };
     if (showCreateWebinarScreen) return () => setShowCreateWebinarScreen(false);
     if (targetUserProfile) return () => setTargetUserProfile(null);
+
+    if (navHistoryStack.length > 0) {
+      return () => {
+        setNavHistoryStack((prev) => {
+          const newStack = [...prev];
+          const prevTab = newStack.pop();
+          if (prevTab) {
+            setActiveTab(prevTab);
+            setActiveDrawerItem(prevTab);
+          }
+          return newStack;
+        });
+      };
+    }
+
     if (activeTab !== "Home") return () => { setActiveTab("Home"); setActiveDrawerItem("Home"); };
     return null;
   }, [
@@ -925,11 +957,44 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
     showCommunityScreen,
     showWalletScreen,
     showMentorDashboard,
+    showPartnerDashboard,
+    showDiscoverPartnersScreen,
+    selectedPartnerForPreview,
     showCreateCourseScreen,
     showCreateWebinarScreen,
     targetUserProfile,
+    navHistoryStack,
     activeTab
   ]);
+
+  useEffect(() => {
+    function handleHardwareOrBrowserBack() {
+      if (activeBackAction) {
+        activeBackAction();
+        return true;
+      }
+      return false;
+    }
+
+    const backSubscription = BackHandler.addEventListener("hardwareBackPress", handleHardwareOrBrowserBack);
+
+    let handlePopState = null;
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      handlePopState = () => {
+        if (activeBackAction) {
+          activeBackAction();
+        }
+      };
+      window.addEventListener("popstate", handlePopState);
+    }
+
+    return () => {
+      backSubscription.remove();
+      if (Platform.OS === "web" && typeof window !== "undefined" && handlePopState) {
+        window.removeEventListener("popstate", handlePopState);
+      }
+    };
+  }, [activeBackAction]);
 
   if (composerMode) {
     return (
@@ -1407,7 +1472,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
                 setShowDiscoverPartnersScreen(false);
                 setSelectedPartnerForPreview(null);
                 resetSubScreens();
-                setActiveTab("Home");
+                changeTab("Home");
                 setActiveDrawerItem("Home");
                 lastHomeTapRef.current = now;
               } else {
@@ -1416,7 +1481,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
                 setShowDiscoverPartnersScreen(false);
                 setSelectedPartnerForPreview(null);
                 resetSubScreens();
-                setActiveTab(tab);
+                changeTab(tab);
                 setActiveDrawerItem(tab);
               }
             }}
