@@ -194,12 +194,14 @@ async function handleUpdateProfile(req, res) {
   try {
     const memoryStore = req.app.locals.memoryStore;
     const { name, handle, bio, location, website, avatarUrl, mentorCategory, yearsExperience, subjects, experiences, certifications, interests, skills } = req.body;
+    const reqUserId = String(req.user?._id || req.user?.id || req.user?.sub || "");
 
     if (memoryStore) {
-      const user = memoryStore.users?.find((u) => u._id === req.user._id) || memoryStore.user;
+      const usersList = memoryStore.users || [memoryStore.user].filter(Boolean);
+      const user = usersList.find((u) => String(u._id || u.id) === reqUserId || u.email === req.user.email) || memoryStore.user;
       if (user) {
         if (name !== undefined && name.trim()) user.name = name.trim();
-        if (handle !== undefined) user.handle = handle.trim().replace(/^@/, "");
+        if (handle !== undefined && handle.trim()) user.handle = handle.trim().replace(/^@/, "");
         if (bio !== undefined) user.bio = bio.trim();
         if (location !== undefined) user.location = location.trim();
         if (website !== undefined) user.website = website.trim();
@@ -213,7 +215,7 @@ async function handleUpdateProfile(req, res) {
         if (Array.isArray(skills)) user.skills = skills;
 
         (memoryStore.posts || []).forEach((post) => {
-          if (post.authorId === req.user._id || post.authorName === req.user.name) {
+          if (String(post.authorId) === reqUserId || post.authorName === req.user.name) {
             if (name) post.authorName = name.trim();
             if (avatarUrl) post.authorAvatarUrl = avatarUrl.trim();
           }
@@ -223,11 +225,11 @@ async function handleUpdateProfile(req, res) {
     }
 
     const updatedUser = await User.findByIdAndUpdate(
-      req.user._id,
+      req.user._id || req.user.id,
       {
         $set: {
           ...(name && name.trim() && { name: name.trim() }),
-          ...(handle && { handle: handle.trim().replace(/^@/, "") }),
+          ...(handle && handle.trim() && { handle: handle.trim().replace(/^@/, "") }),
           ...(bio !== undefined && { bio: bio.trim() }),
           ...(location !== undefined && { location: location.trim() }),
           ...(website !== undefined && { website: website.trim() }),
@@ -246,7 +248,7 @@ async function handleUpdateProfile(req, res) {
 
     if (name || avatarUrl) {
       await CommunityPost.updateMany(
-        { authorId: req.user._id },
+        { authorId: req.user._id || req.user.id },
         {
           $set: {
             ...(name && { authorName: name.trim() }),

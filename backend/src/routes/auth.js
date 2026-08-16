@@ -31,7 +31,7 @@ function signToken(user) {
 
 export function publicUser(user) {
   let userHandle = user.handle;
-  if (!userHandle || userHandle === "ayushman" || userHandle === "ayushman.dev") {
+  if (!userHandle || !userHandle.trim()) {
     if (user.name) {
       userHandle = user.name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
     } else if (user.email) {
@@ -303,6 +303,7 @@ authRouter.post("/google", async (req, res) => {
     const normalizedEmail = normalizeEmail(email);
     const googleName = name || normalizedEmail.split("@")[0];
     const googleAvatar = avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80";
+    const defaultHandle = googleName.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
     const cleanRefCode = referralCode ? String(referralCode).trim().toUpperCase() : "";
     const nowIso = new Date().toISOString();
 
@@ -315,6 +316,7 @@ authRouter.post("/google", async (req, res) => {
           _id: `google-user-${Date.now()}`,
           name: googleName,
           email: normalizedEmail,
+          handle: defaultHandle,
           passwordHash: await bcrypt.hash(`google_${Date.now()}`, 10),
           role,
           avatarUrl: googleAvatar,
@@ -327,7 +329,10 @@ authRouter.post("/google", async (req, res) => {
         };
         users.push(user);
       } else {
-        user.avatarUrl = googleAvatar;
+        // PRESERVE user custom name, handle, and avatarUrl if updated by user!
+        if (!user.name) user.name = googleName;
+        if (!user.handle) user.handle = defaultHandle;
+        if (!user.avatarUrl) user.avatarUrl = googleAvatar;
         user.verified = true;
         if (!user.referredBy && cleanRefCode) {
           user.referredBy = cleanRefCode;
@@ -348,6 +353,7 @@ authRouter.post("/google", async (req, res) => {
       user = await User.create({
         name: googleName,
         email: normalizedEmail,
+        handle: defaultHandle,
         passwordHash,
         role,
         avatarUrl: googleAvatar,
@@ -356,7 +362,10 @@ authRouter.post("/google", async (req, res) => {
         referralAppliedAt: cleanRefCode ? new Date() : null
       });
     } else {
-      user.avatarUrl = googleAvatar;
+      // PRESERVE user custom name, handle, and avatarUrl if updated by user!
+      if (!user.name) user.name = googleName;
+      if (!user.handle) user.handle = defaultHandle;
+      if (!user.avatarUrl) user.avatarUrl = googleAvatar;
       user.verified = true;
       if (!user.referredBy && cleanRefCode) {
         user.referredBy = cleanRefCode;
