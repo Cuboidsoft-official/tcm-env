@@ -45,6 +45,14 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
         ]
   );
 
+  const [skillsText, setSkillsText] = useState(
+    Array.isArray(user.skills)
+      ? user.skills.map((s) => (typeof s === "string" ? s : s.name || s.label || s.title)).join(", ")
+      : typeof user.skills === "string"
+      ? user.skills
+      : ""
+  );
+
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -72,6 +80,13 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
           : typeof user.interests === "string"
           ? user.interests
           : "System Architecture, AI & Machine Learning, Student Mentorship"
+      );
+      setSkillsText(
+        Array.isArray(user.skills)
+          ? user.skills.map((s) => (typeof s === "string" ? s : s.name || s.label || s.title)).join(", ")
+          : typeof user.skills === "string"
+          ? user.skills
+          : ""
       );
       setExperiences(
         user.experiences?.length
@@ -124,6 +139,11 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
         .map((s) => s.trim())
         .filter(Boolean);
 
+      const parsedSkills = skillsText
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
       const payload = {
         name: name.trim(),
         bio: bio.trim(),
@@ -131,6 +151,7 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
         subjects: parsedSubjects,
         certifications: parsedCerts,
         interests: parsedInterests,
+        skills: parsedSkills,
         experiences
       };
 
@@ -207,6 +228,17 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
                 onChangeText={setSubjectsText}
                 multiline
                 placeholder="MERN Stack, Python AI, React Native, NEET Physics"
+                placeholderTextColor={theme.subtext}
+                style={[inputStyle, { height: 60, textAlignVertical: "top" }]}
+              />
+
+              <Text style={[styles.sectionHeading, { color: theme.text }]}>Technical Skills & Specialties</Text>
+              <Text style={[styles.inputSubLabel, { color: theme.subtext }]}>Separate skills with commas (e.g. Python, React, JavaScript, Physics)</Text>
+              <TextInput
+                value={skillsText}
+                onChangeText={setSkillsText}
+                multiline
+                placeholder="Python, React, JavaScript, Physics, System Design"
                 placeholderTextColor={theme.subtext}
                 style={[inputStyle, { height: 60, textAlignVertical: "top" }]}
               />

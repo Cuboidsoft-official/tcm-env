@@ -203,19 +203,34 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
   async function handleSaveSkills() {
     setSavingSkills(true);
     try {
-      const payload = { skills: userSkills };
+      let finalSkillsList = [...userSkills];
+      if (skillNameInput.trim()) {
+        const cleanName = skillNameInput.trim();
+        const strengthVal = Math.max(0, Math.min(100, Number(skillStrengthInput) || 50));
+        const existingIdx = finalSkillsList.findIndex((s) => (s.name || s).toLowerCase() === cleanName.toLowerCase());
+        if (existingIdx >= 0) {
+          finalSkillsList[existingIdx] = { name: cleanName, strength: strengthVal };
+        } else {
+          finalSkillsList.push({ name: cleanName, strength: strengthVal });
+        }
+      }
+
+      const payload = { skills: finalSkillsList };
       if (session?.token) {
         const res = await updateProfile(session.token, payload);
         if (res?.user) {
           setUser(res.user);
+          setUserSkills(res.user.skills || finalSkillsList);
           if (onUserUpdate) onUserUpdate(res.user);
         }
       } else {
-        setUser((prev) => ({ ...prev, skills: userSkills }));
-        if (onUserUpdate) onUserUpdate({ ...user, skills: userSkills });
+        setUser((prev) => ({ ...prev, skills: finalSkillsList }));
+        setUserSkills(finalSkillsList);
+        if (onUserUpdate) onUserUpdate({ ...user, skills: finalSkillsList });
       }
+      setSkillNameInput("");
       setSkillsModalOpen(false);
-      Alert.alert("Skills Saved! 🚀", "Your skills matrix & proficiency levels have been updated on your profile!");
+      Alert.alert("Skills Saved!", "Your skills matrix & proficiency levels have been updated on your profile!");
     } catch (err) {
       Alert.alert("Error", err.message || "Failed to update skills.");
     } finally {
@@ -402,9 +417,16 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
 
   function openEditModal() {
     const subjectsArray = Array.isArray(user.subjects) ? user.subjects : [];
+    const skillsArray = Array.isArray(user.skills)
+      ? user.skills.map((s) => (typeof s === "string" ? s : s.name || s.label || s.title))
+      : typeof user.skills === "string"
+      ? user.skills.split(",")
+      : [];
+
     const autoHandle = (user.handle && user.handle !== "ayushman" && user.handle !== "ayushman.dev")
       ? user.handle
       : (user.name ? user.name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") : "tcm_member");
+
     setForm({
       name: user.name || "",
       handle: autoHandle,
@@ -414,7 +436,8 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       avatarUrl: user.avatarUrl || "",
       mentorCategory: user.mentorCategory || "TCM Information Tech",
       yearsExperience: user.yearsExperience || "5+ Yrs Exp",
-      subjectsStr: subjectsArray.length ? subjectsArray.join(", ") : "Full Stack Development, Node.js, React Native, System Design"
+      subjectsStr: subjectsArray.length ? subjectsArray.join(", ") : "Full Stack Development, Node.js, React Native, System Design",
+      skillsStr: skillsArray.length ? skillsArray.join(", ") : ""
     });
     setEditProfileModalOpen(true);
   }
@@ -475,9 +498,14 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
         ? form.subjectsStr.split(",").map((s) => s.trim()).filter(Boolean)
         : [];
 
+      const parsedSkills = form.skillsStr
+        ? form.skillsStr.split(",").map((s) => s.trim()).filter(Boolean)
+        : [];
+
       const payload = {
         ...form,
-        subjects: parsedSubjects
+        subjects: parsedSubjects,
+        skills: parsedSkills
       };
 
       if (session?.token) {
@@ -1063,6 +1091,17 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
               )}
 
               <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Technical Skills / Specialties (comma separated)</Text>
+                <TextInput
+                  value={form.skillsStr}
+                  onChangeText={(t) => setForm((p) => ({ ...p, skillsStr: t }))}
+                  placeholder="e.g. Python, React, JavaScript, Physics, Node.js"
+                  placeholderTextColor={activeAppTheme.subtext}
+                  style={[styles.textInput, inputStyle]}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: activeAppTheme.subtext }]}>Bio / Tagline</Text>
                 <TextInput value={form.bio} onChangeText={(t) => setForm((p) => ({ ...p, bio: t }))} multiline numberOfLines={3} style={[styles.textInput, inputStyle, { height: 75, textAlignVertical: "top" }]} placeholderTextColor={activeAppTheme.subtext} />
               </View>
@@ -1405,6 +1444,13 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                     <TouchableOpacity
                       key={preset.name}
                       onPress={() => {
+                        const nameLower = preset.name.toLowerCase();
+                        const exists = userSkills.some((s) => (s.name || s).toLowerCase() === nameLower);
+                        if (exists) {
+                          setUserSkills((prev) => prev.filter((s) => (s.name || s).toLowerCase() !== nameLower));
+                        } else {
+                          setUserSkills((prev) => [...prev, { name: preset.name, strength: preset.strength }]);
+                        }
                         setSkillNameInput(preset.name);
                         setSkillStrengthInput(preset.strength);
                       }}
@@ -1653,7 +1699,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
 
       {/* Logout Custom Confirm Modal */}
       <Modal visible={logoutConfirmVisible} transparent animationType="fade" onRequestClose={() => setLogoutConfirmVisible(false)}>
-        <Pressable onPress={() => setLogoutConfirmVisible(false)} style={styles.modalBg}>
+        <Pressable onPress={() => setLogoutConfirmVisible(false)} style={styles.centeredModalBg}>
           <Pressable onPress={(e) => e.stopPropagation()} style={[styles.confirmModalCard, modalCardStyle]}>
             <View style={[styles.confirmIconWrap, { backgroundColor: "#FFE0E4" }]}>
               <Feather name="log-out" size={28} color="#FF465F" />
@@ -1676,7 +1722,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
 
       {/* Delete Account Custom Confirm Modal */}
       <Modal visible={deleteConfirmVisible} transparent animationType="fade" onRequestClose={() => setDeleteConfirmVisible(false)}>
-        <Pressable onPress={() => setDeleteConfirmVisible(false)} style={styles.modalBg}>
+        <Pressable onPress={() => setDeleteConfirmVisible(false)} style={styles.centeredModalBg}>
           <Pressable onPress={(e) => e.stopPropagation()} style={[styles.confirmModalCard, modalCardStyle]}>
             <View style={[styles.confirmIconWrap, { backgroundColor: "#FEE2E2" }]}>
               <Feather name="alert-triangle" size={28} color="#EF4444" />
@@ -1983,6 +2029,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(15, 23, 42, 0.6)",
     justifyContent: "flex-end"
+  },
+  centeredModalBg: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.65)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20
   },
   modalCard: {
     backgroundColor: "#FFFFFF",

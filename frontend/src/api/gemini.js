@@ -754,3 +754,76 @@ FORMATTING RULES:
 
   return "I am TCM One AI, ready to build your custom learning roadmap. Tell me what skill or career goal you would like to master (Full Stack Web, Python DSA, AI Masterclass, Mobile App, NEET/JEE Prep) and your available daily study hours.";
 }
+
+export async function generateAiExamQuestionsForSkills(skillsList = [], targetDomain = "Coding & IT") {
+  const skillsStr = Array.isArray(skillsList) && skillsList.length > 0
+    ? skillsList.join(", ")
+    : "General " + targetDomain;
+
+  const prompt = `You are TCM One AI, Chief Technical Examiner at TCM One Academy.
+Generate EXACTLY 10 high-quality, professional multiple-choice questions (MCQs) for an AI Skill Examination & Interview Test.
+The student has added the following profile skills: "${skillsStr}" under domain "${targetDomain}".
+
+STRICT FORMAT & QUALITY RULES:
+1. Generate EXACTLY 10 MCQs specifically testing the skills: ${skillsStr}.
+2. Each question MUST have:
+   - "id": unique string (e.g. "ai_q1")
+   - "skillTag": the specific skill being tested (e.g. "Python" or "React")
+   - "question": clear, challenging technical or conceptual interview question
+   - "snippet": optional short code snippet, formula, or case study (string or "")
+   - "options": array of 4 distinct choices ["A", "B", "C", "D"]
+   - "correctIndex": integer index (0, 1, 2, or 3) of the correct answer
+   - "hint": brief helpful hint for the student
+3. Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational text):
+{
+  "questions": [
+    {
+      "id": "q1",
+      "skillTag": "Python",
+      "question": "What is the primary difference between a list and a tuple in Python?",
+      "snippet": "a = (1, 2, 3)",
+      "options": [
+        "Tuples are immutable while lists are mutable",
+        "Lists cannot hold mixed data types",
+        "Tuples do not support indexing",
+        "Lists use less memory than tuples"
+      ],
+      "correctIndex": 0,
+      "hint": "Tuples cannot be modified after creation."
+    }
+  ]
+}`;
+
+  try {
+    const rawContent = await callGeminiApi(prompt);
+    if (rawContent) {
+      const cleanedJson = rawContent.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleanedJson);
+      if (parsed && Array.isArray(parsed.questions) && parsed.questions.length >= 5) {
+        return parsed.questions;
+      }
+    }
+  } catch (error) {
+    console.warn("AI Skill Exam Question Generation error:", error);
+  }
+
+  // Dynamic 10 MCQs Fallback for user skills
+  const firstSkill = (skillsList[0] || targetDomain).trim();
+  return Array.from({ length: 10 }, (_, i) => {
+    const currentSkill = skillsList[i % skillsList.length] || firstSkill;
+    return {
+      id: `ai_q_${i + 1}`,
+      skillTag: currentSkill,
+      question: `[${currentSkill} Assessment Q${i + 1}] What is a fundamental core principle of ${currentSkill} when designing scalable production systems?`,
+      snippet: `// ${currentSkill} Core Practice\n// Standard execution pattern for ${currentSkill}`,
+      options: [
+        `Optimal modular design, clean state management, and memory efficiency in ${currentSkill}`,
+        `Unrestricted global variable mutations without type safety`,
+        `Depreciated synchronous execution blocking event loop`,
+        `Hardcoding configuration constants directly in component renders`
+      ],
+      correctIndex: 0,
+      hint: `${currentSkill} requires clean modular structure, memory optimization, and reliable state isolation.`
+    };
+  });
+}

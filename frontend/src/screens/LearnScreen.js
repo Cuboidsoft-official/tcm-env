@@ -707,7 +707,11 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               const initials = (mentor.name || "Mentor").split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "M";
 
               return (
-                <View key={mentor.id} style={[styles.mentorCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                <Pressable
+                  key={mentor.id}
+                  onPress={() => (onSelectUser ? onSelectUser({ id: mentor.id, name: mentor.name, avatarUrl: mentor.avatarUrl, role: "mentor", isMentorCard: true }) : null)}
+                  style={[styles.mentorCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+                >
                   <View style={styles.mentorTopRow}>
                     <View style={styles.mentorAvatarWrap}>
                       {hasRealAvatar ? (
@@ -751,13 +755,12 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
                   <Text style={[styles.mentorExpText, { color: theme.subtext }]}>{mentor.experience}</Text>
                 </View>
 
-                <Pressable
-                  onPress={() => (onSelectUser ? onSelectUser({ id: mentor.id, name: mentor.name, avatarUrl: mentor.avatarUrl, role: "mentor" }) : Alert.alert(mentor.name, mentor.role))}
+                <View
                   style={[styles.viewProfileBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border, borderWidth: 1 }]}
                 >
                   <Text style={[styles.viewProfileBtnText, { color: theme.primary }]}>View Profile</Text>
-                </Pressable>
-              </View>
+                </View>
+              </Pressable>
             );
           })}
         </ScrollView>
@@ -769,6 +772,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         session={session || { token: user?.token }}
         onClose={() => setAllMentorsModalVisible(false)}
         onSelectMentor={(mId) => {
+          setAllMentorsModalVisible(false);
           if (onSelectUser) onSelectUser({ id: mId, role: "mentor" });
         }}
       />
@@ -776,6 +780,8 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
       <AiRoadmapPlannerModal
         visible={roadmapModalVisible}
         user={user}
+        courses={popularCourses}
+        mentors={expertMentors}
         onClose={() => setRoadmapModalVisible(false)}
         onSelectUser={onSelectUser}
       />
@@ -792,6 +798,10 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         onClose={() => setAiExamModalVisible(false)}
         user={user}
         onSaveResult={handleSaveExamResult}
+        onOpenProfile={() => {
+          setAiExamModalVisible(false);
+          if (onSelectUser) onSelectUser(user);
+        }}
       />
 
       {topCategories.length > 0 ? (

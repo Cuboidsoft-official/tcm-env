@@ -86,7 +86,7 @@ function FormattedAiMessage({ text, theme }) {
   );
 }
 
-export default function AiRoadmapPlannerModal({ visible, onClose, user = {} }) {
+export default function AiRoadmapPlannerModal({ visible, onClose, user = {}, courses = [], mentors = [] }) {
   const { theme } = useTheme();
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
@@ -131,7 +131,7 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {} }) {
     setLoading(true);
 
     try {
-      const aiReplyText = await generateInteractiveAiRoadmapAndChat(updatedMessages, cleanText);
+      const aiReplyText = await generateInteractiveAiRoadmapAndChat(updatedMessages, cleanText, { courses, mentors });
       const aiMsg = {
         id: `ai_${Date.now()}`,
         sender: "ai",

@@ -17,6 +17,7 @@ import {
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
+import { generateAiExamQuestionsForSkills } from "../api/gemini";
 
 const { width, height } = Dimensions.get("window");
 
@@ -303,6 +304,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
   const [savingResult, setSavingResult] = useState(false);
 
   const [startCountdown, setStartCountdown] = useState(null);
+  const [isGeneratingAiExam, setIsGeneratingAiExam] = useState(false);
 
   // Persistent seen questions tracking (ZERO REPEATS)
   const [seenQIds, setSeenQIds] = useState(() => {
@@ -317,27 +319,24 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
 
   const timerRef = useRef(null);
 
-  // User skills list
-  const userSkillsList = Array.isArray(user?.skills) ? user.skills.map((s) => s.name) : [];
-
-  // Available sub-skills based on selected domain
-  const availableSubSkills = ["All Skills"];
-  if (selectedDomain === "Coding & IT") {
-    availableSubSkills.push("JavaScript", "Python", "React", "Node.js", "Django");
-  } else if (selectedDomain === "JEE & Engineering") {
-    availableSubSkills.push("Calculus", "Physics", "Organic Chemistry");
-  } else if (selectedDomain === "NEET & Medical") {
-    availableSubSkills.push("Cell Biology", "Plant Physiology", "Human Anatomy", "Genetics");
-  } else if (selectedDomain === "Govt Exams & UPSC") {
-    availableSubSkills.push("Polity", "Reasoning");
+  // Extract User Profile Skills STRICTLY from user.skills ONLY
+  const profileSkills = [];
+  if (Array.isArray(user?.skills)) {
+    user.skills.forEach((s) => {
+      const label = typeof s === "string" ? s : s.name || s.label || s.title;
+      if (label && typeof label === "string" && label.trim() && !profileSkills.includes(label.trim())) {
+        profileSkills.push(label.trim());
+      }
+    });
+  } else if (typeof user?.skills === "string" && user.skills.trim()) {
+    user.skills.split(",").forEach((s) => {
+      const trimmed = s.trim();
+      if (trimmed && !profileSkills.includes(trimmed)) profileSkills.push(trimmed);
+    });
   }
 
-  // Include user profile skills if present
-  userSkillsList.forEach((sk) => {
-    if (!availableSubSkills.includes(sk)) {
-      availableSubSkills.push(sk);
-    }
-  });
+  const hasProfileSkills = profileSkills.length > 0;
+  const availableSubSkills = hasProfileSkills ? ["All Profile Skills", ...profileSkills] : ["All Skills"];
 
   useEffect(() => {
     if (visible) {
@@ -352,7 +351,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
     if (startCountdown !== null) {
       if (typeof startCountdown === "number" && startCountdown > 1) {
         const timer = setTimeout(() => {
-          setStartCountdown(startCountdown - 1);
+          setStartCountdown((prev) => (typeof prev === "number" ? prev - 1 : prev));
         }, 1000);
         return () => clearTimeout(timer);
       } else if (startCountdown === 1) {
@@ -397,67 +396,49 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
     setTimeLeft(360);
     setExamFinished(false);
     setResultData(null);
-    setSelectedSubSkill("All Skills");
+    setSelectedSubSkill(hasProfileSkills ? "All Profile Skills" : "All Skills");
   };
 
-  const handleStartExam = (domainToUse = selectedDomain, subSkillToUse = selectedSubSkill) => {
-    const rawBank = QUESTION_BANKS[domainToUse] || QUESTION_BANKS["Coding & IT"];
-    
-    // Filter by specific sub-skill if selected
-    let targetBank = rawBank;
-    if (subSkillToUse && subSkillToUse !== "All Skills") {
-      const matched = rawBank.filter(
-        (q) =>
-          q.skillTag?.toLowerCase() === subSkillToUse.toLowerCase() ||
-          q.question.toLowerCase().includes(subSkillToUse.toLowerCase())
-      );
-      if (matched.length > 0) {
-        targetBank = matched;
-      }
-    }
-
-    // ZERO QUESTION REPEATS: Filter out previously seen question IDs
-    let unseenPool = targetBank.filter((q) => !seenQIds.includes(q.id));
-
-    // If unseen questions pool runs low, reset tracking history for continuous practice
-    if (unseenPool.length < 5) {
-      unseenPool = targetBank;
-      setSeenQIds([]);
-      try {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.removeItem("tcm_seen_q_ids");
-        }
-      } catch (e) {}
-    }
-
-    // Hard shuffle questions & options
-    const shuffledBank = shuffleArray([...unseenPool, ...targetBank]);
-    const qList = shuffledBank.slice(0, 10).map((q) => {
-      const originalCorrect = q.options[q.correctIndex];
-      const shuffledOpts = shuffleArray(q.options);
-      const newCorrectIdx = shuffledOpts.indexOf(originalCorrect);
-      return {
-        ...q,
-        options: shuffledOpts,
-        correctIndex: newCorrectIdx
-      };
-    });
-
-    // Record newly served question IDs
-    const newServedIds = qList.map((q) => q.id);
-    const updatedSeen = [...new Set([...seenQIds, ...newServedIds])];
-    setSeenQIds(updatedSeen);
+  const handleStartExam = async (domainToUse = selectedDomain, subSkillToUse = selectedSubSkill) => {
+    setIsGeneratingAiExam(true);
     try {
-      if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("tcm_seen_q_ids", JSON.stringify(updatedSeen));
+      let targetSkills = [];
+      if (subSkillToUse && subSkillToUse !== "All Skills" && subSkillToUse !== "All Profile Skills") {
+        targetSkills = [subSkillToUse];
+      } else if (profileSkills.length > 0) {
+        targetSkills = profileSkills;
+      } else {
+        targetSkills = [domainToUse];
       }
-    } catch (e) {}
 
-    setQuestions(qList);
-    setExamFinished(false);
-    setTimeLeft(360);
-    // Launch 3-second countdown before starting exam
-    setStartCountdown(3);
+      // Generate 10 dynamic AI MCQs tailored specifically to this user's profile skills!
+      let aiQuestions = await generateAiExamQuestionsForSkills(targetSkills, domainToUse);
+
+      if (!aiQuestions || aiQuestions.length === 0) {
+        const rawBank = QUESTION_BANKS[domainToUse] || QUESTION_BANKS["Coding & IT"];
+        aiQuestions = rawBank;
+      }
+
+      const qList = aiQuestions.slice(0, 10).map((q) => {
+        const originalCorrect = q.options ? q.options[q.correctIndex] || q.options[0] : "";
+        const shuffledOpts = q.options ? shuffleArray(q.options) : ["Option A", "Option B", "Option C", "Option D"];
+        const newCorrectIdx = Math.max(0, shuffledOpts.indexOf(originalCorrect));
+        return {
+          ...q,
+          options: shuffledOpts,
+          correctIndex: newCorrectIdx
+        };
+      });
+
+      setQuestions(qList);
+      setExamFinished(false);
+      setTimeLeft(360);
+      setStartCountdown(3);
+    } catch (err) {
+      console.warn("AI Question generation error:", err);
+    } finally {
+      setIsGeneratingAiExam(false);
+    }
   };
 
   const handleSelectOption = (optIndex) => {
@@ -600,8 +581,23 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
           </View>
         )}
 
+        {/* === SCENARIO 0: AI GENERATING EXAM QUESTIONS === */}
+        {isGeneratingAiExam && (
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 30 }}>
+            <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: theme.badgeBg, alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+              <ActivityIndicator size="large" color={theme.primary} />
+            </View>
+            <Text style={{ fontSize: 20, fontFamily: fonts.bold, color: theme.text, textAlign: "center", marginBottom: 8 }}>
+              Generating AI Skill Examination...
+            </Text>
+            <Text style={{ fontSize: 13, fontFamily: fonts.medium, color: theme.subtext, textAlign: "center", maxWidth: 300, lineHeight: 18 }}>
+              Crafting 10 unique, real-time interview MCQs tailored specifically for your skills ({profileSkills.join(", ") || selectedDomain})...
+            </Text>
+          </View>
+        )}
+
         {/* === SCENARIO 1: START SCREEN (WITH SPECIFIC SKILL SELECTION) === */}
-        {!examStarted && !examFinished && startCountdown === null && (
+        {!examStarted && !examFinished && startCountdown === null && !isGeneratingAiExam && (
           <ScrollView contentContainerStyle={{ padding: 20, alignItems: "center", paddingTop: 50 }}>
             <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: theme.badgeBg, alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
               <MaterialCommunityIcons name="brain" size={36} color={theme.primary} />

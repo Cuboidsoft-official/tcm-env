@@ -3,6 +3,7 @@ import {
   Alert,
   Dimensions,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -34,7 +35,8 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
     setLoading(true);
     try {
       if (session?.token) {
-        const res = await getMentorDetails(session.token, mentorId || "m1");
+        const targetIdToQuery = mentorId || targetMentor?.id || targetMentor?.userId || targetMentor?.name || "m1";
+        const res = await getMentorDetails(session.token, targetIdToQuery);
         if (res) setMentor(res);
       }
     } catch (e) {
@@ -44,8 +46,12 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
     }
   }
 
-  const rawActive = targetMentor || mentor || {};
-  const isTargetUser = Boolean(user && (user.isMentor || user.id === rawActive.id || user.id === mentorId));
+  const isTargetUser = Boolean(user && (user.isMentor || user.id === targetMentor?.id || user.id === mentorId));
+  const rawActive = {
+    ...(isTargetUser ? user : {}),
+    ...(targetMentor || {}),
+    ...(mentor || {})
+  };
 
   const mentorName = rawActive.name || rawActive.fullName || (isTargetUser ? user.name : "") || "TCM Certified Mentor";
   const mentorRole = rawActive.role || rawActive.headline || rawActive.specialization || rawActive.category || "Educator & Mentor";
@@ -58,20 +64,22 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
   } else if (Array.isArray(rawActive.experienceList) && rawActive.experienceList.length > 0) {
     initialExpList = rawActive.experienceList;
   } else {
+    const expText = rawActive.yearsExperience || rawActive.experience || "3+ Years";
     initialExpList = [
       {
         id: "exp1",
         role: mentorRole,
         company: `${rawActive.organization || rawActive.company || "TCM Educator Network"} • Active Instructor`,
-        durationPill: rawActive.experience || "3+ Years",
+        durationPill: expText,
         icon: "school-outline",
         iconColor: theme.primary || "#6E42F5"
       }
     ];
   }
 
+  const expTitle = rawActive.yearsExperience || rawActive.experience || "3+ Yrs";
   const initialStatsList = rawActive.stats || [
-    { title: rawActive.experience || "3+", sub: "Years Exp.", icon: "school-outline", bg: "#E8F5E9" },
+    { title: expTitle, sub: "Years Exp.", icon: "school-outline", bg: "#E8F5E9" },
     { title: `${rawActive.sessionsCount || 45}+`, sub: "Live Sessions", icon: "play-circle-outline", bg: "#E8F5E9" },
     { title: `${rawActive.studentsCount || rawActive.totalStudents || 1200}+`, sub: "Students", icon: "account-group-outline", bg: "#E8F5E9" },
     { title: rawActive.satisfaction || "98%", sub: "Satisfaction", icon: "medal-outline", bg: "#E8F5E9" }
@@ -91,7 +99,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
       { label: "TCM Educator", bg: "#ECF9E9", color: "#2E7D32" }
     ],
     bio: mentorBio,
-    about: mentorBio,
+    about: rawActive.about || mentorBio,
     avatarUrl: mentorAvatar,
     stats: initialStatsList,
     subjects: rawActive.subjects || [
@@ -99,7 +107,11 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
       { id: "sub2", title: "Course Guidance", desc: "Step by step syllabus & career roadmap", icon: "book-open-outline", bg: "#EAF5FF" }
     ],
     experiences: initialExpList,
-    createdCourses: rawActive.createdCourses || rawActive.courses || []
+    courses: rawActive.courses || rawActive.createdCourses || [],
+    createdCourses: rawActive.createdCourses || rawActive.courses || [],
+    certifications: rawActive.certifications || rawActive.certificates || [],
+    interests: rawActive.interests || rawActive.specializations || [],
+    ratingsOverview: rawActive.ratingsOverview
   };
 
   const mentorInitials = (data.name || "Mentor")
@@ -112,7 +124,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
   const statsList = data.stats || [];
   const subjectsList = data.subjects || [];
   const expList = data.experiences || [];
-  const ratings = data.ratingsOverview || {
+  const ratings = data.ratingsOverview || rawActive.ratingsOverview || {
     score: data.rating || "4.9",
     reviewsLabel: `(${data.reviewsCount || "120"} Reviews)`,
     breakdown: [
@@ -121,7 +133,20 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
       { star: "3 Stars", percent: 2 },
       { star: "2 Stars", percent: 0 },
       { star: "1 Star", percent: 0 }
-    ]
+    ],
+    featuredReview: {
+      authorName: "Ananya Sharma",
+      authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
+      timeAgo: "2 days ago",
+      text: "The mentorship session was extremely structured! Helped me clear all my technical doubts."
+    }
+  };
+
+  const featuredReview = ratings.featuredReview || {
+    authorName: "Ananya Sharma",
+    authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
+    timeAgo: "2 days ago",
+    text: "The mentorship session was extremely structured! Helped me clear all my technical doubts."
   };
   const themedSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
   const themedSoftSurface = {
@@ -130,6 +155,16 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
   };
   const themedBadgeSurface = { backgroundColor: theme.badgeBg, borderColor: theme.border };
   const accentColor = theme.primary;
+
+  function handleBookSessionWhatsApp() {
+    const mentorNameStr = data.name || "Mentor";
+    const roleStr = data.role || "TCM Educator";
+    const msg = `Hello! I would like to book a 1:1 mentorship session with ${mentorNameStr} (${roleStr}).`;
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    Linking.openURL(waUrl).catch(() => {
+      Alert.alert("WhatsApp", "Could not open WhatsApp on this device.");
+    });
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -221,7 +256,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
           </Pressable>
 
           <Pressable
-            onPress={() => Alert.alert("Book a Session", `Schedule 1:1 mentorship session with ${data.name}.`)}
+            onPress={handleBookSessionWhatsApp}
             style={styles.bookBtn}
           >
             <Feather name="calendar" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
@@ -253,25 +288,6 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
           </View>
         </View>
 
-        {/* 6. Subjects I Mentor */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Subjects I Mentor</Text>
-          <Pressable onPress={() => Alert.alert("Subjects", "Showing all mentored topics.")}>
-            <Text style={styles.viewAllText}>View All ›</Text>
-          </Pressable>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContent}>
-          {subjectsList.map((sub) => (
-            <View key={sub.id} style={[styles.subjectCard, themedSurface]}>
-              <View style={[styles.subjectIconWrap, { backgroundColor: theme.isDark ? theme.badgeBg : sub.bg }]}>
-                <MaterialCommunityIcons name={sub.icon} size={22} color={accentColor} />
-              </View>
-              <Text style={[styles.subjectTitle, { color: theme.text }]}>{sub.title}</Text>
-              <Text style={[styles.subjectDesc, { color: theme.subtext }]}>{sub.desc}</Text>
-            </View>
-          ))}
-        </ScrollView>
 
         {/* 6.5. Courses Uploaded by Mentor */}
         <View style={styles.sectionHeaderRow}>
@@ -445,18 +461,18 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
           {/* Right Featured Review Card */}
           <View style={[styles.featuredReviewCard, themedSoftSurface]}>
             <View style={styles.reviewAuthorRow}>
-              <Image source={{ uri: ratings.featuredReview.authorAvatar }} style={styles.reviewAvatar} />
+              <Image source={{ uri: featuredReview.authorAvatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80" }} style={styles.reviewAvatar} />
               <View style={styles.reviewAuthorWrap}>
-                <Text style={[styles.reviewAuthorName, { color: theme.text }]}>{ratings.featuredReview.authorName}</Text>
+                <Text style={[styles.reviewAuthorName, { color: theme.text }]}>{featuredReview.authorName || "TCM Student"}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 2 }}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <FontAwesome key={s} name="star" size={10} color="#FFB800" />
                   ))}
-                  <Text style={styles.reviewTimeAgo}> • {ratings.featuredReview.timeAgo}</Text>
+                  <Text style={styles.reviewTimeAgo}> • {featuredReview.timeAgo || "Recently"}</Text>
                 </View>
               </View>
             </View>
-            <Text style={[styles.reviewBodyText, { color: theme.subtext }]}>"{ratings.featuredReview.text}"</Text>
+            <Text style={[styles.reviewBodyText, { color: theme.subtext }]}>"{featuredReview.text || "Extremely helpful mentorship session!"}"</Text>
             <MaterialCommunityIcons name="format-quote-close" size={32} color={theme.border} style={styles.quoteIcon} />
           </View>
         </Pressable>
@@ -475,7 +491,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
         </View>
 
         <Pressable
-          onPress={() => Alert.alert("Book a Session", `Redirecting to 1:1 booking checkout for ${data.name}.`)}
+          onPress={handleBookSessionWhatsApp}
           style={styles.stickyBookBtn}
         >
           <Text style={styles.stickyBookBtnText}>Book a Session →</Text>

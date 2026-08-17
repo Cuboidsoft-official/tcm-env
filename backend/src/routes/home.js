@@ -3102,30 +3102,57 @@ homeRouter.get("/mentor/:mentorId", requireAuth, async (req, res) => {
   const memoryStore = req.app.locals.memoryStore;
 
   let matchedUser = null;
+  const mLower = String(mentorId).toLowerCase().trim();
 
   // 1. Check req.user
-  if (req.user && (String(req.user._id || req.user.id) === String(mentorId) || req.user.email === mentorId)) {
+  if (req.user && (String(req.user._id || req.user.id) === String(mentorId) || req.user.email === mentorId || String(req.user.name).toLowerCase().trim() === mLower)) {
     matchedUser = req.user;
   }
 
   // 2. Check memoryStore mentors & users
   if (!matchedUser && memoryStore) {
     if (Array.isArray(memoryStore.mentors)) {
-      matchedUser = memoryStore.mentors.find((m) => String(m._id || m.id || m.userId) === String(mentorId) || m.email === mentorId);
+      matchedUser = memoryStore.mentors.find(
+        (m) =>
+          String(m._id || m.id || m.userId) === String(mentorId) ||
+          m.email === mentorId ||
+          (m.name && String(m.name).toLowerCase().trim() === mLower) ||
+          (m.name && String(m.name).toLowerCase().trim().includes(mLower))
+      );
     }
     if (!matchedUser && Array.isArray(memoryStore.users)) {
-      matchedUser = memoryStore.users.find((u) => String(u._id || u.id) === String(mentorId) || u.email === mentorId);
+      matchedUser = memoryStore.users.find(
+        (u) =>
+          String(u._id || u.id) === String(mentorId) ||
+          u.email === mentorId ||
+          (u.name && String(u.name).toLowerCase().trim() === mLower)
+      );
     }
   }
 
-  // 3. Check MongoDB database (Mentor & User models)
+  // 3. Check MongoDB database (Mentor & User models by ID, email, or Name)
   if (!matchedUser) {
     try {
-      matchedUser = await Mentor.findOne({ $or: [{ _id: mentorId }, { userId: mentorId }, { email: mentorId }] }).lean();
+      const nameRegex = new RegExp(mentorId.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), "i");
+      matchedUser = await Mentor.findOne({
+        $or: [
+          ...(mentorId.match(/^[0-9a-fA-F]{24}$/) ? [{ _id: mentorId }] : []),
+          { userId: mentorId },
+          { email: mentorId },
+          { name: nameRegex }
+        ]
+      }).lean();
     } catch (e) {}
     if (!matchedUser) {
       try {
-        matchedUser = await User.findById(mentorId).lean();
+        const nameRegex = new RegExp(mentorId.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), "i");
+        matchedUser = await User.findOne({
+          $or: [
+            ...(mentorId.match(/^[0-9a-fA-F]{24}$/) ? [{ _id: mentorId }] : []),
+            { email: mentorId },
+            { name: nameRegex }
+          ]
+        }).lean();
       } catch (e) {}
     }
   }
@@ -3168,61 +3195,161 @@ homeRouter.get("/mentor/:mentorId", requireAuth, async (req, res) => {
         }
       ];
 
-  // Fetch mentor's created courses
-  const allCourses = (memoryStore?.courses || []).concat(req.app.locals.globalCourses || []);
+  // Fetch mentor's created courses from MongoDB Database & Memory Store
+  let dbCourses = [];
   const matchedUserIdStr = String(matchedUser._id || matchedUser.id || "");
-  const mentorCourses = allCourses.filter(
-    (c) =>
-      c.mentorId === matchedUserIdStr ||
-      c.mentorName === matchedUser.name ||
-      c.mentor?.name === matchedUser.name
-  );
+  const matchedNameLower = String(matchedUser.name || "").toLowerCase().trim();
+
+  try {
+    dbCourses = await Course.find({
+      $or: [
+        { mentorId: matchedUserIdStr },
+        { userId: matchedUserIdStr },
+        { authorId: matchedUserIdStr },
+        { mentorName: matchedUser.name },
+        { "mentor.name": matchedUser.name }
+      ]
+    }).lean();
+  } catch (e) {}
+
+  const memCourses = (memoryStore?.courses || []).concat(req.app.locals.globalCourses || []);
+
+  const filteredMemCourses = memCourses.filter((c) => {
+    const cMentorId = String(c.mentorId || c.userId || c.authorId || "");
+    const cMentorName = String(c.mentorName || c.mentor?.name || "").toLowerCase().trim();
+    return (
+      (cMentorId && cMentorId === matchedUserIdStr) ||
+      (matchedNameLower && cMentorName && (cMentorName === matchedNameLower || cMentorName.includes(matchedNameLower)))
+    );
+  });
+
+  // Combine and deduplicate strictly for this mentor's owned courses
+  const mentorCourses = [];
+  const seenCourseIds = new Set();
+  [...dbCourses, ...filteredMemCourses].forEach((c) => {
+    const cId = String(c.customId || c.id || c._id);
+    if (cId && !seenCourseIds.has(cId)) {
+      seenCourseIds.add(cId);
+      mentorCourses.push({
+        id: cId,
+        customId: cId,
+        title: c.title,
+        subtitle: c.subtitle || `Master ${c.title} with expert live guidance`,
+        category: c.category || "TCM Academy",
+        level: c.level || "All Levels",
+        price: c.price ? (String(c.price).startsWith("₹") ? c.price : `₹${c.price}`) : "₹1,499",
+        rating: c.rating ? String(c.rating) : "5.0",
+        reviewsCount: String(c.reviewsCount || c.reviews || "12"),
+        duration: c.duration || "20 Days",
+        imageUrl: c.imageUrl || c.image || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=640",
+        mentorId: matchedUserIdStr,
+        mentorName: matchedUser.name || "TCM Mentor",
+        modules: c.modules || []
+      });
+    }
+  });
+
+  // Fetch real student reviews for this mentor from MongoDB
+  let realReviews = [];
+  try {
+    realReviews = await ClassReview.find({
+      $or: [
+        { mentorId: matchedUserIdStr },
+        { mentorId: mentorId },
+        { mentorName: matchedUser.name }
+      ]
+    }).sort({ createdAt: -1 }).lean();
+  } catch (e) {}
+
+  let computedScore = matchedUser.rating ? String(matchedUser.rating) : "5.0";
+  let computedReviewsLabel = `(${matchedUser.reviewsCount || "0"} Reviews)`;
+  let computedBreakdown = [
+    { star: "5 Stars", percent: 100 },
+    { star: "4 Stars", percent: 0 },
+    { star: "3 Stars", percent: 0 },
+    { star: "2 Stars", percent: 0 },
+    { star: "1 Star", percent: 0 }
+  ];
+  let featuredReviewObj = {
+    authorName: "Verified Learner",
+    authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
+    timeAgo: "Recently",
+    text: "Mentorship sessions with structured curriculum and real-time doubt resolution."
+  };
+
+  if (realReviews.length > 0) {
+    const totalCount = realReviews.length;
+    const sumRatings = realReviews.reduce((acc, r) => acc + (Number(r.rating) || 5), 0);
+    computedScore = String((sumRatings / totalCount).toFixed(1));
+    computedReviewsLabel = `(${totalCount} ${totalCount === 1 ? "Review" : "Reviews"})`;
+
+    const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    realReviews.forEach((r) => {
+      const star = Math.min(5, Math.max(1, Math.round(Number(r.rating) || 5)));
+      starCounts[star] = (starCounts[star] || 0) + 1;
+    });
+
+    computedBreakdown = [
+      { star: "5 Stars", percent: Math.round((starCounts[5] / totalCount) * 100) },
+      { star: "4 Stars", percent: Math.round((starCounts[4] / totalCount) * 100) },
+      { star: "3 Stars", percent: Math.round((starCounts[3] / totalCount) * 100) },
+      { star: "2 Stars", percent: Math.round((starCounts[2] / totalCount) * 100) },
+      { star: "1 Star", percent: Math.round((starCounts[1] / totalCount) * 100) }
+    ];
+
+    const latestRev = realReviews[0];
+    featuredReviewObj = {
+      authorName: latestRev.studentName || "Verified Student",
+      authorAvatar: latestRev.studentAvatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
+      timeAgo: latestRev.createdAt ? new Date(latestRev.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "Recently",
+      text: latestRev.comment || "Great learning experience & mentor guidance!"
+    };
+  }
 
   return res.json({
     id: matchedUser._id || matchedUser.id || mentorId,
     name: matchedUser.name || "TCM Educator",
     verified: true,
-    badge: `🎓 ${cat} Specialization`,
-    role: `${cat} Mentor & Educator`,
-    rating: "5.0",
-    reviewsCount: "12",
-    studentsCount: "1.2K+",
+    badge: `🎓 ${cat}`,
+    role: matchedUser.headline || `${cat} Mentor & Educator`,
+    rating: computedScore,
+    reviewsCount: String(realReviews.length || matchedUser.reviewsCount || "0"),
+    studentsCount: String(matchedUser.studentsCount || matchedUser.totalStudents || "1.2K+"),
     tags: [
       { label: cat, bg: "#F0EDFF", color: "#5B3CF5" },
       { label: "Live Educator", bg: "#ECF9E9", color: "#2E7D32" }
     ],
     bio: matchedUser.bio || `Specialist in ${cat}. Empowering students with live guidance & practical mentorship.`,
     avatarUrl: matchedUser.avatarUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+    yearsExperience: matchedUser.yearsExperience || matchedUser.experience || "5+ Yrs Exp",
     stats: [
-      { title: matchedUser.yearsExperience || "5+", sub: "Years Exp.", icon: "school-outline", bg: "#F0EDFF" },
-      { title: `${mentorCourses.length || 1}+`, sub: "Live Courses", icon: "play-circle-outline", bg: "#F0EDFF" },
-      { title: "1.2K+", sub: "Students", icon: "account-group-outline", bg: "#F0EDFF" },
+      { title: matchedUser.yearsExperience || matchedUser.experience || "5+", sub: "Years Exp.", icon: "school-outline", bg: "#F0EDFF" },
+      { title: `${mentorCourses.length}`, sub: "Published Courses", icon: "play-circle-outline", bg: "#F0EDFF" },
+      { title: String(matchedUser.studentsCount || matchedUser.totalStudents || "1.2K+"), sub: "Students", icon: "account-group-outline", bg: "#F0EDFF" },
       { title: "100%", sub: "Satisfaction", icon: "medal-outline", bg: "#F0EDFF" }
     ],
     about: matchedUser.bio || `Specializing in ${cat}. I love breaking down complex topics into simple, actionable steps to help students succeed in exams and real-world projects.`,
     subjects: userSubjects,
     experiences: userExp,
-    certifications: matchedUser.certifications || ["Certified Technical Instructor", "Full Stack Systems Architect"],
-    interests: matchedUser.interests || ["System Architecture", "AI & Machine Learning", "Student Mentorship"],
+    certifications: matchedUser.certifications || matchedUser.certificates || ["Certified Technical Instructor", "Full Stack Systems Architect"],
+    interests: matchedUser.interests || matchedUser.specializations || ["System Architecture", "AI & Machine Learning", "Student Mentorship"],
     courses: mentorCourses,
     ratingsOverview: {
-        score: "5.0",
-        reviewsLabel: "(1 Review)",
-        breakdown: [
-          { star: "5 Stars", percent: 100 },
-          { star: "4 Stars", percent: 0 },
-          { star: "3 Stars", percent: 0 },
-          { star: "2 Stars", percent: 0 },
-          { star: "1 Star", percent: 0 }
-        ],
-        featuredReview: {
-          authorName: "TCM Student",
-          authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
-          timeAgo: "1 day ago",
-          text: "Excellent mentor! The sessions are super clear and easy to understand."
-        }
-      }
-    });
+      score: computedScore,
+      reviewsLabel: computedReviewsLabel,
+      breakdown: computedBreakdown,
+      featuredReview: featuredReviewObj,
+      realStudentReviews: realReviews.map((r) => ({
+        id: String(r._id || r.id),
+        studentName: r.studentName || "Learner",
+        studentAvatar: r.studentAvatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100",
+        className: r.className || "Live Session",
+        rating: Number(r.rating) || 5,
+        comment: r.comment || "",
+        createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "Recently"
+      }))
+    }
+  });
 });
 
 homeRouter.post("/user/:targetId/friend-request", requireAuth, async (req, res) => {

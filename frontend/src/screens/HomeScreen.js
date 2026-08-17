@@ -296,7 +296,7 @@ function SwipeBackWrapper({ children, onBack, enabled = true }) {
   );
 }
 
-export default function HomeScreen({ session, onLogout, onRequireLogin }) {
+export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUpdate }) {
   const { width } = useWindowDimensions();
   const [authModalVisible, setAuthModalVisible] = useState(false);
   const [authActionTitle, setAuthActionTitle] = useState("perform this action");
@@ -536,14 +536,23 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
 
   function handleSelectUser(u) {
     if (!u) return;
-    if (isSelfUser(u)) {
+    const targetObj = typeof u === "object" ? u : { id: u };
+
+    // If explicit mentor role/selection, ALWAYS open Mentor Detailed Profile Page!
+    if (targetObj.role === "mentor" || targetObj.isMentor || String(targetObj.id || "").startsWith("m") || targetObj.isMentorCard) {
+      setTargetUserProfile(null);
+      setSelectedMentorId(targetObj);
+      return;
+    }
+
+    if (isSelfUser(targetObj)) {
       setTargetUserProfile(null);
       setSelectedMentorId(null);
       setActiveDrawerItem("Profile");
       setActiveTab("Profile");
     } else {
       setSelectedMentorId(null);
-      setTargetUserProfile(u);
+      setTargetUserProfile(targetObj);
     }
   }
 
@@ -559,8 +568,6 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
   async function loadHome({ quiet = false } = {}) {
     if (!session?.token) {
       setLoading(false);
-      if (onRequireLogin) onRequireLogin();
-      else if (onLogout) onLogout();
       return;
     }
 
@@ -573,7 +580,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
       setHome(data);
       setActiveCategory((current) => current || data.categories?.[0] || "");
     } catch (nextError) {
-      if (nextError?.status === 401 || nextError?.message?.includes("401") || nextError?.message?.includes("token") || nextError?.message?.includes("login")) {
+      if (nextError?.status === 401) {
         if (onLogout) onLogout();
         else if (onRequireLogin) onRequireLogin();
         return;
@@ -1092,7 +1099,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
                 session={session}
                 user={user}
                 targetMentor={typeof selectedMentorId === "object" ? selectedMentorId : null}
-                mentorId={typeof selectedMentorId === "object" ? selectedMentorId?.id : selectedMentorId}
+                mentorId={typeof selectedMentorId === "object" ? (selectedMentorId?.id || selectedMentorId?.userId || selectedMentorId?.name) : selectedMentorId}
                 onClose={() => setSelectedMentorId(null)}
                 onOpenCourseDetails={(cId) => {
                   setSelectedMentorId(null);
@@ -1394,7 +1401,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
                 session={session}
                 onOpenSidebar={() => setSidebarOpen(true)}
                 onNotifications={() => handleSelectDrawerItem("Notifications")}
-                onSelectUser={(m) => setSelectedMentorId(m || "m1")}
+                onSelectUser={(m) => handleSelectUser(m || { id: "m1", role: "mentor" })}
                 onSelectCourse={(cId) => setSelectedCourseId(cId || "p1")}
                 onOpenContinueLearning={() => setShowContinueLearning(true)}
                 onOpenPopularCourses={() => setShowPopularCourses(true)}
@@ -1443,6 +1450,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
                 }}
                 onUserUpdate={(updatedUser) => {
                   setHome((prev) => ({ ...prev, user: updatedUser }));
+                  if (onUserUpdate) onUserUpdate(updatedUser);
                 }}
               />
             ) : (

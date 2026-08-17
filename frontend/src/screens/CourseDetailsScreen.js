@@ -420,7 +420,7 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
   const displayMentorName = courseData.mentorName || courseData.instructor || courseData.mentor?.name || "TCM Expert Educator";
   const displayMentorRole = courseData.mentorRole || courseData.instructorRole || courseData.mentor?.role || "Senior Lead Mentor";
   const displayMentorAvatar = safeImageUri(courseData.mentorAvatarUrl || courseData.mentorAvatar || courseData.instructorAvatar || courseData.mentor?.avatarUrl || courseData.mentor?.avatar, "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150");
-  const displayMentorId = courseData.mentorId || courseData.mentor?._id || courseData.mentor?.id || "m1";
+  const displayMentorId = courseData.mentorId || courseData.mentor?._id || courseData.mentor?.id || courseData.mentorName || courseData.instructor || courseData.mentor?.name || "m1";
 
   function renderSalaryInsightsCard() {
     const salary = aiInsights?.salaryInsights;
@@ -640,7 +640,13 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
         {/* 4.5. Lead Instructor / Mentor Card */}
         <View style={[styles.sectionContainer, themedSurface]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Lead Mentor & Instructor</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (onSelectMentor) onSelectMentor(displayMentorId);
+            }}
+            activeOpacity={0.8}
+            style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}
+          >
             <Image
               source={{ uri: displayMentorAvatar }}
               style={{ width: 54, height: 54, borderRadius: 27, borderWidth: 2, borderColor: theme.primary }}
@@ -657,17 +663,12 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
                 <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: theme.subtext }}>({courseData.mentorReviews || courseData.reviews || "1.2K"} Reviews)</Text>
               </View>
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                if (onSelectMentor) onSelectMentor(displayMentorId);
-                else if (onBack) onBack();
-              }}
-              activeOpacity={0.8}
+            <View
               style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: theme.border }}
             >
               <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: theme.primary }}>View Profile</Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* 5. What you'll learn Section */}

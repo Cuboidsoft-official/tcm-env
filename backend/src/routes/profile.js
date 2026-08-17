@@ -127,19 +127,26 @@ function calculateReputationString(posts = []) {
 
 profileRouter.get("/", requireAuth, async (req, res) => {
   try {
-    const memoryStore = req.app.locals.memoryStore;
+    let dbUser = null;
+    try {
+      dbUser = await User.findById(req.user._id || req.user.id).lean();
+    } catch (e) {}
+
+    const targetUserDoc = dbUser || (memoryStore ? (memoryStore.users?.find((u) => String(u._id) === String(req.user._id)) || memoryStore.user) : req.user);
+    if (!targetUserDoc) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     if (memoryStore) {
-      const userInMem = memoryStore.users?.find((u) => String(u._id) === String(req.user._id)) || memoryStore.user;
       if (!memoryStore.userFollowers) memoryStore.userFollowers = [];
       if (!memoryStore.userFollowing) memoryStore.userFollowing = [];
 
       const userCreatedPosts = (memoryStore.posts || [])
-        .filter((p) => String(p.authorId) === String(req.user._id) || (p.authorName && p.authorName === userInMem?.name))
+        .filter((p) => String(p.authorId) === String(req.user._id) || (p.authorName && p.authorName === targetUserDoc?.name))
         .map(formatCommunityPostToProfileCard);
 
       const totalReviews = userCreatedPosts.reduce((sum, p) => sum + (p.metrics?.comments || 0), 0);
-      const pubUser = publicUser(userInMem);
+      const pubUser = publicUser(targetUserDoc);
       pubUser.stats = {
         postsCount: userCreatedPosts.length,
         followers: memoryStore.userFollowers.length,
@@ -155,7 +162,9 @@ profileRouter.get("/", requireAuth, async (req, res) => {
       });
     }
 
-    const dbUser = await User.findById(req.user._id).lean();
+    if (!dbUser) {
+      dbUser = await User.findById(req.user._id || req.user.id).lean();
+    }
     if (!dbUser) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -197,111 +206,109 @@ async function handleUpdateProfile(req, res) {
     const { name, handle, bio, location, website, avatarUrl, mentorCategory, yearsExperience, subjects, experiences, certifications, interests, skills } = req.body;
     const reqUserId = String(req.user?._id || req.user?.id || req.user?.sub || "");
 
+    let parsedSkills = undefined;
+    if (Array.isArray(skills)) {
+      parsedSkills = skills
+        .map((s) => {
+          if (typeof s === "string" && s.trim()) return { name: s.trim(), strength: 80 };
+          if (typeof s === "object" && s !== null) {
+            const sName = String(s.name || s.label || s.title || "").trim();
+            if (!sName) return null;
+            return { name: sName, strength: Number(s.strength) || 80 };
+          }
+          return null;
+        })
+        .filter(Boolean);
+    } else if (typeof skills === "string" && skills.trim() !== "") {
+      parsedSkills = skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((name) => ({ name, strength: 80 }));
+    }
+
+    let updatedUser = null;
+    let resolvedAvatarUrl = undefined;
+    if (avatarUrl !== undefined && typeof avatarUrl === "string" && avatarUrl.trim() !== "") {
+      resolvedAvatarUrl = (await resolveMediaUrl(avatarUrl)) || avatarUrl.trim();
+    }
+
+    // 1. ALWAYS update MongoDB Database if User ID exists
+    try {
+      const dbTargetId = req.user?._id || req.user?.id || reqUserId;
+      if (dbTargetId) {
+        updatedUser = await User.findByIdAndUpdate(
+          dbTargetId,
+          {
+            $set: {
+              ...(name && name.trim() && { name: name.trim() }),
+              ...(handle && handle.trim() && { handle: handle.trim().replace(/^@/, "") }),
+              ...(bio !== undefined && { bio: bio.trim() }),
+              ...(location !== undefined && { location: location.trim() }),
+              ...(website !== undefined && { website: website.trim() }),
+              ...(resolvedAvatarUrl !== undefined && { avatarUrl: resolvedAvatarUrl }),
+              ...(mentorCategory !== undefined && { mentorCategory }),
+              ...(yearsExperience !== undefined && { yearsExperience }),
+              ...(Array.isArray(subjects) && { subjects }),
+              ...(Array.isArray(experiences) && { experiences }),
+              ...(Array.isArray(certifications) && { certifications }),
+              ...(Array.isArray(interests) && { interests }),
+              ...(parsedSkills !== undefined && { skills: parsedSkills })
+            }
+          },
+          { new: true }
+        ).lean();
+
+        if (updatedUser) {
+          // Also update Mentor collection in MongoDB
+          await Mentor.updateMany(
+            {
+              $or: [
+                { userId: String(dbTargetId) },
+                { email: req.user.email },
+                { name: req.user.name },
+                ...(name ? [{ name: name.trim() }] : [])
+              ]
+            },
+            {
+              $set: {
+                ...(name && name.trim() && { name: name.trim() }),
+                ...(resolvedAvatarUrl && { avatarUrl: resolvedAvatarUrl }),
+                ...(mentorCategory && { mentorCategory }),
+                ...(yearsExperience && { title: `${mentorCategory || "Mentor"} (${yearsExperience})` }),
+                ...(Array.isArray(subjects) && { subjects })
+              }
+            }
+          );
+        }
+      }
+    } catch (dbErr) {
+      console.warn("MongoDB User Profile Update warning:", dbErr);
+    }
+
+    // 2. Also update memoryStore object so in-memory state stays synced
     if (memoryStore) {
       const usersList = memoryStore.users || [memoryStore.user].filter(Boolean);
-      const user = usersList.find((u) => String(u._id || u.id) === reqUserId || u.email === req.user.email) || memoryStore.user;
+      const user = usersList.find((u) => String(u._id || u.id) === reqUserId || u.email === req.user?.email) || memoryStore.user;
       if (user) {
         if (name !== undefined && name.trim()) user.name = name.trim();
         if (handle !== undefined && handle.trim()) user.handle = handle.trim().replace(/^@/, "");
         if (bio !== undefined) user.bio = bio.trim();
         if (location !== undefined) user.location = location.trim();
         if (website !== undefined) user.website = website.trim();
-        if (avatarUrl !== undefined) user.avatarUrl = avatarUrl.trim();
+        if (resolvedAvatarUrl !== undefined) user.avatarUrl = resolvedAvatarUrl;
         if (mentorCategory !== undefined) user.mentorCategory = mentorCategory;
         if (yearsExperience !== undefined) user.yearsExperience = yearsExperience;
         if (Array.isArray(subjects)) user.subjects = subjects;
         if (Array.isArray(experiences)) user.experiences = experiences;
         if (Array.isArray(certifications)) user.certifications = certifications;
         if (Array.isArray(interests)) user.interests = interests;
-        if (Array.isArray(skills)) user.skills = skills;
-
-        (memoryStore.posts || []).forEach((post) => {
-          if (String(post.authorId) === reqUserId || post.authorName === req.user.name) {
-            if (name) post.authorName = name.trim();
-            if (avatarUrl) post.authorAvatarUrl = avatarUrl.trim();
-          }
-        });
-
-        // Also sync Mentor memoryStore object if mentor
-        if (Array.isArray(memoryStore.mentors)) {
-          const mentorObj = memoryStore.mentors.find((m) => String(m.userId || m.id) === reqUserId || m.email === req.user.email);
-          if (mentorObj) {
-            if (name !== undefined && name.trim()) mentorObj.name = name.trim();
-            if (avatarUrl !== undefined) mentorObj.avatarUrl = avatarUrl.trim();
-            if (mentorCategory !== undefined) mentorObj.mentorCategory = mentorCategory;
-            if (yearsExperience !== undefined) mentorObj.title = `${mentorCategory || mentorObj.mentorCategory || "Mentor"} (${yearsExperience})`;
-            if (Array.isArray(subjects)) mentorObj.subjects = subjects;
-          }
-        }
+        if (parsedSkills !== undefined) user.skills = parsedSkills;
       }
-      return res.json({ user: publicUser(user) });
     }
 
-    let resolvedAvatarUrl = undefined;
-    if (avatarUrl !== undefined && typeof avatarUrl === "string" && avatarUrl.trim() !== "") {
-      resolvedAvatarUrl = (await resolveMediaUrl(avatarUrl)) || avatarUrl.trim();
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user._id || req.user.id,
-      {
-        $set: {
-          ...(name && name.trim() && { name: name.trim() }),
-          ...(handle && handle.trim() && { handle: handle.trim().replace(/^@/, "") }),
-          ...(bio !== undefined && { bio: bio.trim() }),
-          ...(location !== undefined && { location: location.trim() }),
-          ...(website !== undefined && { website: website.trim() }),
-          ...(resolvedAvatarUrl !== undefined && { avatarUrl: resolvedAvatarUrl }),
-          ...(mentorCategory !== undefined && { mentorCategory }),
-          ...(yearsExperience !== undefined && { yearsExperience }),
-          ...(Array.isArray(subjects) && { subjects }),
-          ...(Array.isArray(experiences) && { experiences }),
-          ...(Array.isArray(certifications) && { certifications }),
-          ...(Array.isArray(interests) && { interests }),
-          ...(Array.isArray(skills) && { skills })
-        }
-      },
-      { new: true }
-    );
-
-    const finalAvatar = updatedUser.avatarUrl || resolvedAvatarUrl;
-
-    // Also update Mentor collection in MongoDB
-    try {
-      await Mentor.updateMany(
-        {
-          $or: [
-            { userId: String(req.user._id || req.user.id) },
-            { email: req.user.email },
-            { name: req.user.name },
-            ...(updatedUser.name ? [{ name: updatedUser.name }] : [])
-          ]
-        },
-        {
-          $set: {
-            ...(name && name.trim() && { name: name.trim() }),
-            ...(finalAvatar && { avatarUrl: finalAvatar }),
-            ...(mentorCategory && { mentorCategory }),
-            ...(yearsExperience && { title: `${mentorCategory || "Mentor"} (${yearsExperience})` }),
-            ...(Array.isArray(subjects) && { subjects })
-          }
-        }
-      );
-    } catch (mErr) {}
-
-    if (name || finalAvatar) {
-      await CommunityPost.updateMany(
-        { authorId: req.user._id || req.user.id },
-        {
-          $set: {
-            ...(name && { authorName: name.trim() }),
-            ...(finalAvatar && { authorAvatarUrl: finalAvatar })
-          }
-        }
-      );
-    }
-
-    res.json({ user: publicUser(updatedUser) });
+    const finalUserDoc = updatedUser || (memoryStore ? memoryStore.user : req.user);
+    return res.json({ user: publicUser(finalUserDoc) });
   } catch (error) {
     res.status(500).json({ message: "Could not update profile" });
   }
@@ -817,16 +824,21 @@ profileRouter.get("/class-reviews/user/:userId", async (req, res) => {
     const { userId } = req.params;
     let reviews = [];
     try {
-      reviews = await ClassReview.find({ studentId: String(userId) }).sort({ createdAt: -1 });
+      reviews = await ClassReview.find({
+        $or: [
+          { mentorId: String(userId) },
+          { studentId: String(userId) }
+        ]
+      }).sort({ createdAt: -1 });
     } catch (e) {}
 
     const mentorReviews = reviews.filter((r) => r.type === "mentor_feedback");
     const reflections = reviews.filter((r) => r.type === "student_reflection");
 
-    let averageRating = 4.9;
-    if (mentorReviews.length > 0) {
-      const sum = mentorReviews.reduce((acc, r) => acc + (r.rating || 5), 0);
-      averageRating = Number((sum / mentorReviews.length).toFixed(1));
+    let averageRating = 5.0;
+    if (reviews.length > 0) {
+      const sum = reviews.reduce((acc, r) => acc + (Number(r.rating) || 5), 0);
+      averageRating = Number((sum / reviews.length).toFixed(1));
     }
 
     res.json({

@@ -14,7 +14,7 @@ import LoginScreen from "./src/screens/LoginScreen";
 import SplashScreen from "./src/screens/SplashScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
-import { setupPushNotifications } from "./src/services/notificationService";
+import { getProfile } from "./src/api/client";
 
 const STORAGE_SESSION_KEY = "tcm_user_session_v1";
 
@@ -26,15 +26,45 @@ function AppContent() {
     Poppins_700Bold,
     Poppins_800ExtraBold
   });
-  const [screen, setScreen] = useState("splash");
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const stored = window.localStorage.getItem(STORAGE_SESSION_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && (parsed.token || parsed.user)) return parsed;
+        }
+      }
+    } catch (e) {}
+    return null;
+  });
+
+  const [screen, setScreen] = useState(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const stored = window.localStorage.getItem(STORAGE_SESSION_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && (parsed.token || parsed.user)) return "home";
+        }
+      }
+    } catch (e) {}
+    return "splash";
+  });
+
   const { theme } = useTheme();
 
   useEffect(() => {
     let isMounted = true;
     async function restorePersistentSession() {
       try {
-        const storedSessionJson = await AsyncStorage.getItem(STORAGE_SESSION_KEY);
+        let storedSessionJson = null;
+        if (typeof window !== "undefined" && window.localStorage) {
+          storedSessionJson = window.localStorage.getItem(STORAGE_SESSION_KEY);
+        }
+        if (!storedSessionJson) {
+          storedSessionJson = await AsyncStorage.getItem(STORAGE_SESSION_KEY);
+        }
         if (storedSessionJson) {
           const parsedSession = JSON.parse(storedSessionJson);
           if (parsedSession && (parsedSession.token || parsedSession.user)) {
@@ -43,6 +73,22 @@ function AppContent() {
               setScreen("home");
               if (parsedSession.token) {
                 setupPushNotifications(parsedSession.token);
+                // Fetch fresh user profile directly from MongoDB backend on reload
+                getProfile(parsedSession.token)
+                  .then((res) => {
+                    if (res?.user && isMounted) {
+                      const updatedSession = { ...parsedSession, user: res.user };
+                      setSession(updatedSession);
+                      const jsonStr = JSON.stringify(updatedSession);
+                      AsyncStorage.setItem(STORAGE_SESSION_KEY, jsonStr).catch(() => {});
+                      if (typeof window !== "undefined" && window.localStorage) {
+                        window.localStorage.setItem(STORAGE_SESSION_KEY, jsonStr);
+                      }
+                    }
+                  })
+                  .catch((e) => {
+                    console.log("Profile DB sync notice (session preserved):", e);
+                  });
               }
               return;
             }
@@ -51,18 +97,15 @@ function AppContent() {
       } catch (err) {
         console.log("Failed to restore session from AsyncStorage:", err);
       }
-      if (isMounted) {
+      if (isMounted && !session) {
         setScreen("login");
       }
     }
 
-    const timer = setTimeout(() => {
-      restorePersistentSession();
-    }, 1800);
+    restorePersistentSession();
 
     return () => {
       isMounted = false;
-      clearTimeout(timer);
     };
   }, []);
 
@@ -71,7 +114,11 @@ function AppContent() {
     setScreen("home");
     try {
       if (nextSession) {
-        await AsyncStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(nextSession));
+        const jsonStr = JSON.stringify(nextSession);
+        await AsyncStorage.setItem(STORAGE_SESSION_KEY, jsonStr);
+        if (typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.setItem(STORAGE_SESSION_KEY, jsonStr);
+        }
       }
     } catch (err) {
       console.log("Failed to save session to AsyncStorage:", err);
@@ -81,11 +128,27 @@ function AppContent() {
     }
   }
 
+  async function handleUserUpdate(updatedUser) {
+    if (!updatedUser) return;
+    setSession((prev) => {
+      const nextSession = { ...(prev || {}), user: updatedUser };
+      const jsonStr = JSON.stringify(nextSession);
+      AsyncStorage.setItem(STORAGE_SESSION_KEY, jsonStr).catch(() => {});
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem(STORAGE_SESSION_KEY, jsonStr);
+      }
+      return nextSession;
+    });
+  }
+
   async function handleLogout() {
     setSession(null);
     setScreen("login");
     try {
       await AsyncStorage.removeItem(STORAGE_SESSION_KEY);
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.removeItem(STORAGE_SESSION_KEY);
+      }
     } catch (err) {
       console.log("Failed to remove session from AsyncStorage:", err);
     }
@@ -103,6 +166,7 @@ function AppContent() {
           session={{ ...session, onLogout: handleLogout }}
           onLogout={handleLogout}
           onRequireLogin={() => setScreen("login")}
+          onUserUpdate={handleUserUpdate}
         />
       )}
     </SafeAreaProvider>
