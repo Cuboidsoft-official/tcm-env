@@ -435,6 +435,12 @@ function mapPost(post, globalPostComments = {}, userId = null, usersMap = null) 
     }).filter(Boolean);
   }
 
+  const repostedByArr = post.repostedBy || [];
+  const isReposted = Boolean(
+    post.isReposted ||
+    (userId && repostedByArr.some((id) => String(id) === String(userId)))
+  );
+
   return {
     id: post._id || post.id,
     authorId: post.authorId || post.author_id,
@@ -455,10 +461,13 @@ function mapPost(post, globalPostComments = {}, userId = null, usersMap = null) 
     metrics: {
       likes: post.metrics?.likes || likedByArr.length || 0,
       comments: totalComments,
-      shares: post.metrics?.shares || 0
+      shares: post.metrics?.shares || 0,
+      reposts: post.metrics?.reposts || repostedByArr.length || 0
     },
     isLiked,
+    isReposted,
     likedBy: likedByArr,
+    repostedBy: repostedByArr,
     likedByUsers,
     tags: post.tags,
     timeLabel: getTimeLabel(post.publishedAt)
@@ -1066,8 +1075,8 @@ homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
 
   if (!post) {
     try {
-      const { JobPost } = await import("../models/JobPost.js");
-      post = await JobPost.findById(postId);
+      const { Job } = await import("../models/Job.js");
+      post = await Job.findById(postId);
     } catch (e) {}
   }
 
@@ -1100,7 +1109,16 @@ homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
   post.isLiked = isLiked;
 
   if (typeof post.save === "function") {
-    await post.save();
+    try {
+      await post.save();
+    } catch (saveErr) {
+      if (post._id) {
+        await CommunityPost.updateOne(
+          { _id: post._id },
+          { $set: { likedBy: post.likedBy, metrics: post.metrics } }
+        ).catch(() => {});
+      }
+    }
   }
 
   if (isLiked && post.authorId && String(post.authorId) !== userId) {
@@ -1117,6 +1135,72 @@ homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
     comments: post.metrics.comments,
     shares: post.metrics.shares,
     isLiked
+  });
+});
+
+homeRouter.post("/post/:postId/repost", requireAuth, async (req, res) => {
+  const { postId } = req.params;
+  const userId = String(req.user._id || req.user.id);
+  const memoryStore = req.app.locals.memoryStore;
+
+  let post = null;
+  try {
+    post = await CommunityPost.findById(postId);
+  } catch (e) {}
+
+  if (!post) {
+    try {
+      const { Job } = await import("../models/Job.js");
+      post = await Job.findById(postId);
+    } catch (e) {}
+  }
+
+  if (!post && memoryStore) {
+    post = memoryStore.posts?.find((p) => String(p.id || p._id) === String(postId));
+    if (!post) {
+      post = memoryStore.jobs?.find((j) => String(j.id || j._id) === String(postId));
+    }
+  }
+
+  if (!post) {
+    return res.status(404).json({ message: "Post not found" });
+  }
+
+  if (!Array.isArray(post.repostedBy)) post.repostedBy = [];
+  if (!post.metrics) post.metrics = { likes: 0, comments: 0, shares: 0, reposts: 0 };
+
+  const repIndex = post.repostedBy.findIndex((id) => String(id) === userId);
+  let isReposted = false;
+
+  if (repIndex > -1) {
+    post.repostedBy.splice(repIndex, 1);
+    post.metrics.reposts = Math.max(0, (post.metrics.reposts || 1) - 1);
+    isReposted = false;
+  } else {
+    post.repostedBy.push(userId);
+    post.metrics.reposts = (post.metrics.reposts || 0) + 1;
+    isReposted = true;
+  }
+  post.isReposted = isReposted;
+
+  if (typeof post.save === "function") {
+    try {
+      await post.save();
+    } catch (saveErr) {
+      if (post._id) {
+        await CommunityPost.updateOne(
+          { _id: post._id },
+          { $set: { repostedBy: post.repostedBy, metrics: post.metrics } }
+        ).catch(() => {});
+      }
+    }
+  }
+
+  res.json({
+    success: true,
+    reposts: post.metrics.reposts,
+    isReposted,
+    message: isReposted ? "Post reposted successfully!" : "Repost removed"
   });
 });
 

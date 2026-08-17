@@ -15,6 +15,7 @@ import SplashScreen from "./src/screens/SplashScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import { getProfile } from "./src/api/client";
+import { setupPushNotifications } from "./src/services/notificationService";
 
 const STORAGE_SESSION_KEY = "tcm_user_session_v1";
 
@@ -71,8 +72,8 @@ function AppContent() {
             if (isMounted) {
               setSession(parsedSession);
               setScreen("home");
-              if (parsedSession.token) {
-                setupPushNotifications(parsedSession.token);
+              if (parsedSession.token && typeof setupPushNotifications === "function") {
+                setupPushNotifications(parsedSession.token).catch(() => {});
                 // Fetch fresh user profile directly from MongoDB backend on reload
                 getProfile(parsedSession.token)
                   .then((res) => {
@@ -123,8 +124,8 @@ function AppContent() {
     } catch (err) {
       console.log("Failed to save session to AsyncStorage:", err);
     }
-    if (nextSession?.token) {
-      setupPushNotifications(nextSession.token);
+    if (nextSession?.token && typeof setupPushNotifications === "function") {
+      setupPushNotifications(nextSession.token).catch(() => {});
     }
   }
 

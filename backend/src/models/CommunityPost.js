@@ -83,9 +83,18 @@ const communityPostSchema = new mongoose.Schema(
       shares: {
         type: Number,
         default: 0
+      },
+      reposts: {
+        type: Number,
+        default: 0
       }
     },
     likedBy: [
+      {
+        type: String
+      }
+    ],
+    repostedBy: [
       {
         type: String
       }

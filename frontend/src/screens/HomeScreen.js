@@ -34,7 +34,7 @@ import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEvent } from "expo";
 import { VideoView, useVideoPlayer } from "expo-video";
-import { addPostComment, deletePostComment, createCommunityPost, deleteCommunityPost, getHome, getNotifications, getPostComments, sharePost, toggleCommentLike, togglePostLike, toggleSavePost, applyJobPost, deleteJobPost, uploadFile } from "../api/client";
+import { addPostComment, deletePostComment, createCommunityPost, deleteCommunityPost, getHome, getNotifications, getPostComments, sharePost, toggleCommentLike, togglePostLike, repostPost, toggleSavePost, applyJobPost, deleteJobPost, uploadFile } from "../api/client";
 import { sanitizeImageUri, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUtils";
 import { uriToDataUri } from "../utils/fileUtils";
 import { colors, shadow } from "../constants/theme";
@@ -702,9 +702,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
 
   async function submitPost() {
     const config = postModes[composerMode] || postModes.post;
-    const defaultMediaText = uploadType === "video"
-      ? "🎥 Shared Video"
-      : (draft.carouselImages?.length > 1 ? "📷 Shared Carousel Post" : "📷 Shared Photo");
+    const defaultMediaText = "";
     const postText = draft.text.trim() || defaultMediaText;
     const mediaFrameKey = uploadType === "video" && draft.frameKey === "none" ? "portrait" : draft.frameKey;
     const draftSnapshot = { ...draft };
@@ -1941,16 +1939,16 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
         style={[
           styles.postCard,
           {
-            borderRadius: 24,
+            borderRadius: 0,
             borderWidth: 1,
             borderColor: isPinnedCard ? "#F59E0B" : theme.border,
             backgroundColor: theme.cardBg,
             padding: 16,
-            marginBottom: 16,
-            shadowColor: "#000000",
-            shadowOpacity: 0.05,
-            shadowRadius: 12,
-            elevation: 2
+            marginBottom: 12,
+            shadowColor: "transparent",
+            shadowOpacity: 0,
+            shadowRadius: 0,
+            elevation: 0
           }
         ]}
       >
@@ -1992,9 +1990,9 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
             style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
           >
             {/* Avatar with Online Dot */}
-            <View style={{ position: "relative", marginRight: 10 }}>
-              <Avatar name={job.mentorName || post.authorName} uri={job.mentorAvatarUrl || post.authorAvatarUrl} size={44} />
-              <View style={{ position: "absolute", bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, backgroundColor: "#22C55E", borderWidth: 2, borderColor: theme.cardBg }} />
+            <View style={{ position: "relative", marginRight: 8 }}>
+              <Avatar name={job.mentorName || post.authorName} uri={job.mentorAvatarUrl || post.authorAvatarUrl} size={34} />
+              <View style={{ position: "absolute", bottom: 0, right: 0, width: 9, height: 9, borderRadius: 5, backgroundColor: "#22C55E", borderWidth: 1.5, borderColor: theme.cardBg }} />
             </View>
             <View style={styles.postAuthor}>
               <View style={styles.authorLine}>
@@ -2174,7 +2172,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
   }
 
   return (
-    <View style={[styles.postCard, { backgroundColor: theme.cardBg, borderColor: isPinnedCard ? "#F59E0B" : theme.border, borderBottomWidth: 1, borderTopWidth: 0, borderLeftWidth: 0, borderRightWidth: 0, borderRadius: 0, paddingHorizontal: 0, paddingVertical: 12, marginBottom: 4 }]}>
+    <View style={[styles.postCard, { backgroundColor: theme.cardBg, borderWidth: 0, borderBottomWidth: 0, borderTopWidth: 0, borderLeftWidth: 0, borderRightWidth: 0, borderRadius: 0, paddingHorizontal: 0, paddingVertical: 8, marginBottom: 12 }]}>
       {isPinnedCard && (
         <View
           style={{
@@ -2198,81 +2196,103 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
         </View>
       )}
 
-      <Pressable
-        onPress={() =>
-          onSelectUser &&
-          onSelectUser(
-            post.author || {
-              id: post.authorId || post.authorName,
-              name: post.authorName,
-              avatarUrl: post.authorAvatarUrl,
-              role: post.authorRole,
-              isMentor: Boolean(post.isMentor || post.authorRole?.toLowerCase().includes("mentor"))
-            }
-          )
-        }
-        style={[styles.postHeader, { paddingHorizontal: 14 }]}
-      >
-        <Avatar name={post.authorName} uri={post.authorAvatarUrl} size={42} />
-        <View style={styles.postAuthor}>
-          <View style={styles.authorLine}>
-            <Text numberOfLines={1} style={[styles.authorName, { color: theme.text }]}>
-              {post.authorName}
-            </Text>
-            {post.isMentor || post.authorRole?.toLowerCase().includes("mentor") || post.authorRole?.toLowerCase().includes("lead") || post.authorRole?.toLowerCase().includes("hod") || post.authorRole?.toLowerCase().includes("expert") ? (
-              <View style={[styles.mentorBadgePill, { backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderColor: theme.border }]}>
-                <Text style={[styles.mentorBadgeText, { color: theme.isDark ? "#A78BFA" : "#D97706" }]}>Mentor</Text>
-              </View>
-            ) : (
-              <View style={[styles.studentBadgePill, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", borderColor: theme.border }]}>
-                <Text style={[styles.studentBadgeText, { color: theme.subtext }]}>Student</Text>
-              </View>
-            )}
-            {post.isPremium ? (
-              <MaterialCommunityIcons name="check-decagram" size={15} color={theme.primary} style={{ marginLeft: 4 }} />
-            ) : null}
-          </View>
-          <Text numberOfLines={1} style={[styles.authorRole, { color: theme.subtext }]}>
-            {post.authorRole}{post.location ? ` • ${post.location}` : ""}
+      {Boolean(post.isReposted || post.repostedByName) && (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, marginBottom: 6 }}>
+          <MaterialCommunityIcons name="repeat" size={15} color="#10B981" />
+          <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#10B981" }}>
+            {post.repostedByName ? `${post.repostedByName} reposted` : "You reposted"}
           </Text>
         </View>
+      )}
+
+      {/* Modern Feed Post Header (Avatar, Name, Verification, Follow, Options) */}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, marginBottom: 8 }}>
         <Pressable
-          onPress={() => {
-            if (onOpenActionSheet) {
-              onOpenActionSheet(post);
-            } else if (onDeletePost) {
-              onDeletePost(post.id);
-            }
-          }}
-          style={{ padding: 6 }}
+          onPress={() =>
+            onSelectUser &&
+            onSelectUser(
+              post.author || {
+                id: post.authorId || post.authorName,
+                name: post.authorName,
+                avatarUrl: post.authorAvatarUrl,
+                role: post.authorRole,
+                isMentor: Boolean(post.isMentor || post.authorRole?.toLowerCase().includes("mentor"))
+              }
+            )
+          }
+          style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}
         >
-          <Feather name="more-vertical" size={22} color={theme.subtext} />
+          <Avatar name={post.authorName} uri={post.authorAvatarUrl} size={32} />
+          <View style={{ marginLeft: 8, flex: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Text numberOfLines={1} style={{ fontSize: 14.5, fontFamily: fonts.bold, color: theme.text, flexShrink: 1 }}>
+                {post.authorName}
+              </Text>
+              <MaterialCommunityIcons name="check-decagram" size={15} color={theme.primary} />
+            </View>
+          </View>
         </Pressable>
-      </Pressable>
 
-      <View style={[styles.postMetaLine, { paddingHorizontal: 14 }]}>
-        {media.label ? <MediaLabel media={media} /> : null}
-        <View style={styles.metaDot} />
-        <Text style={[styles.postTime, { color: theme.subtext }]}>{post.timeLabel}</Text>
-        <Feather name="globe" size={13} color={theme.subtext} />
-      </View>
-      <View style={{ paddingHorizontal: 14 }}>
-        <ReadMoreText text={post.text} />
-      </View>
-      <PostMedia post={post} onPreview={onPreview} />
-      <View style={{ paddingHorizontal: 14 }}>
-        <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} onToggleLike={onToggleLike} onSelectUser={onSelectUser} />
-      </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {session?.user?.id && String(session.user.id) !== String(post.authorId || post.authorName) ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={{
+                backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9",
+                paddingHorizontal: 12,
+                paddingVertical: 5,
+                borderRadius: 8
+              }}
+            >
+              <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text }}>Follow</Text>
+            </TouchableOpacity>
+          ) : null}
 
-      {post.tags?.length ? (
-        <View style={[styles.tagsRow, { paddingHorizontal: 14 }]}>
-          {post.tags.map((tag) => (
-            <Text key={tag} style={styles.tag}>
-              {tag}
-            </Text>
-          ))}
+          <Pressable
+            onPress={() => {
+              if (onOpenActionSheet) {
+                onOpenActionSheet(post);
+              } else if (onDeletePost) {
+                onDeletePost(post.id);
+              }
+            }}
+            style={{ padding: 4 }}
+          >
+            <Feather name="more-horizontal" size={22} color={theme.text} />
+          </Pressable>
         </View>
-      ) : null}
+      </View>
+
+      {/* Media Block (Video or Image) */}
+      <PostMedia post={post} onPreview={onPreview} />
+
+      {/* Modern Feed Action Bar (Directly below media) */}
+      <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} onToggleLike={onToggleLike} onSelectUser={onSelectUser} />
+
+      {/* Caption, Hashtags & Time (Below Action Bar) */}
+      <View style={{ paddingHorizontal: 14, marginTop: 4 }}>
+        <ReadMoreText text={post.text} />
+
+        {/* Highlighted Hashtags */}
+        {post.tags?.length ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+            {post.tags.map((tag) => (
+              <Text key={tag} style={{ fontSize: 12.5, fontFamily: fonts.medium, color: theme.primary }}>
+                {tag.startsWith("#") ? tag : `#${tag}`}
+              </Text>
+            ))}
+          </View>
+        ) : (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+            <Text style={{ fontSize: 12.5, fontFamily: fonts.medium, color: theme.primary }}>#tcm #learning #tech #foryou</Text>
+          </View>
+        )}
+
+        {/* Time Ago Subtext */}
+        <Text style={{ fontSize: 11, fontFamily: fonts.regular, color: theme.subtext, marginTop: 4 }}>
+          {post.timeLabel || "Just now"}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -2445,7 +2465,7 @@ function SingleFeedImage({ singleImage, fKey, onPreview, mediaTitle, mediaSubtit
     >
       <Image
         source={{ uri: sanitizeImageUri(singleImage) }}
-        style={{ width: "100%", height: "100%", borderRadius: 6 }}
+        style={{ width: "100%", height: "100%", borderRadius: 0 }}
         resizeMode="cover"
       />
     </Pressable>
@@ -3169,36 +3189,85 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
 
   const totalRealLikersCount = realLikedUsers.length;
 
+  function formatCount(num) {
+    if (!num || isNaN(num)) return "0";
+    if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+    return String(num);
+  }
+
+  const [isReposted, setIsReposted] = useState(Boolean(post?.isReposted));
+  const [repostsCount, setRepostsCount] = useState(
+    post?.metrics?.reposts !== undefined ? post.metrics.reposts : (post?.reposts !== undefined ? post.reposts : (Array.isArray(post?.repostedBy) ? post.repostedBy.length : 0))
+  );
+
+  function handleToggleRepost() {
+    const nextState = !isReposted;
+    setIsReposted(nextState);
+    setRepostsCount((prev) => Math.max(0, prev + (nextState ? 1 : -1)));
+
+    if (session?.token && targetPostId) {
+      repostPost(session.token, targetPostId).catch((e) => {
+        console.warn("Failed to sync repost with backend:", e);
+      });
+    }
+  }
+
   return (
-    <View style={{ width: "100%" }}>
-      <View style={styles.actionsRow}>
-        {/* 1. Clapping Hands Button with Micro Animation */}
-        <Pressable onPress={handleToggleClap} style={styles.metric}>
-          <Animated.View style={{ transform: [{ scale: clapScaleAnim }] }}>
+    <View style={{ width: "100%", marginTop: 4 }}>
+      {/* Modern Feed Action Bar matching Instagram/Reels screenshot */}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+          {/* 1. Like Heart Icon + Count */}
+          <Pressable onPress={handleToggleClap} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Animated.View style={{ transform: [{ scale: clapScaleAnim }] }}>
+              <Ionicons
+                name={liked ? "heart" : "heart-outline"}
+                size={24}
+                color={liked ? "#EF4444" : theme.text}
+              />
+            </Animated.View>
+            <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text }}>
+              {formatCount(likesCount)}
+            </Text>
+          </Pressable>
+
+          {/* 2. Comments Icon + Count */}
+          <Pressable onPress={onComment} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Ionicons name="chatbubble-outline" size={21} color={theme.text} />
+            <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text }}>
+              {formatCount(commentsCount)}
+            </Text>
+          </Pressable>
+
+          {/* 3. Repost / Retweet Icon + Count */}
+          <Pressable onPress={handleToggleRepost} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
             <MaterialCommunityIcons
-              name={liked ? "hand-clap" : "hand-clap"}
-              size={24}
-              color={liked ? "#EAB308" : theme.subtext}
+              name="repeat"
+              size={22}
+              color={isReposted ? "#10B981" : theme.text}
             />
-          </Animated.View>
-          <Text style={[styles.metricText, { color: theme.subtext }, liked && { color: "#EAB308", fontFamily: fonts.bold }]}>{likesCount} Claps</Text>
-        </Pressable>
+            <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: isReposted ? "#10B981" : theme.text }}>
+              {formatCount(repostsCount)}
+            </Text>
+          </Pressable>
 
-        {/* 2. Comments Button */}
-        <Pressable onPress={onComment} style={styles.metric}>
-          <Feather name="message-circle" size={22} color={theme.subtext} />
-          <Text style={[styles.metricText, { color: theme.subtext }]}>{commentsCount}</Text>
-        </Pressable>
+          {/* 4. Share Paper Plane Icon + Count */}
+          <Pressable onPress={() => setShareModalOpen(true)} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Feather name="send" size={20} color={theme.text} />
+            <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text }}>
+              {formatCount(sharesCount)}
+            </Text>
+          </Pressable>
+        </View>
 
-        {/* 3. Social Share Button */}
-        <Pressable onPress={() => setShareModalOpen(true)} style={styles.metric}>
-          <Feather name="send" size={22} color={theme.subtext} />
-          <Text style={[styles.metricText, { color: theme.subtext }]}>{sharesCount}</Text>
-        </Pressable>
-
-        {/* 4. Save Bookmark Button (Filled Icon when Saved) */}
-        <Pressable onPress={handleToggleSave} style={styles.saveAction}>
-          <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={23} color={saved ? theme.primary : theme.subtext} />
+        {/* 5. Bookmark Save Icon (Far Right) */}
+        <Pressable onPress={handleToggleSave} style={{ padding: 2 }}>
+          <Ionicons
+            name={saved ? "bookmark" : "bookmark-outline"}
+            size={23}
+            color={saved ? theme.primary : theme.text}
+          />
         </Pressable>
       </View>
 
@@ -3210,10 +3279,9 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
           style={{
             flexDirection: "row",
             alignItems: "center",
-            marginTop: 8,
-            paddingTop: 8,
-            borderTopWidth: 1,
-            borderTopColor: theme.isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9"
+            marginTop: 2,
+            marginBottom: 4,
+            paddingHorizontal: 14
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", marginRight: 8 }}>
@@ -3222,12 +3290,12 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
                 key={u.id || idx}
                 source={{ uri: u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }}
                 style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 11,
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
                   borderWidth: 1.5,
                   borderColor: theme.cardBg,
-                  marginLeft: idx === 0 ? 0 : -7
+                  marginLeft: idx === 0 ? 0 : -6
                 }}
               />
             ))}
@@ -5264,7 +5332,7 @@ const styles = StyleSheet.create({
   },
   page: {
     alignSelf: "center",
-    paddingHorizontal: 2
+    paddingHorizontal: 0
   },
   header: {
     alignItems: "center",
@@ -5529,19 +5597,21 @@ const styles = StyleSheet.create({
     width: 45
   },
   feed: {
-    gap: 12,
-    paddingBottom: 96
+    gap: 4,
+    paddingBottom: 80
   },
   postCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 0,
-    padding: 14,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    marginBottom: 2,
+    shadowColor: "transparent",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0
   },
   postHeader: {
     alignItems: "center",
@@ -5671,8 +5741,8 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     aspectRatio: 0.8,
     backgroundColor: "#F1F5F9",
-    borderRadius: 14,
-    marginTop: 14,
+    borderRadius: 0,
+    marginTop: 8,
     overflow: "hidden",
     width: "100%"
   },
@@ -5683,15 +5753,11 @@ const styles = StyleSheet.create({
     aspectRatio: 1.78
   },
   videoMediaPolaroid: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#FFFFFF",
-    borderBottomWidth: 18,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 6
+    backgroundColor: "transparent",
+    borderWidth: 0
   },
   videoMediaRounded: {
-    borderRadius: 24
+    borderRadius: 0
   },
   videoThumbImage: {
     height: "100%",
@@ -7518,11 +7584,11 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     height: 44,
     width: 44,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowColor: "transparent",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
     overflow: "hidden"
   },
   fabGradient: {
@@ -7544,11 +7610,11 @@ const styles = StyleSheet.create({
     maxWidth: 480,
     alignSelf: "center",
     width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 6
+    shadowColor: "transparent",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0
   },
   tabItem: {
     alignItems: "center",

@@ -626,6 +626,15 @@ export function togglePostLike(token, postId) {
   });
 }
 
+export function repostPost(token, postId) {
+  return request(`/home/post/${postId}/repost`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
 export function addPostComment(token, postId, text, parentCommentId) {
   return request(`/home/post/${postId}/comment`, {
     method: "POST",

@@ -20,10 +20,10 @@ export const colors = {
 };
 
 export const shadow = {
-  shadowColor: "#0A6836",
-  shadowOffset: { width: 0, height: 6 },
-  shadowOpacity: 0.08,
-  shadowRadius: 16,
-  elevation: 4
+  shadowColor: "transparent",
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0,
+  shadowRadius: 0,
+  elevation: 0
 };
 
