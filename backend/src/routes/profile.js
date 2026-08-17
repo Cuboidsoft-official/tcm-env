@@ -127,6 +127,7 @@ function calculateReputationString(posts = []) {
 
 profileRouter.get("/", requireAuth, async (req, res) => {
   try {
+    const memoryStore = req.app.locals.memoryStore;
     let dbUser = null;
     try {
       dbUser = await User.findById(req.user._id || req.user.id).lean();
@@ -196,6 +197,7 @@ profileRouter.get("/", requireAuth, async (req, res) => {
       following: userFollowing
     });
   } catch (error) {
+    console.error("Error in GET /api/profile:", error);
     res.status(500).json({ message: "Could not fetch profile data" });
   }
 });
