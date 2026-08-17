@@ -24,7 +24,7 @@ import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
-export default function MentorDashboardScreen({ session, user = {}, onBack, onNavigateActivity, onEditCourse }) {
+export default function MentorDashboardScreen({ session, user = {}, onBack, onNavigateActivity, onEditCourse, onSelectUser }) {
   const { theme } = useTheme();
   const [liveApprovedStatus, setLiveApprovedStatus] = useState(null);
 
@@ -164,39 +164,33 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
     }
   }
 
-  async function handleDeleteCourse(course) {
+  const [courseToDelete, setCourseToDelete] = useState(null);
+  const [deletingCourse, setDeletingCourse] = useState(false);
+
+  function promptDeleteCourse(course) {
     if (!checkApprovalGuard("Course deletion")) return;
     if (!course) return;
-    const courseTitle = course.title || "Course";
-    const courseId = course.id || course._id || course.customId;
+    setCourseToDelete(course);
+  }
 
-    Alert.alert(
-      "Delete Course 🗑️",
-      `Are you sure you want to delete "${courseTitle}"? This action will permanently remove the course.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              if (session?.token && courseId) {
-                const res = await deleteCourse(session.token, courseId);
-                if (res?.success) {
-                  setMentorCourses((prev) => prev.filter((c) => String(c.id || c._id || c.customId) !== String(courseId)));
-                  Alert.alert("Course Deleted 🎉", `"${courseTitle}" was removed successfully.`);
-                  return;
-                }
-              }
-              setMentorCourses((prev) => prev.filter((c) => String(c.id || c._id || c.customId) !== String(courseId)));
-              Alert.alert("Course Deleted", `"${courseTitle}" was removed.`);
-            } catch (err) {
-              Alert.alert("Error", err?.message || "Could not delete course.");
-            }
-          }
-        }
-      ]
-    );
+  async function confirmDeleteCourseAction() {
+    if (!courseToDelete) return;
+    const courseId = courseToDelete.id || courseToDelete._id || courseToDelete.customId;
+    const courseTitle = courseToDelete.title || "Course";
+
+    setDeletingCourse(true);
+    try {
+      if (session?.token && courseId) {
+        await deleteCourse(session.token, courseId);
+      }
+      setMentorCourses((prev) => prev.filter((c) => String(c.id || c._id || c.customId) !== String(courseId)));
+      Alert.alert("Course Deleted 🎉", `"${courseTitle}" was removed successfully.`);
+      setCourseToDelete(null);
+    } catch (err) {
+      Alert.alert("Error", err?.message || "Could not delete course.");
+    } finally {
+      setDeletingCourse(false);
+    }
   }
 
   // Weekly Engagement Activity Chart Data (Mon - Sun)
@@ -792,9 +786,9 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
         </View>
 
         <View style={{ marginBottom: 16 }}>
-          {(activeCourseList || []).map((course) => (
+          {(activeCourseList || []).map((course, idx) => (
             <View
-              key={course.id}
+              key={course.id || idx}
               style={{
                 backgroundColor: theme.cardBg,
                 borderRadius: 16,
@@ -805,91 +799,96 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                 ...shadow.sm
               }}
             >
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                <View style={{ flex: 1, paddingRight: 10 }}>
-                  <View style={{ backgroundColor: theme.badgeBg, alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginBottom: 6 }}>
-                    <Text style={{ fontSize: 10, fontWeight: "700", color: theme.primary }}>{course.category || "Web Development"}</Text>
-                  </View>
-                  <Text style={{ fontSize: 15, fontWeight: "700", color: theme.text }}>{course.title}</Text>
-                  <Text style={{ fontSize: 12, color: theme.subtext, marginTop: 2 }}>
-                    {course.modules?.length || 5} Day-by-Day Syllabus Modules • {course.duration || "20 Days"}
-                  </Text>
+              {/* Top Row: Category Badge & Duration */}
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <View style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+                  <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.primary }}>{course.category || "TCM Information Tech"}</Text>
                 </View>
-
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  {/* MANAGE SCHEDULE & SHIFT DATES BUTTON */}
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (!checkApprovalGuard("Schedule management")) return;
-                      setSelectedCourseForSchedule(course);
-                      setCourseStatus(course.status || "Active");
-                      setNextClassDate(course.nextClassDate || "Tomorrow");
-                      setNextClassTime(course.nextClassTime || "10:00 AM – 11:30 AM");
-                      setManageScheduleModalOpen(true);
-                    }}
-                    style={{
-                      backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF",
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: theme.primary,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4
-                    }}
-                  >
-                    <Feather name="calendar" size={13} color={theme.primary} />
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: theme.primary }}>Schedule</Text>
-                  </TouchableOpacity>
-
-                  {/* EDIT COURSE BUTTON */}
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (!checkApprovalGuard("Course editing")) return;
-                      if (onEditCourse) {
-                        onEditCourse(course);
-                      } else if (onNavigateActivity) {
-                        onNavigateActivity("Add Courses");
-                      } else {
-                        Alert.alert("Edit Course", `Opening edit editor for "${course.title}".`);
-                      }
-                    }}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                      backgroundColor: theme.badgeBg,
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: theme.border
-                    }}
-                  >
-                    <Feather name="edit-3" size={13} color={theme.primary} />
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: theme.primary }}>Edit</Text>
-                  </TouchableOpacity>
-
-                  {/* DELETE COURSE BUTTON */}
-                  <TouchableOpacity
-                    onPress={() => handleDeleteCourse(course)}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                      backgroundColor: theme.isDark ? "#3B1419" : "#FEE2E2",
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: theme.isDark ? "#991B1B" : "#FCA5A5"
-                    }}
-                  >
-                    <Feather name="trash-2" size={13} color="#EF4444" />
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#EF4444" }}>Delete</Text>
-                  </TouchableOpacity>
+                <View style={{ backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", paddingHorizontal: 9, paddingVertical: 3, borderRadius: 8 }}>
+                  <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.subtext }}>{course.duration || "20 Days"}</Text>
                 </View>
+              </View>
+
+              {/* Title & Metadata (Full Width) */}
+              <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: theme.text, lineHeight: 22, marginBottom: 4 }}>{course.title}</Text>
+              <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: theme.subtext, marginBottom: 14 }}>
+                {course.modules?.length || 5} Day-by-Day Syllabus Modules • {course.studentsEnrolled || 0} Enrolled Students
+              </Text>
+
+              {/* Action Buttons Row */}
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.border }}>
+                {/* MANAGE SCHEDULE & SHIFT DATES BUTTON */}
+                <TouchableOpacity
+                  onPress={() => {
+                    if (!checkApprovalGuard("Schedule management")) return;
+                    setSelectedCourseForSchedule(course);
+                    setCourseStatus(course.status || "Active");
+                    setNextClassDate(course.nextClassDate || "Tomorrow");
+                    setNextClassTime(course.nextClassTime || "10:00 AM – 11:30 AM");
+                    setManageScheduleModalOpen(true);
+                  }}
+                  style={{
+                    backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF",
+                    paddingHorizontal: 12,
+                    paddingVertical: 7,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: theme.primary,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 5
+                  }}
+                >
+                  <Feather name="calendar" size={13} color={theme.primary} />
+                  <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: theme.primary }}>Schedule</Text>
+                </TouchableOpacity>
+
+                {/* EDIT COURSE BUTTON */}
+                <TouchableOpacity
+                  onPress={() => {
+                    if (!checkApprovalGuard("Course editing")) return;
+                    if (onEditCourse) {
+                      onEditCourse(course);
+                    } else if (onNavigateActivity) {
+                      onNavigateActivity("Add Courses");
+                    } else {
+                      Alert.alert("Edit Course", `Opening edit editor for "${course.title}".`);
+                    }
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 5,
+                    backgroundColor: theme.badgeBg,
+                    paddingHorizontal: 12,
+                    paddingVertical: 7,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: theme.border
+                  }}
+                >
+                  <Feather name="edit-3" size={13} color={theme.primary} />
+                  <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: theme.primary }}>Edit</Text>
+                </TouchableOpacity>
+
+                {/* DELETE COURSE BUTTON */}
+                <TouchableOpacity
+                  onPress={() => promptDeleteCourse(course)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 5,
+                    backgroundColor: theme.isDark ? "#3B1419" : "#FEE2E2",
+                    paddingHorizontal: 12,
+                    paddingVertical: 7,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: theme.isDark ? "#991B1B" : "#FCA5A5"
+                  }}
+                >
+                  <Feather name="trash-2" size={13} color="#EF4444" />
+                  <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#EF4444" }}>Delete</Text>
+                </TouchableOpacity>
               </View>
             </View>
           ))}
@@ -1085,6 +1084,10 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
           session={session}
           courses={activeCourseList}
           onClose={() => setReviewsModalOpen(false)}
+          onOpenUserProfile={(u) => {
+            setReviewsModalOpen(false);
+            if (onSelectUser) onSelectUser(u);
+          }}
         />
 
         {/* ============================================================ */}
@@ -1246,6 +1249,10 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
         job={selectedJobForApplicants}
         onClose={() => setSelectedJobForApplicants(null)}
         onUpdateApplicantStatus={handleUpdateApplicantStatus}
+        onOpenUserProfile={(u) => {
+          setSelectedJobForApplicants(null);
+          if (onSelectUser) onSelectUser(u);
+        }}
       />
 
       {/* MODAL 1: ALLOCATE COURSE TO STUDENT */}
@@ -1469,6 +1476,29 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                 {updatingSchedule ? "Saving Schedule..." : "Save & Notify Enrolled Students 📢"}
               </Text>
             </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* MODAL: DELETE COURSE CUSTOM CONFIRMATION */}
+      <Modal visible={Boolean(courseToDelete)} transparent animationType="fade" onRequestClose={() => setCourseToDelete(null)}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: "rgba(15,23,42,0.6)", justifyContent: "center", alignItems: "center", padding: 20 }} activeOpacity={1} onPress={() => setCourseToDelete(null)}>
+          <TouchableOpacity activeOpacity={1} style={{ width: "90%", maxWidth: 400, backgroundColor: theme.cardBg, borderRadius: 22, padding: 22, alignItems: "center", borderWidth: 1, borderColor: theme.border }}>
+            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+              <Feather name="trash-2" size={28} color="#EF4444" />
+            </View>
+            <Text style={{ fontSize: 17, fontFamily: fonts.bold, color: theme.text, textAlign: "center", marginBottom: 8 }}>Delete Course Permanently?</Text>
+            <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: theme.subtext, textAlign: "center", lineHeight: 19, marginBottom: 20 }}>
+              Are you sure you want to delete "{courseToDelete?.title}"? All modules, lessons, and enrollment data will be permanently removed.
+            </Text>
+            <View style={{ flexDirection: "row", gap: 10, width: "100%" }}>
+              <TouchableOpacity onPress={() => setCourseToDelete(null)} style={{ flex: 1, backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", paddingVertical: 12, borderRadius: 12, alignItems: "center" }}>
+                <Text style={{ fontFamily: fonts.semiBold, fontSize: 14, color: theme.text }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={confirmDeleteCourseAction} disabled={deletingCourse} style={{ flex: 1, backgroundColor: "#EF4444", paddingVertical: 12, borderRadius: 12, alignItems: "center" }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: "#FFFFFF" }}>{deletingCourse ? "Deleting..." : "Delete Course"}</Text>
+              </TouchableOpacity>
+            </View>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>

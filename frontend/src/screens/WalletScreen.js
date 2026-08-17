@@ -77,7 +77,13 @@ export default function WalletScreen({ session, user = {}, onBack }) {
   const [copiedToast, setCopiedToast] = useState(false);
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [inputReferralCode, setInputReferralCode] = useState("");
-  const [appliedReferral, setAppliedReferral] = useState(false);
+  const [appliedReferral, setAppliedReferral] = useState(Boolean(user?.referredBy));
+
+  useEffect(() => {
+    if (user?.referredBy) {
+      setAppliedReferral(true);
+    }
+  }, [user?.referredBy]);
 
   async function handleApplyReferralCode() {
     const code = inputReferralCode.trim().toUpperCase();
@@ -85,14 +91,14 @@ export default function WalletScreen({ session, user = {}, onBack }) {
       Alert.alert("Referral Code Required", "Please enter a valid referral code to claim your bonus.");
       return;
     }
-    if (appliedReferral) {
+    if (appliedReferral || user?.referredBy) {
       Alert.alert("Already Claimed", "You have already applied a referral code for this account.");
       return;
     }
 
     try {
       const res = await applyReferralCode(session?.token, code);
-      if (res?.success) {
+      if (res?.success || res?.user) {
         setAppliedReferral(true);
         setInputReferralCode("");
         Alert.alert("Referral Applied! 🎉", res.message || `Referral code ${code} applied successfully!`);

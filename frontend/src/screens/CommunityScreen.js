@@ -1667,21 +1667,21 @@ const styles = StyleSheet.create({
   },
   postCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 14,
-    borderWidth: 1,
+    borderRadius: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 12,
+    marginBottom: 8,
+    borderWidth: 0,
+    borderBottomWidth: 1,
     borderColor: "#E2E8F0",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4
+    elevation: 0,
+    shadowOpacity: 0
   },
   postHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10
+    marginBottom: 10,
+    paddingHorizontal: 14
   },
   authorAvatar: {
     width: 38,
@@ -1720,12 +1720,13 @@ const styles = StyleSheet.create({
     color: "#1E293B",
     fontFamily: fonts.regular,
     lineHeight: 20,
-    marginBottom: 10
+    marginBottom: 10,
+    paddingHorizontal: 14
   },
   postImage: {
     width: "100%",
-    height: 180,
-    borderRadius: 10,
+    height: 280,
+    borderRadius: 0,
     marginBottom: 10
   },
   docCard: {
@@ -1734,7 +1735,8 @@ const styles = StyleSheet.create({
     padding: 10,
     borderWidth: 1,
     borderColor: "#CBD5E1",
-    marginBottom: 10
+    marginBottom: 10,
+    marginHorizontal: 14
   },
   docIconBadge: {
     width: 34,
@@ -1742,7 +1744,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#DC2626",
     alignItems: "center",
-    justify: "center"
+    justifyContent: "center"
   },
   docName: {
     fontSize: 12.5,
@@ -1794,7 +1796,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#F1F5F9",
     paddingTop: 8,
-    marginTop: 4
+    marginTop: 4,
+    paddingHorizontal: 14
   },
   metricBtn: {
     flexDirection: "row",

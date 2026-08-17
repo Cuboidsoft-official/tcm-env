@@ -148,7 +148,7 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
 
     setGeneratingAI(true);
     try {
-      const generatedModules = await generateSyllabusWithAI(title.trim(), assignedCategory, duration);
+      const generatedModules = await generateSyllabusWithAI(title.trim(), assignedCategory, duration, description.trim());
       if (generatedModules && generatedModules.length > 0) {
         const dayWiseModules = generatedModules.map((m, idx) => {
           let topicTitle = m.title || `Topic ${idx + 1}`;

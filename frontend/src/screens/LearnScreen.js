@@ -3,6 +3,7 @@ import {
   Alert,
   Dimensions,
   Image,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -11,7 +12,7 @@ import {
   TextInput,
   View
 } from "react-native";
-import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import ViewAllMentorsModal from "../components/ViewAllMentorsModal";
 import AiRoadmapPlannerModal from "../components/AiRoadmapPlannerModal";
 import TcmAiExamModal from "../components/TcmAiExamModal";

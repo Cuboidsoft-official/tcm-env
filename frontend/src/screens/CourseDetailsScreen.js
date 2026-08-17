@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,7 +12,7 @@ import {
   View
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getCourseDetails } from "../api/client";
 import { generateCourseOverviewInsightsWithAI } from "../api/gemini";
 import { colors, shadow } from "../constants/theme";
@@ -185,6 +186,16 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
   };
 
   const courseData = course || fallbackCourseData;
+
+  function handleConnectWhatsApp() {
+    const title = courseData?.title || "TCM Course";
+    const price = courseData?.price || "₹1,499";
+    const message = `Hi TCM Support Team! I am interested in purchasing the course: "${title}" (${price}). Please guide me.`;
+    const url = `https://wa.me/919238695500?text=${encodeURIComponent(message)}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert("WhatsApp Direct Contact", "Please message +91 9238695500 on WhatsApp for course enrollment.");
+    });
+  }
 
   function handleEnrollNow() {
     setShowPaymentModal(true);
@@ -772,7 +783,9 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    height: "100%",
     width: "100%",
+    position: "relative",
     backgroundColor: "#F8FAFC"
   },
 
@@ -1629,7 +1642,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderTopWidth: 1,
     borderTopColor: "#F0EFFF",
-    zIndex: 999,
+    zIndex: 9999,
     elevation: 10,
     ...shadow.soft
   },

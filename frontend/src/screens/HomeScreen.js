@@ -1015,7 +1015,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
 
   const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen);
 
-  const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard || activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community");
+  const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard || activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community" || activeTab === "Home" || activeTab === "home");
 
   return (
     <SwipeBackWrapper onBack={activeBackAction} enabled={Boolean(activeBackAction)}>
@@ -1229,6 +1229,10 @@ export default function HomeScreen({ session, onLogout, onRequireLogin }) {
                 onBack={() => {
                   setShowMentorDashboard(false);
                   loadHome({ quiet: true });
+                }}
+                onSelectUser={(u) => {
+                  setShowMentorDashboard(false);
+                  handleSelectUser(u);
                 }}
                 onEditCourse={(course) => {
                   setShowMentorDashboard(false);
@@ -1710,24 +1714,6 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
           </View>
         </View>
         <View style={styles.headerActions}>
-          {onOpenWallet ? (
-            <Pressable
-              onPress={onOpenWallet}
-              style={({ pressed }) => [styles.headerWalletPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }, pressed && styles.pressed]}
-            >
-              <MaterialCommunityIcons name="wallet-outline" size={15} color={theme.primary} style={{ marginRight: 4 }} />
-              <Text style={[styles.headerWalletBalance, { color: theme.primary }]}>
-                ₹{user.wallet?.totalBalance !== undefined ? user.wallet.totalBalance.toLocaleString() : (user.balance || 1250)}
-              </Text>
-              <View style={[styles.headerCoinDivider, { backgroundColor: theme.border }]} />
-              <View style={styles.headerCoinIcon}>
-                <Text style={styles.headerCoinIconText}>$</Text>
-              </View>
-              <Text style={[styles.headerCoinsText, { color: theme.text }]}>
-                {user.wallet?.tcmCoins !== undefined ? user.wallet.tcmCoins : (user.tcmCoins || user.coins || 120)}
-              </Text>
-            </Pressable>
-          ) : null}
           <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={styles.iconButton}>
             <Feather name="bell" size={24} color={iconColor} />
             {notifications ? (
@@ -1756,28 +1742,6 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
         </View>
       </View>
       <View style={styles.headerActions}>
-        {/* Coin / Wallet Pill displayed when onOpenWallet is passed or on Self Profile screen */}
-        {isSelfProfile || onOpenWallet ? (
-          <Pressable
-            onPress={() => {
-              if (onOpenWallet) onOpenWallet();
-            }}
-            style={({ pressed }) => [styles.headerWalletPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }, pressed && styles.pressed]}
-          >
-            <MaterialCommunityIcons name="wallet-outline" size={15} color={theme.primary} style={{ marginRight: 4 }} />
-            <Text style={[styles.headerWalletBalance, { color: theme.primary }]}>
-              ₹{user.wallet?.totalBalance !== undefined ? user.wallet.totalBalance.toLocaleString() : (user.balance || 1250)}
-            </Text>
-            <View style={[styles.headerCoinDivider, { backgroundColor: theme.border }]} />
-            <View style={styles.headerCoinIcon}>
-              <Text style={styles.headerCoinIconText}>$</Text>
-            </View>
-            <Text style={[styles.headerCoinsText, { color: theme.text }]}>
-              {user.wallet?.tcmCoins !== undefined ? user.wallet.tcmCoins : (user.tcmCoins || user.coins || 120)}
-            </Text>
-          </Pressable>
-        ) : null}
-
         <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={styles.iconButton}>
           <Feather name="bell" size={24} color={iconColor} />
           {notifications ? (
@@ -2174,13 +2138,13 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
           </TouchableOpacity>
         </View>
 
-        <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} onToggleLike={onToggleLike} />
+        <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} onToggleLike={onToggleLike} onSelectUser={onSelectUser} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.postCard, { backgroundColor: theme.cardBg, borderColor: isPinnedCard ? "#F59E0B" : theme.border, borderWidth: 1 }]}>
+    <View style={[styles.postCard, { backgroundColor: theme.cardBg, borderColor: isPinnedCard ? "#F59E0B" : theme.border, borderBottomWidth: 1, borderTopWidth: 0, borderLeftWidth: 0, borderRightWidth: 0, borderRadius: 0, paddingHorizontal: 0, paddingVertical: 12, marginBottom: 4 }]}>
       {isPinnedCard && (
         <View
           style={{
@@ -2192,13 +2156,14 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
             paddingVertical: 7,
             borderRadius: 10,
             marginBottom: 12,
+            marginHorizontal: 14,
             borderWidth: 1,
             borderColor: theme.isDark ? "#4338CA" : "#FDE68A"
           }}
         >
           <Ionicons name="pushpin" size={15} color="#D97706" />
           <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: "#D97706", letterSpacing: 0.3 }}>
-            📌 PINNED POST
+            PINNED POST
           </Text>
         </View>
       )}
@@ -2216,7 +2181,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
             }
           )
         }
-        style={styles.postHeader}
+        style={[styles.postHeader, { paddingHorizontal: 14 }]}
       >
         <Avatar name={post.authorName} uri={post.authorAvatarUrl} size={42} />
         <View style={styles.postAuthor}>
@@ -2255,18 +2220,22 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
         </Pressable>
       </Pressable>
 
-      <View style={styles.postMetaLine}>
+      <View style={[styles.postMetaLine, { paddingHorizontal: 14 }]}>
         {media.label ? <MediaLabel media={media} /> : null}
         <View style={styles.metaDot} />
         <Text style={[styles.postTime, { color: theme.subtext }]}>{post.timeLabel}</Text>
         <Feather name="globe" size={13} color={theme.subtext} />
       </View>
-      <ReadMoreText text={post.text} />
+      <View style={{ paddingHorizontal: 14 }}>
+        <ReadMoreText text={post.text} />
+      </View>
       <PostMedia post={post} onPreview={onPreview} />
-      <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} onToggleLike={onToggleLike} onSelectUser={onSelectUser} />
+      <View style={{ paddingHorizontal: 14 }}>
+        <PostActions post={post} session={session} metrics={metrics} onComment={() => onComment(post)} onToggleLike={onToggleLike} onSelectUser={onSelectUser} />
+      </View>
 
       {post.tags?.length ? (
-        <View style={styles.tagsRow}>
+        <View style={[styles.tagsRow, { paddingHorizontal: 14 }]}>
           {post.tags.map((tag) => (
             <Text key={tag} style={styles.tag}>
               {tag}
@@ -2446,7 +2415,7 @@ function SingleFeedImage({ singleImage, fKey, onPreview, mediaTitle, mediaSubtit
     >
       <Image
         source={{ uri: sanitizeImageUri(singleImage) }}
-        style={{ width: "100%", height: "100%", borderRadius: fKey === "rounded" ? 24 : 12 }}
+        style={{ width: "100%", height: "100%", borderRadius: 6 }}
         resizeMode="cover"
       />
     </Pressable>
@@ -2535,14 +2504,13 @@ function PostMedia({ post, onPreview }) {
               }
               style={({ pressed }) => [
                 styles.carouselSlide,
-                { width: slideWidth, height: slideHeight, backgroundColor: theme.isDark ? "#0F172A" : "#F8FAFC" },
-                fKey === "rounded" && { borderRadius: 18 },
+                { width: slideWidth, height: slideHeight, backgroundColor: theme.isDark ? "#0F172A" : "#F8FAFC", borderRadius: 6 },
                 pressed && styles.pressed
               ]}
             >
               <Image
                 source={{ uri: sanitizeImageUri(imageUrl) }}
-                style={{ width: "100%", height: "100%", borderRadius: 10 }}
+                style={{ width: "100%", height: "100%", borderRadius: 6 }}
                 resizeMode="contain"
               />
             </Pressable>
@@ -2922,7 +2890,7 @@ function DocumentThumbnail({ title }) {
   );
 }
 
-function PostActions({ post, session, metrics = {}, onComment, onToggleLike }) {
+function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onSelectUser }) {
   const { theme } = useTheme();
   const targetPostId = post?.id || post?._id;
   const isLikedByMe = Boolean(
@@ -3082,26 +3050,62 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike }) {
   const currentUserId = session?.user?.id || session?.user?._id;
   const currentUserName = session?.user?.name || "You";
   const currentUserAvatar = session?.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80";
+
+  function cleanMemberName(u, idx) {
+    if (!u) return post?.authorName || "TCM Member";
+    if (typeof u === "object") {
+      const uid = String(u.id || u._id || "");
+      if (uid && String(uid) === String(currentUserId)) {
+        return currentUserName;
+      }
+      if (u.name && !/^[0-9a-fA-F]{18,}$/.test(u.name)) {
+        return u.name;
+      }
+      if (u.username) return u.username;
+      if (u.email) return u.email.split("@")[0];
+    }
+    if (typeof u === "string") {
+      if (String(u) === String(currentUserId)) {
+        return currentUserName;
+      }
+      if (post?.authorId && String(u) === String(post.authorId) && post.authorName) {
+        return post.authorName;
+      }
+      if (!/^[0-9a-fA-F]{18,}$/.test(u) && !u.startsWith("usr_")) {
+        return u;
+      }
+    }
+    return post?.authorName || "TCM Member";
+  }
+
   let rawUsers = [];
-  if (Array.isArray(post?.likedByUsers) && post.likedByUsers.length) {
-    rawUsers = [...post.likedByUsers];
-  } else if (Array.isArray(post?.likedBy) && post.likedBy.length) {
+  if (Array.isArray(post?.likedByUsers) && post.likedByUsers.length > 0) {
+    rawUsers = post.likedByUsers.map((u, idx) => ({
+      id: u.id || u._id || `user_${idx}`,
+      name: cleanMemberName(u, idx),
+      role: u.role || "TCM Member",
+      avatarUrl: u.avatarUrl || u.avatar || (String(u.id || u._id) === String(currentUserId) ? currentUserAvatar : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"),
+      isMentor: Boolean(u.isMentor || u.role === "mentor")
+    }));
+  } else if (Array.isArray(post?.likedBy) && post.likedBy.length > 0) {
     rawUsers = post.likedBy
       .map((item, idx) => {
         if (typeof item === "object" && item !== null) {
           return {
             id: item.id || item._id || `user_${idx}`,
-            name: item.name || item.username || "TCM Member",
+            name: cleanMemberName(item, idx),
             role: item.role || "TCM Member",
-            avatarUrl: item.avatarUrl || item.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+            avatarUrl: item.avatarUrl || item.avatar || (String(item.id || item._id) === String(currentUserId) ? currentUserAvatar : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"),
             isMentor: Boolean(item.isMentor || item.role === "mentor")
           };
         } else if (typeof item === "string" && item.trim().length > 0) {
+          const isMe = String(item) === String(currentUserId);
+          const resolvedName = isMe ? currentUserName : (post?.authorId && String(item) === String(post.authorId) ? post.authorName : cleanMemberName(item, idx));
           return {
-            id: `user_${item}_${idx}`,
-            name: item,
-            role: "TCM Member",
-            avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+            id: item,
+            name: resolvedName,
+            role: isMe ? (session?.user?.role || "TCM Member") : "TCM Member",
+            avatarUrl: isMe ? currentUserAvatar : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
             isMentor: false
           };
         }
@@ -4586,23 +4590,30 @@ function CreateMediaPreview({ type, imageUrl, videoUri, label, fileSize, onRemov
   const isPolaroid = frameKey === "polaroid";
   const isRounded = frameKey === "rounded";
 
+  let cardStyle = { width: 140, height: 140 };
+  if (frameKey === "square") cardStyle = { width: 140, height: 140 };
+  else if (frameKey === "portrait") cardStyle = { width: 130, height: 162.5 };
+  else if (frameKey === "landscape") cardStyle = { width: 180, height: 101.25 };
+  else if (isPolaroid) cardStyle = { width: 140, height: 170, backgroundColor: "#FFFFFF", padding: 6, paddingBottom: 22, borderRadius: 8, borderWidth: 1, borderColor: "#E2E8F0" };
+  else if (isRounded) cardStyle = { width: 140, height: 140, borderRadius: 24, overflow: "hidden" };
+
   return (
     <Pressable
       onPress={onPress}
       style={[
         styles.createPreviewCard,
-        frameKey === "square" && { width: 140, height: 140 },
-        frameKey === "portrait" && { width: 130, height: 160 },
-        frameKey === "landscape" && { width: 180, height: 110 },
-        isPolaroid && { backgroundColor: "#FFFFFF", padding: 6, borderRadius: 10, borderWidth: 1, borderColor: "#E2E8F0" },
-        isRounded && { borderRadius: 24, overflow: "hidden" }
+        cardStyle
       ]}
     >
       {type === "image" ? (
-        <Image source={{ uri: sanitizeImageUri(imageUrl) }} style={[styles.createPreviewImage, isRounded && { borderRadius: 20 }]} resizeMode="contain" />
+        <Image
+          source={{ uri: sanitizeImageUri(imageUrl) }}
+          style={[styles.createPreviewImage, isRounded && { borderRadius: 18 }, isPolaroid && { borderRadius: 4 }]}
+          resizeMode="cover"
+        />
       ) : type === "document" ? (
         imageUrl ? (
-          <Image source={{ uri: sanitizeImageUri(imageUrl) }} style={styles.createPreviewImage} />
+          <Image source={{ uri: sanitizeImageUri(imageUrl) }} style={styles.createPreviewImage} resizeMode="cover" />
         ) : (
           <View style={styles.documentUploadPreview}>
             <View style={styles.documentUploadIcon}>

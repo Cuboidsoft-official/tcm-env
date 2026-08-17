@@ -44,93 +44,62 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
     }
   }
 
-  const fallbackMentor = {
-    id: "m1",
-    name: "Rahul Sharma",
-    verified: true,
-    badge: "Top Mentor",
-    role: "Full Stack Developer & Mentor",
-    rating: "4.9",
-    reviewsCount: "1.2K",
-    studentsCount: "12K+",
-    tags: [
-      { label: "NEET Mentor", bg: "#E8F5E9", color: "#0A6836" },
-      { label: "JEE Mentor", bg: "#EAF5FF", color: "#2F79B9" },
-      { label: "Coding Mentor", bg: "#ECF9E9", color: "#2E7D32" },
-      { label: "+2 More", bg: "#F4F3FA", color: "#7C7C9A" }
-    ],
-    bio: "Helping students master concepts and build real-world skills with 6+ years of teaching & industry experience.",
-    avatarUrl: "",
-    stats: [
-      { title: "6+", sub: "Years Exp.", icon: "school-outline", bg: "#E8F5E9" },
-      { title: "250+", sub: "Live Sessions", icon: "play-circle-outline", bg: "#E8F5E9" },
-      { title: "12K+", sub: "Students", icon: "account-group-outline", bg: "#E8F5E9" },
-      { title: "98%", sub: "Satisfaction", icon: "medal-outline", bg: "#E8F5E9" }
-    ],
-    about: "I specialize in Full Stack Development (MERN Stack). I love breaking down complex concepts into simple, practical lessons that help students build confidence and real-world skills.",
-    subjects: [
-      { id: "sub1", title: "Coding", desc: "Web Dev, DSA, Python, JS", icon: "code-tags", bg: "#E8F5E9" },
-      { id: "sub2", title: "NEET", desc: "Physics, Chemistry, Biology", icon: "book-open-outline", bg: "#EAF5FF" },
-      { id: "sub3", title: "JEE", desc: "Physics, Chemistry, Maths", icon: "calculator-variant-outline", bg: "#ECF9E9" },
-      { id: "sub4", title: "Others", desc: "Interview Prep, Career Guidance", icon: "widgets-outline", bg: "#FFF7EE" }
-    ],
-    experiences: [
+  const rawActive = targetMentor || mentor || {};
+  const isTargetUser = Boolean(user && (user.isMentor || user.id === rawActive.id || user.id === mentorId));
+
+  const mentorName = rawActive.name || rawActive.fullName || (isTargetUser ? user.name : "") || "TCM Certified Mentor";
+  const mentorRole = rawActive.role || rawActive.headline || rawActive.specialization || rawActive.category || "Educator & Mentor";
+  const mentorAvatar = rawActive.avatarUrl || rawActive.avatar || rawActive.photoUrl || rawActive.image || (isTargetUser ? user.avatarUrl : "") || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80";
+  const mentorBio = rawActive.bio || rawActive.about || rawActive.description || (isTargetUser ? user.bio : "") || `${mentorName} is a verified TCM mentor specializing in ${mentorRole.toLowerCase()} and hands-on student mentoring.`;
+
+  let initialExpList = [];
+  if (Array.isArray(rawActive.experiences) && rawActive.experiences.length > 0) {
+    initialExpList = rawActive.experiences;
+  } else if (Array.isArray(rawActive.experienceList) && rawActive.experienceList.length > 0) {
+    initialExpList = rawActive.experienceList;
+  } else {
+    initialExpList = [
       {
         id: "exp1",
-        role: "Senior Software Engineer",
-        company: "Google • 2021 - Present",
-        durationPill: "3+ Years",
-        icon: "google",
-        iconColor: "#EA4335"
-      },
-      {
-        id: "exp2",
-        role: "Software Engineer",
-        company: "Microsoft • 2019 - 2021",
-        durationPill: "2+ Years",
-        icon: "microsoft",
-        iconColor: "#00A4EF"
-      },
-      {
-        id: "exp3",
-        role: "Software Developer",
-        company: "Infosys • 2018 - 2019",
-        durationPill: "1+ Year",
-        icon: "domain",
-        iconColor: "#007CC3"
+        role: mentorRole,
+        company: `${rawActive.organization || rawActive.company || "TCM Educator Network"} • Active Instructor`,
+        durationPill: rawActive.experience || "3+ Years",
+        icon: "school-outline",
+        iconColor: theme.primary || "#6E42F5"
       }
-    ],
-    ratingsOverview: {
-      score: "4.9",
-      reviewsLabel: "(1.2K Reviews)",
-      breakdown: [
-        { star: "5 Stars", percent: 91 },
-        { star: "4 Stars", percent: 7 },
-        { star: "3 Stars", percent: 2 },
-        { star: "2 Stars", percent: 0 },
-        { star: "1 Star", percent: 0 }
-      ],
-      featuredReview: {
-        authorName: "Ananya Verma",
-        authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
-        timeAgo: "2 days ago",
-        text: "Sir explains concepts in such a simple way. His sessions are super helpful!"
-      }
-    }
-  };
+    ];
+  }
 
-  const activeMentorObj = targetMentor || mentor || {};
+  const initialStatsList = rawActive.stats || [
+    { title: rawActive.experience || "3+", sub: "Years Exp.", icon: "school-outline", bg: "#E8F5E9" },
+    { title: `${rawActive.sessionsCount || 45}+`, sub: "Live Sessions", icon: "play-circle-outline", bg: "#E8F5E9" },
+    { title: `${rawActive.studentsCount || rawActive.totalStudents || 1200}+`, sub: "Students", icon: "account-group-outline", bg: "#E8F5E9" },
+    { title: rawActive.satisfaction || "98%", sub: "Satisfaction", icon: "medal-outline", bg: "#E8F5E9" }
+  ];
+
   const data = {
-    ...fallbackMentor,
-    ...activeMentorObj,
-    ...(user && (user.isMentor || user.id === activeMentorObj.id || user.id === mentorId) ? {
-      name: user.name || activeMentorObj.name || fallbackMentor.name,
-      avatarUrl: user.avatarUrl || user.avatar || user.photoUrl || activeMentorObj.avatarUrl || activeMentorObj.avatar,
-      role: user.role || activeMentorObj.role || fallbackMentor.role,
-      bio: user.bio || activeMentorObj.bio || fallbackMentor.bio
-    } : {
-      avatarUrl: activeMentorObj.avatarUrl || activeMentorObj.avatar || activeMentorObj.photoUrl || activeMentorObj.image || ""
-    })
+    id: rawActive.id || rawActive._id || mentorId || "m1",
+    name: mentorName,
+    verified: Boolean(rawActive.verified ?? true),
+    badge: rawActive.badge || "Verified Mentor",
+    role: mentorRole,
+    rating: rawActive.rating || "4.9",
+    reviewsCount: rawActive.reviewsCount || "120",
+    studentsCount: `${rawActive.studentsCount || rawActive.totalStudents || "1.2K"}`,
+    tags: rawActive.tags || [
+      { label: mentorRole, bg: "#EAF5FF", color: "#2F79B9" },
+      { label: "TCM Educator", bg: "#ECF9E9", color: "#2E7D32" }
+    ],
+    bio: mentorBio,
+    about: mentorBio,
+    avatarUrl: mentorAvatar,
+    stats: initialStatsList,
+    subjects: rawActive.subjects || [
+      { id: "sub1", title: "Live Mentorship", desc: "Interactive doubt solving & skills guidance", icon: "school-outline", bg: "#E8F5E9" },
+      { id: "sub2", title: "Course Guidance", desc: "Step by step syllabus & career roadmap", icon: "book-open-outline", bg: "#EAF5FF" }
+    ],
+    experiences: initialExpList,
+    createdCourses: rawActive.createdCourses || rawActive.courses || []
   };
 
   const mentorInitials = (data.name || "Mentor")
@@ -143,7 +112,17 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
   const statsList = data.stats || [];
   const subjectsList = data.subjects || [];
   const expList = data.experiences || [];
-  const ratings = data.ratingsOverview || fallbackMentor.ratingsOverview;
+  const ratings = data.ratingsOverview || {
+    score: data.rating || "4.9",
+    reviewsLabel: `(${data.reviewsCount || "120"} Reviews)`,
+    breakdown: [
+      { star: "5 Stars", percent: 91 },
+      { star: "4 Stars", percent: 7 },
+      { star: "3 Stars", percent: 2 },
+      { star: "2 Stars", percent: 0 },
+      { star: "1 Star", percent: 0 }
+    ]
+  };
   const themedSurface = { backgroundColor: theme.cardBg, borderColor: theme.border };
   const themedSoftSurface = {
     backgroundColor: theme.isDark ? theme.inputBg || "#131927" : "#F8F7FF",

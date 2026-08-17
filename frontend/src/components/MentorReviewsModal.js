@@ -20,7 +20,7 @@ import { fonts } from "../constants/fonts";
 import { shadow } from "../constants/theme";
 import { useTheme } from "../context/ThemeContext";
 
-export default function MentorReviewsModal({ visible, session, courses = [], onClose }) {
+export default function MentorReviewsModal({ visible, session, courses = [], onClose, onOpenUserProfile }) {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState("write_review"); // "write_review" | "student_reflections" | "view_reviews"
   const [loading, setLoading] = useState(false);
@@ -371,6 +371,32 @@ export default function MentorReviewsModal({ visible, session, courses = [], onC
                         <Text style={[styles.studentName, { color: theme.text }]}>{ref.studentName || "Student"}</Text>
                         <Text style={[styles.classNameText, { color: theme.subtext }]}>{ref.className}</Text>
                       </View>
+
+                      <TouchableOpacity
+                        onPress={() => {
+                          onClose();
+                          if (onOpenUserProfile) {
+                            onOpenUserProfile({
+                              id: ref.studentId || ref.userId || ref.id,
+                              name: ref.studentName || "Student",
+                              avatarUrl: ref.studentAvatar || "",
+                              role: "Student"
+                            });
+                          }
+                        }}
+                        style={{
+                          backgroundColor: theme.badgeBg,
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 6,
+                          borderWidth: 1,
+                          borderColor: theme.border,
+                          marginRight: 6
+                        }}
+                      >
+                        <Text style={{ fontSize: 10.5, fontFamily: fonts.bold, color: theme.primary }}>View Profile</Text>
+                      </TouchableOpacity>
+
                       <View style={[styles.starBadge, { backgroundColor: theme.isDark ? "#1E263B" : "#FFF8EC" }]}>
                         <FontAwesome name="star" size={12} color="#E7A900" style={{ marginRight: 4 }} />
                         <Text style={styles.starBadgeText}>{ref.rating || 5}.0</Text>
@@ -408,6 +434,32 @@ export default function MentorReviewsModal({ visible, session, courses = [], onC
                         <Text style={[styles.studentName, { color: theme.text }]}>{rev.studentName}</Text>
                         <Text style={[styles.classNameText, { color: theme.subtext }]}>{rev.className}</Text>
                       </View>
+
+                      <TouchableOpacity
+                        onPress={() => {
+                          onClose();
+                          if (onOpenUserProfile) {
+                            onOpenUserProfile({
+                              id: rev.studentId || rev.userId || rev.id,
+                              name: rev.studentName || "Student",
+                              avatarUrl: rev.studentAvatar || "",
+                              role: "Student"
+                            });
+                          }
+                        }}
+                        style={{
+                          backgroundColor: theme.badgeBg,
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 6,
+                          borderWidth: 1,
+                          borderColor: theme.border,
+                          marginRight: 6
+                        }}
+                      >
+                        <Text style={{ fontSize: 10.5, fontFamily: fonts.bold, color: theme.primary }}>View Profile</Text>
+                      </TouchableOpacity>
+
                       <View style={[styles.starBadge, { backgroundColor: theme.isDark ? "#1E263B" : "#FFF8EC" }]}>
                         <FontAwesome name="star" size={12} color="#E7A900" style={{ marginRight: 4 }} />
                         <Text style={styles.starBadgeText}>{rev.rating}.0</Text>

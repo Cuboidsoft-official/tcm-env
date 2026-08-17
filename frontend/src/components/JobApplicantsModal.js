@@ -1,5 +1,6 @@
 import {
   Alert,
+  Image,
   Linking,
   Modal,
   Pressable,
@@ -14,7 +15,7 @@ import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
-export default function JobApplicantsModal({ visible, job, onClose, onOpenDocReader, onUpdateApplicantStatus }) {
+export default function JobApplicantsModal({ visible, job, onClose, onOpenDocReader, onUpdateApplicantStatus, onOpenUserProfile }) {
   const { theme } = useTheme();
   if (!job) return null;
 
@@ -109,53 +110,84 @@ export default function JobApplicantsModal({ visible, job, onClose, onOpenDocRea
                 const isRejected = appStatus === "rejected";
 
                 return (
-                  <View key={app.userId || idx} style={[styles.applicantCard, isSelected && styles.selectedCard, isRejected && styles.rejectedCard]}>
+                  <View key={app.userId || idx} style={[styles.applicantCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, isSelected && styles.selectedCard, isRejected && styles.rejectedCard]}>
                     {/* Student Top Info */}
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
-                        <View style={[styles.avatarCircle, isSelected && { backgroundColor: "#166534" }, isRejected && { backgroundColor: "#991B1B" }]}>
-                          <Text style={styles.avatarInitials}>
-                            {(app.name || "S").split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2)}
-                          </Text>
-                        </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, minWidth: 160 }}>
+                        {app.avatarUrl || app.avatar ? (
+                          <Image source={{ uri: app.avatarUrl || app.avatar }} style={{ width: 38, height: 38, borderRadius: 19 }} />
+                        ) : (
+                          <View style={[styles.avatarCircle, isSelected && { backgroundColor: "#166534" }, isRejected && { backgroundColor: "#991B1B" }]}>
+                            <Text style={styles.avatarInitials}>
+                              {(app.name || "S").split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2)}
+                            </Text>
+                          </View>
+                        )}
 
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: "#0F172A" }}>{app.name}</Text>
-                          <Text style={{ fontSize: 11, color: "#64748B" }}>Applied: {app.appliedAt || "Recent"}</Text>
+                          <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: theme.text }}>{app.name || "Student Applicant"}</Text>
+                          <Text style={{ fontSize: 11, color: theme.subtext }}>Applied: {app.appliedAt || "Recent"}</Text>
                         </View>
                       </View>
 
-                      {/* Candidate Selection Status Badge */}
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          isSelected && { backgroundColor: "#DCFCE7", borderColor: "#86EFAC" },
-                          isRejected && { backgroundColor: "#FEE2E2", borderColor: "#FCA5A5" },
-                          !isSelected && !isRejected && { backgroundColor: "#FEF3C7", borderColor: "#FDE68A" }
-                        ]}
-                      >
-                        <Text
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        {/* View Profile Action */}
+                        <TouchableOpacity
+                          onPress={() => {
+                            onClose();
+                            if (onOpenUserProfile) {
+                              onOpenUserProfile({
+                                id: app.userId || app.id || app.email,
+                                name: app.name || "Student",
+                                avatarUrl: app.avatarUrl || app.avatar || "",
+                                role: app.role || "Student"
+                              });
+                            }
+                          }}
+                          style={{
+                            backgroundColor: theme.badgeBg,
+                            paddingHorizontal: 9,
+                            paddingVertical: 5,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            borderColor: theme.border
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.primary }}>View Profile</Text>
+                        </TouchableOpacity>
+
+                        {/* Candidate Selection Status Badge */}
+                        <View
                           style={[
-                            styles.statusBadgeText,
-                            isSelected && { color: "#166534" },
-                            isRejected && { color: "#991B1B" },
-                            !isSelected && !isRejected && { color: "#D97706" }
+                            styles.statusBadge,
+                            isSelected && { backgroundColor: "#DCFCE7", borderColor: "#86EFAC" },
+                            isRejected && { backgroundColor: "#FEE2E2", borderColor: "#FCA5A5" },
+                            !isSelected && !isRejected && { backgroundColor: theme.isDark ? "#1E263B" : "#FEF3C7", borderColor: theme.border }
                           ]}
                         >
-                          {isSelected ? "SELECTED ✅" : isRejected ? "REJECTED ❌" : "PENDING REVIEW ⏳"}
-                        </Text>
+                          <Text
+                            style={[
+                              styles.statusBadgeText,
+                              isSelected && { color: "#166534" },
+                              isRejected && { color: "#991B1B" },
+                              !isSelected && !isRejected && { color: theme.isDark ? "#F59E0B" : "#D97706" }
+                            ]}
+                          >
+                            {isSelected ? "SELECTED ✅" : isRejected ? "REJECTED ❌" : "PENDING ⏳"}
+                          </Text>
+                        </View>
                       </View>
                     </View>
 
                     {/* Contact Info */}
                     <View style={styles.contactGrid}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                        <Feather name="mail" size={12} color="#64748B" />
-                        <Text style={{ fontSize: 11.5, color: "#334155" }}>{app.email || "student@tcm.edu"}</Text>
+                        <Feather name="mail" size={12} color={theme.subtext} />
+                        <Text style={{ fontSize: 11.5, color: theme.text }}>{app.email || "student@tcm.edu"}</Text>
                       </View>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                        <Feather name="phone" size={12} color="#64748B" />
-                        <Text style={{ fontSize: 11.5, color: "#334155" }}>{app.phone || "+91 9876543210"}</Text>
+                        <Feather name="phone" size={12} color={theme.subtext} />
+                        <Text style={{ fontSize: 11.5, color: theme.text }}>{app.phone || "+91 9876543210"}</Text>
                       </View>
                     </View>
 
@@ -165,8 +197,8 @@ export default function JobApplicantsModal({ visible, job, onClose, onOpenDocRea
                         onPress={() => Linking.openURL(app.portfolioUrl).catch(() => {})}
                         style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 }}
                       >
-                        <Feather name="globe" size={12} color="#2563EB" />
-                        <Text style={{ fontSize: 11.5, color: "#2563EB", textDecorationLine: "underline" }} numberOfLines={1}>
+                        <Feather name="globe" size={12} color={theme.primary} />
+                        <Text style={{ fontSize: 11.5, color: theme.primary, textDecorationLine: "underline" }} numberOfLines={1}>
                           {app.portfolioUrl}
                         </Text>
                       </TouchableOpacity>
@@ -174,22 +206,22 @@ export default function JobApplicantsModal({ visible, job, onClose, onOpenDocRea
 
                     {/* Cover Note */}
                     {app.coverNote ? (
-                      <View style={{ backgroundColor: "#F8FAFC", padding: 8, borderRadius: 8, marginTop: 8, borderWidth: 1, borderColor: "#F1F5F9" }}>
-                        <Text style={{ fontSize: 11.5, color: "#475569", fontStyle: "italic" }}>
+                      <View style={{ backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", padding: 8, borderRadius: 8, marginTop: 8, borderWidth: 1, borderColor: theme.border }}>
+                        <Text style={{ fontSize: 11.5, color: theme.subtext, fontStyle: "italic" }}>
                           "{app.coverNote}"
                         </Text>
                       </View>
                     ) : null}
 
                     {/* Resume PDF Box */}
-                    <View style={styles.resumeBox}>
+                    <View style={[styles.resumeBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                       <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}>
                         <MaterialCommunityIcons name="file-pdf-box" size={24} color="#EF4444" style={{ marginRight: 8 }} />
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#0F172A" }} numberOfLines={1}>
+                          <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.text }} numberOfLines={1}>
                             {app.resumeName || "Candidate_Resume.pdf"}
                           </Text>
-                          <Text style={{ fontSize: 10, color: "#64748B" }}>{app.resumeSize || "1.4 MB"} • Candidate Resume</Text>
+                          <Text style={{ fontSize: 10, color: theme.subtext }}>{app.resumeSize || "1.4 MB"} • Candidate Resume</Text>
                         </View>
                       </View>
 
@@ -202,7 +234,7 @@ export default function JobApplicantsModal({ visible, job, onClose, onOpenDocRea
                             Linking.openURL(rUrl).catch(() => Alert.alert("Resume Link", rUrl));
                           }
                         }}
-                        style={styles.viewResumeBtn}
+                        style={[styles.viewResumeBtn, { backgroundColor: theme.primary }]}
                       >
                         <Feather name="book-open" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
                         <Text style={{ color: "#FFFFFF", fontSize: 11.5, fontFamily: fonts.bold }}>View Resume</Text>

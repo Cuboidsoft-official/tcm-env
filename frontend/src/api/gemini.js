@@ -90,41 +90,45 @@ async function callGeminiApi(prompt) {
   return null;
 }
 
-export async function generateSyllabusWithAI(courseTitle, category = "TCM One Information Tech", duration = "20 Days") {
-  const daysMatch = (duration || "").match(/(\d+)\s*(days?|weeks?)/i);
+export async function generateSyllabusWithAI(courseTitle, category = "TCM One Information Tech", duration = "20 Days", courseDescription = "") {
+  const daysMatch = (duration || "").match(/(\d+)\s*(days?|weeks?|months?)/i);
   let totalDays = 20;
   if (daysMatch) {
     const val = parseInt(daysMatch[1], 10);
     const unit = daysMatch[2].toLowerCase();
-    totalDays = unit.startsWith("week") ? val * 7 : val;
+    totalDays = unit.startsWith("week") ? val * 7 : unit.startsWith("month") ? val * 30 : val;
   }
   totalDays = Math.min(Math.max(totalDays, 5), 45);
 
   const titleLower = (courseTitle || "").toLowerCase();
 
-  const prompt = `You are Groq AI acting as Lead Curriculum Architect & Senior Staff Engineer at TCM One Academy.
-Design an EXTREMELY DETAILED, RESEARCH-GRADE, DEEP DAY-BY-DAY CURRICULUM for a course titled "${courseTitle}" under category "${category}" planned for a total duration of "${totalDays} Days".
+  const prompt = `You are TCM One AI acting as Lead Curriculum Architect & Senior Staff Engineer at TCM One Academy.
+Design a STEP-BY-STEP, RESEARCH-GRADE, DEEP DAY-BY-DAY CURRICULUM for a course strictly based on its title, description, category, and total duration.
 
-CRITICAL QUALITY INSTRUCTIONS FOR GRANULAR SUB-TOPICS:
-1. Generate EXACTLY ${totalDays} Day-by-Day modules. Every module title MUST be comprehensive and specific, starting with "Day 1:", "Day 2:", ..., "Day ${totalDays}:".
-2. DO NOT output generic high-level summaries. You MUST specify exact sub-topics, tags, frameworks, libraries, HTML/CSS elements, API methods, and practical labs!
-3. Granularity Rules based on Topic:
-   - If Web Development / MERN / Full Stack: Break down into HTML5 semantics (<header>, <nav>, <section>, <article>, <footer>, Forms, Input Validation, Media tags, Accessibility), CSS3 (Box Model, Flexbox [justify-content, align-items], CSS Grid [grid-template-columns, gap], Media Queries), CSS Frameworks (Bootstrap 5 Grid System & Components / Tailwind CSS Utilities), Modern JavaScript ES6+ (Arrow Functions, Destructuring, Promises, Async/Await, DOM Selection, Event Delegation), React.js (JSX, Props, useState, useEffect, Custom Hooks, Context API, React Router v6), Node.js & Express (Routing, Custom Middleware, JWT Bearer Auth, Bcrypt Password Encryption, Multer Uploads), MongoDB & Mongoose (Schemas, CRUD, .populate(), Aggregation Pipelines $match/$group, Indexing), and Cloud Deployment (Vercel, Render, CI/CD).
-   - If Python / DSA: Break down into Python syntax, Functions, OOP (Classes, Inheritance, Polymorphism), Arrays, Strings, Linked Lists, Stacks, Queues, Hash Maps, Trees (BST, Traversal), Graphs (BFS, DFS), Dynamic Programming (Memoization, Tabulation).
-   - If AI / Machine Learning: Break down into NumPy arrays, Pandas DataFrames, EDA, Matplotlib, Supervised Learning, Classification, Decision Trees, K-Means, Neural Networks, PyTorch/TensorFlow, CNNs, Transformers, RAG & LLMs.
-   - If Mobile App Dev: Break down into React Native / Flutter components, Flexbox layouts, Navigation (Stack, Tabs), Native Device APIs (Camera, Location, Push Notifications), State Management, Local Storage (AsyncStorage/SQLite), App Store & Play Store publishing.
-4. Each day module MUST contain 3 IN-DEPTH, PRACTICAL LESSONS specifying exact tools, methods, syntax, and hands-on coding labs!
+Course Title: "${courseTitle}"
+Course Description: "${courseDescription || "Comprehensive practical course covering hands-on industry mastery."}"
+Category: "${category}"
+Total Duration: "${totalDays} Days" (${duration})
+
+CRITICAL QUALITY INSTRUCTIONS FOR STEP-BY-STEP CURRICULUM:
+1. Generate EXACTLY ${totalDays} Step-by-Step Day modules matching the course duration ("Day 1:", "Day 2:", ..., "Day ${totalDays}:").
+2. Tailor every module and lesson specifically to the provided Course Title ("${courseTitle}") and Course Description ("${courseDescription}").
+3. Include clear step-by-step progression:
+   - Early Days: Core foundations, concepts, environment setup, syntax & fundamentals outlined in the description.
+   - Middle Days: Intermediate practical building, APIs, frameworks, architectures, and state management.
+   - Advanced Days: Advanced features, optimization, security, live project lab, testing, and deployment.
+4. Each day module MUST contain 3 IN-DEPTH, PRACTICAL LESSONS with concrete subtopics and hands-on coding labs!
 
 Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational text):
 {
   "modules": [
     {
       "id": "m1",
-      "title": "Day 1: [Detailed Industry Topic Title specifying exact technologies/frameworks]",
+      "title": "Day 1: [Step-by-Step Topic Title based on course description]",
       "lessons": [
-        "Lesson 1.1: [Granular Subtopic 1 listing specific tags, methods, libraries]",
-        "Lesson 1.2: [Granular Subtopic 2 listing specific concepts, syntax, patterns]",
-        "Lesson 1.3: Hands-on Lab: [Specific practical building exercise & code lab]"
+        "Lesson 1.1: [Specific concept/syntax subtopic]",
+        "Lesson 1.2: [Practical implementation subtopic]",
+        "Lesson 1.3: Hands-on Lab: [Specific practical building exercise]"
       ]
     }
   ]

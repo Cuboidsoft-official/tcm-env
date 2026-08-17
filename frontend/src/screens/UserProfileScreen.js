@@ -148,11 +148,11 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
   const location = userObj.location || "India";
   const joinedDate = userObj.joinedDate || "Joined Jan 2024";
   const website = userObj.website || "thecodemunk.in";
+  const userRole = userObj.role || userObj.authorRole || "Student";
+  const isMentor = Boolean(userObj.isMentor || userRole.toLowerCase().includes("mentor") || userRole.toLowerCase().includes("expert") || userRole.toLowerCase().includes("lead"));
   const isStudentRole = !isMentor && (userRole.toLowerCase().includes("student") || userRole.toLowerCase() === "user");
   const hasPremiumBadge = Boolean(userObj.isPremium || userObj.isPro || userObj.hasVerifiedSubscription);
   const verified = isStudentRole ? Boolean(userObj.verified && hasPremiumBadge) : Boolean(userObj.verified ?? true);
-  const userRole = userObj.role || userObj.authorRole || "Student";
-  const isMentor = Boolean(userObj.isMentor || userRole.toLowerCase().includes("mentor") || userRole.toLowerCase().includes("expert") || userRole.toLowerCase().includes("lead"));
   const currentUserId = String(session?.user?.id || session?.user?._id || "").trim();
   const currentUserName = (session?.user?.name || "").toLowerCase().trim();
   const currentUserHandle = (session?.user?.handle || "").toLowerCase().replace(/^@/, "").trim();

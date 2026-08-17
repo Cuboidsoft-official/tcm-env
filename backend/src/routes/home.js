@@ -378,7 +378,7 @@ function sanitizePostMedia(media) {
   return media;
 }
 
-function mapPost(post, globalPostComments = {}, userId = null) {
+function mapPost(post, globalPostComments = {}, userId = null, usersMap = null) {
   const isMentor = Boolean(
     post.isMentor ||
     post.authorRole?.toLowerCase().includes("mentor") ||
@@ -399,6 +399,41 @@ function mapPost(post, globalPostComments = {}, userId = null) {
     post.isLiked ||
     (userId && likedByArr.some((id) => String(id) === String(userId)))
   );
+
+  let likedByUsers = [];
+  if (Array.isArray(post.likedByUsers) && post.likedByUsers.length > 0) {
+    likedByUsers = post.likedByUsers.map((u, idx) => ({
+      id: String(u._id || u.id || `u_${idx}`),
+      name: u.name || u.username || "TCM Member",
+      role: u.role || "TCM Member",
+      avatarUrl: u.avatarUrl || u.avatar || "",
+      isMentor: Boolean(u.isMentor || u.role === "mentor")
+    }));
+  } else if (likedByArr.length > 0) {
+    likedByUsers = likedByArr.map((item, idx) => {
+      if (typeof item === "object" && item !== null) {
+        return {
+          id: String(item._id || item.id || `user_${idx}`),
+          name: item.name || item.username || "TCM Member",
+          role: item.role || "TCM Member",
+          avatarUrl: item.avatarUrl || item.avatar || "",
+          isMentor: Boolean(item.isMentor || item.role === "mentor")
+        };
+      }
+      const itemStr = String(item);
+      if (usersMap && usersMap.has(itemStr)) {
+        const u = usersMap.get(itemStr);
+        return {
+          id: String(u._id || u.id),
+          name: u.name || u.username || "TCM Member",
+          role: u.role || "TCM Member",
+          avatarUrl: u.avatarUrl || u.avatar || "",
+          isMentor: Boolean(u.isMentor || u.role === "mentor")
+        };
+      }
+      return null;
+    }).filter(Boolean);
+  }
 
   return {
     id: post._id || post.id,
@@ -424,6 +459,7 @@ function mapPost(post, globalPostComments = {}, userId = null) {
     },
     isLiked,
     likedBy: likedByArr,
+    likedByUsers,
     tags: post.tags,
     timeLabel: getTimeLabel(post.publishedAt)
   };

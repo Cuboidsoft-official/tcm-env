@@ -343,6 +343,10 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
   const [timeRemainingStr, setTimeRemainingStr] = useState("");
   const [isReferralWindowValid, setIsReferralWindowValid] = useState(true);
 
+  // Custom Confirm Modals for Logout & Delete Account
+  const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+
   useEffect(() => {
     if (user.referredBy) return;
 
@@ -380,13 +384,14 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
     setApplyingReferral(true);
     try {
       const res = await applyReferralCode(session?.token, referralInput.trim());
-      if (res && res.user) {
-        setUser(res.user);
-        if (onUserUpdate) onUserUpdate(res.user);
+      if (res && (res.user || res.success)) {
+        const updatedUser = res.user || { ...user, referredBy: referralInput.trim().toUpperCase() };
+        setUser(updatedUser);
+        if (onUserUpdate) onUserUpdate(updatedUser);
         Alert.alert("Referral Applied! 🎉", res.message || "Referral code applied successfully!");
         setReferralInput("");
       } else {
-        Alert.alert("Error", res.message || "Failed to apply referral code.");
+        Alert.alert("Error", res?.message || "Failed to apply referral code.");
       }
     } catch (err) {
       Alert.alert("Application Failed", err.message || "Could not apply referral code.");
@@ -527,20 +532,16 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
   }
 
   function handleLogoutPress() {
-    Alert.alert("Logout Confirmation", "Are you sure you want to logout from TCM?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: () => {
-          if (onLogout) {
-            onLogout();
-          } else if (session?.onLogout) {
-            session.onLogout();
-          }
-        }
-      }
-    ]);
+    setLogoutConfirmVisible(true);
+  }
+
+  function confirmLogoutAction() {
+    setLogoutConfirmVisible(false);
+    if (onLogout) {
+      onLogout();
+    } else if (session?.onLogout) {
+      session.onLogout();
+    }
   }
 
   function handleDeleteAccountPress() {
@@ -548,35 +549,26 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       Alert.alert("Account Deletion Restricted", "Account deletion via Profile Settings is only available for Student accounts.");
       return;
     }
+    setDeleteConfirmVisible(true);
+  }
 
-    Alert.alert(
-      "Delete Account Permanently?",
-      "Are you sure you want to delete your student account? All your posts, progress, comments, and profile data will be permanently removed. This action CANNOT be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete Permanently",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setUpdating(true);
-              const token = session?.token || user.token;
-              await deleteAccount(token);
-              Alert.alert("Account Deleted", "Your student account has been deleted permanently.");
-              if (onLogout) {
-                onLogout();
-              } else if (session?.onLogout) {
-                session.onLogout();
-              }
-            } catch (err) {
-              Alert.alert("Error", err.message || "Failed to delete account. Please try again.");
-            } finally {
-              setUpdating(false);
-            }
-          }
-        }
-      ]
-    );
+  async function confirmDeleteAccountAction() {
+    setDeleteConfirmVisible(false);
+    try {
+      setUpdating(true);
+      const token = session?.token || user.token;
+      await deleteAccount(token);
+      Alert.alert("Account Deleted", "Your student account has been deleted permanently.");
+      if (onLogout) {
+        onLogout();
+      } else if (session?.onLogout) {
+        session.onLogout();
+      }
+    } catch (err) {
+      Alert.alert("Error", err.message || "Failed to delete account. Please try again.");
+    } finally {
+      setUpdating(false);
+    }
   }
 
   return (
@@ -1658,6 +1650,52 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
           </Pressable>
         </View>
       </Modal>
+
+      {/* Logout Custom Confirm Modal */}
+      <Modal visible={logoutConfirmVisible} transparent animationType="fade" onRequestClose={() => setLogoutConfirmVisible(false)}>
+        <Pressable onPress={() => setLogoutConfirmVisible(false)} style={styles.modalBg}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.confirmModalCard, modalCardStyle]}>
+            <View style={[styles.confirmIconWrap, { backgroundColor: "#FFE0E4" }]}>
+              <Feather name="log-out" size={28} color="#FF465F" />
+            </View>
+            <Text style={[styles.confirmTitle, { color: activeAppTheme.text }]}>Logout Confirmation</Text>
+            <Text style={[styles.confirmSub, { color: activeAppTheme.subtext }]}>
+              Are you sure you want to logout from your TCM account?
+            </Text>
+            <View style={styles.confirmActionsRow}>
+              <TouchableOpacity onPress={() => setLogoutConfirmVisible(false)} style={[styles.confirmCancelBtn, subtleButtonStyle]}>
+                <Text style={[styles.confirmCancelText, { color: activeAppTheme.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={confirmLogoutAction} style={[styles.confirmActionBtn, { backgroundColor: "#FF465F" }]}>
+                <Text style={styles.confirmActionText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Delete Account Custom Confirm Modal */}
+      <Modal visible={deleteConfirmVisible} transparent animationType="fade" onRequestClose={() => setDeleteConfirmVisible(false)}>
+        <Pressable onPress={() => setDeleteConfirmVisible(false)} style={styles.modalBg}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.confirmModalCard, modalCardStyle]}>
+            <View style={[styles.confirmIconWrap, { backgroundColor: "#FEE2E2" }]}>
+              <Feather name="alert-triangle" size={28} color="#EF4444" />
+            </View>
+            <Text style={[styles.confirmTitle, { color: activeAppTheme.text }]}>Delete Account Permanently?</Text>
+            <Text style={[styles.confirmSub, { color: activeAppTheme.subtext }]}>
+              Are you sure you want to delete your student account? All your posts, progress, comments, and profile data will be permanently removed. This action CANNOT be undone.
+            </Text>
+            <View style={styles.confirmActionsRow}>
+              <TouchableOpacity onPress={() => setDeleteConfirmVisible(false)} style={[styles.confirmCancelBtn, subtleButtonStyle]}>
+                <Text style={[styles.confirmCancelText, { color: activeAppTheme.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={confirmDeleteAccountAction} style={[styles.confirmActionBtn, { backgroundColor: "#EF4444" }]}>
+                <Text style={styles.confirmActionText}>Delete Permanently</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
@@ -2084,5 +2122,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: fonts.medium,
     color: "#0F172A"
+  },
+
+  // Confirm Modal Styles
+  confirmModalCard: {
+    width: "88%",
+    maxWidth: 400,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    padding: 22,
+    alignItems: "center",
+    ...shadow.soft
+  },
+  confirmIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14
+  },
+  confirmTitle: {
+    fontSize: 17,
+    fontFamily: fonts.bold,
+    textAlign: "center",
+    marginBottom: 8
+  },
+  confirmSub: {
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    textAlign: "center",
+    lineHeight: 19,
+    marginBottom: 20
+  },
+  confirmActionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%"
+  },
+  confirmCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  confirmCancelText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 14
+  },
+  confirmActionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  confirmActionText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: "#FFFFFF"
   }
 });

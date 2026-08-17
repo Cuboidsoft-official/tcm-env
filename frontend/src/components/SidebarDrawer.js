@@ -33,6 +33,8 @@ export default function SidebarDrawer({
   const isInvalidWebUri = Platform.OS === "web" && typeof rawAvatar === "string" && rawAvatar.startsWith("file://");
   const avatarUri = isInvalidWebUri ? null : rawAvatar;
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
   const initials = name
     .split(" ")
     .filter(Boolean)
@@ -43,6 +45,12 @@ export default function SidebarDrawer({
   const softSurface = theme.isDark ? theme.inputBg || "#131927" : "#F0EEF8";
 
   const enrolledCoursesCount = user?.enrolledCoursesCount ?? user?.enrolledCourses?.length ?? user?.coursesCount ?? 0;
+
+  function handleConfirmLogout() {
+    setShowLogoutConfirm(false);
+    onClose();
+    if (onLogout) onLogout();
+  }
   const tcmCoins = user?.wallet?.tcmCoins ?? user?.tcmCoins ?? user?.coins ?? user?.points ?? 0;
   const certificatesCount = user?.certificatesCount ?? user?.completedCoursesCount ?? user?.certificates?.length ?? 0;
 
@@ -307,10 +315,7 @@ export default function SidebarDrawer({
 
             {/* 7. Logout Button */}
             <Pressable
-              onPress={() => {
-                onClose();
-                if (onLogout) onLogout();
-              }}
+              onPress={() => setShowLogoutConfirm(true)}
               style={({ pressed }) => [styles.logoutBtn, pressed && styles.pressed]}
             >
               <Feather name="log-out" size={18} color="#FF465F" />
@@ -318,6 +323,27 @@ export default function SidebarDrawer({
             </Pressable>
           </ScrollView>
         </View>
+
+        {/* Custom Logout Confirm Modal inside Sidebar */}
+        <Modal visible={showLogoutConfirm} transparent animationType="fade" onRequestClose={() => setShowLogoutConfirm(false)}>
+          <Pressable onPress={() => setShowLogoutConfirm(false)} style={styles.backdrop}>
+            <Pressable onPress={(e) => e.stopPropagation()} style={[styles.drawer, { width: 320, padding: 22, height: "auto", maxHeight: 260, borderRadius: 20, alignSelf: "center", justifyContent: "center" }]}>
+              <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: "#FFE0E4", alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 12 }}>
+                <Feather name="log-out" size={24} color="#FF465F" />
+              </View>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 16, textAlign: "center", color: theme.text, marginBottom: 6 }}>Confirm Logout</Text>
+              <Text style={{ fontFamily: fonts.regular, fontSize: 12.5, textAlign: "center", color: theme.subtext, marginBottom: 18 }}>Are you sure you want to log out of your TCM account?</Text>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <Pressable onPress={() => setShowLogoutConfirm(false)} style={{ flex: 1, backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", paddingVertical: 10, borderRadius: 10, alignItems: "center" }}>
+                  <Text style={{ fontFamily: fonts.semiBold, fontSize: 13, color: theme.text }}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={handleConfirmLogout} style={{ flex: 1, backgroundColor: "#FF465F", paddingVertical: 10, borderRadius: 10, alignItems: "center" }}>
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#FFFFFF" }}>Logout</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     </Modal>
   );
