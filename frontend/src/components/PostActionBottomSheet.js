@@ -55,7 +55,7 @@ export default function PostActionBottomSheet({
 
   const handleCopyLink = async () => {
     onClose();
-    const link = `https://tcmacademy.com/post/${post.id || post._id || "123"}`;
+    const link = `https://tcm.ac/p/${postId}`;
     try {
       if (typeof navigator !== "undefined" && navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(link);
@@ -75,9 +75,19 @@ export default function PostActionBottomSheet({
 
   const handleShare = async () => {
     onClose();
-    const shareMessage = `Check out this ${isJob ? "job opening" : "post"} by ${displayAuthor} on TCM Academy:\n"${displayTitle.slice(0, 100)}..."`;
+    const cleanTitle = (displayTitle || "TCM Update").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
+    const shortTitle = cleanTitle.length > 70 ? `${cleanTitle.slice(0, 67)}...` : cleanTitle;
+    const shareUrl = `https://tcm.ac/p/${postId}`;
+    const shareMessage = `✨ ${shortTitle}\n— by ${displayAuthor} on TCM\n\n${shareUrl}`;
     try {
-      await Share.share({ message: shareMessage });
+      if (Platform.OS === "ios") {
+        await Share.share({
+          message: `✨ ${shortTitle}\n— by ${displayAuthor} on TCM`,
+          url: shareUrl
+        });
+      } else {
+        await Share.share({ message: shareMessage });
+      }
       if (onShowToast) {
         onShowToast({
           type: "success",

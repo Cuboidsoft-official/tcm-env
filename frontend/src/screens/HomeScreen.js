@@ -835,7 +835,13 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
       });
       return { ...current, posts: updatedPosts };
     });
-  }, [session?.user?.id]);
+
+    if (session?.token && postId) {
+      togglePostLike(session.token, postId).catch((e) => {
+        console.warn("Failed to sync post like with backend:", e);
+      });
+    }
+  }, [session?.token, session?.user?.id]);
 
   const feedPosts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -1549,6 +1555,22 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
           session={session}
           post={commentsPost}
           onClose={() => setCommentsPost(null)}
+          onCommentAdded={(postId, newCommentCount) => {
+            setHome((current) => {
+              if (!current || !Array.isArray(current.posts)) return current;
+              const updatedPosts = current.posts.map((p) => {
+                const pId = p.id || p._id;
+                if (String(pId) === String(postId)) {
+                  return {
+                    ...p,
+                    metrics: { ...(p.metrics || {}), comments: newCommentCount }
+                  };
+                }
+                return p;
+              });
+              return { ...current, posts: updatedPosts };
+            });
+          }}
           onSelectUser={(u) => {
             setCommentsPost(null);
             handleSelectUser(u);
@@ -2979,21 +3001,33 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   const isJob = Boolean(post?.isJob || post?.postType === "job_news" || post?.jobData);
   const shareType = isJob ? "job" : isDoc ? "document" : isVideo ? "video" : "post";
   const targetId = post?.id || post?._id || "p1";
-  const shareUrl = `https://api.thecodemunk.in/api/share/${shareType}/${targetId}`;
+  const shareUrl = `https://tcm.ac/p/${targetId}`;
 
-  const shareKindLabel = isJob ? "Job Opportunity 💼" : isDoc ? "Document 📄" : isVideo ? "Video Update 📹" : "Post 📝";
-  const shareTitleText = post?.title || post?.text?.slice(0, 80) || post?.content?.slice(0, 80) || "TCM Update";
-  const formattedShareMsg = `${shareUrl}\n\n*${shareKindLabel}: ${shareTitleText}*\nBy ${post?.authorName || "TCM Member"} on TCM Academy`;
+  // Clean, concise title (max 70 chars)
+  const rawTitle = (post?.title || post?.text || post?.content || "TCM Update")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const cleanTitle = rawTitle.length > 70 ? `${rawTitle.slice(0, 67)}...` : rawTitle;
+  const authorName = post?.authorName || "TCM Educator";
+
+  // Sleek, professional, single-link message
+  const formattedShareMsg = `✨ ${cleanTitle}\n— by ${authorName} on TCM\n\n${shareUrl}`;
 
   async function handleNativeShare() {
     setShareModalOpen(false);
     setSharesCount((prev) => prev + 1);
     try {
-      await Share.share({
-        title: `${shareKindLabel}: ${shareTitleText}`,
-        message: formattedShareMsg,
-        url: shareUrl
-      });
+      if (Platform.OS === "ios") {
+        await Share.share({
+          message: `✨ ${cleanTitle}\n— by ${authorName} on TCM`,
+          url: shareUrl
+        });
+      } else {
+        await Share.share({
+          message: formattedShareMsg
+        });
+      }
       if (session?.token && post?.id) {
         sharePost(session.token, post.id).catch(() => {});
       }
@@ -3014,16 +3048,16 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   function handleShareFacebook() {
     setShareModalOpen(false);
     setSharesCount((prev) => prev + 1);
-    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareTitleText)}`;
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(cleanTitle)}`;
     Linking.openURL(fbUrl).catch(() => {});
   }
 
   function handleCopyLink() {
     setShareModalOpen(false);
     if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(formattedShareMsg);
+      navigator.clipboard.writeText(shareUrl);
     }
-    Alert.alert("Link & Preview Copied 🔗", "Post preview and link copied to clipboard!");
+    Alert.alert("Link Copied 🔗", "Post link copied to clipboard!");
   }
 
   function handleDirectShare(platform) {
@@ -3033,18 +3067,18 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
         Alert.alert("App Not Found", "WhatsApp is not installed on this device.");
       });
     } else if (platform === "telegram") {
-      Linking.openURL(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(formattedShareMsg)}`).catch(() => {
+      Linking.openURL(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`✨ ${cleanTitle}\n— by ${authorName} on TCM`)}`).catch(() => {
         Alert.alert("App Not Found", "Telegram is not installed on this device.");
       });
     } else if (platform === "linkedin") {
       Linking.openURL(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`).catch(() => {});
     } else if (platform === "copy") {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
-        navigator.clipboard.writeText(formattedShareMsg);
+        navigator.clipboard.writeText(shareUrl);
       }
-      Alert.alert("Link & Preview Copied 🔗", "Post preview text and link copied to clipboard!");
+      Alert.alert("Link Copied 🔗", "Post link copied to clipboard!");
     } else {
-      Share.share({ message: formattedShareMsg, url: shareUrl });
+      Share.share({ message: formattedShareMsg });
     }
   }
 
@@ -3612,7 +3646,7 @@ function renderFormattedCommentText(text, theme) {
   );
 }
 
-function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
+function CommentsBottomSheet({ session, post, onClose, onSelectUser, onCommentAdded }) {
   const { theme } = useTheme();
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState(post?.commentsList || []);
@@ -3766,8 +3800,12 @@ function CommentsBottomSheet({ session, post, onClose, onSelectUser }) {
 
     if (post) {
       const curCount = post?.metrics?.comments !== undefined ? post.metrics.comments : (post?.commentsList ? post.commentsList.length : 0);
+      const newCommentCount = curCount + 1;
       if (!post.metrics) post.metrics = { likes: 0, comments: 0, shares: 0 };
-      post.metrics.comments = curCount + 1;
+      post.metrics.comments = newCommentCount;
+      if (onCommentAdded && targetPostId) {
+        onCommentAdded(targetPostId, newCommentCount);
+      }
     }
 
     try {

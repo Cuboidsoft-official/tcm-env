@@ -205,6 +205,28 @@ authRouter.post("/register", async (req, res) => {
       referralAppliedAt: cleanRefCode ? new Date() : null
     });
 
+    if (cleanRefCode) {
+      try {
+        const referrerUser = await User.findOne({
+          $or: [
+            { referralCode: cleanRefCode },
+            { handle: cleanRefCode.toLowerCase() },
+            { name: new RegExp(`^${cleanRefCode.substring(0, 4)}`, "i") }
+          ]
+        });
+        if (referrerUser && String(referrerUser._id) !== String(user._id)) {
+          referrerUser.tcmCoins = (referrerUser.tcmCoins || 0) + 50;
+          referrerUser.walletBalance = (referrerUser.walletBalance || 0) + 100;
+          await referrerUser.save();
+        }
+        user.tcmCoins = (user.tcmCoins || 0) + 25;
+        user.walletBalance = (user.walletBalance || 0) + 50;
+        await user.save();
+      } catch (refErr) {
+        console.warn("Could not credit signup referral reward:", refErr);
+      }
+    }
+
     if (isMentorRole) {
       try {
         await Mentor.create({
@@ -356,6 +378,28 @@ authRouter.post("/google", async (req, res) => {
         referredBy: cleanRefCode,
         referralAppliedAt: cleanRefCode ? new Date() : null
       });
+
+      if (cleanRefCode) {
+        try {
+          const referrerUser = await User.findOne({
+            $or: [
+              { referralCode: cleanRefCode },
+              { handle: cleanRefCode.toLowerCase() },
+              { name: new RegExp(`^${cleanRefCode.substring(0, 4)}`, "i") }
+            ]
+          });
+          if (referrerUser && String(referrerUser._id) !== String(user._id)) {
+            referrerUser.tcmCoins = (referrerUser.tcmCoins || 0) + 50;
+            referrerUser.walletBalance = (referrerUser.walletBalance || 0) + 100;
+            await referrerUser.save();
+          }
+          user.tcmCoins = (user.tcmCoins || 0) + 25;
+          user.walletBalance = (user.walletBalance || 0) + 50;
+          await user.save();
+        } catch (refErr) {
+          console.warn("Could not credit Google signup referral reward:", refErr);
+        }
+      }
     } else {
       // PRESERVE user custom name, handle, and avatarUrl if updated by user!
       if (!user.name) user.name = googleName;
