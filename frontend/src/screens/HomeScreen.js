@@ -3065,14 +3065,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   }
 
   function handleShareWhatsApp() {
-    setShareModalOpen(false);
-    setSharesCount((prev) => prev + 1);
-    const text = encodeURIComponent(formattedShareMsg);
-    Linking.openURL(`whatsapp://send?text=${text}`).catch(() => {
-      Linking.openURL(`https://api.whatsapp.com/send?text=${text}`).catch(() => {
-        Alert.alert("App Not Found", "WhatsApp is not installed on this device.");
-      });
-    });
+    handleNativeShare();
   }
 
   function handleShareFacebook() {
@@ -3092,14 +3085,8 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
 
   function handleDirectShare(platform) {
     setShareModalOpen(false);
-    if (platform === "whatsapp") {
-      Linking.openURL(`https://api.whatsapp.com/send?text=${encodeURIComponent(formattedShareMsg)}`).catch(() => {
-        Alert.alert("App Not Found", "WhatsApp is not installed on this device.");
-      });
-    } else if (platform === "telegram") {
-      Linking.openURL(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`✨ ${cleanTitle}\n— by ${authorName} on TCM`)}`).catch(() => {
-        Alert.alert("App Not Found", "Telegram is not installed on this device.");
-      });
+    if (platform === "whatsapp" || platform === "telegram") {
+      handleNativeShare();
     } else if (platform === "linkedin") {
       Linking.openURL(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`).catch(() => {});
     } else if (platform === "copy") {
@@ -3108,7 +3095,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
       }
       Alert.alert("Link Copied 🔗", "Post link copied to clipboard!");
     } else {
-      Share.share({ message: formattedShareMsg });
+      handleNativeShare();
     }
   }
 

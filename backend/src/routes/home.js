@@ -4471,12 +4471,12 @@ export async function serveOpenGraphPreview(req, res) {
           post.authorAvatarUrl;
 
         if (candidateImg && typeof candidateImg === "string" && !candidateImg.startsWith("file://")) {
-          image = candidateImg;
+          image = candidateImg.startsWith("/") ? `https://api.thecodemunk.in${candidateImg}` : (!candidateImg.startsWith("http") ? `https://api.thecodemunk.in/${candidateImg}` : candidateImg);
         }
 
         const candidateVideo = post.media?.videoUrl || post.videoUrl || post.jobData?.videoUrl;
         if (candidateVideo && typeof candidateVideo === "string" && !candidateVideo.startsWith("file://")) {
-          video = candidateVideo;
+          video = candidateVideo.startsWith("/") ? `https://api.thecodemunk.in${candidateVideo}` : (!candidateVideo.startsWith("http") ? `https://api.thecodemunk.in/${candidateVideo}` : candidateVideo);
         }
       }
     }

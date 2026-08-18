@@ -36,6 +36,11 @@ app.get("/api/health", (req, res) => {
 });
 
 // Top-Level OpenGraph Share Preview Endpoints for WhatsApp Crawlers
+app.get("/post/:id", (req, res) => { req.params.type = "post"; serveOpenGraphPreview(req, res); });
+app.get("/p/:id", (req, res) => { req.params.type = "post"; serveOpenGraphPreview(req, res); });
+app.get("/job/:id", (req, res) => { req.params.type = "job"; serveOpenGraphPreview(req, res); });
+app.get("/course/:id", (req, res) => { req.params.type = "course"; serveOpenGraphPreview(req, res); });
+app.get("/community/:id", (req, res) => { req.params.type = "community"; serveOpenGraphPreview(req, res); });
 app.get("/share/:type/:id", serveOpenGraphPreview);
 app.get("/share/preview/:type/:id", serveOpenGraphPreview);
 app.get("/api/share/:type/:id", serveOpenGraphPreview);

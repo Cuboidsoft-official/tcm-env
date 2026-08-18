@@ -20,69 +20,7 @@ export function resolveFullMediaUrl(rawUrl) {
 }
 
 /**
- * Generates an Instagram-style 1080x1080 SVG Post Share Card for text posts
- */
-export function generateInstagramCardSvg({ title, authorName, targetId }) {
-  const safeTitle = (title || "TCM Post")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-  const safeAuthor = (authorName || "TCM Educator")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-  const permalink = `app.thecodemunk.in/post/${targetId || "p1"}`;
-  const initial = safeAuthor.charAt(0).toUpperCase();
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
-  <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0F172A" />
-      <stop offset="50%" stop-color="#1E293B" />
-      <stop offset="100%" stop-color="#312E81" />
-    </linearGradient>
-    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#6366F1" />
-      <stop offset="100%" stop-color="#8B5CF6" />
-    </linearGradient>
-  </defs>
-
-  <rect width="1080" height="1080" fill="url(#bgGrad)" />
-  <circle cx="900" cy="150" r="320" fill="#6366F1" opacity="0.18" />
-  <circle cx="150" cy="900" r="380" fill="#8B5CF6" opacity="0.18" />
-
-  <rect x="80" y="80" width="920" height="920" rx="40" fill="#1E293B" stroke="#334155" stroke-width="4" />
-
-  <rect x="130" y="140" width="170" height="48" rx="24" fill="url(#badgeGrad)" />
-  <text x="215" y="172" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="bold" fill="#FFFFFF" text-anchor="middle">TCM ONE</text>
-
-  <text x="910" y="173" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="600" fill="#94A3B8" text-anchor="end">Official Post</text>
-
-  <circle cx="165" cy="265" r="38" fill="#6366F1" />
-  <text x="165" y="276" font-family="system-ui, -apple-system, sans-serif" font-size="30" font-weight="bold" fill="#FFFFFF" text-anchor="middle">${initial}</text>
-
-  <text x="225" y="260" font-family="system-ui, -apple-system, sans-serif" font-size="30" font-weight="bold" fill="#F8FAFC">${safeAuthor}</text>
-  <text x="225" y="292" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#94A3B8">Educator on TCM Academy</text>
-
-  <line x1="130" y1="340" x2="950" y2="340" stroke="#334155" stroke-width="2" />
-
-  <text x="130" y="450" font-family="Georgia, serif" font-size="120" fill="#6366F1" opacity="0.4">“</text>
-
-  <foreignObject x="130" y="430" width="820" height="390">
-    <div xmlns="http://www.w3.org/1999/xhtml" style="color: #F8FAFC; font-family: system-ui, -apple-system, sans-serif; font-size: 44px; font-weight: 700; line-height: 1.4; word-wrap: break-word;">
-      ${safeTitle}
-    </div>
-  </foreignObject>
-
-  <rect x="130" y="860" width="820" height="84" rx="22" fill="#0F172A" stroke="#334155" stroke-width="2" />
-  <text x="170" y="912" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="bold" fill="#818CF8">🔗 ${permalink}</text>
-  <text x="910" y="912" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600" fill="#94A3B8" text-anchor="end">Open Post in App ↗</text>
-</svg>`;
-}
-
-/**
- * Main helper to share post as a real image attachment (Instagram style) + text permalink
+ * Main helper to share post as a real image file attachment (WhatsApp / Instagram style) + text permalink
  */
 export async function sharePostWithMedia({
   title = "",
@@ -124,22 +62,26 @@ export async function sharePostWithMedia({
       }
     }
 
-    // 2. If text-only post or media download failed: generate Instagram Post Card SVG Image
+    // 2. If text-only post or media download failed: download high-res JPG poster image so WhatsApp receives an actual .jpg image file
     if (!targetImageUri) {
-      const svgContent = generateInstagramCardSvg({ title: rawTitle, authorName, targetId });
-      const cardFilename = `tcm_instagram_card_${targetId || Date.now()}.svg`;
+      const fallbackPosterUrl = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&h=630&q=80";
+      const cardFilename = `tcm_card_${targetId || Date.now()}.jpg`;
       const cardPath = `${FileSystem.cacheDirectory}${cardFilename}`;
-      await FileSystem.writeAsStringAsync(cardPath, svgContent, { encoding: FileSystem.EncodingType.UTF8 }).catch(() => {});
 
       const cardInfo = await FileSystem.getInfoAsync(cardPath).catch(() => ({ exists: false }));
-      if (cardInfo.exists) {
+      if (cardInfo.exists && cardInfo.size > 0) {
         targetImageUri = cardPath;
-        mimeType = "image/svg+xml";
-        uti = "public.svg-image";
+      } else {
+        const dlRes = await FileSystem.downloadAsync(fallbackPosterUrl, cardPath).catch(() => null);
+        if (dlRes?.uri && dlRes.status === 200) {
+          targetImageUri = dlRes.uri;
+        }
       }
+      mimeType = "image/jpeg";
+      uti = "public.image";
     }
 
-    // 3. Share actual image file via Native Sharing Sheet (WhatsApp / Instagram / Telegram)
+    // 3. Share actual JPG/MP4 file via Native Sharing Sheet directly into WhatsApp / Instagram / Telegram
     if (targetImageUri && (await Sharing.isAvailableAsync().catch(() => false))) {
       await Sharing.shareAsync(targetImageUri, {
         mimeType,
