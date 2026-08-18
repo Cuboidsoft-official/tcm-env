@@ -14,6 +14,7 @@ import {
 import { Feather, MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { fonts } from "../constants/fonts";
+import { sharePostWithMedia } from "../utils/mediaShareUtils";
 
 export default function PostActionBottomSheet({
   visible,
@@ -84,33 +85,23 @@ export default function PostActionBottomSheet({
       ? (media.documentUrl || post.documentUrl || media.fileUri || "")
       : (media.imageUrl || post.imageUrl || (Array.isArray(media.images) && media.images[0]) || media.thumbnailUrl || post.thumbnailUrl || "");
 
-    const hasMediaUrl = typeof rawMediaUrl === "string" && /^https?:\/\//i.test(rawMediaUrl);
-    const mediaLabel = isVideo ? "🎥 Video" : isDoc ? "📄 Attachment" : "🖼️ Image";
-    const mediaText = hasMediaUrl ? `\n${mediaLabel}: ${rawMediaUrl}` : "";
-
-    const cleanTitle = (displayTitle || "TCM Update").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
-    const shortTitle = cleanTitle.length > 70 ? `${cleanTitle.slice(0, 67)}...` : cleanTitle;
-    const shareUrl = `https://app.thecodemunk.in/post/${postId}`;
-    const shareMessage = `✨ ${shortTitle}\n— by ${displayAuthor} on TCM${mediaText}\n\n🔗 ${shareUrl}`;
-    try {
-      if (Platform.OS === "ios") {
-        await Share.share({
-          message: `✨ ${shortTitle}\n— by ${displayAuthor} on TCM${mediaText}`,
-          url: hasMediaUrl ? rawMediaUrl : shareUrl
-        });
-      } else {
-        await Share.share({ message: shareMessage });
+    await sharePostWithMedia({
+      title: displayTitle,
+      authorName: displayAuthor,
+      targetId: postId,
+      mediaUrl: rawMediaUrl,
+      isVideo,
+      isDoc,
+      onComplete: () => {
+        if (onShowToast) {
+          onShowToast({
+            type: "success",
+            title: "Post Shared!",
+            subtitle: "Share dialog launched successfully."
+          });
+        }
       }
-      if (onShowToast) {
-        onShowToast({
-          type: "success",
-          title: "Post Shared!",
-          subtitle: "Share dialog launched successfully."
-        });
-      }
-    } catch (error) {
-      console.log("Error sharing post:", error);
-    }
+    });
   };
 
   const handleToggleSave = () => {

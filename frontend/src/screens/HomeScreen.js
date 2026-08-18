@@ -33,6 +33,7 @@ import * as VideoThumbnails from "expo-video-thumbnails";
 import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEvent } from "expo";
+import { sharePostWithMedia } from "../utils/mediaShareUtils";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { addPostComment, deletePostComment, createCommunityPost, deleteCommunityPost, getHome, getNotifications, getPostComments, sharePost, toggleCommentLike, togglePostLike, repostPost, toggleSavePost, applyJobPost, deleteJobPost, uploadFile } from "../api/client";
 import { sanitizeImageUri, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUtils";
@@ -3049,16 +3050,14 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     setShareModalOpen(false);
     setSharesCount((prev) => prev + 1);
     try {
-      if (Platform.OS === "ios") {
-        await Share.share({
-          message: `✨ ${cleanTitle}\n— by ${authorName} on TCM${mediaText}`,
-          url: hasMediaUrl ? rawMediaUrl : shareUrl
-        });
-      } else {
-        await Share.share({
-          message: formattedShareMsg
-        });
-      }
+      await sharePostWithMedia({
+        title: cleanTitle,
+        authorName,
+        targetId,
+        mediaUrl: rawMediaUrl,
+        isVideo,
+        isDoc
+      });
       if (session?.token && post?.id) {
         sharePost(session.token, post.id).catch(() => {});
       }
