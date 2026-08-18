@@ -2,6 +2,29 @@ app.thecodemunk.in {
     root * /var/www/tcm-web/current
     encode zstd gzip
 
+    @crawlers {
+        header_regexp User-Agent "(?i)(whatsapp|facebookexternalhit|twitterbot|telegrambot|linkedinbot|discordbot|slackbot)"
+    }
+    handle @crawlers {
+        reverse_proxy https://api.thecodemunk.in {
+            header_up Host api.thecodemunk.in
+        }
+    }
+
+    handle /post/* {
+        @crawlerReq header_regexp User-Agent "(?i)(whatsapp|facebookexternalhit|twitterbot|telegrambot|linkedinbot|discordbot|slackbot)"
+        reverse_proxy @crawlerReq https://api.thecodemunk.in {
+            header_up Host api.thecodemunk.in
+        }
+    }
+
+    handle /p/* {
+        @crawlerReq header_regexp User-Agent "(?i)(whatsapp|facebookexternalhit|twitterbot|telegrambot|linkedinbot|discordbot|slackbot)"
+        reverse_proxy @crawlerReq https://api.thecodemunk.in {
+            header_up Host api.thecodemunk.in
+        }
+    }
+
     header {
         X-Content-Type-Options nosniff
         X-Frame-Options SAMEORIGIN
