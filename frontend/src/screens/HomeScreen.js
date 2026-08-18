@@ -3016,12 +3016,23 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     );
   }
 
-  const isVideo = Boolean(post?.videoUrl || post?.mediaType === "video" || post?.kind === "video");
-  const isDoc = Boolean(post?.isDocument || post?.mediaType === "document" || post?.documentUrl);
+  const postMedia = post?.media || {};
+  const isVideo = Boolean(post?.videoUrl || postMedia.videoUrl || post?.mediaType === "video" || post?.kind === "video" || postMedia.kind === "video");
+  const isDoc = Boolean(post?.isDocument || postMedia.documentUrl || post?.documentUrl || postMedia.kind === "document");
   const isJob = Boolean(post?.isJob || post?.postType === "job_news" || post?.jobData);
   const shareType = isJob ? "job" : isDoc ? "document" : isVideo ? "video" : "post";
   const targetId = post?.id || post?._id || "p1";
   const shareUrl = `https://app.thecodemunk.in/post/${targetId}`;
+
+  const rawMediaUrl = isVideo
+    ? (postMedia.videoUrl || post?.videoUrl || postMedia.fileUri || post?.fileUri || "")
+    : isDoc
+    ? (postMedia.documentUrl || post?.documentUrl || postMedia.fileUri || "")
+    : (postMedia.imageUrl || post?.imageUrl || (Array.isArray(postMedia.images) && postMedia.images[0]) || postMedia.thumbnailUrl || post?.thumbnailUrl || "");
+
+  const hasMediaUrl = typeof rawMediaUrl === "string" && /^https?:\/\//i.test(rawMediaUrl);
+  const mediaLabel = isVideo ? "🎥 Video" : isDoc ? "📄 Attachment" : "🖼️ Image";
+  const mediaText = hasMediaUrl ? `\n${mediaLabel}: ${rawMediaUrl}` : "";
 
   // Clean, concise title (max 70 chars)
   const rawTitle = (post?.title || post?.text || post?.content || "TCM Update")
@@ -3031,8 +3042,8 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   const cleanTitle = rawTitle.length > 70 ? `${rawTitle.slice(0, 67)}...` : rawTitle;
   const authorName = post?.authorName || "TCM Educator";
 
-  // Sleek, professional, single-link message
-  const formattedShareMsg = `✨ ${cleanTitle}\n— by ${authorName} on TCM\n\n${shareUrl}`;
+  // Sleek, professional message including post title, media URL preview, and permalink
+  const formattedShareMsg = `✨ ${cleanTitle}\n— by ${authorName} on TCM${mediaText}\n\n🔗 ${shareUrl}`;
 
   async function handleNativeShare() {
     setShareModalOpen(false);
@@ -3040,8 +3051,8 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     try {
       if (Platform.OS === "ios") {
         await Share.share({
-          message: `✨ ${cleanTitle}\n— by ${authorName} on TCM`,
-          url: shareUrl
+          message: `✨ ${cleanTitle}\n— by ${authorName} on TCM${mediaText}`,
+          url: hasMediaUrl ? rawMediaUrl : shareUrl
         });
       } else {
         await Share.share({

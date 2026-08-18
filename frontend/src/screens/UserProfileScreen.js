@@ -783,8 +783,12 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                 setPostSheetOpen(false);
                 const pId = selectedPostForSheet?.id || selectedPostForSheet?._id;
                 const pUrl = pId ? `https://app.thecodemunk.in/post/${pId}` : "";
-                const msg = `Check out this post on TCM: ${selectedPostForSheet?.title || "TCM Post"}${pUrl ? `\n\n${pUrl}` : ""}`;
-                Share.share({ message: msg, url: pUrl }).catch(() => {});
+                const media = selectedPostForSheet?.media || {};
+                const mediaUrl = selectedPostForSheet?.imageUrl || media.imageUrl || selectedPostForSheet?.videoUrl || media.videoUrl || "";
+                const hasMedia = typeof mediaUrl === "string" && /^https?:\/\//i.test(mediaUrl);
+                const mediaText = hasMedia ? `\n🖼️ Media: ${mediaUrl}` : "";
+                const msg = `Check out this post on TCM: ${selectedPostForSheet?.title || "TCM Post"}${mediaText}${pUrl ? `\n\n🔗 ${pUrl}` : ""}`;
+                Share.share({ message: msg, url: hasMedia ? mediaUrl : pUrl }).catch(() => {});
               }}
               style={{
                 flexDirection: "row",

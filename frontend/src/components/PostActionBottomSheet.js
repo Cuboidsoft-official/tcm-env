@@ -75,15 +75,28 @@ export default function PostActionBottomSheet({
 
   const handleShare = async () => {
     onClose();
+    const media = post.media || {};
+    const isVideo = Boolean(post.videoUrl || media.videoUrl || post.mediaType === "video" || post.kind === "video" || media.kind === "video");
+    const isDoc = Boolean(post.isDocument || media.documentUrl || post.documentUrl || media.kind === "document");
+    const rawMediaUrl = isVideo
+      ? (media.videoUrl || post.videoUrl || media.fileUri || post.fileUri || "")
+      : isDoc
+      ? (media.documentUrl || post.documentUrl || media.fileUri || "")
+      : (media.imageUrl || post.imageUrl || (Array.isArray(media.images) && media.images[0]) || media.thumbnailUrl || post.thumbnailUrl || "");
+
+    const hasMediaUrl = typeof rawMediaUrl === "string" && /^https?:\/\//i.test(rawMediaUrl);
+    const mediaLabel = isVideo ? "🎥 Video" : isDoc ? "📄 Attachment" : "🖼️ Image";
+    const mediaText = hasMediaUrl ? `\n${mediaLabel}: ${rawMediaUrl}` : "";
+
     const cleanTitle = (displayTitle || "TCM Update").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
     const shortTitle = cleanTitle.length > 70 ? `${cleanTitle.slice(0, 67)}...` : cleanTitle;
     const shareUrl = `https://app.thecodemunk.in/post/${postId}`;
-    const shareMessage = `✨ ${shortTitle}\n— by ${displayAuthor} on TCM\n\n${shareUrl}`;
+    const shareMessage = `✨ ${shortTitle}\n— by ${displayAuthor} on TCM${mediaText}\n\n🔗 ${shareUrl}`;
     try {
       if (Platform.OS === "ios") {
         await Share.share({
-          message: `✨ ${shortTitle}\n— by ${displayAuthor} on TCM`,
-          url: shareUrl
+          message: `✨ ${shortTitle}\n— by ${displayAuthor} on TCM${mediaText}`,
+          url: hasMediaUrl ? rawMediaUrl : shareUrl
         });
       } else {
         await Share.share({ message: shareMessage });
@@ -95,7 +108,9 @@ export default function PostActionBottomSheet({
           subtitle: "Share dialog launched successfully."
         });
       }
-    } catch (e) {}
+    } catch (error) {
+      console.log("Error sharing post:", error);
+    }
   };
 
   const handleToggleSave = () => {
