@@ -3065,7 +3065,14 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   }
 
   function handleShareWhatsApp() {
-    handleNativeShare();
+    setShareModalOpen(false);
+    setSharesCount((prev) => prev + 1);
+    const text = encodeURIComponent(formattedShareMsg);
+    Linking.openURL(`whatsapp://send?text=${text}`).catch(() => {
+      Linking.openURL(`https://api.whatsapp.com/send?text=${text}`).catch(() => {
+        handleNativeShare();
+      });
+    });
   }
 
   function handleShareFacebook() {
@@ -3085,8 +3092,12 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
 
   function handleDirectShare(platform) {
     setShareModalOpen(false);
-    if (platform === "whatsapp" || platform === "telegram") {
-      handleNativeShare();
+    if (platform === "whatsapp") {
+      handleShareWhatsApp();
+    } else if (platform === "telegram") {
+      Linking.openURL(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`✨ ${cleanTitle}\n— by ${authorName} on TCM`)}`).catch(() => {
+        handleNativeShare();
+      });
     } else if (platform === "linkedin") {
       Linking.openURL(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`).catch(() => {});
     } else if (platform === "copy") {

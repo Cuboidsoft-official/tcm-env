@@ -4464,11 +4464,11 @@ export async function serveOpenGraphPreview(req, res) {
         const candidateImg =
           post.media?.imageUrl ||
           post.imageUrl ||
+          (Array.isArray(post.media?.images) && post.media.images[0]) ||
           post.jobData?.imageUrl ||
           post.jobData?.media?.imageUrl ||
           post.media?.posterUri ||
-          post.posterUri ||
-          post.authorAvatarUrl;
+          post.posterUri;
 
         if (candidateImg && typeof candidateImg === "string" && !candidateImg.startsWith("file://")) {
           image = candidateImg.startsWith("/") ? `https://api.thecodemunk.in${candidateImg}` : (!candidateImg.startsWith("http") ? `https://api.thecodemunk.in/${candidateImg}` : candidateImg);
