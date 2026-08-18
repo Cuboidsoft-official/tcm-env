@@ -993,7 +993,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
             </View>
 
             <Text style={styles.qrScanText}>Scan to join room on TCM Academy</Text>
-            <Text style={styles.qrUrlText}>tcm.academy/room/{room?.roomId}</Text>
+            <Text style={styles.qrUrlText}>app.thecodemunk.in/community/{room?.roomId}</Text>
 
             <View style={{ flexDirection: "row", gap: 10, marginTop: 16, width: "100%" }}>
               <TouchableOpacity onPress={handleInviteViaLink} style={[styles.qrBtn, { backgroundColor: "#6366F1", flex: 1 }]}>

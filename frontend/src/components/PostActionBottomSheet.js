@@ -55,7 +55,7 @@ export default function PostActionBottomSheet({
 
   const handleCopyLink = async () => {
     onClose();
-    const link = `https://tcm.ac/p/${postId}`;
+    const link = `https://app.thecodemunk.in/post/${postId}`;
     try {
       if (typeof navigator !== "undefined" && navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(link);
@@ -77,7 +77,7 @@ export default function PostActionBottomSheet({
     onClose();
     const cleanTitle = (displayTitle || "TCM Update").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
     const shortTitle = cleanTitle.length > 70 ? `${cleanTitle.slice(0, 67)}...` : cleanTitle;
-    const shareUrl = `https://tcm.ac/p/${postId}`;
+    const shareUrl = `https://app.thecodemunk.in/post/${postId}`;
     const shareMessage = `✨ ${shortTitle}\n— by ${displayAuthor} on TCM\n\n${shareUrl}`;
     try {
       if (Platform.OS === "ios") {

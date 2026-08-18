@@ -781,7 +781,10 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
             <TouchableOpacity
               onPress={() => {
                 setPostSheetOpen(false);
-                Share.share({ message: `Check out this post on TCM: ${selectedPostForSheet?.title || "TCM Post"}` }).catch(() => {});
+                const pId = selectedPostForSheet?.id || selectedPostForSheet?._id;
+                const pUrl = pId ? `https://app.thecodemunk.in/post/${pId}` : "";
+                const msg = `Check out this post on TCM: ${selectedPostForSheet?.title || "TCM Post"}${pUrl ? `\n\n${pUrl}` : ""}`;
+                Share.share({ message: msg, url: pUrl }).catch(() => {});
               }}
               style={{
                 flexDirection: "row",

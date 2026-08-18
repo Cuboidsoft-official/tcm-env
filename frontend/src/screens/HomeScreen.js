@@ -3021,7 +3021,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   const isJob = Boolean(post?.isJob || post?.postType === "job_news" || post?.jobData);
   const shareType = isJob ? "job" : isDoc ? "document" : isVideo ? "video" : "post";
   const targetId = post?.id || post?._id || "p1";
-  const shareUrl = `https://tcm.ac/p/${targetId}`;
+  const shareUrl = `https://app.thecodemunk.in/post/${targetId}`;
 
   // Clean, concise title (max 70 chars)
   const rawTitle = (post?.title || post?.text || post?.content || "TCM Update")
