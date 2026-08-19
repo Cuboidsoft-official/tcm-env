@@ -27,6 +27,7 @@ export async function sharePostWithMedia({
   authorName = "TCM Member",
   targetId = "",
   mediaUrl = "",
+  images = [],
   isVideo = false,
   isDoc = false,
   onStart = () => {},
@@ -36,16 +37,63 @@ export async function sharePostWithMedia({
   const shareUrl = `https://app.thecodemunk.in/post/${targetId || "p1"}`;
   const rawTitle = (title || "TCM Update").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
   const cleanTitle = rawTitle.length > 70 ? `${rawTitle.slice(0, 67)}...` : rawTitle;
-  const formattedShareMsg = `✨ ${cleanTitle}\n— by ${authorName} on TCM\n\n🔗 ${shareUrl}`;
+
+  const validImages = (Array.isArray(images) ? images : []).map((u) => resolveFullMediaUrl(u)).filter(Boolean);
+  const primaryMediaUrl = mediaUrl || validImages[0] || "";
+  const primaryFullUrl = resolveFullMediaUrl(primaryMediaUrl);
+
+  const mediaLabel = isVideo ? "🎥 Video" : isDoc ? "📄 Attachment" : "🖼️ Image";
+  const mediaText = primaryFullUrl ? `\n${mediaLabel}: ${primaryFullUrl}` : "";
+  const formattedShareMsg = `✨ ${cleanTitle}\n— by ${authorName} on TCM${mediaText}\n\n🔗 ${shareUrl}`;
 
   try {
-    const fullUrl = resolveFullMediaUrl(mediaUrl);
+    // A. Web Browser Share (Chrome / Safari / Edge / Web PWA)
+    if (Platform.OS === "web" && typeof navigator !== "undefined") {
+      let fileShared = false;
+      if (primaryFullUrl && typeof fetch === "function" && navigator.canShare) {
+        try {
+          const resp = await fetch(primaryFullUrl, { mode: "cors" });
+          if (resp.ok) {
+            const blob = await resp.blob();
+            const ext = isVideo ? "mp4" : isDoc ? "pdf" : "jpg";
+            const fileMime = isVideo ? "video/mp4" : isDoc ? "application/pdf" : "image/jpeg";
+            const file = new File([blob], `tcm_post_${targetId || Date.now()}.${ext}`, { type: fileMime });
+            
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                title: cleanTitle,
+                text: formattedShareMsg,
+                url: shareUrl,
+                files: [file]
+              });
+              fileShared = true;
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (!fileShared) {
+        if (navigator.share) {
+          await navigator.share({
+            title: cleanTitle,
+            text: formattedShareMsg,
+            url: shareUrl
+          }).catch(() => {});
+        } else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(formattedShareMsg).catch(() => {});
+        }
+      }
+      onComplete();
+      return;
+    }
+
+    // B. Native Mobile (iOS / Android React Native & Expo)
     let targetImageUri = null;
     let mimeType = isVideo ? "video/mp4" : isDoc ? "application/pdf" : "image/jpeg";
     let uti = isVideo ? "public.movie" : isDoc ? "com.adobe.pdf" : "public.image";
 
-    // 1. If post has an attached photo/video/document URL
-    if (fullUrl) {
+    // 1. If post has an attached photo/video/document URL, download to local cache
+    if (primaryFullUrl) {
       const ext = isVideo ? ".mp4" : isDoc ? ".pdf" : ".jpg";
       const filename = `tcm_post_${targetId || Date.now()}${ext}`;
       const localUri = `${FileSystem.cacheDirectory}${filename}`;
@@ -55,14 +103,14 @@ export async function sharePostWithMedia({
       if (fileInfo.exists && fileInfo.size > 0) {
         targetImageUri = localUri;
       } else {
-        const downloadRes = await FileSystem.downloadAsync(fullUrl, localUri).catch(() => null);
+        const downloadRes = await FileSystem.downloadAsync(primaryFullUrl, localUri).catch(() => null);
         if (downloadRes?.uri && downloadRes.status === 200) {
           targetImageUri = downloadRes.uri;
         }
       }
     }
 
-    // 2. If text-only post or media download failed: download high-res JPG poster image so WhatsApp receives an actual .jpg image file
+    // 2. Fallback: Download high-res poster JPG if text-only post or media download failed
     if (!targetImageUri) {
       const fallbackPosterUrl = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&h=630&q=80";
       const cardFilename = `tcm_card_${targetId || Date.now()}.jpg`;
@@ -92,11 +140,11 @@ export async function sharePostWithMedia({
       return;
     }
 
-    // 4. Fallback if native file sharing unavailable
+    // 4. Fallback if native file sharing is unavailable
     if (Platform.OS === "ios") {
       await Share.share({
         message: `✨ ${cleanTitle}\n— by ${authorName} on TCM`,
-        url: fullUrl || shareUrl
+        url: primaryFullUrl || shareUrl
       });
     } else {
       await Share.share({ message: formattedShareMsg });

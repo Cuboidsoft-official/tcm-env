@@ -27,6 +27,7 @@ import { fileToDataUri, formatFileSize } from "../utils/fileUtils";
 import CreateJobModal from "../components/CreateJobModal";
 import ApplyJobModal from "../components/ApplyJobModal";
 import JobDetailsModal from "../components/JobDetailsModal";
+import { sharePostWithMedia } from "../utils/mediaShareUtils";
 import JobApplicantsModal from "../components/JobApplicantsModal";
 import PostActionBottomSheet from "../components/PostActionBottomSheet";
 import {
@@ -542,14 +543,38 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   }
 
   async function handleShare(post) {
+    if (!post) return;
     const targetPostId = post.id || post._id;
     try {
-      if (targetPostId) {
-        await sharePost(session?.token, targetPostId);
+      if (targetPostId && session?.token) {
+        sharePost(session.token, targetPostId).catch(() => {});
       }
-      Share.share({
-        title: `TCM Post by ${post.authorName}`,
-        message: `${post.authorName}: ${post.text}`
+      const media = post.media || {};
+      const isVideo = Boolean(post.videoUrl || media.videoUrl || post.mediaType === "video" || post.kind === "video" || media.kind === "video");
+      const isDoc = Boolean(post.isDocument || media.documentUrl || post.documentUrl || media.kind === "document");
+      const carouselImages = (Array.isArray(media.carouselImages) && media.carouselImages.length > 0)
+        ? media.carouselImages
+        : (Array.isArray(post.carouselImages) && post.carouselImages.length > 0)
+        ? post.carouselImages
+        : (Array.isArray(media.images) && media.images.length > 0)
+        ? media.images
+        : (Array.isArray(post.images) && post.images.length > 0)
+        ? post.images
+        : [];
+      const rawMediaUrl = isVideo
+        ? (media.videoUrl || post.videoUrl || media.fileUri || post.fileUri || "")
+        : isDoc
+        ? (media.documentUrl || post.documentUrl || media.fileUri || "")
+        : (media.imageUrl || post.imageUrl || carouselImages[0] || media.thumbnailUrl || post.thumbnailUrl || "");
+
+      await sharePostWithMedia({
+        title: post.title || post.text || "TCM Community Post",
+        authorName: post.authorName || "TCM Educator",
+        targetId: targetPostId,
+        mediaUrl: rawMediaUrl,
+        images: carouselImages,
+        isVideo,
+        isDoc
       });
     } catch (err) {}
   }

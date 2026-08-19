@@ -79,17 +79,28 @@ export default function PostActionBottomSheet({
     const media = post.media || {};
     const isVideo = Boolean(post.videoUrl || media.videoUrl || post.mediaType === "video" || post.kind === "video" || media.kind === "video");
     const isDoc = Boolean(post.isDocument || media.documentUrl || post.documentUrl || media.kind === "document");
+    const carouselImages = (Array.isArray(media.carouselImages) && media.carouselImages.length > 0)
+      ? media.carouselImages
+      : (Array.isArray(post.carouselImages) && post.carouselImages.length > 0)
+      ? post.carouselImages
+      : (Array.isArray(media.images) && media.images.length > 0)
+      ? media.images
+      : (Array.isArray(post.images) && post.images.length > 0)
+      ? post.images
+      : [];
+
     const rawMediaUrl = isVideo
       ? (media.videoUrl || post.videoUrl || media.fileUri || post.fileUri || "")
       : isDoc
       ? (media.documentUrl || post.documentUrl || media.fileUri || "")
-      : (media.imageUrl || post.imageUrl || (Array.isArray(media.images) && media.images[0]) || media.thumbnailUrl || post.thumbnailUrl || "");
+      : (media.imageUrl || post.imageUrl || carouselImages[0] || media.thumbnailUrl || post.thumbnailUrl || "");
 
     await sharePostWithMedia({
       title: displayTitle,
       authorName: displayAuthor,
       targetId: postId,
       mediaUrl: rawMediaUrl,
+      images: carouselImages,
       isVideo,
       isDoc,
       onComplete: () => {

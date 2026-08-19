@@ -3025,11 +3025,21 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   const targetId = post?.id || post?._id || "p1";
   const shareUrl = `https://app.thecodemunk.in/post/${targetId}`;
 
+  const carouselImages = (Array.isArray(postMedia.carouselImages) && postMedia.carouselImages.length > 0)
+    ? postMedia.carouselImages
+    : (Array.isArray(post?.carouselImages) && post?.carouselImages.length > 0)
+    ? post?.carouselImages
+    : (Array.isArray(postMedia.images) && postMedia.images.length > 0)
+    ? postMedia.images
+    : (Array.isArray(post?.images) && post?.images.length > 0)
+    ? post?.images
+    : [];
+
   const rawMediaUrl = isVideo
     ? (postMedia.videoUrl || post?.videoUrl || postMedia.fileUri || post?.fileUri || "")
     : isDoc
     ? (postMedia.documentUrl || post?.documentUrl || postMedia.fileUri || "")
-    : (postMedia.imageUrl || post?.imageUrl || (Array.isArray(postMedia.images) && postMedia.images[0]) || postMedia.thumbnailUrl || post?.thumbnailUrl || "");
+    : (postMedia.imageUrl || post?.imageUrl || carouselImages[0] || post?.jobData?.imageUrl || post?.jobData?.media?.imageUrl || postMedia.thumbnailUrl || post?.thumbnailUrl || "");
 
   const hasMediaUrl = typeof rawMediaUrl === "string" && /^https?:\/\//i.test(rawMediaUrl);
   const mediaLabel = isVideo ? "🎥 Video" : isDoc ? "📄 Attachment" : "🖼️ Image";
@@ -3055,6 +3065,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
         authorName,
         targetId,
         mediaUrl: rawMediaUrl,
+        images: carouselImages,
         isVideo,
         isDoc
       });
@@ -3067,10 +3078,21 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   function handleShareWhatsApp() {
     setShareModalOpen(false);
     setSharesCount((prev) => prev + 1);
-    const text = encodeURIComponent(formattedShareMsg);
-    Linking.openURL(`whatsapp://send?text=${text}`).catch(() => {
-      Linking.openURL(`https://api.whatsapp.com/send?text=${text}`).catch(() => {
-        handleNativeShare();
+    if (session?.token && post?.id) {
+      sharePost(session.token, post.id).catch(() => {});
+    }
+    sharePostWithMedia({
+      title: cleanTitle,
+      authorName,
+      targetId,
+      mediaUrl: rawMediaUrl,
+      images: carouselImages,
+      isVideo,
+      isDoc
+    }).catch(() => {
+      const text = encodeURIComponent(formattedShareMsg);
+      Linking.openURL(`whatsapp://send?text=${text}`).catch(() => {
+        Linking.openURL(`https://api.whatsapp.com/send?text=${text}`).catch(() => {});
       });
     });
   }
@@ -3095,16 +3117,23 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     if (platform === "whatsapp") {
       handleShareWhatsApp();
     } else if (platform === "telegram") {
-      Linking.openURL(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`✨ ${cleanTitle}\n— by ${authorName} on TCM`)}`).catch(() => {
-        handleNativeShare();
+      sharePostWithMedia({
+        title: cleanTitle,
+        authorName,
+        targetId,
+        mediaUrl: rawMediaUrl,
+        images: carouselImages,
+        isVideo,
+        isDoc
+      }).catch(() => {
+        Linking.openURL(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(formattedShareMsg)}`).catch(() => {});
       });
     } else if (platform === "linkedin") {
       Linking.openURL(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`).catch(() => {});
+    } else if (platform === "twitter" || platform === "x") {
+      Linking.openURL(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`✨ ${cleanTitle}\n— by ${authorName} on TCM`)}`).catch(() => {});
     } else if (platform === "copy") {
-      if (typeof navigator !== "undefined" && navigator.clipboard) {
-        navigator.clipboard.writeText(shareUrl);
-      }
-      Alert.alert("Link Copied 🔗", "Post link copied to clipboard!");
+      handleCopyLink();
     } else {
       handleNativeShare();
     }

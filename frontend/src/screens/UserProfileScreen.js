@@ -22,6 +22,7 @@ import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 import { PRESET_SKILLS, getSkillIconInfo, renderSkillIcon, getSkillLevel } from "../utils/skillIcons";
+import { sharePostWithMedia } from "../utils/mediaShareUtils";
 
 export default function UserProfileScreen({ session, targetUser, onClose, onOpenChat, onSelectPost }) {
   const { theme } = useTheme();
@@ -782,13 +783,33 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
               onPress={() => {
                 setPostSheetOpen(false);
                 const pId = selectedPostForSheet?.id || selectedPostForSheet?._id;
-                const pUrl = pId ? `https://app.thecodemunk.in/post/${pId}` : "";
                 const media = selectedPostForSheet?.media || {};
-                const mediaUrl = selectedPostForSheet?.imageUrl || media.imageUrl || selectedPostForSheet?.videoUrl || media.videoUrl || "";
-                const hasMedia = typeof mediaUrl === "string" && /^https?:\/\//i.test(mediaUrl);
-                const mediaText = hasMedia ? `\n🖼️ Media: ${mediaUrl}` : "";
-                const msg = `Check out this post on TCM: ${selectedPostForSheet?.title || "TCM Post"}${mediaText}${pUrl ? `\n\n🔗 ${pUrl}` : ""}`;
-                Share.share({ message: msg, url: hasMedia ? mediaUrl : pUrl }).catch(() => {});
+                const isVideo = Boolean(selectedPostForSheet?.videoUrl || media.videoUrl || selectedPostForSheet?.mediaType === "video" || selectedPostForSheet?.kind === "video" || media.kind === "video");
+                const isDoc = Boolean(selectedPostForSheet?.isDocument || media.documentUrl || selectedPostForSheet?.documentUrl || media.kind === "document");
+                const carouselImages = (Array.isArray(media.carouselImages) && media.carouselImages.length > 0)
+                  ? media.carouselImages
+                  : (Array.isArray(selectedPostForSheet?.carouselImages) && selectedPostForSheet.carouselImages.length > 0)
+                  ? selectedPostForSheet.carouselImages
+                  : (Array.isArray(media.images) && media.images.length > 0)
+                  ? media.images
+                  : (Array.isArray(selectedPostForSheet?.images) && selectedPostForSheet.images.length > 0)
+                  ? selectedPostForSheet.images
+                  : [];
+                const rawMediaUrl = isVideo
+                  ? (media.videoUrl || selectedPostForSheet?.videoUrl || media.fileUri || selectedPostForSheet?.fileUri || "")
+                  : isDoc
+                  ? (media.documentUrl || selectedPostForSheet?.documentUrl || media.fileUri || "")
+                  : (selectedPostForSheet?.imageUrl || media.imageUrl || carouselImages[0] || media.thumbnailUrl || selectedPostForSheet?.thumbnailUrl || "");
+
+                sharePostWithMedia({
+                  title: selectedPostForSheet?.title || selectedPostForSheet?.text || "TCM Post",
+                  authorName: selectedPostForSheet?.authorName || profileUser?.name || "TCM Educator",
+                  targetId: pId,
+                  mediaUrl: rawMediaUrl,
+                  images: carouselImages,
+                  isVideo,
+                  isDoc
+                }).catch(() => {});
               }}
               style={{
                 flexDirection: "row",

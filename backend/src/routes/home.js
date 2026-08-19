@@ -4461,17 +4461,36 @@ export async function serveOpenGraphPreview(req, res) {
           authorAvatar = post.authorAvatarUrl || post.mentorAvatarUrl;
         }
 
-        const candidateImg =
-          post.media?.imageUrl ||
-          post.imageUrl ||
-          (Array.isArray(post.media?.images) && post.media.images[0]) ||
-          post.jobData?.imageUrl ||
-          post.jobData?.media?.imageUrl ||
-          post.media?.posterUri ||
-          post.posterUri;
+        const rawCandidateImages = [
+          post.media?.imageUrl,
+          post.imageUrl,
+          post.image,
+          ...(Array.isArray(post.media?.carouselImages) ? post.media.carouselImages : []),
+          ...(Array.isArray(post.carouselImages) ? post.carouselImages : []),
+          ...(Array.isArray(post.media?.images) ? post.media.images : []),
+          ...(Array.isArray(post.images) ? post.images : []),
+          post.jobData?.imageUrl,
+          post.jobData?.media?.imageUrl,
+          post.media?.thumbnailUrl,
+          post.thumbnailUrl,
+          post.media?.posterUri,
+          post.posterUri
+        ].filter(Boolean);
 
-        if (candidateImg && typeof candidateImg === "string" && !candidateImg.startsWith("file://")) {
-          image = candidateImg.startsWith("/") ? `https://api.thecodemunk.in${candidateImg}` : (!candidateImg.startsWith("http") ? `https://api.thecodemunk.in/${candidateImg}` : candidateImg);
+        const imagesList = [];
+        for (const item of rawCandidateImages) {
+          if (typeof item === "string" && !item.startsWith("file://")) {
+            const fullUrl = item.startsWith("/")
+              ? `https://api.thecodemunk.in${item}`
+              : (!item.startsWith("http") ? `https://api.thecodemunk.in/${item}` : item);
+            if (!imagesList.includes(fullUrl)) {
+              imagesList.push(fullUrl);
+            }
+          }
+        }
+
+        if (imagesList.length > 0) {
+          image = imagesList[0];
         }
 
         const candidateVideo = post.media?.videoUrl || post.videoUrl || post.jobData?.videoUrl;
@@ -4482,6 +4501,9 @@ export async function serveOpenGraphPreview(req, res) {
     }
 
     const previewUrl = `https://app.thecodemunk.in/${type || "post"}/${id}`;
+    const ogImageTags = imagesList.length > 0
+      ? imagesList.map((img) => `  <meta property="og:image" content="${escapeHtml(img)}">\n  <meta property="og:image:secure_url" content="${escapeHtml(img)}">\n  <meta property="og:image:type" content="image/jpeg">\n  <meta property="og:image:width" content="1200">\n  <meta property="og:image:height" content="630">`).join("\n")
+      : `  <meta property="og:image" content="${escapeHtml(image)}">\n  <meta property="og:image:secure_url" content="${escapeHtml(image)}">\n  <meta property="og:image:type" content="image/jpeg">\n  <meta property="og:image:width" content="1200">\n  <meta property="og:image:height" content="630">`;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -4497,11 +4519,7 @@ export async function serveOpenGraphPreview(req, res) {
   <meta property="og:url" content="${escapeHtml(previewUrl)}">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
-  <meta property="og:image" content="${escapeHtml(image)}">
-  <meta property="og:image:secure_url" content="${escapeHtml(image)}">
-  <meta property="og:image:type" content="image/jpeg">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
+${ogImageTags}
   ${video ? `<meta property="og:video" content="${escapeHtml(video)}">` : ""}
   ${video ? `<meta property="og:video:secure_url" content="${escapeHtml(video)}">` : ""}
   ${video ? `<meta property="og:video:type" content="video/mp4">` : ""}
