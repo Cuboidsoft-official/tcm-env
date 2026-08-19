@@ -42,9 +42,8 @@ export async function sharePostWithMedia({
   const primaryMediaUrl = mediaUrl || validImages[0] || "";
   const primaryFullUrl = resolveFullMediaUrl(primaryMediaUrl);
 
-  const mediaLabel = isVideo ? "🎥 Video" : isDoc ? "📄 Attachment" : "🖼️ Image";
-  const mediaText = primaryFullUrl ? `\n${mediaLabel}: ${primaryFullUrl}` : "";
-  const formattedShareMsg = `✨ ${cleanTitle}\n— by ${authorName} on TCM${mediaText}\n\n🔗 ${shareUrl}`;
+  const captionBody = `✨ ${cleanTitle}\n— by ${authorName} on TCM`;
+  const formattedShareMsg = `${captionBody}\n\n🔗 ${shareUrl}`;
 
   try {
     // A. Web Browser Share (Chrome / Safari / Edge / Web PWA)
@@ -62,7 +61,7 @@ export async function sharePostWithMedia({
             if (navigator.canShare({ files: [file] })) {
               await navigator.share({
                 title: cleanTitle,
-                text: formattedShareMsg,
+                text: captionBody,
                 url: shareUrl,
                 files: [file]
               });
@@ -76,7 +75,7 @@ export async function sharePostWithMedia({
         if (navigator.share) {
           await navigator.share({
             title: cleanTitle,
-            text: formattedShareMsg,
+            text: captionBody,
             url: shareUrl
           }).catch(() => {});
         } else if (navigator.clipboard) {

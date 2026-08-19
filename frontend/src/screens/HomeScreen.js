@@ -3042,10 +3042,6 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     : (postMedia.imageUrl || post?.imageUrl || carouselImages[0] || post?.jobData?.imageUrl || post?.jobData?.media?.imageUrl || postMedia.thumbnailUrl || post?.thumbnailUrl || "");
 
   const hasMediaUrl = typeof rawMediaUrl === "string" && /^https?:\/\//i.test(rawMediaUrl);
-  const mediaLabel = isVideo ? "🎥 Video" : isDoc ? "📄 Attachment" : "🖼️ Image";
-  const mediaText = hasMediaUrl ? `\n${mediaLabel}: ${rawMediaUrl}` : "";
-
-  // Clean, concise title (max 70 chars)
   const rawTitle = (post?.title || post?.text || post?.content || "TCM Update")
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\s+/g, " ")
@@ -3053,8 +3049,9 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   const cleanTitle = rawTitle.length > 70 ? `${rawTitle.slice(0, 67)}...` : rawTitle;
   const authorName = post?.authorName || "TCM Educator";
 
-  // Sleek, professional message including post title, media URL preview, and permalink
-  const formattedShareMsg = `✨ ${cleanTitle}\n— by ${authorName} on TCM${mediaText}\n\n🔗 ${shareUrl}`;
+  // Sleek, professional message formatting
+  const captionBody = `✨ ${cleanTitle}\n— by ${authorName} on TCM`;
+  const formattedShareMsg = `${captionBody}\n\n🔗 ${shareUrl}`;
 
   async function handleNativeShare() {
     setShareModalOpen(false);
@@ -3126,7 +3123,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
         isVideo,
         isDoc
       }).catch(() => {
-        Linking.openURL(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(formattedShareMsg)}`).catch(() => {});
+        Linking.openURL(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(captionBody)}`).catch(() => {});
       });
     } else if (platform === "linkedin") {
       Linking.openURL(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`).catch(() => {});
