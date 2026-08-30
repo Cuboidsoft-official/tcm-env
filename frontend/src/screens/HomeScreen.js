@@ -137,7 +137,7 @@ const postModes = {
   }
 };
 
-const initialsFor = (name = "TCM One") =>
+const initialsFor = (name = "Last Class") =>
   name
     .split(" ")
     .filter(Boolean)
@@ -1364,9 +1364,9 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
                     <CategoryTabs categories={categories} activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
                     <View style={styles.feed}>
                       {feedPosts.length ? (
-                        feedPosts.map((post) => (
+                        feedPosts.map((post, idx) => (
                           <PostCard
-                            key={post.id}
+                            key={`feed_post_${post.id || post._id || idx}_${idx}`}
                             session={session}
                             post={post}
                             onComment={setCommentsPost}
@@ -1649,77 +1649,13 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
 
 function ZigZagFlowTcmOneLogo({ fontSize = 19 }) {
   const { theme } = useTheme();
-
-  const letters = [
-    { char: "T", color: "#FF9933" },
-    { char: "C", color: theme.isDark ? "#F8FAFC" : "#000080" },
-    { char: "M", color: "#138808" },
-    { char: " ", color: theme.text },
-    { char: "O", color: "#FF9933" },
-    { char: "n", color: theme.isDark ? "#F8FAFC" : theme.primary },
-    { char: "e", color: "#138808" }
-  ];
-
-  const animValues = useRef(letters.map(() => new Animated.Value(0))).current;
-
-  useEffect(() => {
-    const animations = animValues.map((anim, index) => {
-      const moveDistance = index % 2 === 0 ? -6 : -4;
-      return Animated.sequence([
-        Animated.timing(anim, {
-          toValue: moveDistance,
-          duration: 220,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true
-        }),
-        Animated.timing(anim, {
-          toValue: 2,
-          duration: 200,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true
-        }),
-        Animated.timing(anim, {
-          toValue: 0,
-          duration: 180,
-          easing: Easing.in(Easing.quad),
-          useNativeDriver: true
-        })
-      ]);
-    });
-
-    const waveLoop = Animated.loop(
-      Animated.sequence([
-        Animated.stagger(80, animations),
-        Animated.delay(600)
-      ])
-    );
-
-    waveLoop.start();
-
-    return () => waveLoop.stop();
-  }, [theme.isDark]);
+  const lastColor = theme.isDark ? "#F8FAFC" : "#0F172A";
+  const classColor = "#EF4444";
 
   return (
     <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-      {letters.map((item, idx) => {
-        if (item.char === " ") {
-          return <Text key={idx} style={{ fontSize }}> </Text>;
-        }
-        return (
-          <Animated.Text
-            key={idx}
-            style={{
-              fontFamily: fonts.bold,
-              fontSize,
-              color: item.color,
-              letterSpacing: 0.2,
-              transform: [{ translateY: animValues[idx] }]
-            }}
-          >
-            {item.char}
-          </Animated.Text>
-        );
-      })}
+      <Text style={{ fontFamily: fonts.extraBold, fontSize, color: lastColor, letterSpacing: -0.2 }}>Last</Text>
+      <Text style={{ fontFamily: fonts.extraBold, fontSize, color: classColor, letterSpacing: -0.2 }}>Class</Text>
     </View>
   );
 }
@@ -1739,7 +1675,7 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
           </Pressable>
           <View style={styles.brandWrap}>
             <ZigZagFlowTcmOneLogo />
-            <Text style={[styles.brandSub, { color: subtextColor }]}>{backLabel || "Talent & Career Mission"}</Text>
+            <Text style={[styles.brandSub, { color: subtextColor }]}>{backLabel || "Decoding The Mind"}</Text>
           </View>
         </View>
         <View style={styles.headerActions}>
@@ -1767,7 +1703,7 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
         </Pressable>
         <View style={styles.brandWrap}>
           <ZigZagFlowTcmOneLogo />
-          <Text style={[styles.brandSub, { color: subtextColor }]}>Talent & Career Mission</Text>
+          <Text style={[styles.brandSub, { color: subtextColor }]}>Decoding The Mind</Text>
         </View>
       </View>
       <View style={styles.headerActions}>
@@ -2420,15 +2356,33 @@ function SingleFeedImage({ singleImage, fKey, onPreview, mediaTitle, mediaSubtit
     if (singleImage) {
       const uri = sanitizeImageUri(singleImage);
       if (uri) {
-        Image.getSize(
-          uri,
-          (width, height) => {
-            if (width && height && height > 0) {
-              setNaturalAspect(width / height);
+        if (Platform.OS === "web") {
+          if (typeof window !== "undefined") {
+            try {
+              const img = new window.Image();
+              img.onload = () => {
+                if (img.width && img.height && img.height > 0) {
+                  setNaturalAspect(img.width / img.height);
+                }
+              };
+              img.src = uri;
+            } catch (e) {}
+          }
+        } else {
+          try {
+            if (typeof Image?.getSize === "function") {
+              Image.getSize(
+                uri,
+                (width, height) => {
+                  if (width && height && height > 0) {
+                    setNaturalAspect(width / height);
+                  }
+                },
+                () => {}
+              );
             }
-          },
-          () => {}
-        );
+          } catch (e) {}
+        }
       }
     }
   }, [singleImage]);
@@ -2653,7 +2607,8 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
           if (entry.isIntersecting && entry.intersectionRatio >= 0.50) {
             if (!userPausedRef.current && player) {
               try {
-                player.play();
+                const res = player.play();
+                if (res && typeof res.catch === "function") res.catch(() => {});
                 setPlaying(true);
               } catch (e) {}
             }
@@ -2661,7 +2616,8 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
             // Post half hidden (< 50% visible) or scrolled off-screen -> pause immediately
             if (player) {
               try {
-                player.pause();
+                const res = player.pause();
+                if (res && typeof res.catch === "function") res.catch(() => {});
                 setPlaying(false);
               } catch (e) {}
             }
@@ -2702,14 +2658,16 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
             if (isFullyOrMostlyVisible) {
               if (!userPausedRef.current && player) {
                 try {
-                  player.play();
+                  const res = player.play();
+                  if (res && typeof res.catch === "function") res.catch(() => {});
                   setPlaying(true);
                 } catch (e) {}
               }
             } else {
               if (player) {
                 try {
-                  player.pause();
+                  const res = player.pause();
+                  if (res && typeof res.catch === "function") res.catch(() => {});
                   setPlaying(false);
                 } catch (e) {}
               }
@@ -3321,7 +3279,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
           <View style={{ flexDirection: "row", alignItems: "center", marginRight: 8 }}>
             {realLikedUsers.slice(0, 3).map((u, idx) => (
               <Image
-                key={u.id || idx}
+                key={`liked_avatar_${u.id || u._id || idx}_${idx}`}
                 source={{ uri: u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }}
                 style={{
                   width: 20,
@@ -3360,7 +3318,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
               {realLikedUsers.map((likedUser, idx) => (
                 <TouchableOpacity
-                  key={likedUser.id || `liker_${idx}`}
+                  key={`liked_sheet_row_${likedUser.id || likedUser._id || idx}_${idx}`}
                   onPress={() => {
                     setLikedByModalOpen(false);
                     if (onSelectUser) {
@@ -3580,7 +3538,7 @@ function MediaPreviewModal({ item, onClose }) {
             <View style={styles.previewTitleWrap}>
               <Text numberOfLines={1} style={styles.previewTitle}>{item.title}</Text>
               <Text numberOfLines={1} style={styles.previewSub}>
-                {item.fileSize || "Document"} | {item.authorName || "TCM One"}
+                {item.fileSize || "Document"} | {item.authorName || "Last Class"}
               </Text>
             </View>
             <Pressable hitSlop={10} onPress={onClose} style={styles.previewClose}>
@@ -4098,7 +4056,7 @@ function LearnDashboard({ learn, user, onSelectUser }) {
         </View>
       </LinearGradient>
 
-      <Text style={styles.sectionTitle}>Explore TCM One</Text>
+      <Text style={styles.sectionTitle}>Explore Last Class</Text>
       <View style={styles.exploreGrid}>
         {(learn.explore || []).map((item) => (
           <Pressable key={item.id} style={styles.exploreCard}>
@@ -5374,10 +5332,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingBottom: 10,
     paddingTop: 8,
-    paddingHorizontal: 4,
-    position: "sticky",
+    paddingHorizontal: 12,
+    position: Platform.OS === "web" ? "sticky" : "relative",
     top: 0,
-    zIndex: 100
+    zIndex: 100,
+    ...(Platform.OS === "web"
+      ? {
+          backdropFilter: "blur(20px) saturate(180%)",
+          WebkitBackdropFilter: "blur(20px) saturate(180%)"
+        }
+      : {})
   },
   brandRow: {
     alignItems: "center",

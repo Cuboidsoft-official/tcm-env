@@ -46,19 +46,17 @@ const roleOptions = [
 function TcmOneBrandHeader({ compact = false }) {
   const { theme } = useTheme();
   const fontSize = compact ? 28 : 34;
+  const lastColor = theme.isDark ? "#F8FAFC" : "#0F172A";
+  const classColor = "#EF4444";
+
   return (
     <View style={{ alignItems: "center", marginBottom: compact ? 8 : 16 }}>
       <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-        <Text style={{ fontFamily: fonts.bold, fontSize, color: "#FF9933", letterSpacing: 0.2 }}>T</Text>
-        <Text style={{ fontFamily: fonts.bold, fontSize, color: theme.isDark ? "#F8FAFC" : "#000080", letterSpacing: 0.2 }}>C</Text>
-        <Text style={{ fontFamily: fonts.bold, fontSize, color: "#138808", letterSpacing: 0.2 }}>M</Text>
-        <Text style={{ fontFamily: fonts.bold, fontSize, color: theme.text }}> </Text>
-        <Text style={{ fontFamily: fonts.bold, fontSize, color: "#FF9933", letterSpacing: 0.2 }}>O</Text>
-        <Text style={{ fontFamily: fonts.bold, fontSize, color: theme.isDark ? "#F8FAFC" : theme.primary, letterSpacing: 0.2 }}>n</Text>
-        <Text style={{ fontFamily: fonts.bold, fontSize, color: "#138808", letterSpacing: 0.2 }}>e</Text>
+        <Text style={{ fontFamily: fonts.extraBold, fontSize, color: lastColor, letterSpacing: -0.2 }}>Last</Text>
+        <Text style={{ fontFamily: fonts.extraBold, fontSize, color: classColor, letterSpacing: -0.2 }}>Class</Text>
       </View>
       <Text style={{ fontFamily: fonts.semiBold, fontSize: compact ? 10 : 11, color: theme.subtext, letterSpacing: 1.5, textTransform: "uppercase", marginTop: 2 }}>
-        Talent & Career Mission
+        Decoding The Mind
       </Text>
     </View>
   );
@@ -407,7 +405,7 @@ export default function LoginScreen({ onLogin }) {
             <TcmOneBrandHeader compact />
             <Text style={[styles.signupTitle, { color: theme.text }]}>{mode === "mentor" ? "Mentor Sign Up" : "Create Your Account"}</Text>
             <Text style={[styles.signupSub, { color: theme.subtext }]}>
-              {mode === "mentor" ? "Join as a mentor and inspire the future" : "Join TCM One and start your learning journey"}
+              {mode === "mentor" ? "Join as a mentor and inspire the future" : "Join Last Class and start your learning journey"}
             </Text>
 
             {mode === "mentor" ? <MentorIntro /> : <RoleTabs role={role} setRole={setRole} setMode={setMode} />}

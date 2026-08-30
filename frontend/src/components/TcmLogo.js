@@ -9,6 +9,9 @@ export default function TcmLogo({ compact = false }) {
   const primaryColor = theme?.primary || colors.primary;
   const primaryDarkColor = theme?.primaryDark || colors.primaryDark;
 
+  const lastColor = theme?.isDark ? "#F8FAFC" : "#0F172A";
+  const classColor = "#EF4444";
+
   return (
     <View style={styles.wrap}>
       <Image
@@ -16,10 +19,13 @@ export default function TcmLogo({ compact = false }) {
         style={[styles.logoImage, compact && styles.logoImageCompact]}
         resizeMode="contain"
       />
-      <Text style={[styles.title, compact && styles.titleCompact, { color: primaryDarkColor }]}>TCM One</Text>
+      <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+        <Text style={[styles.title, compact && styles.titleCompact, { color: lastColor }]}>Last</Text>
+        <Text style={[styles.title, compact && styles.titleCompact, { color: classColor, fontWeight: "900" }]}>Class</Text>
+      </View>
       <View style={styles.subtitleRow}>
         <View style={[styles.line, { backgroundColor: primaryColor }]} />
-        <Text style={[styles.subtitle, compact && styles.subtitleCompact, { color: primaryDarkColor }]}>Talent & Career Mission</Text>
+        <Text style={[styles.subtitle, compact && styles.subtitleCompact, { color: theme?.subtext || "#64748B" }]}>Decoding The Mind</Text>
         <View style={[styles.line, { backgroundColor: primaryColor }]} />
       </View>
     </View>

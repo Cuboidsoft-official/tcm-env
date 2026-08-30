@@ -695,7 +695,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
       const smartAnswerText = generateClientSmartFallback(questionText, room?.category);
       const fallbackAiMsg = {
         id: `msg_ai_${Date.now()}`,
-        authorName: "TCM AI Tutor 🤖",
+        authorName: "Oveta AI Tutor 🤖",
         authorRole: "AI Assistant",
         authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -1125,7 +1125,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                     <View style={styles.aiFooterMentionRow}>
                       <MaterialCommunityIcons name="shield-check" size={13} color={theme.isDark ? "#A78BFA" : "#6366F1"} />
                       <Text style={[styles.aiFooterMentionText, { color: theme.isDark ? "#A78BFA" : "#0A6836" }]}>
-                        ⚡ Powered by TCM AI Engine • Verified Academic Mentor
+                        ⚡ Powered by Oveta AI Engine • Verified Academic Mentor
                       </Text>
                     </View>
                   )}

@@ -216,7 +216,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         {
           id: course.id || `course_${Date.now()}`,
           title: course.title,
-          subtitle: `Enrolled • ${course.category || "TCM Course"}`,
+          subtitle: `Enrolled • ${course.category || "Last Class Course"}`,
           progress: 5,
           icon: "book-open",
           iconColor: "#0A6836",
@@ -355,10 +355,10 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
       ) : null}
 
       <View style={styles.exploreTcmSection}>
-        <Text style={[styles.exploreTcmHeaderTitle, { color: theme.text }]}>Explore TCM</Text>
+        <Text style={[styles.exploreTcmHeaderTitle, { color: theme.text }]}>Explore Last Class</Text>
         <View style={styles.exploreTcmGrid}>
           <Pressable
-            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("inform") : Alert.alert("TCM Inform Tech", "Opening Live Classes, Notes & Assignments..."))}
+            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("inform") : Alert.alert("Last Class Tech", "Opening Live Classes, Notes & Assignments..."))}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
@@ -367,12 +367,12 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               </View>
               <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
-            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM Inform Tech</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Tech</Text>
             <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Live Classes, Notes, Assignments & More</Text>
           </Pressable>
 
           <Pressable
-            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("academy") : Alert.alert("TCM Academy", "Opening Premium Courses & Specialized Programs..."))}
+            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("academy") : Alert.alert("Last Class Academy", "Opening Premium Courses & Specialized Programs..."))}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
@@ -381,12 +381,12 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               </View>
               <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
-            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM Academy</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Academy</Text>
             <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Premium Courses, Specialized Programs</Text>
           </Pressable>
 
           <Pressable
-            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("govt") : Alert.alert("TCM Government", "Opening UPSC, SSC, Banking & Govt Exams..."))}
+            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("govt") : Alert.alert("Last Class Government", "Opening UPSC, SSC, Banking & Govt Exams..."))}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
@@ -395,12 +395,12 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               </View>
               <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
-            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM Government</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Government</Text>
             <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>UPSC, SSC CGL, Banking & Govt Exams</Text>
           </Pressable>
 
           <Pressable
-            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("career") : Alert.alert("TCM Career", "Opening Internships, Jobs & Placements..."))}
+            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("career") : Alert.alert("Last Class Career", "Opening Internships, Jobs & Placements..."))}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
@@ -409,7 +409,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               </View>
               <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
-            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM Career</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Career</Text>
             <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Internships, Jobs, Placements</Text>
           </Pressable>
         </View>
@@ -550,9 +550,9 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       </Pressable>
 
-      {/* TCM AI EXAMINATIONS CARD - Vector Illustration Concept */}
+      {/* LAST CLASS AI EXAMINATIONS CARD - Vector Illustration Concept */}
       <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitleText, { color: theme.text }]}>TCM AI Examinations</Text>
+        <Text style={[styles.sectionTitleText, { color: theme.text }]}>Last Class AI Examinations</Text>
         <Pressable onPress={() => setAiExamModalVisible(true)}>
           <Text style={[styles.viewAllText, { color: theme.primary }]}>Take Exam →</Text>
         </Pressable>
@@ -606,7 +606,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             </View>
 
             <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text || colors.ink, marginBottom: 2 }}>
-              TCM AI Skill Examinations & Scorecards
+              Last Class AI Skill Examinations & Scorecards
             </Text>
             <Text style={{ fontSize: 10.5, fontFamily: fonts.regular, color: theme.subtext || colors.muted }} numberOfLines={1}>
               10-minute adaptive test with instant AI scorecard & certificate.

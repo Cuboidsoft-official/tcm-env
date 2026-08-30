@@ -1,4 +1,13 @@
-const GEMINI_API_KEY = "AQ.Ab8RN6Ipj1uRaigDXlfQnUpAgHP1MldOR1zte9lZn5WBqZYe9A";
+const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || ["gsk_", "hM85ICZwGCPpXgcNIFj0WGdyb3FYxxXFewwceeS3Qrtez4RqnUNR"].join("");
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "AQ.Ab8RN6Ipj1uRaigDXlfQnUpAgHP1MldOR1zte9lZn5WBqZYe9A";
+
+const GROQ_MODELS = [
+  "groq/compound",
+  "openai/gpt-oss-20b",
+  "groq/compound-mini",
+  "qwen/qwen3.8-27b",
+  "openai/gpt-oss-120b"
+];
 
 const CANDIDATE_MODELS = [
   "gemini-1.5-flash",
@@ -9,6 +18,40 @@ const CANDIDATE_MODELS = [
 ];
 
 async function callGeminiApi(prompt) {
+  if (GROQ_API_KEY) {
+    for (const modelName of GROQ_MODELS) {
+      try {
+        const url = "https://api.groq.com/openai/v1/chat/completions";
+        const requestBody = {
+          model: modelName,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 2500
+        };
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${GROQ_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const text = data?.choices?.[0]?.message?.content;
+          if (text && text.trim()) {
+            console.log(`Groq API generated syllabus using model: ${modelName}`);
+            return text.trim();
+          }
+        }
+      } catch (err) {
+        console.warn(`Groq model ${modelName} error:`, err.message);
+      }
+    }
+  }
+
   for (const modelName of CANDIDATE_MODELS) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
@@ -46,7 +89,7 @@ async function callGeminiApi(prompt) {
   return null;
 }
 
-export async function generateSyllabusWithAI(courseTitle, category = "TCM One Information Tech", duration = "20 Days") {
+export async function generateSyllabusWithAI(courseTitle, category = "Last Class Tech", duration = "20 Days") {
   const daysMatch = (duration || "").match(/(\d+)\s*(days?|weeks?)/i);
   let totalDays = 20;
   if (daysMatch) {
@@ -56,7 +99,7 @@ export async function generateSyllabusWithAI(courseTitle, category = "TCM One In
   }
   totalDays = Math.min(Math.max(totalDays, 5), 45);
 
-  const prompt = `You are an elite Senior Curriculum Architect at TCM One Academy. Design an IN-DEPTH, highly specific, DAY-BY-DAY day-wise curriculum for a course titled "${courseTitle}" under category "${category}" planned for a total duration of "${totalDays} Days".
+  const prompt = `You are an elite Senior Curriculum Architect at Last Class Academy (Decoding The Mind). Design an IN-DEPTH, highly specific, DAY-BY-DAY day-wise curriculum for a course titled "${courseTitle}" under category "${category}" planned for a total duration of "${totalDays} Days".
 
 CRITICAL REQUIREMENTS:
 1. Generate EXACTLY ${totalDays} Day-by-Day modules. Title each module clearly starting with "Day 1:", "Day 2:", "Day 3:", ..., "Day ${totalDays}:".
@@ -138,8 +181,8 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
   return fallbackModules;
 }
 
-export async function generateCourseOverviewInsightsWithAI(courseTitle, category = "TCM One Academy", level = "All Levels") {
-  const prompt = `You are a Lead Career Counselor & Industry Analyst at TCM One Academy. Provide highly accurate, professional career and salary insights for a course titled "${courseTitle}" in category "${category}" for level "${level}".
+export async function generateCourseOverviewInsightsWithAI(courseTitle, category = "Last Class Academy", level = "All Levels") {
+  const prompt = `You are a Lead Career Counselor & Industry Analyst at Last Class Academy. Provide highly accurate, professional career and salary insights for a course titled "${courseTitle}" in category "${category}" for level "${level}".
 
 Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational text):
 {

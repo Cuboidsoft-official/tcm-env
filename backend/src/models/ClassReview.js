@@ -21,7 +21,7 @@ const classReviewSchema = new mongoose.Schema(
     },
     mentorName: {
       type: String,
-      default: "TCM One Mentor"
+      default: "Last Class Mentor"
     },
     mentorAvatar: {
       type: String,

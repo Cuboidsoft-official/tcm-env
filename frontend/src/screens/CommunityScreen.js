@@ -669,9 +669,9 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   function renderMainCommunityScreen() {
     return (
       <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} showsVerticalScrollIndicator={false}>
-        <View style={{ width: "100%", maxWidth: 1200, alignSelf: "center", flex: 1 }}>
+        <View style={{ width: "100%", alignSelf: "center", flex: 1, paddingHorizontal: 4 }}>
           {/* Top Tab Selectors */}
-        <View style={{ flexDirection: "row", paddingHorizontal: 12, marginTop: 10, gap: 6 }}>
+        <View style={{ flexDirection: "row", paddingHorizontal: 4, marginTop: 10, gap: 6 }}>
           <TouchableOpacity
             onPress={() => setActiveTabPill("channels")}
             activeOpacity={0.8}
@@ -715,7 +715,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
 
         {activeTabPill === "jobs" ? (
           /* JOB FEED & HIRING DRIVES */
-          <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 30 }}>
+          <View style={{ paddingHorizontal: 4, paddingTop: 14, paddingBottom: 30 }}>
             {/* Header Action Banner */}
             <View style={{ backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : theme.badgeBg, borderWidth: 1, borderColor: theme.border, borderRadius: 16, padding: 14, marginBottom: 16 }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -780,7 +780,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
           </View>
         ) : (
           <>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, marginTop: 12, marginBottom: 10 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 4, marginTop: 12, marginBottom: 10 }}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Feather name="award" size={15} color={theme.primary} style={{ marginRight: 6 }} />
                 <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: theme.text }}>Official Channels</Text>
@@ -797,7 +797,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
             </View>
 
         {/* 5. Dynamic Channel List Cards */}
-        <View style={{ paddingHorizontal: 10, paddingBottom: 20, gap: 10 }}>
+        <View style={{ paddingHorizontal: 4, paddingBottom: 20, gap: 10 }}>
           {communities.length === 0 ? (
             <View style={[styles.emptyContainer, { backgroundColor: theme.cardBg, borderRadius: 16, borderWidth: 1, borderColor: theme.border }]}>
               <Feather name="users" size={36} color={theme.subtext} />

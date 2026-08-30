@@ -20,7 +20,7 @@ const applicantSchema = new mongoose.Schema(
 const jobSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-    company: { type: String, default: "TCM One Hiring Partner" },
+    company: { type: String, default: "Last Class Hiring Partner" },
     mentorId: { type: String },
     mentorName: { type: String, default: "Mentor" },
     mentorAvatarUrl: { type: String, default: "" },

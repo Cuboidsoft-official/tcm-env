@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema(
     },
     mentorCategory: {
       type: String,
-      default: "TCM One Information Tech"
+      default: "Last Class Tech"
     },
     instituteName: {
       type: String,
@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema(
     },
     partnerCategory: {
       type: String,
-      default: "TCM One Partner Institute"
+      default: "Last Class Partner Institute"
     },
     contactNumber: {
       type: String,
@@ -93,11 +93,11 @@ const userSchema = new mongoose.Schema(
     },
     memberBadge: {
       type: String,
-      default: "TCM One Member"
+      default: "Last Class Member"
     },
     bio: {
       type: String,
-      default: "Building TCM One to help curious minds learn, grow & create impact."
+      default: "Building Last Class (Decoding The Mind) to help curious minds learn, grow & create impact."
     },
     location: {
       type: String,
@@ -142,7 +142,7 @@ const userSchema = new mongoose.Schema(
     experiences: {
       type: Array,
       default: [
-        { id: "exp1", role: "Senior Software Engineer & Mentor", company: "TCM One Academy", durationPill: "3+ Years", icon: "school", iconColor: "#5B3CF5" }
+        { id: "exp1", role: "Senior Software Engineer & Mentor", company: "Last Class Academy", durationPill: "3+ Years", icon: "school", iconColor: "#5B3CF5" }
       ]
     },
     certifications: {

@@ -603,7 +603,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
               <MaterialCommunityIcons name="brain" size={36} color={theme.primary} />
             </View>
             <Text style={{ fontSize: 22, fontFamily: fonts.bold, color: theme.text, textAlign: "center" }}>
-              TCM One AI Interview & Skill Examinations
+              Last Class AI Interview & Skill Examinations
             </Text>
             <Text style={{ fontSize: 13, color: theme.subtext, textAlign: "center", marginTop: 4, marginBottom: 24, paddingHorizontal: 20 }}>
               Top-tier GeeksforGeeks & Toptal level interview questions with zero repetition tracking!
@@ -1087,7 +1087,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
                   {user?.name || "Student"}
                 </Text>
                 <Text style={{ fontSize: 11.5, color: theme.subtext, marginTop: 2 }}>
-                  TCM One Verified Learner • {user?.handle ? `@${user.handle}` : "Achievement Credentials"}
+                  Last Class Verified Learner • {user?.handle ? `@${user.handle}` : "Achievement Credentials"}
                 </Text>
               </View>
 

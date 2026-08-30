@@ -147,7 +147,7 @@ adminRouter.post("/signup", async (req, res) => {
         role: "admin",
         isApproved: true,
         verified: true,
-        memberBadge: "TCM One Administrator",
+        memberBadge: "Last Class Administrator",
         createdAt: nowIso
       };
 
@@ -172,7 +172,7 @@ adminRouter.post("/signup", async (req, res) => {
       role: "admin",
       isApproved: true,
       verified: true,
-      memberBadge: "TCM One Administrator"
+      memberBadge: "Last Class Administrator"
     });
 
     res.status(201).json({
@@ -272,8 +272,8 @@ adminRouter.get("/mentors", requireAdmin, async (req, res) => {
           email: u.email,
           role: u.role,
           isApproved: u.isApproved !== false,
-          mentorCategory: u.mentorCategory || "TCM One Information Tech",
-          title: `${u.mentorCategory || "TCM One"} Educator`,
+          mentorCategory: u.mentorCategory || "Last Class Information Tech",
+          title: `${u.mentorCategory || "Last Class"} Educator`,
           avatarUrl: u.avatarUrl || "",
           bio: u.bio || "",
           yearsExperience: u.yearsExperience || "5+ Yrs",
@@ -290,8 +290,8 @@ adminRouter.get("/mentors", requireAdmin, async (req, res) => {
             email: m.email || "mentor@tcm.com",
             role: "mentor",
             isApproved: m.isApproved !== false,
-            mentorCategory: m.mentorCategory || "TCM One Information Tech",
-            title: m.title || "TCM One Mentor",
+            mentorCategory: m.mentorCategory || "Last Class Information Tech",
+            title: m.title || "Last Class Mentor",
             avatarUrl: m.avatarUrl || "",
             bio: m.bio || "",
             skills: m.skills || ["Mentorship"],
@@ -324,8 +324,8 @@ adminRouter.get("/mentors", requireAdmin, async (req, res) => {
       email: u.email,
       role: u.role,
       isApproved: u.isApproved !== false,
-      mentorCategory: u.mentorCategory || "TCM One Information Tech",
-      title: `${u.mentorCategory || "TCM One"} Senior Mentor`,
+      mentorCategory: u.mentorCategory || "Last Class Information Tech",
+      title: `${u.mentorCategory || "Last Class"} Senior Mentor`,
       avatarUrl: u.avatarUrl || "",
       bio: u.bio || "",
       yearsExperience: u.yearsExperience || "5+ Yrs",
@@ -714,7 +714,7 @@ adminRouter.post("/partners", requireAdmin, async (req, res) => {
         rating: Number(rating),
         reviewsCount,
         existingCourses: coursesArr,
-        bio: bio || "TCM One Partner Educational Institute",
+        bio: bio || "Last Class Partner Educational Institute",
         avatarUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=300&q=80",
         recentStudents: [
           { id: "s1", name: "Aman Verma", course: "Full Stack Development", date: "20 May 2025", status: "Active", avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" },
@@ -752,7 +752,7 @@ adminRouter.post("/partners", requireAdmin, async (req, res) => {
       rating: Number(rating),
       reviewsCount,
       existingCourses: coursesArr,
-      bio: bio || "TCM One Partner Educational Institute",
+      bio: bio || "Last Class Partner Educational Institute",
       avatarUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=300&q=80"
     });
 

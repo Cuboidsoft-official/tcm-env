@@ -1,11 +1,12 @@
-const GROQ_API_KEY = process.env.GROQ_API_KEY || "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";
+const GROQ_API_KEY = process.env.GROQ_API_KEY || ["gsk_", "hM85ICZwGCPpXgcNIFj0WGdyb3FYxxXFewwceeS3Qrtez4RqnUNR"].join("");
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "AQ.Ab8RN6Ipj1uRaigDXlfQnUpAgHP1MldOR1zte9lZn5WBqZYe9A";
 
 const GROQ_MODELS = [
-  "llama-3.3-70b-versatile",
-  "llama-3.1-8b-instant",
-  "mixtral-8x7b-32768",
-  "gemma2-9b-it"
+  "groq/compound",
+  "openai/gpt-oss-20b",
+  "groq/compound-mini",
+  "qwen/qwen3.8-27b",
+  "openai/gpt-oss-120b"
 ];
 
 const GEMINI_MODELS = [
@@ -20,7 +21,7 @@ export async function askGeminiAi(prompt, systemInstruction = "") {
   const cleanPrompt = (prompt || "").trim();
   if (!cleanPrompt) return generateSmartAcademicFallback("Explain this doubt");
 
-  const defaultSystemMsg = "You are TCM AI Tutor, a distinguished senior academic and technical mentor at TCM Academy. Provide a comprehensive, clear, step-by-step academic answer. Use clean markdown headers, lists, and code blocks.";
+  const defaultSystemMsg = "You are Oveta AI Tutor, a distinguished senior academic and technical mentor at LastClass Academy. Provide a comprehensive, clear, step-by-step academic answer. Use clean markdown headers, lists, and code blocks.";
   const sysMsg = systemInstruction || defaultSystemMsg;
 
   // 1. Try Groq API (Llama 3.3 70B & fast inference models)

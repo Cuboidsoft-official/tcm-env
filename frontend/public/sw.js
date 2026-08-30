@@ -72,9 +72,9 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("push", (event) => {
   console.log("PWA SW: Push event received", event);
 
-  let title = "TCM One Notification 🔔";
+  let title = "Last Class Notification 🔔";
   let options = {
-    body: "You have a new update on TCM One",
+    body: "You have a new update on Last Class",
     icon: "/icon-192.png",
     badge: "/icon-192.png",
     vibrate: [100, 50, 100],

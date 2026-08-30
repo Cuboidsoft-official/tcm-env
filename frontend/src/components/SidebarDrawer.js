@@ -124,7 +124,7 @@ export default function SidebarDrawer({
               <TouchableOpacity activeOpacity={0.8} onPress={() => handleNavigate("Wallet")} style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                 <FontAwesome5 name="coins" size={16} color="#FFB800" />
                 <Text style={[styles.metricVal, { color: theme.text }]}>{typeof tcmCoins === "number" ? tcmCoins.toLocaleString() : tcmCoins}</Text>
-                <Text style={[styles.metricLbl, { color: theme.subtext }]}>TCM One Coins</Text>
+                <Text style={[styles.metricLbl, { color: theme.subtext }]}>Last Class Coins</Text>
               </TouchableOpacity>
 
               <TouchableOpacity activeOpacity={0.8} onPress={() => handleNavigate("Profile")} style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
@@ -226,8 +226,8 @@ export default function SidebarDrawer({
               />
               <MenuItem
                 icon={<Feather name="users" size={18} />}
-                label="TCM One Community"
-                active={activeItem === "TCM Community" || activeItem === "Community" || activeItem === "TCM One Community"}
+                label="Last Class Community"
+                active={activeItem === "TCM Community" || activeItem === "Community" || activeItem === "Last Class Community"}
                 onPress={() => handleNavigate("TCM Community")}
               />
               <MenuItem
@@ -250,7 +250,7 @@ export default function SidebarDrawer({
 
               <MenuItem
                 icon={<Feather name="credit-card" size={18} />}
-                label="TCM One Wallet & Balance"
+                label="Last Class Wallet & Balance"
                 active={activeItem === "Wallet"}
                 onPress={() => handleNavigate("Wallet")}
               />
@@ -306,7 +306,7 @@ export default function SidebarDrawer({
                 <FontAwesome5 name="crown" size={14} color="#FFFFFF" />
               </View>
               <View style={styles.premiumTextWrap}>
-                <Text style={[styles.premiumTitle, { color: theme.badgeText || theme.primary }]}>Get TCM One Verified Pro</Text>
+                <Text style={[styles.premiumTitle, { color: theme.badgeText || theme.primary }]}>Get Last Class Verified Pro</Text>
                 <Text style={[styles.premiumSub, { color: theme.subtext }]}>Verified Badge, Real Projects & ATS Resume from ₹29/mo</Text>
               </View>
               <Feather name="chevron-right" size={18} color={theme.primary} />

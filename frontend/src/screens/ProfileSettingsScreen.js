@@ -81,7 +81,7 @@ function ProfileAvatar({ name = "", uri, size = 74 }) {
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
-    .toUpperCase() || "TCM One";
+    .toUpperCase() || "Last Class";
 
   const isInvalidWebUri = Platform.OS === "web" && typeof uri === "string" && uri.startsWith("file://");
 
@@ -246,7 +246,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
     {
       id: "welcome_1",
       sender: "ai",
-      text: "Hello! I am your TCM AI Support Specialist 🤖. How can I help you today? Ask about course access, doubt rooms, wallet/coins, or mentor bookings."
+      text: "Hello! I am your Oveta AI Support Specialist 🤖. How can I help you today? Ask about course access, doubt rooms, wallet/coins, or mentor bookings."
     }
   ]);
 
@@ -1303,7 +1303,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
               {askingSupportAi ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4 }}>
                   <ActivityIndicator size="small" color={activeAppTheme.primary} />
-                  <Text style={{ fontSize: 11.5, color: activeAppTheme.subtext, fontStyle: "italic" }}>TCM AI Support is typing answer...</Text>
+                  <Text style={{ fontSize: 11.5, color: activeAppTheme.subtext, fontStyle: "italic" }}>Oveta AI Support is typing answer...</Text>
                 </View>
               ) : null}
             </ScrollView>

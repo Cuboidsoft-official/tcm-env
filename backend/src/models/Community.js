@@ -23,7 +23,7 @@ const communitySchema = new mongoose.Schema(
     },
     creatorRole: {
       type: String,
-      default: "TCM One Mentor"
+      default: "Last Class Mentor"
     },
     creatorAvatarUrl: String,
     privacy: {

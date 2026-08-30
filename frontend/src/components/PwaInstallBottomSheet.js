@@ -113,7 +113,7 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
             onShowToast({
               type: "success",
               title: "App Installed 🎉",
-              subtitle: "TCM One app added to your Home Screen!"
+              subtitle: "Last Class app added to your Home Screen!"
             });
           }
           setVisible(false);
@@ -202,7 +202,7 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
 
               <View style={styles.headerInfo}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Text style={[styles.appTitle, { color: theme.text }]}>TCM One</Text>
+                  <Text style={[styles.appTitle, { color: theme.text }]}>Last Class</Text>
                   <View style={[styles.pwaTag, { backgroundColor: theme.primary }]}>
                     <Text style={styles.pwaTagText}>PWA APP</Text>
                   </View>
