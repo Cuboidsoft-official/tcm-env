@@ -560,7 +560,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
   const tabs = home?.tabs?.length ? home.tabs : fallbackTabs;
   const categories = home?.categories || [];
   const posts = home?.posts || [];
-  const contentWidth = Math.min(width - 24, 820);
+  const contentWidth = Math.min(width, 1200);
 
   useEffect(() => {
     loadHome();
@@ -1313,7 +1313,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
             }
           >
             <View style={[styles.page, { width: (activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community") ? "100%" : contentWidth }]}>
-              {!targetUserProfile && (activeTab === "Learn" || (activeTab === "Community" && isCommChannelOpen)) ? null : (
+              {!targetUserProfile && (activeTab === "Community" || activeTab === "community" || activeTab === "Chats" || activeTab === "chats" || activeTab === "Doubts" || activeTab === "doubts") ? null : (
                 <Header
                   user={user}
                   notifications={unreadNotifCount || home?.notifications || 0}
@@ -1398,6 +1398,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
                 navigation={{ goBack: () => setActiveTab("Home") }}
                 onChannelStateChange={(isOpen) => setIsCommChannelOpen(isOpen)}
                 onOpenChannelChat={(targetChannel) => setActiveChatUser(targetChannel)}
+                onOpenSidebar={() => setSidebarOpen(true)}
+                onNotifications={() => handleSelectDrawerItem("Notifications")}
               />
             ) : activeTab === "Learn" ? (
               <LearnScreen
@@ -1423,6 +1425,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
                 onSelectDoubtRoom={(roomItem) => {
                   setActiveDoubtRoom(roomItem);
                 }}
+                onOpenSidebar={() => setSidebarOpen(true)}
+                onNotifications={() => handleSelectDrawerItem("Notifications")}
               />
             ) : activeTab === "Profile" ? (
               <ProfileScreen
@@ -1807,7 +1811,7 @@ function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
   if (!categories.length) return null;
 
   return (
-    <ScrollView horizontal contentContainerStyle={{ gap: 6, paddingHorizontal: 2, paddingBottom: 10 }} showsHorizontalScrollIndicator={false}>
+    <ScrollView horizontal contentContainerStyle={{ gap: 6, paddingHorizontal: 14, paddingBottom: 10 }} showsHorizontalScrollIndicator={false}>
       {categories.map((category) => {
         const active = category === activeCategory;
         const conf = getCategoryIconConfig(category);
@@ -5339,11 +5343,13 @@ const styles = StyleSheet.create({
   },
   scroll: {
     alignItems: "center",
-    paddingBottom: 88
+    paddingBottom: 88,
+    width: "100%"
   },
   page: {
     alignSelf: "center",
-    paddingHorizontal: 0
+    paddingHorizontal: 0,
+    width: "100%"
   },
   header: {
     alignItems: "center",
@@ -5351,7 +5357,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingBottom: 10,
     paddingTop: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
+    width: "100%",
     position: Platform.OS === "web" ? "sticky" : "relative",
     top: 0,
     zIndex: 100,
@@ -5477,7 +5484,8 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 16
+    marginBottom: 16,
+    paddingHorizontal: 14
   },
   searchBox: {
     alignItems: "center",

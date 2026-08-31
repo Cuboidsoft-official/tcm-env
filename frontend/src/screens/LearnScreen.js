@@ -12,7 +12,7 @@ import {
   TextInput,
   View
 } from "react-native";
-import { Feather, FontAwesome, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, FontAwesome, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import ViewAllMentorsModal from "../components/ViewAllMentorsModal";
 import AiRoadmapPlannerModal from "../components/AiRoadmapPlannerModal";
 import TcmAiExamModal from "../components/TcmAiExamModal";
@@ -301,25 +301,6 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <View style={styles.topHeader}>
-        <View style={styles.headerLeft}>
-          <Pressable onPress={onOpenSidebar} style={[styles.menuBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Feather name="menu" size={22} color={theme.text} />
-          </Pressable>
-          <View style={styles.titleWrap}>
-            <Text style={[styles.screenTitle, { color: theme.text }]}>Learn</Text>
-            <Text numberOfLines={1} style={[styles.screenSub, { color: theme.subtext }]}>Grow your skills</Text>
-          </View>
-        </View>
-
-        <View style={styles.headerRight}>
-          <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", "You have learning updates."))} style={[styles.headerIconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Feather name="bell" size={18} color={theme.text} />
-            <View style={[styles.notifDot, { backgroundColor: theme.primary }]} />
-          </Pressable>
-        </View>
-      </View>
-
       {/* 1. Hero Sliders Carousel */}
       {heroBanners.length > 0 ? (
         <View style={styles.bannerContainer}>
@@ -888,7 +869,11 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingBottom: 30
+    paddingHorizontal: 14,
+    paddingBottom: 30,
+    width: "100%",
+    maxWidth: 1200,
+    alignSelf: "center"
   },
 
   // 1. Top Header Bar
@@ -932,16 +917,11 @@ const styles = StyleSheet.create({
     gap: 10
   },
   headerIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#FFFFFF",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#F0EFFF",
-    position: "relative",
-    ...shadow.soft
+    justifyContent: "center"
   },
   notifDot: {
     position: "absolute",
@@ -987,7 +967,7 @@ const styles = StyleSheet.create({
     marginBottom: 22
   },
   bannerCard: {
-    width: Math.min(width - 32, 580),
+    width: Math.min(width - 28, 640),
     maxWidth: "100%",
     backgroundColor: "#E8F5E9",
     borderRadius: 22,
@@ -1159,7 +1139,7 @@ const styles = StyleSheet.create({
     elevation: 2
   },
   roadmapCardBanner: {
-    marginHorizontal: 16,
+    marginHorizontal: 0,
     marginTop: 14,
     marginBottom: 8,
     backgroundColor: "#0A6836",

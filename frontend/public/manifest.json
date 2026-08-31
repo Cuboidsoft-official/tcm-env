@@ -5,8 +5,9 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait",
-  "background_color": "#F4F7F4",
+  "background_color": "#0F172A",
   "theme_color": "#0A6836",
   "categories": ["education", "social", "productivity"],
   "icons": [

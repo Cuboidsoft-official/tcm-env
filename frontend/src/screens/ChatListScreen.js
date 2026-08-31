@@ -14,14 +14,14 @@ import {
   TextInput,
   View
 } from "react-native";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { getChatConversations, getDoubtsList, createDoubtThread, getDoubtRooms, createDoubtRoom, searchKnowledgeBase } from "../api/client";
 import { shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
-export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoom }) {
+export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoom, onOpenSidebar, onNotifications }) {
   const [activeTab, setActiveTab] = useState("chats"); // "chats" | "doubts"
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchInput, setShowSearchInput] = useState(false);
@@ -233,25 +233,31 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <View style={{ width: "100%", alignSelf: "center", flex: 1, paddingHorizontal: Platform.OS === "web" ? 16 : 8 }}>
-        {/* 1. Main Section Header (No Duplicate App Header) */}
-      <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>All Chats</Text>
+      <View style={{ width: "100%", maxWidth: 1200, alignSelf: "center", flex: 1, paddingHorizontal: 14 }}>
+        {/* Native App Messages Header */}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 0, marginBottom: 14, borderBottomWidth: 1, borderBottomColor: theme.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)" }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: theme.isDark ? "#312E81" : "#EEF2FF", alignItems: "center", justifyContent: "center" }}>
+            <Feather name="message-square" size={17} color={theme.primary} />
+          </View>
+          <Text style={{ fontSize: 19, fontFamily: fonts.bold, color: theme.text }}>Chats</Text>
+        </View>
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
           <Pressable
             onPress={() => setShowRoomModal(true)}
-            style={{
+            style={({ pressed }) => [{
               flexDirection: "row",
               alignItems: "center",
               backgroundColor: theme.primary,
-              paddingHorizontal: 12,
-              paddingVertical: 7,
-              borderRadius: 20,
-              gap: 4
-            }}
+              paddingHorizontal: 9,
+              paddingVertical: 5,
+              borderRadius: 16,
+              gap: 3
+            }, pressed && { opacity: 0.85 }]}
           >
-            <Feather name="plus-circle" size={14} color="#FFFFFF" />
-            <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>Create Room</Text>
+            <Feather name="plus-circle" size={13} color="#FFFFFF" />
+            <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 11 }}>Create Room</Text>
           </Pressable>
 
           <Pressable
@@ -259,13 +265,17 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               setShowSearchInput(!showSearchInput);
               if (showSearchInput) setSearchQuery("");
             }}
-            style={[styles.compactRefreshBtn, { backgroundColor: showSearchInput ? theme.primary : (theme.isDark ? "#1E263B" : "#F0EDFF") }]}
+            style={({ pressed }) => [{ width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: showSearchInput ? theme.primary : (theme.isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9"), borderWidth: 1, borderColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0" }, pressed && { opacity: 0.75 }]}
           >
-            <Feather name="search" size={14} color={showSearchInput ? "#FFFFFF" : theme.primary} />
+            <Feather name="search" size={15} color={showSearchInput ? "#FFFFFF" : theme.primary} />
           </Pressable>
 
-          <Pressable onPress={() => fetchConversations()} style={[styles.compactRefreshBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F0EDFF" }]}>
+          <Pressable onPress={() => fetchConversations()} style={({ pressed }) => [{ width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9", borderWidth: 1, borderColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0" }, pressed && { opacity: 0.75 }]}>
             <Feather name="refresh-cw" size={14} color={theme.primary} />
+          </Pressable>
+
+          <Pressable onPress={onOpenSidebar} style={({ pressed }) => [{ width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9", borderWidth: 1, borderColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0" }, pressed && { opacity: 0.75 }]}>
+            <Ionicons name="grid-outline" size={17} color={theme.primary} />
           </Pressable>
         </View>
       </View>
@@ -703,8 +713,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
-    paddingHorizontal: 8,
-    paddingTop: 10
+    paddingHorizontal: 0,
+    paddingTop: 4
   },
 
   // 1. Main Section Header
