@@ -33,7 +33,7 @@ const communityPostSchema = new mongoose.Schema(
     },
     postType: {
       type: String,
-      enum: ["daily_update", "exam_news", "job_news", "study_doc", "general"],
+      enum: ["daily_update", "exam_news", "job_news", "study_doc", "general", "photo", "video", "showcase", "notes", "code", "roadmap", "question", "poll"],
       default: "general"
     },
     targetCourseId: {

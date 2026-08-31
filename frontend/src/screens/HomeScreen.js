@@ -729,7 +729,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
         console.warn("Normalize draft error:", err);
       }
 
-      const isRemote = (uri) => !uri || /^https?:\/\//i.test(uri);
+      const isRemote = (uri) => !uri || /^(https?:\/\/|\/uploads\/|data:(image|video)\/)/i.test(uri);
       const pendingLocal = [
         normalizedDraft.mediaUrl,
         normalizedDraft.fileUri,
@@ -1671,7 +1671,7 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
       <View style={[styles.header, { backgroundColor: theme.bg }]}>
         <View style={styles.brandRow}>
           <Pressable onPress={onBack} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
-            <Feather name="chevron-left" size={26} color={iconColor} />
+            <Feather name="chevron-left" size={24} color={iconColor} />
           </Pressable>
           <View style={styles.brandWrap}>
             <ZigZagFlowTcmOneLogo />
@@ -1679,8 +1679,8 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
           </View>
         </View>
         <View style={styles.headerActions}>
-          <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={styles.iconButton}>
-            <Feather name="bell" size={24} color={iconColor} />
+          <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={[styles.iconButton, { backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F4F3F8" }]}>
+            <Feather name="bell" size={19} color={iconColor} />
             {notifications ? (
               <View style={styles.headerBadge}>
                 <Text style={styles.headerBadgeText}>{notifications > 9 ? "9+" : notifications}</Text>
@@ -1688,7 +1688,7 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
             ) : null}
           </Pressable>
           <Pressable onPress={onProfile} style={[styles.profileRing, { backgroundColor: theme.cardBg, borderColor: theme.primary }]}>
-            <Avatar name={user.name} uri={user.avatarUrl} size={32} />
+            <Avatar name={user.name} uri={user.avatarUrl} size={28} />
           </Pressable>
         </View>
       </View>
@@ -1698,17 +1698,14 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
   return (
     <View style={[styles.header, { backgroundColor: theme.bg }]}>
       <View style={styles.brandRow}>
-        <Pressable onPress={onOpenSidebar} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
-          <Feather name="menu" size={25} color={iconColor} />
-        </Pressable>
         <View style={styles.brandWrap}>
           <ZigZagFlowTcmOneLogo />
           <Text style={[styles.brandSub, { color: subtextColor }]}>Decoding The Mind</Text>
         </View>
       </View>
       <View style={styles.headerActions}>
-        <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={styles.iconButton}>
-          <Feather name="bell" size={24} color={iconColor} />
+        <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={[styles.iconButton, { backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F4F3F8" }]}>
+          <Feather name="bell" size={19} color={iconColor} />
           {notifications ? (
             <View style={styles.headerBadge}>
               <Text style={styles.headerBadgeText}>{notifications > 9 ? "9+" : notifications}</Text>
@@ -1716,14 +1713,17 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
           ) : null}
         </Pressable>
         {isSelfProfile ? (
-          <Pressable onPress={onOpenSettings} style={[styles.iconButton, { backgroundColor: theme.badgeBg, borderRadius: 20, width: 36, height: 36, alignItems: "center", justifyContent: "center" }]}>
-            <Feather name="settings" size={20} color={theme.primary} />
+          <Pressable onPress={onOpenSettings} style={[styles.iconButton, { backgroundColor: theme.badgeBg }]}>
+            <Feather name="settings" size={19} color={theme.primary} />
           </Pressable>
         ) : (
           <Pressable onPress={onProfile} style={[styles.profileRing, { backgroundColor: theme.cardBg, borderColor: theme.primary }]}>
-            <Avatar name={user.name} uri={user.avatarUrl} size={32} />
+            <Avatar name={user.name} uri={user.avatarUrl} size={28} />
           </Pressable>
         )}
+        <Pressable onPress={onOpenSidebar} style={({ pressed }) => [styles.menuButton, { backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F4F3F8" }, pressed && styles.pressed]}>
+          <Ionicons name="grid-outline" size={20} color={iconColor} />
+        </Pressable>
       </View>
     </View>
   );
@@ -5104,7 +5104,7 @@ function LoadingState() {
       >
         <ActivityIndicator size="small" color={theme.primary} />
         <Text style={{ fontFamily: fonts.semiBold, fontSize: 13, color: theme.primary }}>
-          Curating live TCM feed & stories...
+          Curating live LastClass feed & stories...
         </Text>
       </View>
 
@@ -5332,7 +5332,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingBottom: 10,
     paddingTop: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     position: Platform.OS === "web" ? "sticky" : "relative",
     top: 0,
     zIndex: 100,
@@ -5351,10 +5351,10 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     alignItems: "center",
-    height: 44,
     justifyContent: "center",
-    marginRight: 13,
-    width: 34
+    width: 36,
+    height: 36,
+    borderRadius: 18
   },
   brandWrap: {
     flexShrink: 1,
@@ -5376,7 +5376,7 @@ const styles = StyleSheet.create({
   headerActions: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 9
+    gap: 8
   },
   headerWalletPill: {
     flexDirection: "row",
@@ -5421,24 +5421,23 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     alignItems: "center",
-    backgroundColor: "transparent",
-    borderRadius: 21,
-    height: 42,
     justifyContent: "center",
-    width: 42
+    width: 36,
+    height: 36,
+    borderRadius: 18
   },
   headerBadge: {
     alignItems: "center",
     backgroundColor: colors.primary,
     borderColor: "#FFFFFF",
-    borderRadius: 8,
-    borderWidth: 2,
-    height: 16,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    height: 14,
     justifyContent: "center",
-    minWidth: 16,
+    minWidth: 14,
     paddingHorizontal: 2,
     position: "absolute",
-    right: 3,
+    right: 2,
     top: 2
   },
   headerBadgeText: {
@@ -5450,11 +5449,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderColor: colors.primary,
-    borderRadius: 21,
+    borderRadius: 18,
     borderWidth: 1.5,
-    height: 42,
+    height: 36,
     justifyContent: "center",
-    width: 42
+    width: 36
   },
   searchRow: {
     flexDirection: "row",

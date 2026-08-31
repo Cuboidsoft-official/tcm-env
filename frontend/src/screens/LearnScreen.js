@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Alert,
   Dimensions,
@@ -130,21 +130,78 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
   const [selectedPaymentCourse, setSelectedPaymentCourse] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
+  const bannerScrollRef = useRef(null);
   const safeLearn = learn || {};
-  const heroBanners = safeLearn.heroBanners?.length ? safeLearn.heroBanners : defaultHeroBanners;
-  const topCategories = safeLearn.topCategories?.length ? safeLearn.topCategories : defaultTopCategories;
-  const expertMentors = safeLearn.expertMentors?.length ? safeLearn.expertMentors : defaultExpertMentors;
+  const topCategories = (safeLearn.topCategories && safeLearn.topCategories.length) ? safeLearn.topCategories : defaultTopCategories;
+  const expertMentors = (safeLearn.expertMentors && safeLearn.expertMentors.length) ? safeLearn.expertMentors : defaultExpertMentors;
   const initialPopular = Array.isArray(safeLearn.popularCourses) ? safeLearn.popularCourses : defaultPopularCourses;
 
   const [popularCourses, setPopularCourses] = useState(initialPopular);
   const [aiExamModalVisible, setAiExamModalVisible] = useState(false);
   const [continueLearningList, setContinueLearningList] = useState(
-    safeLearn.continueLearning?.length ? safeLearn.continueLearning : []
+    (safeLearn.continueLearning && safeLearn.continueLearning.length) ? safeLearn.continueLearning : []
   );
+
+  // Dynamic Auto-Generated Hero Banners (Exactly 4 Slides)
+  const heroBanners = useMemo(() => {
+    if (safeLearn.heroBanners && safeLearn.heroBanners.length >= 4) return safeLearn.heroBanners.slice(0, 4);
+
+    const generated = [];
+    const sourceCourses = Array.isArray(popularCourses) && popularCourses.length > 0 ? popularCourses : [];
+
+    const tags = ["🔥 FEATURED BATCH", "⭐ TOP RATED 2026", "🚀 HIGH PLACEMENT", "⚡ LIVE INTERACTIVE"];
+    const buttons = ["Enroll Now →", "Explore Course →", "Join Batch →", "View Details →"];
+
+    sourceCourses.forEach((c, idx) => {
+      if (generated.length < 4) {
+        generated.push({
+          id: c.id || `gen_c_${idx}`,
+          tag: c.badge || c.tag || tags[idx % tags.length],
+          title: c.title ? String(c.title).replace(" - ", "\n") : "Live Batch Course",
+          subtitle: `${c.category || "Professional Course"} • ${c.rating || "4.9 ⭐"} (${c.studentsCount || "1.2k+ Students"})`,
+          buttonText: buttons[idx % buttons.length],
+          image: safeImageUri(c.image || c.imageUrl || c.thumbnailUrl || defaultHeroBanners[idx % defaultHeroBanners.length].image)
+        });
+      }
+    });
+
+    let fallbackIdx = 0;
+    while (generated.length < 4) {
+      const fb = defaultHeroBanners[fallbackIdx % defaultHeroBanners.length];
+      if (!generated.some((item) => item.id === fb.id)) {
+        generated.push(fb);
+      }
+      fallbackIdx++;
+    }
+
+    return generated.slice(0, 4);
+  }, [safeLearn.heroBanners, popularCourses]);
+
+  // Auto-scroll Slider every 4.5 seconds
+  useEffect(() => {
+    if (!heroBanners || heroBanners.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setActiveBannerIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % heroBanners.length;
+        if (bannerScrollRef.current) {
+          try {
+            bannerScrollRef.current.scrollTo({
+              x: nextIndex * (width - 32),
+              animated: true
+            });
+          } catch (e) {}
+        }
+        return nextIndex;
+      });
+    }, 4500);
+
+    return () => clearInterval(interval);
+  }, [heroBanners]);
 
   async function handleSaveExamResult(resultData) {
     try {
-      const token = session?.token || user?.token;
+      const token = (session && session.token) || (user && user.token);
       if (token) {
         await saveExamResult(token, resultData);
       }
@@ -154,20 +211,20 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
   }
 
   useEffect(() => {
-    if (Array.isArray(learn?.popularCourses)) {
+    if (Array.isArray(learn && learn.popularCourses)) {
       setPopularCourses(learn.popularCourses);
     }
-  }, [learn?.popularCourses]);
+  }, [learn && learn.popularCourses]);
 
   useEffect(() => {
     loadRealContinueLearningData();
-  }, [session?.token]);
+  }, [session && session.token]);
 
   async function loadRealContinueLearningData() {
     try {
-      if (session?.token) {
+      if (session && session.token) {
         const data = await getContinueLearningDetails(session.token);
-        if (data && !data.noEnrolledCourses && (data.enrolledCourses?.length || data.courseTitle)) {
+        if (data && !data.noEnrolledCourses && ((data.enrolledCourses && data.enrolledCourses.length) || data.courseTitle)) {
           setContinueLearningList(
             data.enrolledCourses && data.enrolledCourses.length > 0
               ? data.enrolledCourses
@@ -176,7 +233,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
                     id: data.courseId || "c_active",
                     title: data.courseTitle,
                     subtitle: `Mentor: ${data.mentorName || "Mentor"} • Live Batch Ready`,
-                    progress: data.userProgress?.courseProgress || 0,
+                    progress: (data.userProgress && data.userProgress.courseProgress) || 0,
                     icon: "code-tags",
                     iconColor: "#0A6836",
                     bgColor: "#E8F5E9"
@@ -251,14 +308,11 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           </Pressable>
           <View style={styles.titleWrap}>
             <Text style={[styles.screenTitle, { color: theme.text }]}>Learn</Text>
-            <Text style={[styles.screenSub, { color: theme.subtext }]}>Explore courses and grow your skills</Text>
+            <Text numberOfLines={1} style={[styles.screenSub, { color: theme.subtext }]}>Grow your skills</Text>
           </View>
         </View>
 
         <View style={styles.headerRight}>
-          <Pressable onPress={() => Alert.alert("Search", "Type in the search bar below to search courses.")} style={[styles.headerIconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Feather name="search" size={18} color={theme.text} />
-          </Pressable>
           <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", "You have learning updates."))} style={[styles.headerIconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <Feather name="bell" size={18} color={theme.text} />
             <View style={[styles.notifDot, { backgroundColor: theme.primary }]} />
@@ -266,46 +320,11 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       </View>
 
-      <View style={[styles.searchBoxCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-        <Feather name="search" size={18} color={theme.subtext} style={{ marginRight: 10 }} />
-        <TextInput
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search for courses, topics or skills..."
-          placeholderTextColor={theme.subtext}
-          style={[styles.searchInput, { color: theme.text }]}
-        />
-        {searchQuery ? (
-          <Pressable onPress={() => setSearchQuery("")} style={{ marginRight: 6 }}>
-            <Feather name="x" size={16} color={theme.subtext} />
-          </Pressable>
-        ) : null}
-        <Pressable onPress={() => Alert.alert("Filter Courses", "Filter by Category, Difficulty & Rating")} style={styles.filterBtn}>
-          <MaterialCommunityIcons name="tune-variant" size={18} color="#181725" />
-        </Pressable>
-      </View>
-
-      <Pressable
-        onPress={() => setRoadmapModalVisible(true)}
-        style={({ pressed }) => [styles.quickAiRoadmapBar, { backgroundColor: theme.isDark ? "#1E1B4B" : "#E8F5E9", borderColor: theme.border }, pressed && styles.pressed]}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
-          <View style={styles.quickAiBadgeIcon}>
-            <MaterialCommunityIcons name="map-marker-path" size={20} color="#FFFFFF" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text }}>Plan My Learning Roadmap</Text>
-            <Text numberOfLines={1} style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.primary }}>Interactive AI Career & Budget Guide</Text>
-          </View>
-        </View>
-        <View style={[styles.quickAiBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.primary }}>Start →</Text>
-        </View>
-      </Pressable>
-
+      {/* 1. Hero Sliders Carousel */}
       {heroBanners.length > 0 ? (
         <View style={styles.bannerContainer}>
           <ScrollView
+            ref={bannerScrollRef}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
@@ -353,6 +372,62 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           </View>
         </View>
       ) : null}
+
+      {/* 2. Redesigned Interactive AI Career & Budget Roadmap Card */}
+      <Pressable
+        onPress={() => setRoadmapModalVisible(true)}
+        style={({ pressed }) => [
+          styles.quickAiRoadmapBar,
+          {
+            backgroundColor: theme.isDark ? "#1E1B4B" : "#F5F3FF",
+            borderColor: theme.isDark ? "#4338CA" : "#C4B5FD"
+          },
+          pressed && styles.pressed
+        ]}
+      >
+        <View style={styles.roadmapCardHeaderRow}>
+          <View style={[styles.aiSparkleBadge, { backgroundColor: theme.isDark ? "#312E81" : "#EDE9FE" }]}>
+            <MaterialCommunityIcons name="sparkles" size={14} color="#7C3AED" />
+            <Text style={[styles.aiSparkleText, { color: "#7C3AED" }]}>AI CAREER NAVIGATOR</Text>
+          </View>
+
+          <View style={[styles.roadmapLiveBadge, { backgroundColor: theme.isDark ? "#064E3B" : "#ECFDF5" }]}>
+            <View style={styles.liveIndicatorDot} />
+            <Text style={[styles.liveBadgeText, { color: theme.isDark ? "#34D399" : "#059669" }]}>Interactive AI Guide</Text>
+          </View>
+        </View>
+
+        <View style={styles.roadmapMainContentRow}>
+          <View style={[styles.quickAiBadgeIcon, { backgroundColor: "#7C3AED" }]}>
+            <MaterialCommunityIcons name="map-marker-path" size={22} color="#FFFFFF" />
+          </View>
+
+          <View style={{ flex: 1, paddingLeft: 10, paddingRight: 6 }}>
+            <Text numberOfLines={1} style={[styles.roadmapMainTitle, { color: theme.text }]}>
+              Plan My Learning Roadmap
+            </Text>
+            <Text numberOfLines={1} style={[styles.roadmapSubTitle, { color: theme.subtext }]}>
+              Interactive AI Career Path, Skill Matrix & Budget Guide
+            </Text>
+
+            <View style={styles.roadmapChipsRow}>
+              <View style={[styles.roadmapChip, { backgroundColor: theme.isDark ? "#2E1065" : "#EDE9FE", borderColor: theme.isDark ? "#581C87" : "#DDD6FE" }]}>
+                <Text style={[styles.roadmapChipText, { color: theme.isDark ? "#C084FC" : "#6D28D9" }]}>🎯 Goals</Text>
+              </View>
+              <View style={[styles.roadmapChip, { backgroundColor: theme.isDark ? "#064E3B" : "#D1FAE5", borderColor: theme.isDark ? "#065F46" : "#A7F3D0" }]}>
+                <Text style={[styles.roadmapChipText, { color: theme.isDark ? "#34D399" : "#047857" }]}>💰 Budget</Text>
+              </View>
+              <View style={[styles.roadmapChip, { backgroundColor: theme.isDark ? "#1E3A8A" : "#DBEAFE", borderColor: theme.isDark ? "#1E40AF" : "#BFDBFE" }]}>
+                <Text style={[styles.roadmapChipText, { color: theme.isDark ? "#60A5FA" : "#1D4ED8" }]}>⚡ Milestones</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={[styles.quickAiBtn, { backgroundColor: "#7C3AED", borderColor: "#6D28D9" }]}>
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#FFFFFF" }}>Start AI →</Text>
+          </View>
+        </View>
+      </Pressable>
 
       <View style={styles.exploreTcmSection}>
         <Text style={[styles.exploreTcmHeaderTitle, { color: theme.text }]}>Explore Last Class</Text>
@@ -692,7 +767,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
       )}
 
       {expertMentors.length > 0 ? (
-        <>
+        <React.Fragment>
           <View style={styles.sectionHeaderRow}>
             <Text style={[styles.sectionTitleText, { color: theme.text }]}>Our Expert Mentors</Text>
             <Pressable onPress={() => (onOpenAllMentors ? onOpenAllMentors() : setAllMentorsModalVisible(true))}>
@@ -702,7 +777,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContent}>
             {expertMentors.map((mentor) => {
-              const mAvatar = (user?.role === "mentor" || user?.isMentor) ? (user.avatarUrl || mentor.avatarUrl) : mentor.avatarUrl;
+              const mAvatar = ((user && user.role === "mentor") || (user && user.isMentor)) ? (user.avatarUrl || mentor.avatarUrl) : mentor.avatarUrl;
               const hasRealAvatar = Boolean(mAvatar && typeof mAvatar === "string" && mAvatar.trim().length > 5);
               const initials = (mentor.name || "Mentor").split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "M";
 
@@ -764,12 +839,12 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             );
           })}
         </ScrollView>
-        </>
+        </React.Fragment>
       ) : null}
 
       <ViewAllMentorsModal
         visible={allMentorsModalVisible}
-        session={session || { token: user?.token }}
+        session={session || { token: user && user.token }}
         onClose={() => setAllMentorsModalVisible(false)}
         onSelectMentor={(mId) => {
           setAllMentorsModalVisible(false);
@@ -805,7 +880,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
       />
 
       {topCategories.length > 0 ? (
-        <>
+        <React.Fragment>
           <View style={styles.sectionHeaderRow}>
             <Text style={[styles.sectionTitleText, { color: theme.text }]}>Top Categories</Text>
             <Pressable onPress={() => Alert.alert("Top Categories", "Browse all 18 learning categories.")}>
@@ -828,7 +903,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               </Pressable>
             ))}
           </ScrollView>
-        </>
+        </React.Fragment>
       ) : null}
     </View>
   );
@@ -936,7 +1011,8 @@ const styles = StyleSheet.create({
     marginBottom: 22
   },
   bannerCard: {
-    width: width - 40,
+    width: Math.min(width - 32, 580),
+    maxWidth: "100%",
     backgroundColor: "#E8F5E9",
     borderRadius: 22,
     padding: 18,
@@ -1008,33 +1084,103 @@ const styles = StyleSheet.create({
   quickAiRoadmapBar: {
     width: "100%",
     alignSelf: "stretch",
-    marginTop: 8,
-    marginBottom: 14,
-    backgroundColor: "#E8F5E9",
-    borderWidth: 1,
-    borderColor: "#C4B5FD",
-    borderRadius: 16,
+    marginTop: 4,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 14,
+    ...shadow.soft
+  },
+  roadmapCardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10
+  },
+  aiSparkleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12
+  },
+  aiSparkleText: {
+    fontSize: 10,
+    fontFamily: fonts.bold,
+    letterSpacing: 0.6
+  },
+  roadmapLiveBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10
+  },
+  liveIndicatorDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#10B981"
+  },
+  liveBadgeText: {
+    fontSize: 10.5,
+    fontFamily: fonts.semiBold
+  },
+  roadmapMainContentRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between"
   },
   quickAiBadgeIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#0A6836",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#7C3AED",
     alignItems: "center",
     justifyContent: "center"
   },
+  roadmapMainTitle: {
+    fontSize: 14.5,
+    fontFamily: fonts.bold,
+    lineHeight: 20
+  },
+  roadmapSubTitle: {
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    lineHeight: 15,
+    marginTop: 1
+  },
+  roadmapChipsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 6
+  },
+  roadmapChip: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1
+  },
+  roadmapChipText: {
+    fontSize: 10,
+    fontFamily: fonts.semiBold
+  },
   quickAiBtn: {
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    backgroundColor: "#7C3AED",
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#DDD6FE"
+    borderColor: "#6D28D9",
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2
   },
   roadmapCardBanner: {
     marginHorizontal: 16,
