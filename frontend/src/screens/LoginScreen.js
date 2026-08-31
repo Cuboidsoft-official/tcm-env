@@ -67,14 +67,14 @@ export default function LoginScreen({ onLogin }) {
   const { width, height } = useWindowDimensions();
   const [mode, setMode] = useState("login");
   const [role, setRole] = useState("student");
-  const [mentorCategory, setMentorCategory] = useState("TCM Information Tech");
+  const [mentorCategory, setMentorCategory] = useState("Last Class Information Tech");
   const [secure, setSecure] = useState(true);
   const [confirmSecure, setConfirmSecure] = useState(true);
 
   const mentorCategoryOptions = [
-    { key: "TCM Information Tech", label: "TCM Information Tech", desc: "Coding, MERN, AI, DevOps", icon: "laptop-mac", color: "#5B3CF5" },
-    { key: "TCM Academy", label: "TCM Academy", desc: "NEET, JEE, Boards", icon: "school", color: "#2E7D32" },
-    { key: "TCM Government", label: "TCM Government", desc: "UPSC, SSC CGL, Banking, Railway", icon: "bank", color: "#2F79B9" }
+    { key: "Last Class Information Tech", label: "Last Class Information Tech", desc: "Coding, MERN, AI, DevOps", icon: "laptop-mac", color: "#5B3CF5" },
+    { key: "Last Class Academy", label: "Last Class Academy", desc: "NEET, JEE, Boards", icon: "school", color: "#2E7D32" },
+    { key: "Last Class Government", label: "Last Class Government", desc: "UPSC, SSC CGL, Banking, Railway", icon: "bank", color: "#2F79B9" }
   ];
   const [loading, setLoading] = useState(false);
   const googleSignInInFlight = useRef(false);

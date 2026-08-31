@@ -28,7 +28,7 @@ export default function SidebarDrawer({
     ? user.handle.replace(/^@/, "")
     : (name ? name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") : "tcm_student");
   const handle = `@${rawHandle}`;
-  const memberBadge = user.memberBadge || (user.role === "mentor" ? "Verified Mentor" : user.verified ? "Verified Member" : "TCM Student");
+  const memberBadge = user.memberBadge || (user.role === "mentor" ? "Verified Mentor" : user.verified ? "Verified Member" : "Last Class Student");
   const rawAvatar = user.avatarUrl || "";
   const isInvalidWebUri = Platform.OS === "web" && typeof rawAvatar === "string" && rawAvatar.startsWith("file://");
   const avatarUri = isInvalidWebUri ? null : rawAvatar;
@@ -217,7 +217,7 @@ export default function SidebarDrawer({
               ) : null}
               <MenuItem
                 icon={<Feather name="download" size={18} color={theme.primary} />}
-                label="Install TCM App (PWA)"
+                label="Install Last Class App (PWA)"
                 active={false}
                 onPress={() => {
                   onClose();
@@ -227,8 +227,8 @@ export default function SidebarDrawer({
               <MenuItem
                 icon={<Feather name="users" size={18} />}
                 label="Last Class Community"
-                active={activeItem === "TCM Community" || activeItem === "Community" || activeItem === "Last Class Community"}
-                onPress={() => handleNavigate("TCM Community")}
+                active={activeItem === "Last Class Community" || activeItem === "Community" || activeItem === "Last Class Community"}
+                onPress={() => handleNavigate("Last Class Community")}
               />
               <MenuItem
                 icon={<Feather name="tv" size={18} />}

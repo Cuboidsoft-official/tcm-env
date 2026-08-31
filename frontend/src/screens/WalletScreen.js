@@ -120,13 +120,13 @@ export default function WalletScreen({ session, user = {}, onBack }) {
   function handleCopyReferral() {
     setCopiedToast(true);
     setTimeout(() => setCopiedToast(false), 2500);
-    Alert.alert("Referral Code Copied", `Code: ${referralCode}\nShare with friends to earn ₹100 & 50 TCM Coins per referral!`);
+    Alert.alert("Referral Code Copied", `Code: ${referralCode}\nShare with friends to earn ₹100 & 50 Last Class Coins per referral!`);
   }
 
   function handleShareReferral() {
     Alert.alert(
       "Share Referral Link",
-      `Join me on TCM Academy using my code ${referralCode} and get 10 TCM Coins & ₹500 converted referral reward!\n\nLink: https://tcm.app/ref/${referralCode}`
+      `Join me on Last Class Academy using my code ${referralCode} and get 10 Last Class Coins & ₹500 converted referral reward!\n\nLink: https://tcm.app/ref/${referralCode}`
     );
   }
 
@@ -134,7 +134,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
     if (walletData.tcmCoins < 500) {
       Alert.alert(
         "Coins Requirement",
-        `You currently have ${walletData.tcmCoins} TCM Coins. You need 500 coins to convert to ₹100 cash (500 Coins = ₹100).\n\nApply a referral code (+20 coins) or invite friends to earn coins!`
+        `You currently have ${walletData.tcmCoins} Last Class Coins. You need 500 coins to convert to ₹100 cash (500 Coins = ₹100).\n\nApply a referral code (+20 coins) or invite friends to earn coins!`
       );
       return;
     }
@@ -156,7 +156,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
             id: `tx_conv_${Date.now()}`,
             type: "credit",
             title: "Coins Converted to Cash",
-            subtitle: `Converted ${coinsDeducted} TCM Coins to ₹${cashAdded.toFixed(2)} Cash`,
+            subtitle: `Converted ${coinsDeducted} Last Class Coins to ₹${cashAdded.toFixed(2)} Cash`,
             amount: `+ ₹${cashAdded.toFixed(2)}`,
             date: "Just now",
             icon: "gift",
@@ -167,7 +167,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
         ]
       }));
 
-      Alert.alert("Coins Converted! 🎉", `${coinsDeducted} TCM Coins converted successfully! ₹${cashAdded.toFixed(2)} cash added to your available balance.`);
+      Alert.alert("Coins Converted! 🎉", `${coinsDeducted} Last Class Coins converted successfully! ₹${cashAdded.toFixed(2)} cash added to your available balance.`);
     } catch (err) {
       Alert.alert("Conversion Failed", err.message || "Failed to convert coins.");
     } finally {
@@ -215,7 +215,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
     const amt = parseFloat(withdrawAmount) || walletData.availableBalance || 100;
     const upi = upiId.trim() || "Not specified";
     const whatsappNum = "9238695500";
-    const msg = `Hi TCM Support! I want to withdraw ₹${amt.toFixed(2)} from my TCM Wallet. My UPI / Bank details: ${upi}. Please process my withdrawal.`;
+    const msg = `Hi Last Class Support! I want to withdraw ₹${amt.toFixed(2)} from my Last Class Wallet. My UPI / Bank details: ${upi}. Please process my withdrawal.`;
     const encoded = encodeURIComponent(msg);
     const url = `https://wa.me/91${whatsappNum}?text=${encoded}`;
 
@@ -265,7 +265,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
 
       setAddMoneyModalOpen(false);
       setAddAmount("");
-      Alert.alert("Money Added Successfully", `₹${amt.toFixed(2)} added to your TCM Wallet balance.`);
+      Alert.alert("Money Added Successfully", `₹${amt.toFixed(2)} added to your Last Class Wallet balance.`);
     } catch (err) {
       Alert.alert("Error", err.message || "Failed to add money.");
     } finally {
@@ -281,7 +281,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
           <Feather name="chevron-left" size={24} color={theme.text} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Wallet</Text>
-        <Pressable onPress={() => Alert.alert("TCM Wallet Help", "Earn coins via referrals and convert coins to withdrawable cash anytime!")} style={styles.helpBtn}>
+        <Pressable onPress={() => Alert.alert("Last Class Wallet Help", "Earn coins via referrals and convert coins to withdrawable cash anytime!")} style={styles.helpBtn}>
           <Feather name="help-circle" size={20} color={theme.text} />
         </Pressable>
       </View>
@@ -358,9 +358,9 @@ export default function WalletScreen({ session, user = {}, onBack }) {
 
           <View style={[styles.metricDivider, { backgroundColor: theme.border }]} />
 
-          {/* Column 3: TCM Coins */}
+          {/* Column 3: Last Class Coins */}
           <View style={styles.metricCol}>
-            <Text style={[styles.metricLabel, { color: theme.subtext }]}>TCM Coins</Text>
+            <Text style={[styles.metricLabel, { color: theme.subtext }]}>Last Class Coins</Text>
             <View style={styles.metricValueRow}>
               <View style={styles.coinCircle}>
                 <Text style={styles.coinSymbol}>$</Text>
@@ -414,7 +414,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
           {/* Add Friend's Referral Code Section */}
           <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: theme.border }}>
             <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: theme.text, marginBottom: 4 }}>Have a Referral Code?</Text>
-            <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: theme.subtext, marginBottom: 8 }}>Enter someone's referral code to get 20 TCM Coins instantly!</Text>
+            <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: theme.subtext, marginBottom: 8 }}>Enter someone's referral code to get 20 Last Class Coins instantly!</Text>
 
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TextInput
@@ -481,7 +481,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
               <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: theme.primary }}>Eligible for New Course Purchase 🎓</Text>
             </View>
             <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: theme.text, lineHeight: 17 }}>
-              Aap apne converted wallet cash (<Text style={{ fontFamily: fonts.bold, color: theme.primary }}>₹{walletData.availableBalance.toFixed(2)}</Text>) se naye TCM Courses purchase kar sakte hain ya instant course discount claim kar sakte hain!
+              Aap apne converted wallet cash (<Text style={{ fontFamily: fonts.bold, color: theme.primary }}>₹{walletData.availableBalance.toFixed(2)}</Text>) se naye Last Class Courses purchase kar sakte hain ya instant course discount claim kar sakte hain!
             </Text>
           </View>
         </View>
@@ -573,7 +573,7 @@ export default function WalletScreen({ session, user = {}, onBack }) {
               <Feather name="users" size={20} color={theme.primary} />
             </View>
             <Text style={[styles.stepNumTitle, { color: theme.text }]}>1. Refer</Text>
-            <Text style={[styles.stepSubText, { color: theme.subtext }]}>Invite your friends to TCM Academy</Text>
+            <Text style={[styles.stepSubText, { color: theme.subtext }]}>Invite your friends to Last Class Academy</Text>
           </View>
 
           {/* Step 2 */}

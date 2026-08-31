@@ -473,7 +473,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
     else if (pct >= 60) grade = "Proficient";
 
     const timeSpentSec = 360 - timeLeft;
-    const certId = `TCM-ONE-EXAM-${Math.floor(10000 + Math.random() * 90000)}`;
+    const certId = `LC-EXAM-${Math.floor(10000 + Math.random() * 90000)}`;
 
     const examTitleStr = selectedSubSkill !== "All Skills" ? `${selectedSubSkill} (${selectedDomain})` : `${selectedDomain} Assessment`;
 
@@ -1029,7 +1029,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
               Assessment Completed
             </Text>
             <Text style={{ fontSize: 12, color: theme.subtext, textAlign: "center", marginTop: 4, marginBottom: 20 }}>
-              Official TCM Verified Student Achievement Record
+              Official Last Class Verified Student Achievement Record
             </Text>
 
             {/* HIGH QUALITY CERTIFICATE CARD */}
@@ -1113,7 +1113,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
                 </View>
                 <View style={{ flex: 1, backgroundColor: theme.bg, borderRadius: 12, padding: 10, alignItems: "center", borderWidth: 1, borderColor: theme.border }}>
                   <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: "#7C3AED" }}>Verified</Text>
-                  <Text style={{ fontSize: 10, color: theme.subtext, marginTop: 2 }}>TCM AI Badge</Text>
+                  <Text style={{ fontSize: 10, color: theme.subtext, marginTop: 2 }}>Last Class AI Badge</Text>
                 </View>
               </View>
             </View>

@@ -373,57 +373,33 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       ) : null}
 
-      {/* 2. Redesigned Interactive AI Career & Budget Roadmap Card */}
+      {/* 2. Interactive AI Career Roadmap Card */}
       <Pressable
         onPress={() => setRoadmapModalVisible(true)}
         style={({ pressed }) => [
           styles.quickAiRoadmapBar,
           {
-            backgroundColor: theme.isDark ? "#1E1B4B" : "#F5F3FF",
-            borderColor: theme.isDark ? "#4338CA" : "#C4B5FD"
+            backgroundColor: theme.cardBg,
+            borderColor: theme.border
           },
           pressed && styles.pressed
         ]}
       >
-        <View style={styles.roadmapCardHeaderRow}>
-          <View style={[styles.aiSparkleBadge, { backgroundColor: theme.isDark ? "#312E81" : "#EDE9FE" }]}>
-            <MaterialCommunityIcons name="sparkles" size={14} color="#7C3AED" />
-            <Text style={[styles.aiSparkleText, { color: "#7C3AED" }]}>AI CAREER NAVIGATOR</Text>
-          </View>
-
-          <View style={[styles.roadmapLiveBadge, { backgroundColor: theme.isDark ? "#064E3B" : "#ECFDF5" }]}>
-            <View style={styles.liveIndicatorDot} />
-            <Text style={[styles.liveBadgeText, { color: theme.isDark ? "#34D399" : "#059669" }]}>Interactive AI Guide</Text>
-          </View>
-        </View>
-
         <View style={styles.roadmapMainContentRow}>
-          <View style={[styles.quickAiBadgeIcon, { backgroundColor: "#7C3AED" }]}>
-            <MaterialCommunityIcons name="map-marker-path" size={22} color="#FFFFFF" />
+          <View style={[styles.quickAiBadgeIcon, { backgroundColor: theme.isDark ? (theme.primary + "25") : (theme.primaryLight || "#FCDBDE") }]}>
+            <MaterialCommunityIcons name="map-marker-path" size={22} color={theme.primary} />
           </View>
 
-          <View style={{ flex: 1, paddingLeft: 10, paddingRight: 6 }}>
+          <View style={{ flex: 1, paddingLeft: 12, paddingRight: 8 }}>
             <Text numberOfLines={1} style={[styles.roadmapMainTitle, { color: theme.text }]}>
               Plan My Learning Roadmap
             </Text>
             <Text numberOfLines={1} style={[styles.roadmapSubTitle, { color: theme.subtext }]}>
-              Interactive AI Career Path, Skill Matrix & Budget Guide
+              AI-driven personalized career path & skill guide
             </Text>
-
-            <View style={styles.roadmapChipsRow}>
-              <View style={[styles.roadmapChip, { backgroundColor: theme.isDark ? "#2E1065" : "#EDE9FE", borderColor: theme.isDark ? "#581C87" : "#DDD6FE" }]}>
-                <Text style={[styles.roadmapChipText, { color: theme.isDark ? "#C084FC" : "#6D28D9" }]}>🎯 Goals</Text>
-              </View>
-              <View style={[styles.roadmapChip, { backgroundColor: theme.isDark ? "#064E3B" : "#D1FAE5", borderColor: theme.isDark ? "#065F46" : "#A7F3D0" }]}>
-                <Text style={[styles.roadmapChipText, { color: theme.isDark ? "#34D399" : "#047857" }]}>💰 Budget</Text>
-              </View>
-              <View style={[styles.roadmapChip, { backgroundColor: theme.isDark ? "#1E3A8A" : "#DBEAFE", borderColor: theme.isDark ? "#1E40AF" : "#BFDBFE" }]}>
-                <Text style={[styles.roadmapChipText, { color: theme.isDark ? "#60A5FA" : "#1D4ED8" }]}>⚡ Milestones</Text>
-              </View>
-            </View>
           </View>
 
-          <View style={[styles.quickAiBtn, { backgroundColor: "#7C3AED", borderColor: "#6D28D9" }]}>
+          <View style={[styles.quickAiBtn, { backgroundColor: theme.primary, borderColor: theme.primaryDark || theme.primary, shadowColor: theme.primary }]}>
             <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#FFFFFF" }}>Start AI →</Text>
           </View>
         </View>
@@ -1693,7 +1669,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }]
   },
 
-  // Explore TCM Styles
+  // Explore Last Class Styles
   exploreTcmSection: {
     marginVertical: 14,
     paddingHorizontal: 2

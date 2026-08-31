@@ -37,16 +37,16 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   logoImage: {
-    width: 84,
-    height: 84,
-    marginBottom: 8,
-    borderRadius: 20
+    width: 100,
+    height: 100,
+    marginBottom: 10,
+    borderRadius: 22
   },
   logoImageCompact: {
-    width: 52,
-    height: 52,
-    marginBottom: 4,
-    borderRadius: 12
+    width: 64,
+    height: 64,
+    marginBottom: 6,
+    borderRadius: 14
   },
   title: {
     fontSize: 72,

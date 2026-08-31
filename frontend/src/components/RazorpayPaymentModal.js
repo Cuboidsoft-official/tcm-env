@@ -26,13 +26,13 @@ export default function RazorpayPaymentModal({ visible, course, onClose, onPayme
 
   if (!visible || !course) return null;
 
-  const courseTitle = course.title || "TCM Course";
+  const courseTitle = course.title || "Last Class Course";
   const coursePrice = course.price || "₹1,499";
   const originalPrice = course.originalPrice || "₹4,999";
   const whatsappNumber = "9238695500";
 
   function handleOpenWhatsApp() {
-    const message = `Hi TCM Support Team! I want to purchase the course: "${courseTitle}" (${coursePrice}). Please share payment details so I can complete my purchase.`;
+    const message = `Hi Last Class Support Team! I want to purchase the course: "${courseTitle}" (${coursePrice}). Please share payment details so I can complete my purchase.`;
     const encoded = encodeURIComponent(message);
     const url = `https://wa.me/91${whatsappNumber}?text=${encoded}`;
 
@@ -94,7 +94,7 @@ export default function RazorpayPaymentModal({ visible, course, onClose, onPayme
               <View style={[styles.courseCard, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border }]}>
                 <View style={{ flex: 1, paddingRight: 10 }}>
                   <Text numberOfLines={2} style={[styles.courseTitle, { color: theme.text }]}>{courseTitle}</Text>
-                  <Text style={[styles.courseCategory, { color: theme.subtext }]}>{course.category || "TCM Certification"} • Lifetime Access</Text>
+                  <Text style={[styles.courseCategory, { color: theme.subtext }]}>{course.category || "Last Class Certification"} • Lifetime Access</Text>
                 </View>
                 <View style={{ alignItems: "flex-end" }}>
                   <Text style={[styles.priceText, { color: theme.primary }]}>{coursePrice}</Text>

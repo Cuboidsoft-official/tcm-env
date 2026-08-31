@@ -139,7 +139,7 @@ export function EnrollmentsView({ enrollmentsData = {}, mentors = [], search = '
                     </td>
                     <td>
                       <div style={{ fontWeight: '700', color: '#7C3AED' }}>👨‍🏫 {item.assignedMentorName}</div>
-                      <div style={{ fontSize: '0.7rem', color: '#64748B' }}>{item.assignedMentorTitle || 'TCM Mentor'}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#64748B' }}>{item.assignedMentorTitle || 'Last Class Mentor'}</div>
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>

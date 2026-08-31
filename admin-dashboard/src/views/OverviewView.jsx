@@ -43,7 +43,7 @@ export function OverviewView({ stats, pendingMentors, onApprove, onReject, onNav
             </div>
           </div>
           <div className="stat-value">{stats.approvedMentorsCount || 0}</div>
-          <div className="stat-sub" style={{ color: '#34D399' }}>Publicly visible on TCM One</div>
+          <div className="stat-sub" style={{ color: '#34D399' }}>Publicly visible on Last Class</div>
         </div>
 
         <div className="stat-card">
@@ -105,7 +105,7 @@ export function OverviewView({ stats, pendingMentors, onApprove, onReject, onNav
                 </div>
 
                 <div className="mentor-bio">
-                  <strong>Category:</strong> {mentor.mentorCategory || 'TCM Educator'} <br />
+                  <strong>Category:</strong> {mentor.mentorCategory || 'Last Class Educator'} <br />
                   <strong>Experience:</strong> {mentor.yearsExperience || 'Senior Level'}
                 </div>
 

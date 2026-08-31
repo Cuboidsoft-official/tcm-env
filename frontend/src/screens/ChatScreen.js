@@ -239,7 +239,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
       if (fullscreenImageUri) {
         await Share.share({
           title: fullscreenImageTitle || "Photo Attachment",
-          message: `Check out this photo from TCM Chat: ${fullscreenImageTitle || "Photo Attachment"}`,
+          message: `Check out this photo from Last Class Chat: ${fullscreenImageTitle || "Photo Attachment"}`,
           url: fullscreenImageUri
         });
       }
@@ -324,8 +324,8 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
   const fallbackTargetUser = {
     id: targetUserId || initialTargetUser?.id || "m1",
-    name: initialTargetUser?.name || "TCM Member",
-    role: initialTargetUser?.role || "TCM Mentor & Member",
+    name: initialTargetUser?.name || "Last Class Member",
+    role: initialTargetUser?.role || "Last Class Mentor & Member",
     avatarUrl: initialTargetUser?.avatarUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
     verified: true,
     online: true,
@@ -662,7 +662,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
 
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 1 }}>
               <View style={styles.greenPulseDot} />
-              <Text numberOfLines={1} style={[styles.headerStatus, { color: theme.subtext }]}>Online  •  {currentTarget.role || "TCM Member"}</Text>
+              <Text numberOfLines={1} style={[styles.headerStatus, { color: theme.subtext }]}>Online  •  {currentTarget.role || "Last Class Member"}</Text>
             </View>
           </View>
         </Pressable>
@@ -818,10 +818,10 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
                   {/* SHARE BUTTON */}
                   <TouchableOpacity
                     onPress={async () => {
-                      const shareMsgText = `${currentTarget.name || "TCM Channel"}: ${msg.text || "Check out this update on TCM"}`;
+                      const shareMsgText = `${currentTarget.name || "Last Class Channel"}: ${msg.text || "Check out this update on Last Class"}`;
                       try {
                         await Share.share({
-                          title: currentTarget.name || "TCM Channel Update",
+                          title: currentTarget.name || "Last Class Channel Update",
                           message: shareMsgText
                         });
                       } catch (err) {

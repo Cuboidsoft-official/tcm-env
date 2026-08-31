@@ -160,7 +160,7 @@ export default function AllMentorsScreen({ session, onBack, onSelectMentor }) {
 
                     <View style={styles.badgeCol}>
                       <View style={[styles.specializationPill, { backgroundColor: theme.badgeBg }]}>
-                        <Text style={[styles.specializationText, { color: theme.primary }]}>{mentor.category || "TCM Mentor"}</Text>
+                        <Text style={[styles.specializationText, { color: theme.primary }]}>{mentor.category || "Last Class Mentor"}</Text>
                       </View>
 
                       <View style={[styles.ratingBox, { backgroundColor: theme.isDark ? "#1E263B" : "#FFF8EC" }]}>
