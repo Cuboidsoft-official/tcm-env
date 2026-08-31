@@ -857,7 +857,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
         .toLowerCase();
 
       let categoryMatch = false;
-      if (!cleanActiveCat || cleanActiveCat === "for you" || cleanActiveCat === "trending") {
+      if (!cleanActiveCat || cleanActiveCat === "for you" || cleanActiveCat === "trending" || cleanActiveCat === "following") {
         categoryMatch = true;
       } else if (cleanActiveCat.includes("job") || cleanActiveCat.includes("hiring")) {
         categoryMatch = isJobPost;

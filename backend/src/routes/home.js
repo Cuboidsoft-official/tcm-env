@@ -470,7 +470,9 @@ function mapPost(post, globalPostComments = {}, userId = null, usersMap = null) 
     repostedBy: repostedByArr,
     likedByUsers,
     tags: post.tags,
-    timeLabel: getTimeLabel(post.publishedAt)
+    publishedAt: post.publishedAt || post.createdAt || new Date().toISOString(),
+    createdAt: post.createdAt || post.publishedAt || new Date().toISOString(),
+    timeLabel: getTimeLabel(post.publishedAt || post.createdAt)
   };
 }
 
