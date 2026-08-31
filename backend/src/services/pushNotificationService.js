@@ -5,7 +5,32 @@ import { PushToken } from "../models/PushToken.js";
 
 export const VAPID_PUBLIC_KEY = "BKfFsEAwiqI4h42Z0OC0sx0In8j8g3CrjmyN_TNjHaj4kLlu26_h1gFwdsj4uDURFcljxo4-3F3NBVLWG3ly3So";
 
+export const EXPON_PUSH_TOKEN_RE = /^ExponentPushToken\[[A-Za-z0-9_-]+\]$/;
+
 const userPushTokens = {}; // userId -> Array of { token, platform, registeredAt }
+
+function isPlausiblePushSubscription(str) {
+  if (typeof str !== "string" || !str.trim()) return false;
+  try {
+    const parsed = JSON.parse(str);
+    return !!(parsed && typeof parsed === "object" && typeof parsed.endpoint === "string");
+  } catch (e) {
+    return false;
+  }
+}
+
+async function removePushToken(token) {
+  for (const key of Object.keys(userPushTokens)) {
+    userPushTokens[key] = (userPushTokens[key] || []).filter((t) => t.token !== token);
+  }
+  if (mongoose.connection.readyState === 1) {
+    try {
+      await PushToken.deleteMany({ token });
+    } catch (e) {
+      console.error("Failed to delete dead push token:", e.message);
+    }
+  }
+}
 export const userNotificationsStore = {}; // userId -> Array of In-App Notification objects
 
 export async function hydratePushTokens() {
@@ -28,20 +53,26 @@ export async function hydratePushTokens() {
 }
 
 export async function registerPushToken(userId, token, platform = "android") {
-  if (!userId || !token) return;
+  if (!userId || !token || typeof token !== "string") return;
+  const trimmed = token.trim();
+  if (!trimmed) return;
+  if (!EXPON_PUSH_TOKEN_RE.test(trimmed) && !isPlausiblePushSubscription(trimmed)) {
+    console.warn("Ignoring invalid push token registration:", trimmed.substring(0, 24));
+    return;
+  }
   const key = String(userId);
   if (!userPushTokens[key]) {
     userPushTokens[key] = [];
   }
-  const exists = userPushTokens[key].some((t) => t.token === token);
+  const exists = userPushTokens[key].some((t) => t.token === trimmed);
   if (!exists) {
-    userPushTokens[key].push({ token, platform, registeredAt: new Date() });
+    userPushTokens[key].push({ token: trimmed, platform, registeredAt: new Date() });
   }
   if (mongoose.connection.readyState === 1) {
     try {
       await PushToken.findOneAndUpdate(
-        { userId: key, token },
-        { platform, registeredAt: new Date() },
+        { token: trimmed },
+        { userId: key, platform, registeredAt: new Date() },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
     } catch (e) {
@@ -146,57 +177,89 @@ export async function sendPushNotification({ userIds = [], title, body, data = {
 
   // Send to Expo Push service
   if (expoTokens.length > 0) {
-    try {
-      const messages = expoTokens.map((token) => ({
-        to: token,
-        sound: "default",
-        title: title,
-        body: body,
-        data: { ...data, type },
-        channelId: "default",
-        priority: "high"
-      }));
+    const accessToken = process.env.EXPO_ACCESS_TOKEN || process.env.EXPO_TOKEN || "";
+    if (!accessToken) {
+      console.warn("EXPO_ACCESS_TOKEN not configured — skipping Expo push send (no delivery).");
+    } else {
+      try {
+        const messages = expoTokens.map((token) => ({
+          to: token,
+          sound: "default",
+          title: title,
+          body: body,
+          data: { ...data, type },
+          channelId: "default",
+          priority: "high"
+        }));
 
-      await fetch("https://exp.host/--/api/v2/push/send", {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Accept-encoding": "gzip, deflate",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(messages)
-      });
-    } catch (err) {
-      console.error("Expo push notification send error:", err.message);
+        const resp = await fetch("https://exp.host/--/api/v2/push/send", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Accept-encoding": "gzip, deflate",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`
+          },
+          body: JSON.stringify(messages)
+        });
+
+        if (!resp.ok) {
+          console.error(`Expo push API returned HTTP ${resp.status}:`, await resp.text().catch(() => ""));
+        } else {
+          const result = await resp.json().catch(() => null);
+          if (result && Array.isArray(result.data)) {
+            result.data.forEach((entry, i) => {
+              if (!entry) return;
+              const status = entry.status;
+              const errCode = entry.details?.error;
+              if (status !== "ok" && (errCode === "DeviceNotRegistered" || errCode === "MessageTooBig" || entry.message)) {
+                const deadToken = messages[i]?.to;
+                if (deadToken) {
+                  console.warn(`Removing dead push token (${errCode || status}):`, deadToken.substring(0, 24));
+                  removePushToken(deadToken);
+                }
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Expo push notification send error:", err.message);
+      }
     }
   }
 
   // Handle Web Push Subscriptions
   if (webPushSubscriptions.length > 0) {
-    for (const sub of webPushSubscriptions) {
+    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || "";
+    if (!vapidPrivateKey) {
+      console.warn(`VAPID_PRIVATE_KEY not configured — skipping ${webPushSubscriptions.length} web push delivery(s).`);
+    } else {
+      let webpush = null;
       try {
-        if (sub && sub.endpoint) {
-          // Send web push payload via standard fetch if backend web-push is configured
-          await fetch(sub.endpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              TTL: "60"
-            },
-            body: JSON.stringify({
-              title,
-              body,
-              data: { ...data, type },
-              icon: "/icon-192.png",
-              badge: "/icon-192.png"
-            })
-          }).catch((e) => {
-            // Expected if standard WebPush crypto VAPID headers are missing on raw HTTP POST
-            console.log("Web Push dispatch triggered for endpoint:", sub.endpoint?.substring(0, 30));
-          });
+        webpush = (await import("web-push")).default;
+      } catch (e) {
+        webpush = null;
+      }
+      if (!webpush) {
+        console.warn("web-push package not installed — skipping web push delivery");
+      } else {
+        webpush.setVapidDetails("mailto:admin@thecodemunk.in", VAPID_PUBLIC_KEY, vapidPrivateKey);
+        for (const sub of webPushSubscriptions) {
+          try {
+            const payload = JSON.stringify({ title, body, data: { ...data, type }, icon: "/icon-192.png", badge: "/icon-192.png" });
+            await webpush.sendNotification(sub, payload, { TTL: 60 });
+          } catch (err) {
+            const statusCode = err?.statusCode;
+            if (statusCode === 410 || statusCode === 404) {
+              if (sub?.endpoint) {
+                console.warn("Removing gone web push subscription:", sub.endpoint.substring(0, 30));
+                removePushToken(JSON.stringify(sub));
+              }
+            } else {
+              console.error("Web push dispatch error:", err?.body || err.message);
+            }
+          }
         }
-      } catch (err) {
-        console.error("Web push dispatch error:", err.message);
       }
     }
   }

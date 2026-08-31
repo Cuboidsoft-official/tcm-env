@@ -984,9 +984,9 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
 
   notifyNewCommunityPost({
     authorName: req.user.name,
-    channelName: category || "TCM Community",
+    channelName: normalizedCategory || "TCM Community",
     postTitle: postText,
-    channelId: targetCourseId || category
+    channelId: targetCourseId || normalizedCategory
   }).catch(() => {});
 
   return res.status(201).json({ post: mapPost(createdPost, {}, req.user._id?.toString()), mediaWarning });
