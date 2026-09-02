@@ -248,21 +248,34 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* 1. Top Header Bar with Moving Marquee Info Ticker */}
-      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-        <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.badgeBg }]}>
-          <Feather name="arrow-left" size={20} color={theme.text} />
+      {/* Standardized App Header */}
+      <View style={[styles.header, { backgroundColor: theme.cardBg, borderBottomColor: theme.border, position: "relative", justifyContent: "center", minHeight: 48 }]}>
+        <Pressable
+          onPress={() => {
+            if (onBack) {
+              onBack();
+            } else if (typeof window !== "undefined" && window.history && window.history.length > 1) {
+              window.history.back();
+            }
+          }}
+          style={({ pressed }) => [
+            {
+              position: "absolute",
+              left: 14,
+              top: 10,
+              zIndex: 10,
+              padding: 4,
+              flexDirection: "row",
+              alignItems: "center"
+            },
+            pressed && styles.pressed
+          ]}
+        >
+          <Feather name="chevron-left" size={24} color={theme.text} />
         </Pressable>
 
-        <View style={styles.titleWrap}>
-          <View style={[styles.badgePill, { backgroundColor: theme.isDark ? "#1E1B4B" : cat.badgeBg }]}>
-            <Text style={[styles.badgeText, { color: theme.isDark ? "#A78BFA" : cat.badgeColor }]}>{cat.badge}</Text>
-          </View>
-          <Text style={[styles.screenTitle, { color: theme.text }]}>{cat.title}</Text>
-        </View>
-
-        <View style={[styles.categoryIconWrap, { backgroundColor: theme.isDark ? "#1E1B4B" : cat.iconBg }]}>
-          <MaterialCommunityIcons name={cat.icon} size={22} color={theme.isDark ? "#A78BFA" : cat.iconColor} />
+        <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center", justifyContent: "center" }} pointerEvents="none">
+          <Text numberOfLines={1} style={[styles.screenTitle, { color: theme.text, textAlign: "center" }]}>{cat.title}</Text>
         </View>
       </View>
 
@@ -428,6 +441,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0
   },
 
+  header: {
+    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    zIndex: 100
+  },
+  pressed: {
+    opacity: 0.7
+  },
+  screenTitle: {
+    fontSize: 19,
+    fontFamily: fonts.semiBold,
+    color: "#181725"
+  },
   topHeader: {
     flexDirection: "row",
     alignItems: "center",

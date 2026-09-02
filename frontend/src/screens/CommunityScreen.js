@@ -50,7 +50,7 @@ import {
   uploadFile
 } from "../api/client";
 
-export default function CommunityScreen({ navigation, route, session, onChannelStateChange, onOpenChannelChat }) {
+export default function CommunityScreen({ navigation, route, session, onChannelStateChange, onOpenChannelChat, commCreateTrigger }) {
   const { theme } = useTheme();
   const user = session?.user || {};
   const currentUserIdStr = String(session?.user?.id || session?.user?._id || user?.id || user?._id || "");
@@ -114,6 +114,12 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
 
   // Modal States
   const [createCommModalOpen, setCreateCommModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (commCreateTrigger > 0) {
+      setCreateCommModalOpen(true);
+    }
+  }, [commCreateTrigger]);
   const [newCommName, setNewCommName] = useState("");
   const [newCommPrivacy, setNewCommPrivacy] = useState("public");
   const [newCommCategory, setNewCommCategory] = useState("Exam News");
@@ -685,7 +691,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
               }}
             >
               <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: activeTabPill === "channels" ? theme.primary : theme.subtext }}>
-                Official Channels ({communities.length})
+                Channels ({communities.length})
               </Text>
             </TouchableOpacity>
 
@@ -773,20 +779,8 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
             )}
           </View>
         ) : (
-          <>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", paddingHorizontal: 4, marginTop: 4, marginBottom: 10 }}>
-              <TouchableOpacity
-                onPress={() => setCreateCommModalOpen(true)}
-                activeOpacity={0.8}
-                style={[styles.createChannelBtnPill, { borderColor: theme.primary, backgroundColor: theme.badgeBg }]}
-              >
-                <Feather name="plus" size={13} color={theme.primary} style={{ marginRight: 3 }} />
-                <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: theme.primary }}>Create Channel</Text>
-              </TouchableOpacity>
-            </View>
-
-        {/* 5. Dynamic Channel List Cards */}
-        <View style={{ paddingHorizontal: 4, paddingBottom: 20, gap: 10 }}>
+          /* 5. Dynamic Channel List Cards */
+          <View style={{ paddingHorizontal: 4, paddingBottom: 20, gap: 10 }}>
           {communities.length === 0 ? (
             <View style={[styles.emptyContainer, { backgroundColor: theme.cardBg, borderRadius: 16, borderWidth: 1, borderColor: theme.border }]}>
               <Feather name="users" size={36} color={theme.subtext} />
@@ -874,7 +868,6 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
             ))
           )}
         </View>
-        </>
         )}
         </View>
       </ScrollView>

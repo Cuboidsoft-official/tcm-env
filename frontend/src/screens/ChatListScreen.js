@@ -21,15 +21,30 @@ import { shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
-export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoom }) {
+export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoom, showSearchInput: externalShowSearch, onToggleSearch, chatCreateTrigger }) {
   const [activeTab, setActiveTab] = useState("chats"); // "chats" | "doubts"
   const [searchQuery, setSearchQuery] = useState("");
-  const [showSearchInput, setShowSearchInput] = useState(false);
+  const [internalShowSearch, setInternalShowSearch] = useState(false);
+  const showSearchInput = externalShowSearch !== undefined ? externalShowSearch : internalShowSearch;
+  const setShowSearchInput = (val) => {
+    if (onToggleSearch) onToggleSearch(val);
+    setInternalShowSearch(val);
+  };
   const [conversations, setConversations] = useState([]);
   const [doubts, setDoubts] = useState([]);
   const [doubtRooms, setDoubtRooms] = useState([]);
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingDoubts, setLoadingDoubts] = useState(true);
+
+  useEffect(() => {
+    if (chatCreateTrigger > 0) {
+      if (activeTab === "chats") {
+        setShowRoomModal(true);
+      } else {
+        setShowDoubtModal(true);
+      }
+    }
+  }, [chatCreateTrigger]);
 
   // Create Individual Doubt Modal State
   const [showDoubtModal, setShowDoubtModal] = useState(false);
@@ -234,25 +249,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={{ width: "100%", alignSelf: "center", flex: 1, paddingHorizontal: 0 }}>
-        {/* 1. Top Action Row (Search & Plus Icon without background - Refresh removed) */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", paddingHorizontal: 12, marginTop: 6, marginBottom: 8, gap: 14 }}>
-          <Pressable
-            onPress={() => (activeTab === "chats" ? setShowRoomModal(true) : setShowDoubtModal(true))}
-            style={({ pressed }) => [{ padding: 4 }, pressed && styles.pressed]}
-          >
-            <Feather name="plus" size={22} color={theme.text} />
-          </Pressable>
-
-          <Pressable
-            onPress={() => {
-              setShowSearchInput(!showSearchInput);
-              if (showSearchInput) setSearchQuery("");
-            }}
-            style={({ pressed }) => [{ padding: 4 }, pressed && styles.pressed]}
-          >
-            <Feather name="search" size={20} color={showSearchInput ? theme.primary : theme.text} />
-          </Pressable>
-        </View>
+        {/* 1. Toggled Search Bar */}
 
         {/* 2. Toggled Search Bar */}
         {showSearchInput ? (

@@ -518,36 +518,52 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* 1. Header Bar matching reference UI */}
-      <View style={[styles.headerRow, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
-        <View style={styles.headerLeft}>
-          <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: theme.badgeBg }]}>
-            <Feather name="arrow-left" size={20} color={theme.text} />
-          </Pressable>
-          <View style={styles.headerTitleWrap}>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>Course Details</Text>
-            <Text style={[styles.headerSub, { color: theme.subtext }]}>Learn. Practice. Grow.</Text>
-          </View>
+      {/* Standardized App Header */}
+      <View style={[styles.header, { backgroundColor: theme.cardBg, borderBottomColor: theme.border, position: "relative", justifyContent: "center", minHeight: 48 }]}>
+        <Pressable
+          onPress={() => {
+            if (onBack) {
+              onBack();
+            } else if (typeof window !== "undefined" && window.history && window.history.length > 1) {
+              window.history.back();
+            }
+          }}
+          style={({ pressed }) => [
+            {
+              position: "absolute",
+              left: 14,
+              top: 10,
+              zIndex: 10,
+              padding: 4,
+              flexDirection: "row",
+              alignItems: "center"
+            },
+            pressed && styles.pressed
+          ]}
+        >
+          <Feather name="chevron-left" size={24} color={theme.text} />
+        </Pressable>
+
+        <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center", justifyContent: "center" }} pointerEvents="none">
+          <Text numberOfLines={1} style={[styles.screenTitle, { color: theme.text, textAlign: "center" }]}>Course Details</Text>
         </View>
 
-        <View style={styles.headerRight}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, position: "absolute", right: 14, top: 10, zIndex: 10 }}>
           {isMentorUser ? (
-            <Pressable onPress={() => onEditCourse && onEditCourse(courseData)} style={[styles.editHeaderBtn, { backgroundColor: theme.primary }]}>
-              <Feather name="edit-3" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
-              <Text style={styles.editHeaderBtnText}>Edit</Text>
+            <Pressable onPress={() => onEditCourse && onEditCourse(courseData)} style={({ pressed }) => [{ padding: 4 }, pressed && styles.pressed]}>
+              <Feather name="edit-3" size={20} color={theme.primary} />
             </Pressable>
           ) : null}
-
-          <Pressable onPress={() => setBookmarked((p) => !p)} style={[styles.headerIconBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
-            <Feather name="bookmark" size={18} color={bookmarked ? theme.primary : theme.text} fill={bookmarked ? theme.primary : "none"} />
+          <Pressable onPress={() => setBookmarked((p) => !p)} style={({ pressed }) => [{ padding: 4 }, pressed && styles.pressed]}>
+            <Feather name="bookmark" size={20} color={bookmarked ? theme.primary : theme.text} fill={bookmarked ? theme.primary : "none"} />
           </Pressable>
-          <Pressable onPress={handleShare} style={[styles.headerIconBtn, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
-            <Feather name="share-2" size={18} color={theme.text} />
+          <Pressable onPress={handleShare} style={({ pressed }) => [{ padding: 4 }, pressed && styles.pressed]}>
+            <Feather name="share-2" size={19} color={theme.text} />
           </Pressable>
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingTop: 12 }]}>
         {/* 2. Dark Hero Header Card */}
         <LinearGradient colors={theme.isDark ? ["#0B0F19", "#111625"] : ["#0D0B26", "#19154C"]} style={[styles.heroCard, { borderColor: theme.border, borderWidth: 1 }]}>
           <View style={styles.heroTopRow}>
@@ -844,6 +860,23 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: 12,
     color: "#FFFFFF"
+  },
+  header: {
+    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    zIndex: 100
+  },
+  pressed: {
+    opacity: 0.7
+  },
+  screenTitle: {
+    fontSize: 19,
+    fontFamily: fonts.semiBold,
+    color: "#181725"
   },
   headerIconBtn: {
     width: 38,
