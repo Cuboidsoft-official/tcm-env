@@ -70,7 +70,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
     if (!isApproved) {
       Alert.alert(
         "Account Verification Required",
-        `Your mentor profile is currently under review by TCM Administration. ${actionName} will be enabled once your account is verified.`
+        `Your mentor profile is currently under review by Last Class Administration. ${actionName} will be enabled once your account is verified.`
       );
       return false;
     }
@@ -468,7 +468,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                 Mentor Account Verification Pending
               </Text>
               <Text style={{ fontSize: 11, fontFamily: fonts.regular, color: theme.subtext || colors.muted, marginTop: 4, lineHeight: 17 }}>
-                Your mentor profile is currently under review by TCM Administration. Access to dashboard features—including course publishing, live class scheduling, student management, and payouts—will be automatically unlocked upon approval.
+                Your mentor profile is currently under review by Last Class Administration. Access to dashboard features—including course publishing, live class scheduling, student management, and payouts—will be automatically unlocked upon approval.
               </Text>
             </View>
           </View>
@@ -802,7 +802,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
               {/* Top Row: Category Badge & Duration */}
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <View style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
-                  <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.primary }}>{course.category || "TCM Information Tech"}</Text>
+                  <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: theme.primary }}>{course.category || "Last Class Information Tech"}</Text>
                 </View>
                 <View style={{ backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9", paddingHorizontal: 9, paddingVertical: 3, borderRadius: 8 }}>
                   <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.subtext }}>{course.duration || "20 Days"}</Text>
@@ -939,7 +939,7 @@ export default function MentorDashboardScreen({ session, user = {}, onBack, onNa
                           {course.title}
                         </Text>
                         <Text style={{ fontSize: 10, color: isSelected ? "#E2E8F0" : theme.subtext, marginTop: 2 }}>
-                          Category: {course.category || "TCM Academy"}
+                          Category: {course.category || "Last Class Academy"}
                         </Text>
                       </TouchableOpacity>
                     );

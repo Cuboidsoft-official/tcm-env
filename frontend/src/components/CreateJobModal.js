@@ -125,7 +125,7 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
       }
       const payload = {
         title: title.trim(),
-        company: company.trim() || "TCM Hiring Partner",
+        company: company.trim() || "Last Class Hiring Partner",
         mentorName: user.name || "Mentor",
         mentorAvatarUrl: user.avatarUrl || user.avatar || "",
         mentorRole: user.role || "Senior Mentor",
@@ -195,7 +195,7 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
             <Text style={[styles.label, { color: theme.text }]}>Company / Organization Name</Text>
             <TextInput
               style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
-              placeholder="e.g. TCM Tech Studio"
+              placeholder="e.g. Last Class Tech Studio"
               placeholderTextColor={theme.subtext}
               value={company}
               onChangeText={setCompany}

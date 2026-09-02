@@ -53,10 +53,10 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
     ...(mentor || {})
   };
 
-  const mentorName = rawActive.name || rawActive.fullName || (isTargetUser ? user.name : "") || "TCM Certified Mentor";
+  const mentorName = rawActive.name || rawActive.fullName || (isTargetUser ? user.name : "") || "Last Class Certified Mentor";
   const mentorRole = rawActive.role || rawActive.headline || rawActive.specialization || rawActive.category || "Educator & Mentor";
   const mentorAvatar = rawActive.avatarUrl || rawActive.avatar || rawActive.photoUrl || rawActive.image || (isTargetUser ? user.avatarUrl : "") || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80";
-  const mentorBio = rawActive.bio || rawActive.about || rawActive.description || (isTargetUser ? user.bio : "") || `${mentorName} is a verified TCM mentor specializing in ${mentorRole.toLowerCase()} and hands-on student mentoring.`;
+  const mentorBio = rawActive.bio || rawActive.about || rawActive.description || (isTargetUser ? user.bio : "") || `${mentorName} is a verified Last Class mentor specializing in ${mentorRole.toLowerCase()} and hands-on student mentoring.`;
 
   let initialExpList = [];
   if (Array.isArray(rawActive.experiences) && rawActive.experiences.length > 0) {
@@ -69,7 +69,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
       {
         id: "exp1",
         role: mentorRole,
-        company: `${rawActive.organization || rawActive.company || "TCM Educator Network"} • Active Instructor`,
+        company: `${rawActive.organization || rawActive.company || "Last Class Educator Network"} • Active Instructor`,
         durationPill: expText,
         icon: "school-outline",
         iconColor: theme.primary || "#6E42F5"
@@ -96,7 +96,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
     studentsCount: `${rawActive.studentsCount || rawActive.totalStudents || "1.2K"}`,
     tags: rawActive.tags || [
       { label: mentorRole, bg: "#EAF5FF", color: "#2F79B9" },
-      { label: "TCM Educator", bg: "#ECF9E9", color: "#2E7D32" }
+      { label: "Last Class Educator", bg: "#ECF9E9", color: "#2E7D32" }
     ],
     bio: mentorBio,
     about: rawActive.about || mentorBio,
@@ -158,7 +158,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
 
   function handleBookSessionWhatsApp() {
     const mentorNameStr = data.name || "Mentor";
-    const roleStr = data.role || "TCM Educator";
+    const roleStr = data.role || "Last Class Educator";
     const msg = `Hello! I would like to book a 1:1 mentorship session with ${mentorNameStr} (${roleStr}).`;
     const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
     Linking.openURL(waUrl).catch(() => {
@@ -353,7 +353,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
 
                 <View style={styles.mentorCourseContent}>
                   <View style={[styles.badgePillSmall, { backgroundColor: theme.badgeBg }]}>
-                    <Text style={[styles.badgePillSmallText, { color: theme.primary }]}>{course.category || "TCM Course"}</Text>
+                    <Text style={[styles.badgePillSmallText, { color: theme.primary }]}>{course.category || "Last Class Course"}</Text>
                   </View>
                   <Text numberOfLines={2} style={[styles.mentorCourseTitle, { color: theme.text }]}>
                     {course.title}
@@ -484,7 +484,7 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
             <View style={styles.reviewAuthorRow}>
               <Image source={{ uri: featuredReview.authorAvatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80" }} style={styles.reviewAvatar} />
               <View style={styles.reviewAuthorWrap}>
-                <Text style={[styles.reviewAuthorName, { color: theme.text }]}>{featuredReview.authorName || "TCM Student"}</Text>
+                <Text style={[styles.reviewAuthorName, { color: theme.text }]}>{featuredReview.authorName || "Last Class Student"}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 2 }}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <FontAwesome key={s} name="star" size={10} color="#FFB800" />

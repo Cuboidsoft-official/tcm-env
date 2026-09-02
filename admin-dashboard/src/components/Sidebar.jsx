@@ -31,7 +31,7 @@ export function Sidebar({ currentTab, setCurrentTab, pendingCount = 0 }) {
   return (
     <aside className="sidebar">
       <div className="brand-section">
-        <div className="brand-icon">TCM One</div>
+        <img src="/logo.png" alt="Last Class" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: 8 }} />
         <div>
           <div className="brand-title">Admin Console</div>
           <span className="brand-badge">PRO PORTAL</span>

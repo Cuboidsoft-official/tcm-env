@@ -14,7 +14,7 @@ import {
   TextInput,
   View
 } from "react-native";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { getChatConversations, getDoubtsList, createDoubtThread, getDoubtRooms, createDoubtRoom, searchKnowledgeBase } from "../api/client";
 import { shadow } from "../constants/theme";
@@ -302,6 +302,10 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               Doubts ({doubts.length})
             </Text>
           </Pressable>
+
+          <Pressable onPress={onOpenSidebar} style={({ pressed }) => [{ width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9", borderWidth: 1, borderColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0" }, pressed && { opacity: 0.75 }]}>
+            <Ionicons name="grid-outline" size={17} color={theme.primary} />
+          </Pressable>
         </View>
 
       {/* 4. Tab Content */}
@@ -412,7 +416,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
                     </View>
 
                     <Text style={[styles.roomSubInfoText, { color: theme.subtext }]} numberOfLines={1}>
-                      Mentor: {roomItem.assignedMentor?.name || "TCM Mentor"} • {roomItem.membersCount || "1.2K"} Members • {roomItem.onlineCount || 86} Online
+                      Mentor: {roomItem.assignedMentor?.name || "Last Class Mentor"} • {roomItem.membersCount || "1.2K"} Members • {roomItem.onlineCount || 86} Online
                     </Text>
                   </View>
 
@@ -686,8 +690,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
-    paddingHorizontal: 8,
-    paddingTop: 10
+    paddingHorizontal: 0,
+    paddingTop: 4
   },
 
   // 1. Main Section Header

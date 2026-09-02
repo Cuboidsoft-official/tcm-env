@@ -291,7 +291,7 @@ function isValidImageUri(uri) {
 function isUsableMediaUri(uri) {
   if (typeof uri !== "string" || !uri.trim()) return false;
   const trimmed = uri.trim();
-  return /^(https?:\/\/|\/uploads\/|data:(image|video)\/)/i.test(trimmed);
+  return /^(https?:\/\/|\/uploads\/|data:(image|video)\/|file:|content:|ph:\/\/|blob:)/i.test(trimmed);
 }
 
 function sanitizeIncomingMedia(media) {
@@ -470,7 +470,9 @@ function mapPost(post, globalPostComments = {}, userId = null, usersMap = null) 
     repostedBy: repostedByArr,
     likedByUsers,
     tags: post.tags,
-    timeLabel: getTimeLabel(post.publishedAt)
+    publishedAt: post.publishedAt || post.createdAt || new Date().toISOString(),
+    createdAt: post.createdAt || post.publishedAt || new Date().toISOString(),
+    timeLabel: getTimeLabel(post.publishedAt || post.createdAt)
   };
 }
 
@@ -876,9 +878,6 @@ homeRouter.post("/communities/:id/manage-request", requireAuth, async (req, res)
 homeRouter.post("/posts", requireAuth, async (req, res) => {
   const memoryStore = req.app.locals.memoryStore;
   const {
-    category = "Community",
-    privacy = "public",
-    postType = "general",
     targetCourseId,
     documentUrl,
     documentName,
@@ -894,6 +893,17 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
   if (!postText) {
     return res.status(400).json({ message: "Post text is required" });
   }
+
+  const validPostTypes = ["daily_update", "exam_news", "job_news", "study_doc", "general", "photo", "video", "showcase", "notes", "code", "roadmap", "question", "poll"];
+  const rawPostType = String(req.body.postType || "general").toLowerCase();
+  const normalizedPostType = validPostTypes.includes(rawPostType) ? rawPostType : "general";
+
+  const rawPrivacy = String(req.body.privacy || "public").toLowerCase();
+  const normalizedPrivacy = (rawPrivacy === "private" || rawPrivacy === "only_me") ? "private" : "public";
+
+  const normalizedCategory = (req.body.category && typeof req.body.category === "string" && req.body.category.trim())
+    ? req.body.category.trim()
+    : "Community";
 
   const normalizedTags = tags
     .map((tag) => tag.trim())
@@ -921,9 +931,9 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     authorAvatarUrl: req.user.avatarUrl,
     verified: isUserMentor ? true : Boolean(req.user.verified),
     isMentor: isUserMentor,
-    category,
-    privacy,
-    postType,
+    category: normalizedCategory,
+    privacy: normalizedPrivacy,
+    postType: normalizedPostType,
     targetCourseId: targetCourseId || null,
     documentUrl: documentUrl || null,
     documentName: documentName || null,
@@ -976,9 +986,9 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
 
   notifyNewCommunityPost({
     authorName: req.user.name,
-    channelName: category || "TCM Community",
+    channelName: normalizedCategory || "TCM Community",
     postTitle: postText,
-    channelId: targetCourseId || category
+    channelId: targetCourseId || normalizedCategory
   }).catch(() => {});
 
   return res.status(201).json({ post: mapPost(createdPost, {}, req.user._id?.toString()), mediaWarning });

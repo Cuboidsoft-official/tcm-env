@@ -7,8 +7,21 @@ import { requireAuth } from "../middleware/auth.js";
 
 const uploadsRouter = express.Router();
 
-export const UPLOADS_DIR = process.env.UPLOADS_DIR || "/opt/tcm/uploads";
-const PUBLIC_ORIGIN = (process.env.PUBLIC_ORIGIN || "https://api.thecodemunk.in").replace(/\/+$/, "");
+export const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads");
+
+function getPublicOrigin(req) {
+  if (process.env.PUBLIC_ORIGIN) {
+    return process.env.PUBLIC_ORIGIN.replace(/\/+$/, "");
+  }
+  if (req) {
+    const host = req.get("host");
+    if (host) {
+      const proto = req.protocol || "http";
+      return `${proto}://${host}`;
+    }
+  }
+  return "http://localhost:5000";
+}
 const MAX_BYTES = 80 * 1024 * 1024;
 
 const MIME_MAP = {
@@ -225,7 +238,8 @@ export async function resolveMediaUrl(data) {
   const baseName = `${Date.now().toString(36)}-${crypto.randomBytes(6).toString("hex")}`;
   const filePath = path.join(UPLOADS_DIR, `${baseName}.${MIME_MAP[parsed.mime]}`);
   fs.writeFileSync(filePath, parsed.buf, { mode: 0o644 });
-  return `${PUBLIC_ORIGIN}/uploads/${path.basename(filePath)}`;
+  const origin = getPublicOrigin();
+  return `${origin}/uploads/${path.basename(filePath)}`;
 }
 
 uploadsRouter.post("/file", requireAuth, async (req, res) => {
@@ -251,8 +265,9 @@ uploadsRouter.post("/file", requireAuth, async (req, res) => {
 
     const finalPath = await maybeTranscodeVideo(parsed.mime, origPath, path.join(UPLOADS_DIR, baseName));
     const name = path.basename(finalPath);
+    const origin = getPublicOrigin(req);
 
-    res.json({ url: `${PUBLIC_ORIGIN}/uploads/${name}` });
+    res.json({ url: `${origin}/uploads/${name}` });
   } catch (error) {
     console.error("Upload error:", error);
     res.status(500).json({ message: "Upload failed" });

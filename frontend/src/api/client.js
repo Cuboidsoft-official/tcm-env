@@ -958,7 +958,7 @@ export async function createJobPost(token, payload) {
   const newJob = {
     id: `job-${Date.now()}`,
     title: payload.title || "Software Engineering Role",
-    company: payload.company || "TCM Hiring Partner",
+    company: payload.company || "Last Class Hiring Partner",
     mentorName: payload.mentorName || "Mentor",
     mentorAvatarUrl: payload.mentorAvatarUrl || "",
     mentorRole: payload.mentorRole || "Tech Mentor",

@@ -30,10 +30,10 @@ export function AuthView() {
       <div className="auth-card">
         <div className="auth-header">
           <div className="brand-icon" style={{ margin: '0 auto', width: '56px', height: '56px', fontSize: '1.5rem' }}>
-            TCM One
+            Last Class
           </div>
           <h2>{isSignup ? 'Create Admin Account' : 'Admin Portal Login'}</h2>
-          <p>{isSignup ? 'Register a new administrator for TCM One' : 'Enter your admin credentials to manage mentors & users'}</p>
+          <p>{isSignup ? 'Register a new administrator for Last Class' : 'Enter your admin credentials to manage mentors & users'}</p>
         </div>
 
         {error && <div className="error-banner">{error}</div>}

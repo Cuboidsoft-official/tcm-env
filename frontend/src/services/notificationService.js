@@ -57,8 +57,7 @@ export async function setupPushNotifications(sessionToken, force = false) {
         }
 
         if (permission === "granted") {
-          let pushTokenStr = `web_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-          let platformType = "web";
+          let registered = false;
 
           if ("serviceWorker" in navigator && "PushManager" in window) {
             try {
@@ -77,9 +76,9 @@ export async function setupPushNotifications(sessionToken, force = false) {
                     });
                   }
                 }
-                if (sub) {
-                  pushTokenStr = JSON.stringify(sub);
-                  platformType = "web_push";
+                if (sub && sub.endpoint) {
+                  await registerPushTokenApi(sessionToken, JSON.stringify(sub), "web_push");
+                  registered = true;
                 }
               }
             } catch (swErr) {
@@ -87,10 +86,13 @@ export async function setupPushNotifications(sessionToken, force = false) {
             }
           }
 
-          await registerPushTokenApi(sessionToken, pushTokenStr, platformType);
-          isRegistered = true;
-          console.log("Web push notification permission granted and registered successfully.");
-          return true;
+          isRegistered = registered;
+          if (registered) {
+            console.log("Web push notification permission granted and registered successfully.");
+            return true;
+          }
+          console.log("Web push subscription could not be registered (no valid subscription).");
+          return false;
         } else {
           console.log("Web notification permission status:", permission);
           return false;
@@ -158,14 +160,13 @@ export async function setupPushNotifications(sessionToken, force = false) {
       try {
         token = (await Notifications.getExpoPushTokenAsync()).data;
       } catch (e2) {
-        try {
-          token = (await Notifications.getDevicePushTokenAsync()).data;
-        } catch (err) {}
+        console.log("Could not obtain an Expo push token:", e2.message);
       }
     }
 
-    if (!token) {
-      token = `dev_token_${Platform.OS}_${Date.now()}`;
+    if (!token || !/^ExponentPushToken\[/.test(token)) {
+      console.log("No valid Expo push token obtained — push notification not registered on this device.");
+      return false;
     }
 
     await registerPushTokenApi(sessionToken, token, Platform.OS);

@@ -96,7 +96,7 @@ const postModes = {
     title: "Create Post",
     placeholder: "Share your learning update, notes, doubt or insight...",
     category: "Community",
-    tags: "#TCM #Learning",
+    tags: "#Last Class #Learning",
     media: { kind: "none" }
   },
   doubt: {
@@ -116,8 +116,8 @@ const postModes = {
       label: "Student Notes",
       labelIcon: "file-document-outline",
       title: "Shared Notes",
-      subtitle: "TCM Notes.pdf",
-      fileName: "TCM Notes.pdf",
+      subtitle: "Last Class Notes.pdf",
+      fileName: "Last Class Notes.pdf",
       fileSize: "2.1 MB"
     }
   },
@@ -178,7 +178,7 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
       label: "Video Post",
       labelIcon: "play-circle",
       title: title || "New Video",
-      subtitle: "TCM COMMUNITY",
+      subtitle: "Last Class COMMUNITY",
       duration: "0:30",
       frameKey,
       imageUrl: thumbnailSrc,
@@ -199,8 +199,8 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
       label: "Shared Document",
       labelIcon: "file-document-outline",
       title: title || "Shared Notes",
-      subtitle: draft.fileName.trim() || "TCM Document.pdf",
-      fileName: draft.fileName.trim() || "TCM Document.pdf",
+      subtitle: draft.fileName.trim() || "Last Class Document.pdf",
+      fileName: draft.fileName.trim() || "Last Class Document.pdf",
       fileSize: draft.fileSize.trim() || "2.1 MB",
       frameKey,
       imageUrl: mediaUrl,
@@ -217,7 +217,7 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
         label: "Image Post",
         labelIcon: "image-multiple",
         title: title || "Photo Update",
-        subtitle: "TCM Community",
+        subtitle: "Last Class Community",
         frameKey,
         imageUrl: primaryUrl,
         carouselImages: carouselImages
@@ -421,8 +421,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
               if (!knownNotifIds.current.has(notifKey)) {
                 knownNotifIds.current.add(notifKey);
                 sendLocalNotification({
-                  title: n.title || "TCM Notification 🔔",
-                  body: n.subtitle || n.message || "You have a new update on TCM Mobile",
+                  title: n.title || "Last Class Notification 🔔",
+                  body: n.subtitle || n.message || "You have a new update on Last Class Mobile",
                   data: n
                 });
                 break;
@@ -563,7 +563,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
   const tabs = home?.tabs?.length ? home.tabs : fallbackTabs;
   const categories = home?.categories || [];
   const posts = home?.posts || [];
-  const contentWidth = Math.min(width - 24, 820);
+  const contentWidth = Math.min(width, 1200);
 
   useEffect(() => {
     loadHome();
@@ -618,17 +618,17 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
       setActiveTab("Learn");
     } else if (itemKey === "Doubts") {
       setActiveTab("Doubts");
-    } else if (itemKey === "TCM Community" || itemKey === "Community") {
+    } else if (itemKey === "Last Class Community" || itemKey === "Community") {
       setShowCommunityScreen(true);
     } else if (itemKey === "Notifications") {
       setShowNotificationsScreen(true);
-    } else if (itemKey === "Wallet" || itemKey === "TCM Wallet & Referrals" || itemKey === "TCM Wallet & Balance" || itemKey === "Referrals" || itemKey === "Refer & Earn (₹500 Bonus)" || itemKey === "Referral") {
+    } else if (itemKey === "Wallet" || itemKey === "Last Class Wallet & Referrals" || itemKey === "Last Class Wallet & Balance" || itemKey === "Referrals" || itemKey === "Refer & Earn (₹500 Bonus)" || itemKey === "Referral") {
       setShowWalletScreen(true);
     } else if (itemKey === "Profile") {
       setActiveTab("Profile");
     } else if (itemKey === "Settings") {
       setActiveTab("ProfileSettings");
-    } else if (itemKey === "Go Premium" || itemKey === "Get Premium" || itemKey === "Get TCM Verified Pro" || itemKey === "Premium Features" || itemKey === "Premium Features ⭐") {
+    } else if (itemKey === "Go Premium" || itemKey === "Get Premium" || itemKey === "Get Last Class Verified Pro" || itemKey === "Premium Features" || itemKey === "Premium Features ⭐") {
       setGetVerifiedModalOpen(true);
     } else if (itemKey === "Feedback" || itemKey === "Feedback & Suggestions") {
       setShowFeedbackModal(true);
@@ -732,7 +732,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
         console.warn("Normalize draft error:", err);
       }
 
-      const isRemote = (uri) => !uri || /^https?:\/\//i.test(uri);
+      const isRemote = (uri) => !uri || /^(https?:\/\/|\/uploads\/|data:(image|video)\/)/i.test(uri);
       const pendingLocal = [
         normalizedDraft.mediaUrl,
         normalizedDraft.fileUri,
@@ -773,7 +773,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
       if (!newPost) {
         newPost = {
           id: `post_local_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          authorName: user?.name || "TCM Learner",
+          authorName: user?.name || "Last Class Learner",
           authorAvatarUrl: user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
           authorRole: user?.role || "Student",
           isMentor: Boolean(user?.role?.toLowerCase?.().includes("mentor")),
@@ -860,7 +860,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
         .toLowerCase();
 
       let categoryMatch = false;
-      if (!cleanActiveCat || cleanActiveCat === "for you" || cleanActiveCat === "trending") {
+      if (!cleanActiveCat || cleanActiveCat === "for you" || cleanActiveCat === "trending" || cleanActiveCat === "following") {
         categoryMatch = true;
       } else if (cleanActiveCat.includes("job") || cleanActiveCat.includes("hiring")) {
         categoryMatch = isJobPost;
@@ -1316,7 +1316,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
             }
           >
             <View style={[styles.page, { width: (activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community") ? "100%" : contentWidth }]}>
-              {!targetUserProfile && (activeTab === "Learn" || (activeTab === "Community" && isCommChannelOpen)) ? null : (
+              {!targetUserProfile && (activeTab === "Community" || activeTab === "community" || activeTab === "Chats" || activeTab === "chats" || activeTab === "Doubts" || activeTab === "doubts") ? null : (
                 <Header
                   title={activeTab}
                   user={user}
@@ -1417,6 +1417,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
                 navigation={{ goBack: () => setActiveTab("Home") }}
                 onChannelStateChange={(isOpen) => setIsCommChannelOpen(isOpen)}
                 onOpenChannelChat={(targetChannel) => setActiveChatUser(targetChannel)}
+                onOpenSidebar={() => setSidebarOpen(true)}
+                onNotifications={() => handleSelectDrawerItem("Notifications")}
               />
             ) : activeTab === "Learn" ? (
               <LearnScreen
@@ -1445,6 +1447,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
                 onSelectDoubtRoom={(roomItem) => {
                   setActiveDoubtRoom(roomItem);
                 }}
+                onOpenSidebar={() => setSidebarOpen(true)}
+                onNotifications={() => handleSelectDrawerItem("Notifications")}
               />
             ) : activeTab === "Profile" ? (
               <ProfileScreen
@@ -1669,15 +1673,38 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
   );
 }
 
-function ZigZagFlowTcmOneLogo({ fontSize = 19 }) {
+const homeHeaderLogo = require("../../assets/icon.png");
+
+function ZigZagFlowTcmOneLogo({ fontSize = 18, showIcon = true, subtitle = "Decoding The Mind", logoSize = 36 }) {
   const { theme } = useTheme();
   const lastColor = theme.isDark ? "#F8FAFC" : "#0F172A";
   const classColor = "#EF4444";
+  const subtextColor = theme.isDark ? "#94A3B8" : "#64748B";
 
   return (
-    <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-      <Text style={{ fontFamily: fonts.extraBold, fontSize, color: lastColor, letterSpacing: -0.2 }}>Last</Text>
-      <Text style={{ fontFamily: fonts.extraBold, fontSize, color: classColor, letterSpacing: -0.2 }}>Class</Text>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 9 }}>
+      {showIcon ? (
+        <Image
+          source={homeHeaderLogo}
+          style={{
+            width: logoSize,
+            height: logoSize,
+            borderRadius: Math.round(logoSize * 0.22)
+          }}
+          resizeMode="contain"
+        />
+      ) : null}
+      <View style={{ justifyContent: "center", alignItems: "flex-start" }}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize, lineHeight: 20, color: lastColor, letterSpacing: -0.2 }}>Last</Text>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize, lineHeight: 20, color: classColor, letterSpacing: -0.2 }}>Class</Text>
+        </View>
+        {subtitle ? (
+          <Text style={{ color: subtextColor, fontFamily: fonts.medium, fontSize: 9.5, lineHeight: 12, marginTop: 1 }} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -1703,8 +1730,8 @@ function Header({ title, user, notifications, onOpenSidebar, onProfile, onOpenSe
           </View>
         </View>
         <View style={styles.headerActions}>
-          <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={styles.iconButton}>
-            <Feather name="bell" size={24} color={iconColor} />
+          <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={[styles.iconButton, { backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F4F3F8" }]}>
+            <Feather name="bell" size={19} color={iconColor} />
             {notifications ? (
               <View style={styles.headerBadge}>
                 <Text style={styles.headerBadgeText}>{notifications > 9 ? "9+" : notifications}</Text>
@@ -1712,7 +1739,7 @@ function Header({ title, user, notifications, onOpenSidebar, onProfile, onOpenSe
             ) : null}
           </Pressable>
           <Pressable onPress={onProfile} style={[styles.profileRing, { backgroundColor: theme.cardBg, borderColor: theme.primary }]}>
-            <Avatar name={user.name} uri={user.avatarUrl} size={32} />
+            <Avatar name={user.name} uri={user.avatarUrl} size={28} />
           </Pressable>
         </View>
       </View>
@@ -1835,7 +1862,7 @@ function CategoryTabs({ categories, activeCategory, setActiveCategory }) {
   if (!categories.length) return null;
 
   return (
-    <ScrollView horizontal contentContainerStyle={{ gap: 6, paddingHorizontal: 2, paddingBottom: 10 }} showsHorizontalScrollIndicator={false}>
+    <ScrollView horizontal contentContainerStyle={{ gap: 6, paddingHorizontal: 14, paddingBottom: 10 }} showsHorizontalScrollIndicator={false}>
       {categories.map((category) => {
         const active = category === activeCategory;
         const conf = getCategoryIconConfig(category);
@@ -1893,7 +1920,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
   const job = post.jobData || {
     id: post.id,
     title: post.title || post.text?.split("\n")[0] || "Software Developer Opening",
-    company: post.company || "TCM Hiring Partner",
+    company: post.company || "Last Class Hiring Partner",
     mentorName: post.authorName || "Mentor",
     mentorAvatarUrl: post.authorAvatarUrl,
     mentorRole: post.authorRole,
@@ -1986,7 +2013,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
                   <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: theme.badgeText || theme.primary }}>Mentor Drive</Text>
                 </View>
               </View>
-              <Text numberOfLines={1} style={[styles.authorRole, { color: theme.subtext, fontSize: 11 }]}>{job.company || "TCM Hiring Partner"} • {job.mentorRole || "Mentor"}</Text>
+              <Text numberOfLines={1} style={[styles.authorRole, { color: theme.subtext, fontSize: 11 }]}>{job.company || "Last Class Hiring Partner"} • {job.mentorRole || "Mentor"}</Text>
             </View>
           </Pressable>
 
@@ -2074,7 +2101,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
                 onPreview({
                   type: "image",
                   title: job.title || "Job Cover",
-                  subtitle: job.company || "TCM Hiring Partner",
+                  subtitle: job.company || "Last Class Hiring Partner",
                   imageUrl: job.imageUrl
                 })
               }
@@ -2449,7 +2476,7 @@ function SingleFeedImage({ singleImage, fKey, onPreview, mediaTitle, mediaSubtit
         onPreview({
           type: "image",
           title: mediaTitle || "Photo Post",
-          subtitle: mediaSubtitle || "TCM Community",
+          subtitle: mediaSubtitle || "Last Class Community",
           imageUrl: singleImage
         })
       }
@@ -2483,7 +2510,7 @@ function PostMedia({ post, onPreview }) {
     const documentItem = {
       type: "document",
       title: media.fileName || post.documentName || media.subtitle || media.title || "Document",
-      subtitle: media.title || media.label || "TCM Document",
+      subtitle: media.title || media.label || "Last Class Document",
       fileSize: media.fileSize || post.documentSize || "PDF Document",
       imageUrl: media.imageUrl || post.imageUrl || "",
       fileUri: resolvedDocUri,
@@ -2497,7 +2524,7 @@ function PostMedia({ post, onPreview }) {
           <MaterialCommunityIcons name="file-pdf-box" size={34} color="#FF465F" />
         </View>
         <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text numberOfLines={1} style={styles.pdfTitle}>{media.fileName || media.subtitle || "TCM Document.pdf"}</Text>
+          <Text numberOfLines={1} style={styles.pdfTitle}>{media.fileName || media.subtitle || "Last Class Document.pdf"}</Text>
           <Text style={styles.pdfSize}>{media.fileSize || "PDF Document"} • Tap to view</Text>
         </View>
         <Feather name="external-link" size={18} color="#6366F1" style={{ marginLeft: 8 }} />
@@ -2550,7 +2577,7 @@ function PostMedia({ post, onPreview }) {
                 onPreview({
                   type: "image",
                   title: media.title || "Photo Post",
-                  subtitle: media.subtitle || "TCM Community",
+                  subtitle: media.subtitle || "Last Class Community",
                   imageUrl: sanitizeImageUri(imageUrl)
                 })
               }
@@ -2593,7 +2620,7 @@ function PostMedia({ post, onPreview }) {
 
   if (media.kind === "video" && post.category === "Coding") {
     const codeLines = [
-      'String str = "TCM is awesome";',
+      'String str = "Last Class is awesome";',
       "String rev = new StringBuilder(str).reverse().toString();",
       "System.out.println(rev);"
     ];
@@ -2851,7 +2878,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
       <Pressable onPressIn={handleTouchStart} onPress={handleTapPress} style={styles.videoTapLayer} />
       <View style={styles.videoCopy}>
         <Text numberOfLines={1} style={styles.videoTitle}>{media.title || "Video Post"}</Text>
-        <Text numberOfLines={1} style={styles.videoSmall}>{media.subtitle || "TCM Community"}</Text>
+        <Text numberOfLines={1} style={styles.videoSmall}>{media.subtitle || "Last Class Community"}</Text>
       </View>
 
       {/* Auto-Hiding Play/Pause Icon Overlay */}
@@ -2872,7 +2899,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
                 type: "video",
                 kind: "video",
                 title: media.title || "Video Post",
-                subtitle: media.subtitle || "TCM Community",
+                subtitle: media.subtitle || "Last Class Community",
                 imageUrl: posterUri,
                 videoUrl: sourceUri,
                 fileUri: sourceUri
@@ -3047,15 +3074,15 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     : (postMedia.imageUrl || post?.imageUrl || carouselImages[0] || post?.jobData?.imageUrl || post?.jobData?.media?.imageUrl || postMedia.thumbnailUrl || post?.thumbnailUrl || "");
 
   const hasMediaUrl = typeof rawMediaUrl === "string" && /^https?:\/\//i.test(rawMediaUrl);
-  const rawTitle = (post?.title || post?.text || post?.content || "TCM Update")
+  const rawTitle = (post?.title || post?.text || post?.content || "Last Class Update")
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\s+/g, " ")
     .trim();
   const cleanTitle = rawTitle.length > 70 ? `${rawTitle.slice(0, 67)}...` : rawTitle;
-  const authorName = post?.authorName || "TCM Educator";
+  const authorName = post?.authorName || "Last Class Educator";
 
   // Sleek, professional message formatting
-  const captionBody = `✨ ${cleanTitle}\n— by ${authorName} on TCM`;
+  const captionBody = `✨ ${cleanTitle}\n— by ${authorName} on Last Class`;
   const formattedShareMsg = `${captionBody}\n\n🔗 ${shareUrl}`;
 
   async function handleNativeShare() {
@@ -3133,7 +3160,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     } else if (platform === "linkedin") {
       Linking.openURL(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`).catch(() => {});
     } else if (platform === "twitter" || platform === "x") {
-      Linking.openURL(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`✨ ${cleanTitle}\n— by ${authorName} on TCM`)}`).catch(() => {});
+      Linking.openURL(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`✨ ${cleanTitle}\n— by ${authorName} on Last Class`)}`).catch(() => {});
     } else if (platform === "copy") {
       handleCopyLink();
     } else {
@@ -3153,7 +3180,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   const currentUserAvatar = session?.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80";
 
   function cleanMemberName(u, idx) {
-    if (!u) return post?.authorName || "TCM Member";
+    if (!u) return post?.authorName || "Last Class Member";
     if (typeof u === "object") {
       const uid = String(u.id || u._id || "");
       if (uid && String(uid) === String(currentUserId)) {
@@ -3176,7 +3203,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
         return u;
       }
     }
-    return post?.authorName || "TCM Member";
+    return post?.authorName || "Last Class Member";
   }
 
   let rawUsers = [];
@@ -3184,7 +3211,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     rawUsers = post.likedByUsers.map((u, idx) => ({
       id: u.id || u._id || `user_${idx}`,
       name: cleanMemberName(u, idx),
-      role: u.role || "TCM Member",
+      role: u.role || "Last Class Member",
       avatarUrl: u.avatarUrl || u.avatar || (String(u.id || u._id) === String(currentUserId) ? currentUserAvatar : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"),
       isMentor: Boolean(u.isMentor || u.role === "mentor")
     }));
@@ -3195,7 +3222,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
           return {
             id: item.id || item._id || `user_${idx}`,
             name: cleanMemberName(item, idx),
-            role: item.role || "TCM Member",
+            role: item.role || "Last Class Member",
             avatarUrl: item.avatarUrl || item.avatar || (String(item.id || item._id) === String(currentUserId) ? currentUserAvatar : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"),
             isMentor: Boolean(item.isMentor || item.role === "mentor")
           };
@@ -3205,7 +3232,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
           return {
             id: item,
             name: resolvedName,
-            role: isMe ? (session?.user?.role || "TCM Member") : "TCM Member",
+            role: isMe ? (session?.user?.role || "Last Class Member") : "Last Class Member",
             avatarUrl: isMe ? currentUserAvatar : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
             isMentor: false
           };
@@ -3220,7 +3247,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     realLikedUsers.unshift({
       id: currentUserId,
       name: currentUserName,
-      role: session?.user?.role || "TCM Member",
+      role: session?.user?.role || "Last Class Member",
       avatarUrl: currentUserAvatar,
       isMentor: Boolean(session?.user?.role === "mentor" || session?.user?.isMentor)
     });
@@ -3394,7 +3421,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
                         </View>
                       ) : null}
                     </View>
-                    <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: theme.subtext, marginTop: 2 }}>{likedUser.role || "TCM Member"}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: theme.subtext, marginTop: 2 }}>{likedUser.role || "Last Class Member"}</Text>
                   </View>
                   <View style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, flexDirection: "row", alignItems: "center", gap: 4 }}>
                     <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: theme.primary }}>Profile</Text>
@@ -3614,7 +3641,7 @@ function MediaPreviewModal({ item, onClose }) {
               <TouchableOpacity
                 onPress={() => {
                   const docShareUrl = `https://app.thecodemunk.in/document/${item.id || item._id || "doc1"}`;
-                  Share.share({ url: docShareUrl, message: `Check out this document on TCM: ${item.title || "File Attachment"}\n\nLink: ${docShareUrl}` }).catch(() => {});
+                  Share.share({ url: docShareUrl, message: `Check out this document on Last Class: ${item.title || "File Attachment"}\n\nLink: ${docShareUrl}` }).catch(() => {});
                 }}
                 activeOpacity={0.8}
                 style={[styles.documentButton, { backgroundColor: "rgba(100, 116, 139, 0.12)", borderWidth: 1, borderColor: "rgba(100, 116, 139, 0.25)", paddingVertical: 5, paddingHorizontal: 8, borderRadius: 10 }]}
@@ -3685,7 +3712,7 @@ function MediaPreviewModal({ item, onClose }) {
           <View style={[styles.imageCaption, { paddingTop: safeTopPadding }]}>
             <View style={styles.imageCaptionCopy}>
               <Text numberOfLines={1} style={styles.imageCaptionTitle}>{item.title || "Video Preview"}</Text>
-              <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle || "TCM Video Update"}</Text>
+              <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle || "Last Class Video Update"}</Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <TouchableOpacity
@@ -3709,7 +3736,7 @@ function MediaPreviewModal({ item, onClose }) {
           <View style={[styles.imageCaption, { paddingTop: safeTopPadding }]}>
             <View style={styles.imageCaptionCopy}>
               <Text numberOfLines={1} style={styles.imageCaptionTitle}>{item.title || "Photo Attachment"}</Text>
-              <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle || "TCM Photo Update"}</Text>
+              <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle || "Last Class Photo Update"}</Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <TouchableOpacity
@@ -4421,7 +4448,7 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
             <View style={styles.createUserRow}>
               <Avatar name={user?.name} uri={user?.avatarUrl} size={42} />
               <View style={styles.createUserCopy}>
-                <Text numberOfLines={1} style={[styles.createUserName, { color: theme.text }]}>{user?.name || "TCM Learner"}</Text>
+                <Text numberOfLines={1} style={[styles.createUserName, { color: theme.text }]}>{user?.name || "Last Class Learner"}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
                   <View style={[styles.audiencePill, { backgroundColor: theme.isDark ? "#1E263B" : "#F1EDFF" }]}>
                     <Feather name="globe" size={11} color={theme.primary} />
@@ -4653,7 +4680,7 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
             </View>
             <View style={styles.guidelineCopy}>
               <Text style={[styles.guidelineTitle, { color: theme.text }]}>Community Guidelines</Text>
-              <Text style={[styles.guidelineText, { color: theme.subtext }]}>Be respectful and follow TCM community guidelines.</Text>
+              <Text style={[styles.guidelineText, { color: theme.subtext }]}>Be respectful and follow Last Class community guidelines.</Text>
             </View>
             <Feather name="chevron-right" size={20} color={theme.subtext} />
           </Pressable>
@@ -5036,7 +5063,7 @@ function DrawerFeatureModal({ feature, onClose, user }) {
                   const success = await setupPushNotifications(session?.token, true);
                   if (success) {
                     sendLocalNotification({
-                      title: "TCM Push Notifications Active 🔔",
+                      title: "Last Class Push Notifications Active 🔔",
                       body: "System notifications are active! You will receive live updates even when outside the app.",
                       data: { test: true }
                     });
@@ -5103,7 +5130,7 @@ function DrawerFeatureModal({ feature, onClose, user }) {
               <View style={[styles.genericFeatureCard, modalSurface]}>
                 <MaterialCommunityIcons name="star-shooting" size={44} color={theme.primary} />
                 <Text style={[styles.genericTitle, { color: theme.text }]}>{feature}</Text>
-                <Text style={[styles.genericSub, { color: theme.subtext }]}>Welcome to {feature} section in TCM.</Text>
+                <Text style={[styles.genericSub, { color: theme.subtext }]}>Welcome to {feature} section in Last Class.</Text>
               </View>
             </View>
           )}
@@ -5159,7 +5186,7 @@ function LoadingState() {
       >
         <ActivityIndicator size="small" color={theme.primary} />
         <Text style={{ fontFamily: fonts.semiBold, fontSize: 13, color: theme.primary }}>
-          Curating live TCM feed & stories...
+          Curating live LastClass feed & stories...
         </Text>
       </View>
 
@@ -5375,11 +5402,13 @@ const styles = StyleSheet.create({
   },
   scroll: {
     alignItems: "center",
-    paddingBottom: 88
+    paddingBottom: 88,
+    width: "100%"
   },
   page: {
     alignSelf: "center",
-    paddingHorizontal: 0
+    paddingHorizontal: 0,
+    width: "100%"
   },
   header: {
     alignItems: "center",
@@ -5387,7 +5416,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingBottom: 10,
     paddingTop: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
+    width: "100%",
     position: Platform.OS === "web" ? "sticky" : "relative",
     top: 0,
     zIndex: 100,
@@ -5406,10 +5436,10 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     alignItems: "center",
-    height: 44,
     justifyContent: "center",
-    marginRight: 13,
-    width: 34
+    width: 36,
+    height: 36,
+    borderRadius: 18
   },
   brandWrap: {
     flexShrink: 1,
@@ -5438,7 +5468,7 @@ const styles = StyleSheet.create({
   headerActions: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 9
+    gap: 8
   },
   headerWalletPill: {
     flexDirection: "row",
@@ -5483,24 +5513,23 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     alignItems: "center",
-    backgroundColor: "transparent",
-    borderRadius: 21,
-    height: 42,
     justifyContent: "center",
-    width: 42
+    width: 36,
+    height: 36,
+    borderRadius: 18
   },
   headerBadge: {
     alignItems: "center",
     backgroundColor: colors.primary,
     borderColor: "#FFFFFF",
-    borderRadius: 8,
-    borderWidth: 2,
-    height: 16,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    height: 14,
     justifyContent: "center",
-    minWidth: 16,
+    minWidth: 14,
     paddingHorizontal: 2,
     position: "absolute",
-    right: 3,
+    right: 2,
     top: 2
   },
   headerBadgeText: {
@@ -5512,16 +5541,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderColor: colors.primary,
-    borderRadius: 21,
+    borderRadius: 18,
     borderWidth: 1.5,
-    height: 42,
+    height: 36,
     justifyContent: "center",
-    width: 42
+    width: 36
   },
   searchRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 16
+    marginBottom: 16,
+    paddingHorizontal: 14
   },
   searchBox: {
     alignItems: "center",

@@ -142,9 +142,9 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
   }
 
   const userObj = profileData || targetUser || {};
-  const name = userObj.name || userObj.authorName || "TCM Member";
-  const handle = userObj.handle || (name !== "TCM Member" ? name.toLowerCase().replace(/[^a-z0-9]/g, "_") : "tcm_member");
-  const bio = userObj.bio || "Building TCM to help curious minds learn, grow & create impact.";
+  const name = userObj.name || userObj.authorName || "Last Class Member";
+  const handle = userObj.handle || (name !== "Last Class Member" ? name.toLowerCase().replace(/[^a-z0-9]/g, "_") : "tcm_member");
+  const bio = userObj.bio || "Building Last Class to help curious minds learn, grow & create impact.";
   const avatarUrl = userObj.avatarUrl || userObj.avatar || userObj.authorAvatarUrl || userObj.photoUrl || userObj.image || userObj.profileImage || userObj.imageUrl || "";
   const location = userObj.location || "India";
   const joinedDate = userObj.joinedDate || "Joined Jan 2024";
@@ -230,7 +230,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
     const shareUrl = `https://app.thecodemunk.in/user/${handle}`;
     try {
       await Share.share({
-        message: `Check out ${name}'s (@${handle}) profile on TCM: ${shareUrl}`
+        message: `Check out ${name}'s (@${handle}) profile on Last Class: ${shareUrl}`
       });
     } catch (err) {
       Alert.alert("Share Profile", `Profile URL: ${shareUrl}`);
@@ -407,7 +407,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
               <Image source={{ uri: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=80&q=80" }} style={[styles.stackAvatar, { borderColor: theme.cardBg }]} />
               <Image source={{ uri: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80" }} style={[styles.stackAvatar, { marginLeft: -8, borderColor: theme.cardBg }]} />
             </View>
-            <Text style={[styles.socialProofText, { color: theme.subtext }]}>Connected with TCM Community</Text>
+            <Text style={[styles.socialProofText, { color: theme.subtext }]}>Connected with Last Class Community</Text>
           </View>
         </View>
       </View>
@@ -802,8 +802,8 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                   : (selectedPostForSheet?.imageUrl || media.imageUrl || carouselImages[0] || media.thumbnailUrl || selectedPostForSheet?.thumbnailUrl || "");
 
                 sharePostWithMedia({
-                  title: selectedPostForSheet?.title || selectedPostForSheet?.text || "TCM Post",
-                  authorName: selectedPostForSheet?.authorName || profileUser?.name || "TCM Educator",
+                  title: selectedPostForSheet?.title || selectedPostForSheet?.text || "Last Class Post",
+                  authorName: selectedPostForSheet?.authorName || profileUser?.name || "Last Class Educator",
                   targetId: pId,
                   mediaUrl: rawMediaUrl,
                   images: carouselImages,
@@ -897,7 +897,7 @@ export default function UserProfileScreen({ session, targetUser, onClose, onOpen
                           <Text style={[styles.igUserName, { color: theme.text }]}>{u.name}</Text>
                           {u.verified ? <MaterialCommunityIcons name="check-decagram" size={14} color={theme.primary} /> : null}
                         </View>
-                        <Text style={[styles.igUserHandle, { color: theme.subtext }]}>@{u.handle || "member"} • {u.role || "TCM Member"}</Text>
+                        <Text style={[styles.igUserHandle, { color: theme.subtext }]}>@{u.handle || "member"} • {u.role || "Last Class Member"}</Text>
                       </View>
                     </View>
 

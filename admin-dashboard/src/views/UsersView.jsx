@@ -130,7 +130,7 @@ export function UsersView({ users, onUpdateUser, onDeleteUser, search }) {
                   <input type="number" className="form-input" value={editWalletBalance} onChange={(e) => setEditWalletBalance(e.target.value)} min="0" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">TCM Coins</label>
+                  <label className="form-label">Last Class Coins</label>
                   <input type="number" className="form-input" value={editCoins} onChange={(e) => setEditCoins(e.target.value)} min="0" />
                 </div>
               </div>
@@ -180,7 +180,7 @@ export function UsersView({ users, onUpdateUser, onDeleteUser, search }) {
                         />
                         <div>
                           <div style={{ fontWeight: '600', color: 'white' }}>{user.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{user.memberBadge || 'TCM Member'}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{user.memberBadge || 'Last Class Member'}</div>
                         </div>
                       </div>
                     </td>

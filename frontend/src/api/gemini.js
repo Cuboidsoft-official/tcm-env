@@ -672,7 +672,7 @@ System Knowledge about Last Class Academy App Courses & Pricing:
 - NEET & JEE Rank Booster Exam Prep: ₹3,499 (3 Months)
 
 System Knowledge about Last Class App Premium Services:
-- TCM Verified Pro Membership: ₹499/month or ₹2,999/year
+- Last Class Verified Pro Membership: ₹499/month or ₹2,999/year
 - Featured Profile: Verified student badge & recruiter highlight
 - Real Domain Project: Live hosted project, domain certificate & review
 - ATS Resume Builder: AI ATS resume builder & PDF export

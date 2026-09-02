@@ -125,7 +125,7 @@ export default function ApplyJobModal({ visible, job, user = {}, token, onClose,
                 <Ionicons name="briefcase" size={18} color={theme.primary} />
                 <Text style={[styles.modalTitle, { color: theme.text }]} numberOfLines={1}>Apply for {job.title}</Text>
               </View>
-              <Text style={[styles.modalSub, { color: theme.subtext }]}>{job.company || "TCM Partner"} • Salary: ₹{job.minSalary} – ₹{job.maxSalary} {job.salaryPeriod}</Text>
+              <Text style={[styles.modalSub, { color: theme.subtext }]}>{job.company || "Last Class Partner"} • Salary: ₹{job.minSalary} – ₹{job.maxSalary} {job.salaryPeriod}</Text>
             </View>
             <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.isDark ? theme.inputBg || "#1E263B" : "#F8FAFC" }]}>
               <Feather name="x" size={20} color={theme.text} />
