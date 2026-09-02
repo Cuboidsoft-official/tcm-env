@@ -1716,18 +1716,14 @@ function Header({ title, user, notifications, onOpenSidebar, onProfile, onOpenSe
 
   const isHomePage = (!title || title === "Home" || title === "home") && !showBack;
 
-  // 1. ORIGINAL HOME PAGE HEADER (Logo + Menu + Slogan + Bell + Avatar)
+  // 1. ORIGINAL HOME PAGE HEADER (Logo with Image + Click Logo to Open Sidebar)
   if (isHomePage) {
     return (
       <View style={[styles.header, { backgroundColor: theme.bg }]}>
         <View style={styles.brandRow}>
-          <Pressable onPress={onOpenSidebar} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
-            <Feather name="menu" size={25} color={iconColor} />
+          <Pressable onPress={onOpenSidebar} style={({ pressed }) => [styles.brandWrap, pressed && styles.pressed]}>
+            <ZigZagFlowTcmOneLogo logoSize={34} showIcon={true} />
           </Pressable>
-          <View style={styles.brandWrap}>
-            <ZigZagFlowTcmOneLogo />
-            <Text style={[styles.brandSub, { color: subtextColor }]}>Decoding The Mind</Text>
-          </View>
         </View>
         <View style={styles.headerActions}>
           <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={[styles.iconButton, { backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F4F3F8" }]}>
