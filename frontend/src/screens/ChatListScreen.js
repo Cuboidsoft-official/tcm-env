@@ -21,7 +21,7 @@ import { shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
-export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoom, showSearchInput: externalShowSearch, onToggleSearch, chatCreateTrigger }) {
+export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoom, showSearchInput: externalShowSearch, onToggleSearch, chatCreateTrigger, onOpenSidebar }) {
   const [activeTab, setActiveTab] = useState("chats"); // "chats" | "doubts"
   const [searchQuery, setSearchQuery] = useState("");
   const [internalShowSearch, setInternalShowSearch] = useState(false);

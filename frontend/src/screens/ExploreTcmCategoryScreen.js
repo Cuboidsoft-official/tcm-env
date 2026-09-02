@@ -546,7 +546,12 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingBottom: 100
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 100,
+    maxWidth: 1200,
+    width: "100%",
+    alignSelf: "center"
   },
 
   // Hero Carousel Banner (Reused LearnScreen Design System)
@@ -554,7 +559,7 @@ const styles = StyleSheet.create({
     marginBottom: 18
   },
   bannerCard: {
-    width: width - 40,
+    width: Math.min(width - 28, 560),
     borderRadius: 22,
     padding: 18,
     flexDirection: "row",

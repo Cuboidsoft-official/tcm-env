@@ -1316,7 +1316,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
             }
           >
             <View style={[styles.page, { width: (activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community") ? "100%" : contentWidth }]}>
-              {!targetUserProfile && (activeTab === "Community" || activeTab === "community" || activeTab === "Chats" || activeTab === "chats" || activeTab === "Doubts" || activeTab === "doubts") ? null : (
+              {isFullScreenView ? null : (
                 <Header
                   title={activeTab}
                   user={user}

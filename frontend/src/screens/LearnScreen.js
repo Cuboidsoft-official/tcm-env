@@ -301,21 +301,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
-        <Pressable
-          onPress={onBack || (() => {
-            if (typeof window !== "undefined" && window.history && window.history.length > 1) {
-              window.history.back();
-            }
-          })}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-        >
-          <Feather name="chevron-left" size={24} color={theme.text} />
-        </Pressable>
-        <View style={{ flex: 1, alignItems: "center", marginRight: 32 }}>
-          <Text style={[styles.screenTitle, { color: theme.text, textAlign: "center" }]}>Learn</Text>
-        </View>
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
       <View style={[styles.searchBoxCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <Feather name="search" size={18} color={theme.subtext} style={{ marginRight: 10 }} />
@@ -336,23 +322,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </Pressable>
       </View>
 
-      <Pressable
-        onPress={() => setRoadmapModalVisible(true)}
-        style={({ pressed }) => [styles.quickAiRoadmapBar, { backgroundColor: theme.isDark ? "#1E1B4B" : "#E8F5E9", borderColor: theme.border }, pressed && styles.pressed]}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
-          <View style={styles.quickAiBadgeIcon}>
-            <MaterialCommunityIcons name="map-marker-path" size={20} color="#FFFFFF" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text }}>Plan My Learning Roadmap</Text>
-            <Text numberOfLines={1} style={{ fontSize: 11, fontFamily: fonts.medium, color: theme.primary }}>Interactive AI Career & Budget Guide</Text>
-          </View>
-        </View>
-        <View style={[styles.quickAiBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: theme.primary }}>Start →</Text>
-        </View>
-      </Pressable>
+
 
       {heroBanners.length > 0 ? (
         <View style={styles.bannerContainer}>
@@ -914,6 +884,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           </ScrollView>
         </React.Fragment>
       ) : null}
+      </ScrollView>
     </View>
   );
 }
@@ -921,8 +892,15 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: "100%"
+  },
+  scrollContent: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 110,
+    maxWidth: 1200,
     width: "100%",
-    paddingBottom: 30
+    alignSelf: "center"
   },
 
   // 1. Top Header Bar
