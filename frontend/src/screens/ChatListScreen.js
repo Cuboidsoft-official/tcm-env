@@ -233,25 +233,14 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <View style={{ width: "100%", alignSelf: "center", flex: 1, paddingHorizontal: Platform.OS === "web" ? 16 : 8 }}>
-        {/* 1. Main Section Header (No Duplicate App Header) */}
-      <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>All Chats</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={{ width: "100%", alignSelf: "center", flex: 1, paddingHorizontal: 0 }}>
+        {/* 1. Top Action Row (Search & Plus Icon without background - Refresh removed) */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", paddingHorizontal: 12, marginTop: 6, marginBottom: 8, gap: 14 }}>
           <Pressable
-            onPress={() => setShowRoomModal(true)}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: theme.primary,
-              paddingHorizontal: 12,
-              paddingVertical: 7,
-              borderRadius: 20,
-              gap: 4
-            }}
+            onPress={() => (activeTab === "chats" ? setShowRoomModal(true) : setShowDoubtModal(true))}
+            style={({ pressed }) => [{ padding: 4 }, pressed && styles.pressed]}
           >
-            <Feather name="plus-circle" size={14} color="#FFFFFF" />
-            <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 12 }}>Create Room</Text>
+            <Feather name="plus" size={22} color={theme.text} />
           </Pressable>
 
           <Pressable
@@ -259,67 +248,64 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               setShowSearchInput(!showSearchInput);
               if (showSearchInput) setSearchQuery("");
             }}
-            style={[styles.compactRefreshBtn, { backgroundColor: showSearchInput ? theme.primary : (theme.isDark ? "#1E263B" : "#F0EDFF") }]}
+            style={({ pressed }) => [{ padding: 4 }, pressed && styles.pressed]}
           >
-            <Feather name="search" size={14} color={showSearchInput ? "#FFFFFF" : theme.primary} />
-          </Pressable>
-
-          <Pressable onPress={() => fetchConversations()} style={[styles.compactRefreshBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F0EDFF" }]}>
-            <Feather name="refresh-cw" size={14} color={theme.primary} />
+            <Feather name="search" size={20} color={showSearchInput ? theme.primary : theme.text} />
           </Pressable>
         </View>
-      </View>
 
-      {/* 2. Toggled Search Bar */}
-      {showSearchInput ? (
-        <View style={[styles.searchWrap, { backgroundColor: theme.cardBg, borderColor: theme.border, marginTop: 8, marginBottom: 8 }]}>
-          <Feather name="search" size={15} color={theme.subtext} style={{ marginRight: 8 }} />
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search by name, role, or message..."
-            placeholderTextColor={theme.subtext}
-            autoFocus
-            style={[styles.searchInput, { color: theme.text }]}
-          />
-          <Pressable onPress={() => { setSearchQuery(""); setShowSearchInput(false); }}>
-            <Feather name="x-circle" size={15} color={theme.subtext} />
+        {/* 2. Toggled Search Bar */}
+        {showSearchInput ? (
+          <View style={[styles.searchWrap, { backgroundColor: theme.cardBg, borderColor: theme.border, marginTop: 2, marginBottom: 10, marginHorizontal: 12 }]}>
+            <Feather name="search" size={15} color={theme.subtext} style={{ marginRight: 8 }} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search by name, role, or message..."
+              placeholderTextColor={theme.subtext}
+              autoFocus
+              style={[styles.searchInput, { color: theme.text }]}
+            />
+            <Pressable onPress={() => { setSearchQuery(""); setShowSearchInput(false); }}>
+              <Feather name="x-circle" size={15} color={theme.subtext} />
+            </Pressable>
+          </View>
+        ) : null}
+
+        {/* 3. Full Width Underline Tabs (Zero Gap Left & Right) */}
+        <View style={{ flexDirection: "row", width: "100%", borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 12 }}>
+          <Pressable
+            onPress={() => setActiveTab("chats")}
+            style={{
+              flex: 1,
+              paddingVertical: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              borderBottomWidth: activeTab === "chats" ? 3 : 0,
+              borderBottomColor: activeTab === "chats" ? theme.primary : "transparent"
+            }}
+          >
+            <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: activeTab === "chats" ? theme.primary : theme.subtext }}>
+              Chats ({conversations.length})
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setActiveTab("doubts")}
+            style={{
+              flex: 1,
+              paddingVertical: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              borderBottomWidth: activeTab === "doubts" ? 3 : 0,
+              borderBottomColor: activeTab === "doubts" ? theme.primary : "transparent"
+            }}
+          >
+            <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: activeTab === "doubts" ? theme.primary : theme.subtext }}>
+              Doubts ({doubts.length})
+            </Text>
           </Pressable>
         </View>
-      ) : null}
-
-      {/* 3. Small Compact Segmented Tabs */}
-      <View style={[styles.tabContainer, { backgroundColor: theme.isDark ? "#1E263B" : "#EFEFFF" }]}>
-        <Pressable
-          onPress={() => setActiveTab("chats")}
-          style={[styles.smallTabBtn, activeTab === "chats" && [styles.smallTabBtnActive, { backgroundColor: theme.cardBg }]]}
-        >
-          <MaterialCommunityIcons
-            name="chat-processing-outline"
-            size={15}
-            color={activeTab === "chats" ? theme.primary : theme.subtext}
-            style={{ marginRight: 5 }}
-          />
-          <Text style={[styles.smallTabText, { color: activeTab === "chats" ? theme.primary : theme.subtext }, activeTab === "chats" && [styles.smallTabTextActive, { color: theme.primary }]]}>
-            Chats ({conversations.length})
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => setActiveTab("doubts")}
-          style={[styles.smallTabBtn, activeTab === "doubts" && [styles.smallTabBtnActive, { backgroundColor: theme.cardBg }]]}
-        >
-          <Feather
-            name="help-circle"
-            size={14}
-            color={activeTab === "doubts" ? theme.primary : theme.subtext}
-            style={{ marginRight: 5 }}
-          />
-          <Text style={[styles.smallTabText, { color: activeTab === "doubts" ? theme.primary : theme.subtext }, activeTab === "doubts" && [styles.smallTabTextActive, { color: theme.primary }]]}>
-            Doubts ({doubts.length})
-          </Text>
-        </Pressable>
-      </View>
 
       {/* 4. Tab Content */}
       {activeTab === "chats" ? (

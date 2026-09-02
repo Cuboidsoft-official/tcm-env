@@ -1315,6 +1315,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
             <View style={[styles.page, { width: (activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community") ? "100%" : contentWidth }]}>
               {!targetUserProfile && (activeTab === "Learn" || (activeTab === "Community" && isCommChannelOpen)) ? null : (
                 <Header
+                  title={activeTab}
                   user={user}
                   notifications={unreadNotifCount || home?.notifications || 0}
                   onOpenSidebar={() => setSidebarOpen(true)}
@@ -1660,22 +1661,24 @@ function ZigZagFlowTcmOneLogo({ fontSize = 19 }) {
   );
 }
 
-function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings, isSelfProfile, onNotifications, showBack, backLabel, onBack, onOpenWallet }) {
+function Header({ title, user, notifications, onOpenSidebar, onProfile, onOpenSettings, isSelfProfile, onNotifications, showBack, backLabel, onBack, onOpenWallet }) {
   const { theme } = useTheme();
   const iconColor = theme.isDark ? "#81C784" : colors.primary;
-  const brandColor = theme.isDark ? "#A7F3D0" : colors.primary;
   const subtextColor = theme.isDark ? "#94A3B8" : "#64748B";
 
-  if (showBack) {
+  const isHomePage = (!title || title === "Home" || title === "home") && !showBack;
+
+  // 1. ORIGINAL HOME PAGE HEADER (Logo + Menu + Slogan + Bell + Avatar)
+  if (isHomePage) {
     return (
       <View style={[styles.header, { backgroundColor: theme.bg }]}>
         <View style={styles.brandRow}>
-          <Pressable onPress={onBack} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
-            <Feather name="chevron-left" size={26} color={iconColor} />
+          <Pressable onPress={onOpenSidebar} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
+            <Feather name="menu" size={25} color={iconColor} />
           </Pressable>
           <View style={styles.brandWrap}>
             <ZigZagFlowTcmOneLogo />
-            <Text style={[styles.brandSub, { color: subtextColor }]}>{backLabel || "Decoding The Mind"}</Text>
+            <Text style={[styles.brandSub, { color: subtextColor }]}>Decoding The Mind</Text>
           </View>
         </View>
         <View style={styles.headerActions}>
@@ -1695,35 +1698,26 @@ function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings,
     );
   }
 
+  // 2. ALL OTHER PAGES HEADER (Clean, Sticky, White Card, Left Back Button, Centered Title with Learn Font & Boldness)
+  const displayTitle = showBack
+    ? (backLabel || "Details")
+    : (title === "ProfileSettings" ? "Settings" : (title || "Page"));
+
+  const handleBackAction = () => {
+    if (onBack) {
+      onBack();
+    } else if (typeof window !== "undefined" && window.history && window.history.length > 1) {
+      window.history.back();
+    }
+  };
+
   return (
-    <View style={[styles.header, { backgroundColor: theme.bg }]}>
-      <View style={styles.brandRow}>
-        <Pressable onPress={onOpenSidebar} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
-          <Feather name="menu" size={25} color={iconColor} />
-        </Pressable>
-        <View style={styles.brandWrap}>
-          <ZigZagFlowTcmOneLogo />
-          <Text style={[styles.brandSub, { color: subtextColor }]}>Decoding The Mind</Text>
-        </View>
-      </View>
-      <View style={styles.headerActions}>
-        <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={styles.iconButton}>
-          <Feather name="bell" size={24} color={iconColor} />
-          {notifications ? (
-            <View style={styles.headerBadge}>
-              <Text style={styles.headerBadgeText}>{notifications > 9 ? "9+" : notifications}</Text>
-            </View>
-          ) : null}
-        </Pressable>
-        {isSelfProfile ? (
-          <Pressable onPress={onOpenSettings} style={[styles.iconButton, { backgroundColor: theme.badgeBg, borderRadius: 20, width: 36, height: 36, alignItems: "center", justifyContent: "center" }]}>
-            <Feather name="settings" size={20} color={theme.primary} />
-          </Pressable>
-        ) : (
-          <Pressable onPress={onProfile} style={[styles.profileRing, { backgroundColor: theme.cardBg, borderColor: theme.primary }]}>
-            <Avatar name={user.name} uri={user.avatarUrl} size={32} />
-          </Pressable>
-        )}
+    <View style={[styles.header, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+      <Pressable onPress={handleBackAction} style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}>
+        <Feather name="chevron-left" size={24} color={theme.text} />
+      </Pressable>
+      <View style={{ flex: 1, alignItems: "center", marginRight: 32 }}>
+        <Text style={[styles.screenTitle, { color: theme.text, textAlign: "center" }]}>{displayTitle}</Text>
       </View>
     </View>
   );
@@ -5359,6 +5353,13 @@ const styles = StyleSheet.create({
   brandWrap: {
     flexShrink: 1,
     minWidth: 0
+  },
+  screenTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize: 19,
+    lineHeight: 23,
+    letterSpacing: -0.2,
+    color: "#181725"
   },
   brand: {
     color: colors.primaryDark,

@@ -669,53 +669,47 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   function renderMainCommunityScreen() {
     return (
       <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} showsVerticalScrollIndicator={false}>
-        <View style={{ width: "100%", alignSelf: "center", flex: 1, paddingHorizontal: 4 }}>
-          {/* Top Tab Selectors */}
-        <View style={{ flexDirection: "row", paddingHorizontal: 4, marginTop: 10, gap: 6 }}>
-          <TouchableOpacity
-            onPress={() => setActiveTabPill("channels")}
-            activeOpacity={0.8}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 10,
-              paddingVertical: 5,
-              borderRadius: 16,
-              backgroundColor: activeTabPill === "channels" ? theme.primary : (theme.isDark ? "#1E263B" : "#F1F5F9"),
-              borderWidth: 1,
-              borderColor: activeTabPill === "channels" ? theme.primary : theme.border
-            }}
-          >
-            <Feather name="users" size={12} color={activeTabPill === "channels" ? "#FFFFFF" : theme.primary} style={{ marginRight: 4 }} />
-            <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: activeTabPill === "channels" ? "#FFFFFF" : theme.subtext }}>
-              Official Channels ({communities.length})
-            </Text>
-          </TouchableOpacity>
+        <View style={{ width: "100%", alignSelf: "center", flex: 1, paddingHorizontal: 0 }}>
+          {/* Full Width Underline Tabs (No Circle, No Gap - Edge to Edge) */}
+          <View style={{ flexDirection: "row", width: "100%", borderBottomWidth: 1, borderBottomColor: theme.border, marginTop: 4, marginBottom: 12 }}>
+            <TouchableOpacity
+              onPress={() => setActiveTabPill("channels")}
+              activeOpacity={0.7}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                alignItems: "center",
+                justifyContent: "center",
+                borderBottomWidth: activeTabPill === "channels" ? 3 : 0,
+                borderBottomColor: activeTabPill === "channels" ? theme.primary : "transparent"
+              }}
+            >
+              <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: activeTabPill === "channels" ? theme.primary : theme.subtext }}>
+                Official Channels ({communities.length})
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => setActiveTabPill("jobs")}
-            activeOpacity={0.8}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 10,
-              paddingVertical: 5,
-              borderRadius: 16,
-              backgroundColor: activeTabPill === "jobs" ? theme.primary : (theme.isDark ? theme.inputBg || "#1E293B" : "#F1F5F9"),
-              borderWidth: 1,
-              borderColor: activeTabPill === "jobs" ? theme.primary : theme.border
-            }}
-          >
-            <Ionicons name="briefcase" size={12} color={activeTabPill === "jobs" ? "#FFFFFF" : theme.primary} style={{ marginRight: 4 }} />
-            <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: activeTabPill === "jobs" ? "#FFFFFF" : theme.subtext }}>
-              Job Feed ({jobPosts.length})
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              onPress={() => setActiveTabPill("jobs")}
+              activeOpacity={0.7}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                alignItems: "center",
+                justifyContent: "center",
+                borderBottomWidth: activeTabPill === "jobs" ? 3 : 0,
+                borderBottomColor: activeTabPill === "jobs" ? theme.primary : "transparent"
+              }}
+            >
+              <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: activeTabPill === "jobs" ? theme.primary : theme.subtext }}>
+                Job Feed ({jobPosts.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
 
         {activeTabPill === "jobs" ? (
           /* JOB FEED & HIRING DRIVES */
-          <View style={{ paddingHorizontal: 4, paddingTop: 14, paddingBottom: 30 }}>
+          <View style={{ paddingHorizontal: 4, paddingTop: 6, paddingBottom: 30 }}>
             {/* Header Action Banner */}
             <View style={{ backgroundColor: theme.isDark ? theme.inputBg || "#1E293B" : theme.badgeBg, borderWidth: 1, borderColor: theme.border, borderRadius: 16, padding: 14, marginBottom: 16 }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -780,12 +774,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
           </View>
         ) : (
           <>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 4, marginTop: 12, marginBottom: 10 }}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Feather name="award" size={15} color={theme.primary} style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: theme.text }}>Official Channels</Text>
-              </View>
-
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", paddingHorizontal: 4, marginTop: 4, marginBottom: 10 }}>
               <TouchableOpacity
                 onPress={() => setCreateCommModalOpen(true)}
                 activeOpacity={0.8}

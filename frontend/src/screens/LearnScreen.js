@@ -122,7 +122,7 @@ function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694
   return url;
 }
 
-export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory, onOpenDiscoverPartners }) {
+export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory, onOpenDiscoverPartners, onBack }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [allMentorsModalVisible, setAllMentorsModalVisible] = useState(false);
@@ -244,25 +244,19 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <View style={styles.topHeader}>
-        <View style={styles.headerLeft}>
-          <Pressable onPress={onOpenSidebar} style={[styles.menuBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Feather name="menu" size={22} color={theme.text} />
-          </Pressable>
-          <View style={styles.titleWrap}>
-            <Text style={[styles.screenTitle, { color: theme.text }]}>Learn</Text>
-            <Text style={[styles.screenSub, { color: theme.subtext }]}>Explore courses and grow your skills</Text>
-          </View>
-        </View>
-
-        <View style={styles.headerRight}>
-          <Pressable onPress={() => Alert.alert("Search", "Type in the search bar below to search courses.")} style={[styles.headerIconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Feather name="search" size={18} color={theme.text} />
-          </Pressable>
-          <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", "You have learning updates."))} style={[styles.headerIconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Feather name="bell" size={18} color={theme.text} />
-            <View style={[styles.notifDot, { backgroundColor: theme.primary }]} />
-          </Pressable>
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+        <Pressable
+          onPress={onBack || (() => {
+            if (typeof window !== "undefined" && window.history && window.history.length > 1) {
+              window.history.back();
+            }
+          })}
+          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
+        >
+          <Feather name="chevron-left" size={24} color={theme.text} />
+        </Pressable>
+        <View style={{ flex: 1, alignItems: "center", marginRight: 32 }}>
+          <Text style={[styles.screenTitle, { color: theme.text, textAlign: "center" }]}>Learn</Text>
         </View>
       </View>
 
@@ -368,7 +362,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
             <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Tech</Text>
-            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Live Classes, Notes, Assignments & More</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Live Classes & Notes</Text>
           </Pressable>
 
           <Pressable
@@ -382,7 +376,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
             <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Academy</Text>
-            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Premium Courses, Specialized Programs</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Specialized Programs</Text>
           </Pressable>
 
           <Pressable
@@ -396,7 +390,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
             <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Government</Text>
-            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>UPSC, SSC CGL, Banking & Govt Exams</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>UPSC, SSC & Govt Exams</Text>
           </Pressable>
 
           <Pressable
@@ -410,7 +404,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
               <Feather name="chevron-right" size={16} color={theme.subtext} />
             </View>
             <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Career</Text>
-            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Internships, Jobs, Placements</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Jobs & Placements</Text>
           </Pressable>
         </View>
       </View>
@@ -837,6 +831,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: "100%",
     paddingBottom: 30
   },
 
@@ -845,35 +840,49 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0, 0, 0, 0.06)",
+    position: Platform.OS === "web" ? "sticky" : "relative",
+    top: 0,
+    zIndex: 100,
+    ...(Platform.OS === "web"
+      ? {
+          backdropFilter: "blur(20px) saturate(180%)",
+          WebkitBackdropFilter: "blur(20px) saturate(180%)"
+        }
+      : {})
+  },
+  backBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center"
   },
   headerLeft: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 12
+    alignItems: "center"
   },
-  menuBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#F0EFFF",
-    ...shadow.soft
+  titleWrap: {
+    justifyContent: "center"
   },
-  titleWrap: {},
   screenTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 22,
+    fontFamily: fonts.semiBold,
+    fontSize: 19,
+    lineHeight: 23,
+    letterSpacing: -0.2,
     color: "#181725"
   },
   screenSub: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    lineHeight: 14,
     color: "#7C7C9A",
-    marginTop: 1
+    marginTop: 0,
+    letterSpacing: 0
   },
   headerRight: {
     flexDirection: "row",
