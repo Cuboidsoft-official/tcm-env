@@ -51,7 +51,10 @@
           "color": "#261B94",
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "expo-sharing",
+      "expo-status-bar",
+      "expo-video"
     ],
     "extra": {
       "eas": {
