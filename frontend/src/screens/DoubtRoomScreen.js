@@ -43,22 +43,18 @@ function generateClientSmartFallback(query, category = "Academic") {
   const rawTopic = query.replace(/(sir|bhai|mujhe|tell me|explain|what is|how to|about|ke bare me|batao|bataye|\?)/gi, '').trim() || 'Programming & Academic Doubt';
 
   if (text.includes("python")) {
-    return `🐍 **Python Programming & Execution Architecture**\n\n1. **Core Concept Overview**:\n   Python is a high-level, interpreted programming language renowned for its elegant syntax, dynamic typing, and beginner-to-advanced versatility.\n\n2. **Key Capabilities & Highlights**:\n   • **Readable Syntax**: Clean, human-like structure using indentation instead of curly braces.\n   • **Multi-Paradigm Support**: Seamlessly combines Object-Oriented, Functional, and Procedural programming paradigms.\n   • **PVM Execution Loop**: Source code (.py) compiles into bytecode (.pyc), which is executed line-by-line by the Python Virtual Machine (PVM).\n   • **Extensive Ecosystem**: Powerhouse for Web Backend (Django, FastAPI), Data Analysis (Pandas, NumPy), Artificial Intelligence (PyTorch, TensorFlow), and Automation.\n\n3. **Practical Code Example**:\n\`\`\`python\n# Example: Student Grade Evaluator\ndef evaluate_student(name, score):\n    status = "Distinction" if score >= 80 else ("Pass" if score >= 40 else "Needs Review")\n    return f"Student {name}: {score}/100 -> Grade: {status}"\n\nprint(evaluate_student("Aman", 85))\n\`\`\`\n\n4. **Recommended Next Steps**:\n   Master fundamental data structures (Lists, Dictionaries, Sets), practice writing modular functions, and explore libraries related to your domain.`;
+    return `🐍 **Python Explanation by Lappy AI**\n\nPython ek simple, powerful aur high-level programming language hai! Web development, AI, automation aur data analysis me python widely use hoti hai.\n\n### 🎯 Key Highlights:\n- **Simple Syntax**: English jaisa readable code.\n- **Versatile**: Web apps (Django/Flask), AI/ML (TensorFlow, PyTorch) me use hota hai.\n- **Dynamically Typed**: Variables ka type manually declare nahi karna padta.\n\n\`\`\`python\n# Simple Python Example\ndef greet_student(name):\n    return f"Hello {name}, welcome to Lappy AI Learning!"\n\nprint(greet_student("Aman"))\n\`\`\`\n\n🚀 **Next Step**: Pehle basic variables, loops aur functions ki practice karo!`;
   }
 
   if (text.includes("django")) {
-    return `🎓 **Python & Django MVT Architecture Overview**\n\n1. **Architecture Mechanics (MVT Pattern)**:\n   - **Model (models.py)**: Maps Python classes directly to database schemas.\n   - **View (views.py)**: Implements business logic and API responses.\n   - **Template (templates/)**: Handles UI rendering.\n\n2. **Production-Ready View Pattern**:\n\`\`\`python\nfrom django.http import JsonResponse\n\ndef get_user_dashboard(request):\n    data = {"status": "success", "message": "Welcome to TCM One Academy"}\n    return JsonResponse(data, status=200)\n\`\`\`\n\n3. **Best Practices**:\n   Isolate business logic inside service layers and manage credentials using environment variables.`;
+    return `🎓 **Django Overview by Lappy AI**\n\nDjango ek powerful Python Web Framework hai jo **MVT Architecture** (Model, View, Template) use karta hai.\n\n- **Model**: Database schema define karta hai.\n- **View**: API and Business Logic handle karta hai.\n- **Template**: HTML UI render karta hai.\n\n\`\`\`python\nfrom django.http import JsonResponse\n\ndef my_api_view(request):\n    return JsonResponse({"message": "Hello from Lappy AI & Django!"})\n\`\`\``;
   }
 
   if (text.includes("react") || text.includes("javascript") || text.includes("js")) {
-    return `⚡ **Modern Web Development: React & JavaScript Architecture**\n\n1. **Core Concept Overview**:\n   Modern web applications rely on declarative UI components, reactive state management, and non-blocking asynchronous event loops.\n\n2. **Key Pillars**:\n   • **Virtual DOM**: React maintains an in-memory Virtual DOM to compute minimal structural updates.\n   • **Hooks & Lifecycle**: Functional components encapsulate state (useState) and side effects (useEffect).\n\n3. **Code Example**:\n\`\`\`javascript\nimport React, { useState } from 'react';\n\nexport function Counter() {\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(c => c + 1)}>Clicks: {count}</button>;\n}\n\`\`\`\n\n4. **Best Practices**:\n   Keep state immutable and clean up side-effects in useEffect closures.`;
+    return `⚡ **React & JavaScript Guide by Lappy AI**\n\nReact ek declarative, component-based UI library hai jo modern web and mobile apps (React Native) me use hoti hai.\n\n- **Virtual DOM**: Fast updates aur re-rendering compute karta hai.\n- **Hooks**: \`useState\` and \`useEffect\` se state and side effects manage hote hain.\n\n\`\`\`javascript\nimport React, { useState } from 'react';\n\nexport function Counter() {\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(c => c + 1)}>Clicks: {count}</button>;\n}\n\`\`\``;
   }
 
-  if (text.includes("neet") || text.includes("biology") || text.includes("physics") || text.includes("chemistry") || text.includes("jee") || text.includes("math")) {
-    return `🔬 **Academic Solution & Concept Breakdown: ${rawTopic}**\n\n1. **Fundamental Principle & Overview**:\n   Mastering competitive exam topics requires breaking down core definitions, understanding governing formulas/laws, and applying them step-by-step to numerical and analytical questions.\n\n2. **Step-by-Step Problem Solving Methodology**:\n   • **Step 1**: Extract given values, boundary conditions, and target variables.\n   • **Step 2**: Apply the fundamental theorem or law with strict unit consistency.\n   • **Step 3**: Cross-verify results with standard syllabus guidelines (NCERT / Exam standards).\n\n3. **Exam Performance Strategy**:\n   Regularly solve past-year MCQs and maintain a dedicated formula sheet.`;
-  }
-
-  return `📚 **Comprehensive Guide & Explanation: ${rawTopic}**\n\n1. **Executive Concept Overview**:\n   Regarding **"${query}"**: This topic involves understanding underlying principles, operational steps, and practical applications.\n\n2. **Step-by-Step Resolution & Methodology**:\n   • **Step 1 (Core Fundamentals)**: Define basic terms, inputs, and expected outcomes.\n   • **Step 2 (Execution Strategy)**: Structure logic into clean, modular steps to ensure clarity and accuracy.\n   • **Step 3 (Edge Case Handling)**: Validate outputs against boundary conditions and verify syntax/parameters.\n\n3. **Key Takeaways & Best Practices**:\n   Break down complex problems into smaller manageable sub-tasks and test with realistic edge cases.`;
+  return `🤖 **Lappy AI Quick Guide on "${rawTopic}"**\n\nAapke question **"${query}"** ka key breakdown:\n\n1. **Core Idea**: Pehle basic concepts aur inputs ko clear samjho.\n2. **Practical Approach**: Logic ko step-by-step modular code ya clean solution me break karo.\n3. **Best Practice**: Output check karo aur edge cases handle karo.\n\nAgar koi specific doubt ho ya code sample chahiye, to text me specify karke puch sakte ho! 🚀`;
 }
 
 function renderAiFormattedResponse(rawText, theme = {}) {
@@ -290,17 +286,17 @@ function isQuestionMessage(item) {
 
 async function generateDoubtAnswerWithLiveAI(query, category = "Academic") {
   const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || ["gsk_", "hM85ICZwGCPpXgcNIFj0WGdyb3FYxxXFewwceeS3Qrtez4RqnUNR"].join("");
-  const prompt = `You are TCM One Oveta AI, an expert academic and technical AI tutor for students.
-Answer the following student doubt in detail, clearly and accurately with formatting, bullet points, explanations, and code examples if relevant.
+  const prompt = `You are Lappy AI (TCM One Lappy AI 🤖), a friendly, highly intelligent expert academic and coding tutor at TCM One Academy.
 
-Student Doubt: "${query}"
-Course/Domain Category: "${category}"
+Student Query: "${query}"
+Subject / Domain Category: "${category}"
 
-Provide a clean, structured response:
-1. Core Concept Overview
-2. Step-by-step Solution / Explanation
-3. Code / Practical Example (if relevant)
-4. Key Takeaways & Best Practices`;
+INSTRUCTIONS FOR LAPPY AI:
+1. Identify yourself as Lappy AI if asked.
+2. Adapt to the student's language naturally (Hinglish/Hindi/English). If the student asks in Hinglish (e.g. "Python smjhao", "kaise kare"), answer in clear, friendly Hinglish with code & bullet points!
+3. DO NOT use rigid robotic headings like "Executive Concept Overview" or "Step 1 (Core Fundamentals)".
+4. Give a direct, easy-to-understand, engaging explanation with real-world analogies, code examples with comments, and key tips.
+5. Keep formatting clean using bold headings, code blocks, and bullet points.`;
 
   if (GROQ_API_KEY) {
     try {
@@ -731,7 +727,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
       const aiMsg = {
         id: `msg_ai_${Date.now()}`,
-        authorName: "Oveta AI Tutor 🤖",
+        authorName: "Lappy AI Tutor 🤖",
         authorRole: "AI Assistant",
         authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -1163,7 +1159,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                     <View style={styles.aiFooterMentionRow}>
                       <MaterialCommunityIcons name="shield-check" size={13} color={theme.isDark ? "#A78BFA" : "#6366F1"} />
                       <Text style={[styles.aiFooterMentionText, { color: theme.isDark ? "#A78BFA" : "#0A6836" }]}>
-                        ⚡ Powered by Oveta AI Engine • Verified Academic Mentor
+                        ⚡ Powered by Lappy AI Engine • Verified Academic Tutor
                       </Text>
                     </View>
                   )}

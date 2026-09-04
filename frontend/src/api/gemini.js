@@ -711,8 +711,8 @@ export async function generateInteractiveAiRoadmapAndChat(chatHistory = [], user
 
   const cleanUserMsg = (userMessage || "").trim();
 
-  const prompt = `You are Oveta AI, the official Senior AI Learning Architect & Career Counselor at TCM One Academy (Decoding The Mind).
-IMPORTANT IDENTITY RULE: You must ONLY identify yourself as "Oveta AI". Never mention "Groq", "Llama", "Google Gemini", "ChatGPT", or any third-party provider name.
+  const prompt = `You are Lappy AI, the official Senior AI Learning Architect & Career Counselor at TCM One Academy (Decoding The Mind).
+IMPORTANT IDENTITY RULE: You must ONLY identify yourself as "Lappy AI". Never mention "Groq", "Llama", "Google Gemini", "ChatGPT", or any third-party provider name.
 
 STRICT DATA ACCURACY RULE:
 You MUST ONLY recommend courses, plans, features, and pricing that ACTUALLY EXIST in the TCM One Academy App as specified in the System Knowledge below. DO NOT invent fake prices, fake courses, or fake subscription tiers!
@@ -750,15 +750,16 @@ FORMATTING RULES:
     const text = await callGeminiApi(prompt);
     if (text && text.trim()) {
       return text.trim()
-        .replace(/Groq\s*AI/gi, "Oveta AI")
-        .replace(/Llama\s*\d*(\.\d*)?/gi, "Oveta AI")
-        .replace(/Gemini\s*AI/gi, "Oveta AI")
-        .replace(/Last\s*Class\s*AI/gi, "Oveta AI")
-        .replace(/Nexus\s*AI/gi, "Oveta AI")
+        .replace(/Groq\s*AI/gi, "Lappy AI")
+        .replace(/Llama\s*\d*(\.\d*)?/gi, "Lappy AI")
+        .replace(/Gemini\s*AI/gi, "Lappy AI")
+        .replace(/Last\s*Class\s*AI/gi, "Lappy AI")
+        .replace(/Nexus\s*AI/gi, "Lappy AI")
+        .replace(/Oveta\s*AI/gi, "Lappy AI")
         .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "");
     }
   } catch (err) {
-    console.warn("Oveta AI Roadmap Chat Generation error:", err);
+    console.warn("Lappy AI Roadmap Chat Generation error:", err);
   }
 
   // Smart structured fallback if network fails
