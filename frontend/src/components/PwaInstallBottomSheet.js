@@ -113,7 +113,7 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
             onShowToast({
               type: "success",
               title: "App Installed 🎉",
-              subtitle: "Last Class app added to your Home Screen!"
+              subtitle: "TCM One app added to your Home Screen!"
             });
           }
           setVisible(false);

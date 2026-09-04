@@ -84,7 +84,7 @@ function normalizeCourseModules(modArray, fallbackTitle = "Core Course Topic") {
 export default function CreateCourseScreen({ session, user = {}, courseToEdit = null, onBack, onCourseCreated }) {
   const { theme } = useTheme();
   const isEditing = Boolean(courseToEdit);
-  const assignedCategory = courseToEdit?.category || user.mentorCategory || user.category || "Last Class Information Tech";
+  const assignedCategory = courseToEdit?.category || user.mentorCategory || user.category || "TCM One Information Tech";
   
   const [title, setTitle] = useState(courseToEdit?.title || "");
   const [subtitle, setSubtitle] = useState(courseToEdit?.subtitle || "");
@@ -116,15 +116,15 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
   // Category Icon Mapping
   const getCategoryMeta = (catKey) => {
     if (catKey.includes("Academy")) {
-      return { label: "Last Class Academy", icon: "school", color: "#2E7D32", bg: "#ECF9E9" };
+      return { label: "TCM One Academy", icon: "school", color: "#2E7D32", bg: "#ECF9E9" };
     }
     if (catKey.includes("Government")) {
-      return { label: "Last Class Government", icon: "bank", color: "#2F79B9", bg: "#EAF5FF" };
+      return { label: "TCM One Government", icon: "bank", color: "#2F79B9", bg: "#EAF5FF" };
     }
     if (catKey.includes("Career")) {
-      return { label: "Last Class Career", icon: "briefcase", color: "#E76F51", bg: "#FFF2EE" };
+      return { label: "TCM One Career", icon: "briefcase", color: "#E76F51", bg: "#FFF2EE" };
     }
-    return { label: "Last Class Information Tech", icon: "laptop-mac", color: "#5B3CF5", bg: "#F0EDFF" };
+    return { label: "TCM One Information Tech", icon: "laptop-mac", color: "#5B3CF5", bg: "#F0EDFF" };
   };
 
   const catMeta = getCategoryMeta(assignedCategory);
@@ -310,8 +310,8 @@ export default function CreateCourseScreen({ session, user = {}, courseToEdit = 
         price: price.startsWith("₹") ? price : `₹${price}`,
         duration,
         imageUrl: coverImageUrl,
-        mentorName: user.name || "Last Class Mentor",
-        mentorRole: user.role || "Last Class Educator",
+        mentorName: user.name || "TCM One Mentor",
+        mentorRole: user.role || "TCM One Educator",
         mentorAvatarUrl: user.avatarUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
         modules
       };

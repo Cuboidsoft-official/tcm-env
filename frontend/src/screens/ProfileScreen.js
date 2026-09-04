@@ -55,7 +55,7 @@ function ProfileAvatar({ name = "", uri, size = 90 }) {
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
-    .toUpperCase() || "Last Class";
+    .toUpperCase() || "TCM One";
 
   const isInvalidWebUri = Platform.OS === "web" && typeof uri === "string" && uri.startsWith("file://");
 
@@ -177,7 +177,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
         setFollowingList(data.following);
       }
 
-      // Fetch Last Class AI Exam Results
+      // Fetch TCM One AI Exam Results
       try {
         const examRes = await getExamResults(session.token);
         if (examRes?.results) {
@@ -406,7 +406,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
 
         <View style={styles.userMainInfo}>
           <View style={styles.nameRow}>
-            <Text style={[styles.userName, { color: theme.text }]}>{profileUser.name || "Last Class Member"}</Text>
+            <Text style={[styles.userName, { color: theme.text }]}>{profileUser.name || "TCM One Member"}</Text>
             {profileUser.isMentor || profileUser.role?.toLowerCase().includes("mentor") ? (
               <View style={{ backgroundColor: theme.isDark ? "#1E1B4B" : "#FEF3C7", borderWidth: 1, borderColor: theme.border, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 4 }}>
                 <Text style={{ fontSize: 10, fontWeight: "700", color: theme.isDark ? "#A78BFA" : "#D97706" }}>Mentor</Text>
@@ -452,7 +452,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               </Text>
             ) : null}
             <View style={[styles.memberBadgePill, { backgroundColor: theme.badgeBg }]}>
-              <Text style={[styles.memberBadgeText, { color: theme.primary }]}>{profileUser.memberBadge || "Last Class Member"}</Text>
+              <Text style={[styles.memberBadgeText, { color: theme.primary }]}>{profileUser.memberBadge || "TCM One Member"}</Text>
             </View>
           </View>
 
@@ -496,8 +496,8 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               onPress={() => {
                 const shareUrl = `https://app.thecodemunk.in/user/${profileUser.handle || "user"}`;
                 Share.share({
-                  title: profileUser.name || "Last Class Profile",
-                  message: `Check out ${profileUser.name || "Last Class Member"}'s profile on Last Class: ${shareUrl}`
+                  title: profileUser.name || "TCM One Profile",
+                  message: `Check out ${profileUser.name || "TCM One Member"}'s profile on TCM One: ${shareUrl}`
                 }).catch(() => {});
               }}
               style={[styles.shareBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
@@ -929,7 +929,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                           {item.examTitle}
                         </Text>
                         <Text style={{ fontSize: 10.5, color: theme.subtext, marginTop: 1 }}>
-                          ID: {item.certId || `Last Class-EXAM-${index + 100}`} • {new Date(item.createdAt).toLocaleDateString()}
+                          ID: {item.certId || `TCM One-EXAM-${index + 100}`} • {new Date(item.createdAt).toLocaleDateString()}
                         </Text>
                       </View>
                     </View>
@@ -965,7 +965,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               <MaterialCommunityIcons name="trophy-outline" size={38} color="#94A3B8" />
               <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: theme.text, marginTop: 8 }}>No Exam Certificates Yet</Text>
               <Text style={{ fontSize: 12, color: theme.subtext, marginTop: 3, textAlign: "center" }}>
-                Complete Last Class AI Skill Exams on the Learn Page to earn verified scorecards & certificates!
+                Complete TCM One AI Skill Exams on the Learn Page to earn verified scorecards & certificates!
               </Text>
             </View>
           ) : (
@@ -1328,7 +1328,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
               <ProfileAvatar name={profileUser.name} uri={profileUser.avatarUrl} size={210} />
             </View>
 
-            <Text style={styles.enlargedUserName}>{profileUser.name || "Last Class Member"}</Text>
+            <Text style={styles.enlargedUserName}>{profileUser.name || "TCM One Member"}</Text>
             {profileUser.handle ? <Text style={styles.enlargedUserHandle}>@{profileUser.handle}</Text> : null}
 
             <View style={styles.enlargedActionRow}>

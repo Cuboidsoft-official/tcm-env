@@ -49,7 +49,7 @@ export default function AuthRequiredModal({
 
           {/* Description */}
           <Text style={[styles.description, { color: theme.subtext }]}>
-            To <Text style={{ fontFamily: fonts.bold, color: theme.primary }}>{actionTitle}</Text>, please log in or create your free account on <Text style={{ fontFamily: fonts.bold, color: theme.primary }}>Last Class</Text>.
+            To <Text style={{ fontFamily: fonts.bold, color: theme.primary }}>{actionTitle}</Text>, please log in or create your free account on <Text style={{ fontFamily: fonts.bold, color: theme.primary }}>TCM One</Text>.
           </Text>
 
           {/* Features List */}
@@ -64,7 +64,7 @@ export default function AuthRequiredModal({
             </View>
             <View style={styles.featureItem}>
               <Feather name="check-circle" size={15} color="#10B981" style={{ marginRight: 8 }} />
-              <Text style={[styles.featureText, { color: theme.text }]}>Connect with mentors & active learners on Last Class</Text>
+              <Text style={[styles.featureText, { color: theme.text }]}>Connect with mentors & active learners on TCM One</Text>
             </View>
           </View>
 

@@ -88,7 +88,7 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
     ? "NEET Ultimate Crash Course 2026"
     : isJee
     ? "JEE Rank Booster Batch 2026"
-    : "Last Class Live Masterclass";
+    : "TCM One Live Masterclass";
 
   const fallbackSubtitle = isNeet
     ? "Physics • Chemistry • Biology • 5000+ MCQs & Mock Tests"
@@ -109,7 +109,7 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
     about: [
       `Course Overview\nMaster ${fallbackTitle} with live interactive guidance, daily practical exercises, and high-yield question solving. ${fallbackSubtitle}`,
       `Who Should Join?\nDesigned for learners seeking real-world practical skills with 1-on-1 live mentor doubt clearance and daily problem solving.`,
-      `Career & Exam Outcomes\nWork on live industry projects / high-yield test series, build your portfolio, and earn an official Last Class Verified Certificate upon completion.`
+      `Career & Exam Outcomes\nWork on live industry projects / high-yield test series, build your portfolio, and earn an official TCM One Verified Certificate upon completion.`
     ].join("\n\n"),
     whatYouWillLearn: [
       `Master core fundamentals and advanced concepts of ${fallbackTitle}`,
@@ -188,9 +188,9 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
   const courseData = course || fallbackCourseData;
 
   function handleConnectWhatsApp() {
-    const title = courseData?.title || "Last Class Course";
+    const title = courseData?.title || "TCM One Course";
     const price = courseData?.price || "₹1,499";
-    const message = `Hi Last Class Support Team! I am interested in purchasing the course: "${title}" (${price}). Please guide me.`;
+    const message = `Hi TCM One Support Team! I am interested in purchasing the course: "${title}" (${price}). Please guide me.`;
     const url = `https://wa.me/919238695500?text=${encodeURIComponent(message)}`;
     Linking.openURL(url).catch(() => {
       Alert.alert("WhatsApp Direct Contact", "Please message +91 9238695500 on WhatsApp for course enrollment.");
@@ -209,8 +209,8 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
   function handleShare() {
     const shareUrl = `https://app.thecodemunk.in/course/${courseId}`;
     Share.share({
-      title: courseData?.title || "Last Class Course",
-      message: `Check out this course on Last Class: "${courseData?.title || "Masterclass"}"\n\nEnroll link: ${shareUrl}`
+      title: courseData?.title || "TCM One Course",
+      message: `Check out this course on TCM One: "${courseData?.title || "Masterclass"}"\n\nEnroll link: ${shareUrl}`
     }).catch(() => {});
   }
 
@@ -417,7 +417,7 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
     );
   }
 
-  const displayMentorName = courseData.mentorName || courseData.instructor || courseData.mentor?.name || "Last Class Expert Educator";
+  const displayMentorName = courseData.mentorName || courseData.instructor || courseData.mentor?.name || "TCM One Expert Educator";
   const displayMentorRole = courseData.mentorRole || courseData.instructorRole || courseData.mentor?.role || "Senior Lead Mentor";
   const displayMentorAvatar = safeImageUri(courseData.mentorAvatarUrl || courseData.mentorAvatar || courseData.instructorAvatar || courseData.mentor?.avatarUrl || courseData.mentor?.avatar, "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150");
   const displayMentorId = courseData.mentorId || courseData.mentor?._id || courseData.mentor?.id || courseData.mentorName || courseData.instructor || courseData.mentor?.name || "m1";
@@ -508,7 +508,7 @@ export default function CourseDetailsScreen({ session, user = {}, courseId = "p1
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: theme.isDark ? "#1E293B" : "#ECFDF5", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: theme.isDark ? "#334155" : "#A7F3D0" }}>
             <MaterialCommunityIcons name="check-decagram" size={16} color="#10B981" />
             <Text style={{ flex: 1, fontFamily: fonts.medium, fontSize: 11, color: theme.isDark ? "#6EE7B7" : "#047857" }}>
-              Includes 1-on-1 Resume Review, Live Mock Interviews & Last Class Placement Network Support
+              Includes 1-on-1 Resume Review, Live Mock Interviews & TCM One Placement Network Support
             </Text>
           </View>
         </View>

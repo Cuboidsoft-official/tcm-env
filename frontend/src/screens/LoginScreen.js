@@ -67,14 +67,14 @@ export default function LoginScreen({ onLogin }) {
   const { width, height } = useWindowDimensions();
   const [mode, setMode] = useState("login");
   const [role, setRole] = useState("student");
-  const [mentorCategory, setMentorCategory] = useState("Last Class Information Tech");
+  const [mentorCategory, setMentorCategory] = useState("TCM One Information Tech");
   const [secure, setSecure] = useState(true);
   const [confirmSecure, setConfirmSecure] = useState(true);
 
   const mentorCategoryOptions = [
-    { key: "Last Class Information Tech", label: "Last Class Information Tech", desc: "Coding, MERN, AI, DevOps", icon: "laptop-mac", color: "#5B3CF5" },
-    { key: "Last Class Academy", label: "Last Class Academy", desc: "NEET, JEE, Boards", icon: "school", color: "#2E7D32" },
-    { key: "Last Class Government", label: "Last Class Government", desc: "UPSC, SSC CGL, Banking, Railway", icon: "bank", color: "#2F79B9" }
+    { key: "TCM One Information Tech", label: "TCM One Information Tech", desc: "Coding, MERN, AI, DevOps", icon: "laptop-mac", color: "#5B3CF5" },
+    { key: "TCM One Academy", label: "TCM One Academy", desc: "NEET, JEE, Boards", icon: "school", color: "#2E7D32" },
+    { key: "TCM One Government", label: "TCM One Government", desc: "UPSC, SSC CGL, Banking, Railway", icon: "bank", color: "#2F79B9" }
   ];
   const [loading, setLoading] = useState(false);
   const googleSignInInFlight = useRef(false);
@@ -409,7 +409,7 @@ export default function LoginScreen({ onLogin }) {
             <TcmOneBrandHeader compact />
             <Text style={[styles.signupTitle, { color: theme.text }]}>{mode === "mentor" ? "Mentor Sign Up" : "Create Your Account"}</Text>
             <Text style={[styles.signupSub, { color: theme.subtext }]}>
-              {mode === "mentor" ? "Join as a mentor and inspire the future" : "Join Last Class and start your learning journey"}
+              {mode === "mentor" ? "Join as a mentor and inspire the future" : "Join TCM One and start your learning journey"}
             </Text>
 
             {mode === "mentor" ? <MentorIntro /> : <RoleTabs role={role} setRole={setRole} setMode={setMode} />}

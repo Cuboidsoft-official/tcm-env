@@ -91,7 +91,7 @@ async function callGeminiApi(prompt) {
   return null;
 }
 
-export async function generateSyllabusWithAI(courseTitle, category = "Last Class Information Tech", duration = "20 Days", courseDescription = "") {
+export async function generateSyllabusWithAI(courseTitle, category = "TCM One Information Tech", duration = "20 Days", courseDescription = "") {
   const daysMatch = (duration || "").match(/(\d+)\s*(days?|weeks?|months?)/i);
   let totalDays = 20;
   if (daysMatch) {
@@ -103,7 +103,7 @@ export async function generateSyllabusWithAI(courseTitle, category = "Last Class
 
   const titleLower = (courseTitle || "").toLowerCase();
 
-  const prompt = `You are Last Class AI acting as Lead Curriculum Architect & Senior Staff Engineer at Last Class Academy.
+  const prompt = `You are TCM One AI acting as Lead Curriculum Architect & Senior Staff Engineer at TCM One Academy.
 Design a STEP-BY-STEP, RESEARCH-GRADE, DEEP DAY-BY-DAY CURRICULUM for a course strictly based on its title, description, category, and total duration.
 
 Course Title: "${courseTitle}"
@@ -565,8 +565,8 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
   return fallbackModules;
 }
 
-export async function generateCourseOverviewInsightsWithAI(courseTitle, category = "Last Class Academy", level = "All Levels") {
-  const prompt = `You are Google Gemini AI acting as Lead Career Counselor & Industry Analyst at Last Class Academy. Provide highly accurate, professional career and salary insights for a course titled "${courseTitle}" in category "${category}" for level "${level}".
+export async function generateCourseOverviewInsightsWithAI(courseTitle, category = "TCM One Academy", level = "All Levels") {
+  const prompt = `You are Google Gemini AI acting as Lead Career Counselor & Industry Analyst at TCM One Academy. Provide highly accurate, professional career and salary insights for a course titled "${courseTitle}" in category "${category}" for level "${level}".
 
 Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational text):
 {
@@ -611,8 +611,8 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
   };
 }
 
-export async function generateMcqQuizWithGemini(topic, courseTitle = "Last Class Course") {
-  const prompt = `You are Last Class AI acting as Lead Examiner at Last Class Academy. Generate EXACTLY 10 multiple-choice questions (MCQs) for a student practice test on the topic "${topic}" of the course "${courseTitle}".
+export async function generateMcqQuizWithGemini(topic, courseTitle = "TCM One Course") {
+  const prompt = `You are TCM One AI acting as Lead Examiner at TCM One Academy. Generate EXACTLY 10 multiple-choice questions (MCQs) for a student practice test on the topic "${topic}" of the course "${courseTitle}".
 
 CRITICAL REQUIREMENTS:
 1. Generate EXACTLY 10 questions. Each question must have 4 options: ["A", "B", "C", "D"].
@@ -661,18 +661,18 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
 }
 
 export async function generateRoadmapChatResponseWithGroq(chatMessages = [], currentPrompt = "", targetGoal = "", budget = "") {
-  const prompt = `You are Last Class AI, Senior Career Advisor and Learning Strategist at Last Class Academy.
-Your job is to interactively guide a student to build their ideal tech career roadmap using ONLY official courses, services, and pricing available in the Last Class App.
+  const prompt = `You are TCM One AI, Senior Career Advisor and Learning Strategist at TCM One Academy.
+Your job is to interactively guide a student to build their ideal tech career roadmap using ONLY official courses, services, and pricing available in the TCM One App.
 
-System Knowledge about Last Class Academy App Courses & Pricing:
+System Knowledge about TCM One Academy App Courses & Pricing:
 - Full Stack Web Development (MERN / React / Node.js): ₹4,999 (3 Months)
 - AI & Machine Learning Masterclass (Python / PyTorch / LLMs): ₹5,999 (3 Months)
 - Mobile App Development (React Native / Expo / iOS & Android): ₹3,999 (2 Months)
 - Python & Data Structures & Algorithms (DSA): ₹2,999 (2 Months)
 - NEET & JEE Rank Booster Exam Prep: ₹3,499 (3 Months)
 
-System Knowledge about Last Class App Premium Services:
-- Last Class Verified Pro Membership: ₹499/month or ₹2,999/year
+System Knowledge about TCM One App Premium Services:
+- TCM One Verified Pro Membership: ₹499/month or ₹2,999/year
 - Featured Profile: Verified student badge & recruiter highlight
 - Real Domain Project: Live hosted project, domain certificate & review
 - ATS Resume Builder: AI ATS resume builder & PDF export
@@ -688,7 +688,7 @@ Expected Budget: "${budget}"
 Instructions:
 1. DO NOT use any emojis in your response. Keep text clean and professional.
 2. Provide a concise, structured response (under 200 words).
-3. Recommend specific Last Class App courses and premium features matching their budget.
+3. Recommend specific TCM One App courses and premium features matching their budget.
 4. Include a 3-Month Month-by-Month roadmap (Month 1, Month 2, Month 3).`;
 
   try {
@@ -712,21 +712,21 @@ export async function generateInteractiveAiRoadmapAndChat(chatHistory = [], user
 
   const cleanUserMsg = (userMessage || "").trim();
 
-  const prompt = `You are Oveta AI, the official Senior AI Learning Architect & Career Counselor at LastClass Academy (Decoding The Mind).
+  const prompt = `You are Oveta AI, the official Senior AI Learning Architect & Career Counselor at TCM One Academy (Decoding The Mind).
 IMPORTANT IDENTITY RULE: You must ONLY identify yourself as "Oveta AI". Never mention "Groq", "Llama", "Google Gemini", "ChatGPT", or any third-party provider name.
 
 STRICT DATA ACCURACY RULE:
-You MUST ONLY recommend courses, plans, features, and pricing that ACTUALLY EXIST in the LastClass Academy App as specified in the System Knowledge below. DO NOT invent fake prices, fake courses, or fake subscription tiers!
+You MUST ONLY recommend courses, plans, features, and pricing that ACTUALLY EXIST in the TCM One Academy App as specified in the System Knowledge below. DO NOT invent fake prices, fake courses, or fake subscription tiers!
 
-System Knowledge about LastClass Academy App Available Courses & Pricing:
+System Knowledge about TCM One Academy App Available Courses & Pricing:
 - Full Stack Web Development (MERN, React, Node.js): ₹4,999 (3 Months Live Batch)
 - AI & Machine Learning Masterclass (Python, PyTorch, LLMs): ₹5,999 (3 Months Live Batch)
 - Mobile App Development (React Native, Expo, iOS/Android): ₹3,999 (2 Months Live Batch)
 - Python & Data Structures Algorithms (DSA): ₹2,999 (2 Months Live Batch)
 - NEET & JEE Rank Booster Exam Prep: ₹3,499 (3 Months Live Batch)
 
-System Knowledge about LastClass Premium Features & Subscriptions Available in App:
-- LastClass Verified Pro Membership: ₹499/month or ₹2,999/year (Includes all Pro features below)
+System Knowledge about TCM One Premium Features & Subscriptions Available in App:
+- TCM One Verified Pro Membership: ₹499/month or ₹2,999/year (Includes all Pro features below)
 - Featured Profile Service: Verified profile badge & recruiter highlight (Included in Pro)
 - Real Domain Project Service: Live domain hosting, production project & certificate (Included in Pro / ₹1,499 standalone)
 - ATS Resume Builder: AI ATS resume creation & PDF export (Included in Pro / ₹299 standalone)
@@ -764,12 +764,12 @@ FORMATTING RULES:
 
   // Smart structured fallback if network fails
   if (/python|dsa|data\s*structure/i.test(cleanUserMsg)) {
-    return "📌 SUMMARY & GOAL\nMaster Python programming fundamentals, object-oriented concepts, and core Data Structures & Algorithms to crack top technical coding interviews.\n\n🗓️ MONTHLY OVERVIEW\n- Month 1: Python Syntax, Functions, Control Flow & Object-Oriented Programming\n- Month 2: Arrays, Linked Lists, Stacks, Queues, Recursion & Sorting Algorithms\n- Month 3: Trees, Graphs, Dynamic Programming & Mock Technical Coding Interviews\n\n🎓 RECOMMENDED APP COURSE & PRICING\n- Python & Data Structures Algorithms (DSA): ₹2,999 (2 Months Live Batch)\n\n⚡ AVAILABLE PRO FEATURES\n- LastClass Verified Pro Membership: ₹499/month (Includes Cloud Lab Access & Real Project Certificate)";
+    return "📌 SUMMARY & GOAL\nMaster Python programming fundamentals, object-oriented concepts, and core Data Structures & Algorithms to crack top technical coding interviews.\n\n🗓️ MONTHLY OVERVIEW\n- Month 1: Python Syntax, Functions, Control Flow & Object-Oriented Programming\n- Month 2: Arrays, Linked Lists, Stacks, Queues, Recursion & Sorting Algorithms\n- Month 3: Trees, Graphs, Dynamic Programming & Mock Technical Coding Interviews\n\n🎓 RECOMMENDED APP COURSE & PRICING\n- Python & Data Structures Algorithms (DSA): ₹2,999 (2 Months Live Batch)\n\n⚡ AVAILABLE PRO FEATURES\n- TCM One Verified Pro Membership: ₹499/month (Includes Cloud Lab Access & Real Project Certificate)";
   } else if (/ai|machine|data\s*science/i.test(cleanUserMsg)) {
-    return "📌 SUMMARY & GOAL\nBuild production-grade Artificial Intelligence and Machine Learning models using PyTorch, Transformers, LLMs, and RAG architectures.\n\n🗓️ MONTHLY OVERVIEW\n- Month 1: Python for Data Science, NumPy, Pandas, Data Visualization & Scikit-Learn\n- Month 2: Supervised & Unsupervised ML, Neural Networks, PyTorch & Computer Vision\n- Month 3: Natural Language Processing (NLP), LLM Fine-Tuning & RAG Enterprise App\n\n🎓 RECOMMENDED APP COURSE & PRICING\n- AI & Machine Learning Masterclass: ₹5,999 (3 Months Live Batch)\n\n⚡ AVAILABLE PRO FEATURES\n- LastClass Verified Pro Membership: ₹499/month (Includes Cloud Lab Access & ATS Resume Builder)";
+    return "📌 SUMMARY & GOAL\nBuild production-grade Artificial Intelligence and Machine Learning models using PyTorch, Transformers, LLMs, and RAG architectures.\n\n🗓️ MONTHLY OVERVIEW\n- Month 1: Python for Data Science, NumPy, Pandas, Data Visualization & Scikit-Learn\n- Month 2: Supervised & Unsupervised ML, Neural Networks, PyTorch & Computer Vision\n- Month 3: Natural Language Processing (NLP), LLM Fine-Tuning & RAG Enterprise App\n\n🎓 RECOMMENDED APP COURSE & PRICING\n- AI & Machine Learning Masterclass: ₹5,999 (3 Months Live Batch)\n\n⚡ AVAILABLE PRO FEATURES\n- TCM One Verified Pro Membership: ₹499/month (Includes Cloud Lab Access & ATS Resume Builder)";
   }
 
-  return "📌 SUMMARY & GOAL\nMaster Full Stack Web Development using modern MERN Stack architecture (MongoDB, Express, React.js, Node.js).\n\n🗓️ MONTHLY OVERVIEW\n- Month 1: HTML5, Modern CSS Flexbox/Grid, Responsive Design & Modern JavaScript (ES6+)\n- Month 2: React.js Component Architecture, Hooks, State Management & Tailwind CSS\n- Month 3: Node.js REST API Development, MongoDB Database & Production Cloud Deployment\n\n🎓 RECOMMENDED APP COURSE & PRICING\n- Full Stack Web Development (MERN): ₹4,999 (3 Months Live Batch)\n\n⚡ AVAILABLE PRO FEATURES\n- LastClass Verified Pro Membership: ₹499/month (Includes Real Domain Project Hosting & ATS Resume Builder)";
+  return "📌 SUMMARY & GOAL\nMaster Full Stack Web Development using modern MERN Stack architecture (MongoDB, Express, React.js, Node.js).\n\n🗓️ MONTHLY OVERVIEW\n- Month 1: HTML5, Modern CSS Flexbox/Grid, Responsive Design & Modern JavaScript (ES6+)\n- Month 2: React.js Component Architecture, Hooks, State Management & Tailwind CSS\n- Month 3: Node.js REST API Development, MongoDB Database & Production Cloud Deployment\n\n🎓 RECOMMENDED APP COURSE & PRICING\n- Full Stack Web Development (MERN): ₹4,999 (3 Months Live Batch)\n\n⚡ AVAILABLE PRO FEATURES\n- TCM One Verified Pro Membership: ₹499/month (Includes Real Domain Project Hosting & ATS Resume Builder)";
 }
 
 export async function generateAiExamQuestionsForSkills(skillsList = [], targetDomain = "Coding & IT") {
@@ -777,7 +777,7 @@ export async function generateAiExamQuestionsForSkills(skillsList = [], targetDo
     ? skillsList.join(", ")
     : "General " + targetDomain;
 
-  const prompt = `You are Last Class AI, Chief Technical Examiner at Last Class Academy.
+  const prompt = `You are TCM One AI, Chief Technical Examiner at TCM One Academy.
 Generate EXACTLY 10 high-quality, professional multiple-choice questions (MCQs) for an AI Skill Examination & Interview Test.
 The student has added the following profile skills: "${skillsStr}" under domain "${targetDomain}".
 

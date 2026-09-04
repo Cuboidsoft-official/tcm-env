@@ -85,7 +85,7 @@ export async function login(email, password) {
         avatarUrl: "",
         handle: userHandle,
         verified: true,
-        memberBadge: "Last Class Member",
+        memberBadge: "TCM One Member",
         joinedDate: "Joined Aug 2026",
         stats: { postsCount: 0, followers: "0", following: 0, reviews: "0" },
         quickTools: { savedCount: 0, draftsCount: 0, deletedCount: 0 },
@@ -110,13 +110,13 @@ export async function register(payload) {
       token: `local_token_${Date.now()}`,
       user: {
         id: `local-user-${Date.now()}`,
-        name: payload.name || "Last Class Learner",
+        name: payload.name || "TCM One Learner",
         email: payload.email,
         role: payload.role || "student",
         avatarUrl: "",
         handle: userHandle,
         verified: true,
-        memberBadge: payload.role === "mentor" ? "Last Class Mentor" : "Last Class Member",
+        memberBadge: payload.role === "mentor" ? "TCM One Mentor" : "TCM One Member",
         joinedDate: "Joined Aug 2026",
         stats: { postsCount: 0, followers: "0", following: 0, reviews: "0" },
         quickTools: { savedCount: 0, draftsCount: 0, deletedCount: 0 },
@@ -188,7 +188,7 @@ export async function getHome(token) {
 
     return {
       id: String(j.id || j._id),
-      authorName: j.mentorName || "Last Class Mentor",
+      authorName: j.mentorName || "TCM One Mentor",
       authorAvatarUrl: j.mentorAvatarUrl || j.authorAvatarUrl || "",
       authorRole: j.mentorRole || "Senior Mentor",
       publishedAt: j.createdAt || new Date().toISOString(),
@@ -196,7 +196,7 @@ export async function getHome(token) {
       isPinned: false,
       postType: "job_news",
       category: "💼 Jobs & Hiring",
-      text: `HIRING DRIVE: ${j.title} at ${j.company || "Last Class Partner"}. Salary: ₹${j.minSalary} - ₹${j.maxSalary} ${j.salaryPeriod || "LPA"}. Deadline: ${j.deadline || "Open"}.\n\n${j.description}`,
+      text: `HIRING DRIVE: ${j.title} at ${j.company || "TCM One Partner"}. Salary: ₹${j.minSalary} - ₹${j.maxSalary} ${j.salaryPeriod || "LPA"}. Deadline: ${j.deadline || "Open"}.\n\n${j.description}`,
       timeLabel: "Active Hiring",
       documentUrl: j.documentUrl,
       documentName: j.documentName,
@@ -237,7 +237,7 @@ export async function getHome(token) {
   return {
     user: {
       id: "local-user",
-      name: "Last Class Learner",
+      name: "TCM One Learner",
       email: "user@tcm.com",
       role: "student",
       avatarUrl: "",
@@ -958,7 +958,7 @@ export async function createJobPost(token, payload) {
   const newJob = {
     id: `job-${Date.now()}`,
     title: payload.title || "Software Engineering Role",
-    company: payload.company || "Last Class Hiring Partner",
+    company: payload.company || "TCM One Hiring Partner",
     mentorName: payload.mentorName || "Mentor",
     mentorAvatarUrl: payload.mentorAvatarUrl || "",
     mentorRole: payload.mentorRole || "Tech Mentor",

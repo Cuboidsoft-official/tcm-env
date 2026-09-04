@@ -47,7 +47,7 @@ function generateClientSmartFallback(query, category = "Academic") {
   }
 
   if (text.includes("django")) {
-    return `🎓 **Python & Django MVT Architecture Overview**\n\n1. **Architecture Mechanics (MVT Pattern)**:\n   - **Model (models.py)**: Maps Python classes directly to database schemas.\n   - **View (views.py)**: Implements business logic and API responses.\n   - **Template (templates/)**: Handles UI rendering.\n\n2. **Production-Ready View Pattern**:\n\`\`\`python\nfrom django.http import JsonResponse\n\ndef get_user_dashboard(request):\n    data = {"status": "success", "message": "Welcome to Last Class Academy"}\n    return JsonResponse(data, status=200)\n\`\`\`\n\n3. **Best Practices**:\n   Isolate business logic inside service layers and manage credentials using environment variables.`;
+    return `🎓 **Python & Django MVT Architecture Overview**\n\n1. **Architecture Mechanics (MVT Pattern)**:\n   - **Model (models.py)**: Maps Python classes directly to database schemas.\n   - **View (views.py)**: Implements business logic and API responses.\n   - **Template (templates/)**: Handles UI rendering.\n\n2. **Production-Ready View Pattern**:\n\`\`\`python\nfrom django.http import JsonResponse\n\ndef get_user_dashboard(request):\n    data = {"status": "success", "message": "Welcome to TCM One Academy"}\n    return JsonResponse(data, status=200)\n\`\`\`\n\n3. **Best Practices**:\n   Isolate business logic inside service layers and manage credentials using environment variables.`;
   }
 
   if (text.includes("react") || text.includes("javascript") || text.includes("js")) {
@@ -768,7 +768,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         solutionText: "Atomic size increases down group & halogens have maximum effective nuclear pull."
       });
       if (res && res.success) {
-        Alert.alert("Success 🎉", "Doubt thread marked as Solved and archived to Last Class Knowledge Base!");
+        Alert.alert("Success 🎉", "Doubt thread marked as Solved and archived to TCM One Knowledge Base!");
         loadRoomDetails();
         setMenuVisible(false);
       }
@@ -895,7 +895,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
             <View style={styles.mentorInfo}>
               <Text style={styles.mentorLabel}>Assigned Mentor</Text>
               <Text style={styles.mentorName}>{room.assignedMentor.name}</Text>
-              <Text style={styles.mentorSpecialty}>{room.assignedMentor.role || "Last Class Mentor"}</Text>
+              <Text style={styles.mentorSpecialty}>{room.assignedMentor.role || "TCM One Mentor"}</Text>
             </View>
 
             <MaterialCommunityIcons name="chevron-right" size={22} color="#64748B" />

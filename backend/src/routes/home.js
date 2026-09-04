@@ -4201,7 +4201,7 @@ homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => 
     const roomTitle = room?.title || "TCM Academy";
     const roomCategory = room?.category || "TCM Learning";
 
-    const systemInstruction = `You are Last Class AI Tutor, a distinguished senior academic and technical mentor at Last Class Academy for ${roomTitle}. Provide a direct, comprehensive, highly mature, in-depth answer for "${questionToAsk}". Structure your response clearly with headings and code/examples where applicable. Do not use generic filler templates.`;
+    const systemInstruction = `You are TCM One AI Tutor, a distinguished senior academic and technical mentor at TCM One Academy for ${roomTitle}. Provide a direct, comprehensive, highly mature, in-depth answer for "${questionToAsk}". Structure your response clearly with headings and code/examples where applicable. Do not use generic filler templates.`;
     
     let geminiResponse = null;
     try {
@@ -4216,7 +4216,7 @@ homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => 
 
     const aiMsg = {
       id: `msg_ai_${Date.now()}`,
-      authorName: "Last Class AI Tutor 🤖",
+      authorName: "TCM One AI Tutor 🤖",
       authorRole: "AI Assistant",
       authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -4260,7 +4260,7 @@ homeRouter.post("/support/ask-ai", requireAuth, async (req, res) => {
     }
 
     const questionToAsk = query.trim();
-    const systemInstruction = `You are Oveta AI Support Specialist, an intelligent and polite customer support AI assistant for the LastClass App (Decoding The Mind). Help the user resolve app issues, doubt rooms access, course subscriptions, mentor bookings, wallet withdrawals, profile settings, or technical bugs. Provide step-by-step guidance. If the issue requires human intervention, remind the user they can email support@cuboidsoft.in. Keep answers concise, clear, and encouraging.`;
+    const systemInstruction = `You are Oveta AI Support Specialist, an intelligent and polite customer support AI assistant for the TCM One App (Decoding The Mind). Help the user resolve app issues, doubt rooms access, course subscriptions, mentor bookings, wallet withdrawals, profile settings, or technical bugs. Provide step-by-step guidance. If the issue requires human intervention, remind the user they can email support@cuboidsoft.in. Keep answers concise, clear, and encouraging.`;
 
     let geminiResponse = null;
     try {
@@ -4433,11 +4433,11 @@ homeRouter.get("/knowledge-base/search", requireAuth, async (req, res) => {
 export async function serveOpenGraphPreview(req, res) {
   try {
     const { type, id } = req.params;
-    let title = "Last Class Academy - Decoding The Mind";
-    let description = "Check out this update on Last Class Academy!";
+    let title = "TCM One Academy - Decoding The Mind";
+    let description = "Check out this update on TCM One Academy!";
     let image = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80";
     let video = "";
-    let authorName = "Last Class Member";
+    let authorName = "TCM One Member";
     let authorAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150";
 
     if (id) {
@@ -4461,12 +4461,12 @@ export async function serveOpenGraphPreview(req, res) {
       }
 
       if (post) {
-        title = post.title || post.jobData?.title || post.text?.split("\n")[0] || post.content?.slice(0, 80) || "Last Class Update";
-        description = post.content || post.text || post.description || post.title || "Shared from Last Class App (Decoding The Mind)";
+        title = post.title || post.jobData?.title || post.text?.split("\n")[0] || post.content?.slice(0, 80) || "TCM One Update";
+        description = post.content || post.text || post.description || post.title || "Shared from TCM One App (Decoding The Mind)";
         if (description.length > 240) {
           description = description.substring(0, 237) + "...";
         }
-        authorName = post.authorName || post.mentorName || "Last Class Educator";
+        authorName = post.authorName || post.mentorName || "TCM One Educator";
         if (post.authorAvatarUrl || post.mentorAvatarUrl) {
           authorAvatar = post.authorAvatarUrl || post.mentorAvatarUrl;
         }
@@ -4520,11 +4520,11 @@ export async function serveOpenGraphPreview(req, res) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)} | Last Class</title>
+  <title>${escapeHtml(title)} | TCM One</title>
   <meta name="description" content="${escapeHtml(description)}">
   
   <!-- Open Graph / WhatsApp / Facebook Meta Tags -->
-  <meta property="og:site_name" content="Last Class Academy">
+  <meta property="og:site_name" content="TCM One Academy">
   <meta property="og:type" content="${video ? "video.other" : "article"}">
   <meta property="og:url" content="${escapeHtml(previewUrl)}">
   <meta property="og:title" content="${escapeHtml(title)}">
@@ -4722,7 +4722,7 @@ ${ogImageTags}
 <body>
   <div class="wrapper">
     <div class="brand-header">
-      <div class="brand-badge">Last Class</div>
+      <div class="brand-badge">TCM One</div>
       <div class="brand-sub">Decoding The Mind</div>
     </div>
 
@@ -4731,7 +4731,7 @@ ${ogImageTags}
         <img src="${escapeHtml(authorAvatar)}" alt="${escapeHtml(authorName)}" class="author-avatar" />
         <div class="author-info">
           <div class="author-name">${escapeHtml(authorName)}</div>
-          <div class="author-tag">✓ Verified Post on Last Class</div>
+          <div class="author-tag">✓ Verified Post on TCM One</div>
         </div>
       </div>
 
@@ -4742,7 +4742,7 @@ ${ogImageTags}
 
       <div class="actions">
         <a href="${escapeHtml(previewUrl)}" class="btn-primary">
-          <span>Open in Last Class App</span>
+          <span>Open in TCM One App</span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
         <a href="${escapeHtml(previewUrl)}" class="btn-secondary">
@@ -4758,7 +4758,7 @@ ${ogImageTags}
     </div>
 
     <div class="footer-note">
-      © 2026 Last Class Academy. All rights reserved.
+      © 2026 TCM One Academy. All rights reserved.
     </div>
   </div>
 </body>

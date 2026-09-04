@@ -31,7 +31,7 @@ export const adminApi = {
               email: 'admin@tcm.com',
               role: 'admin',
               isApproved: true,
-              memberBadge: 'Last Class Administrator'
+              memberBadge: 'TCM One Administrator'
             }
           };
         }
@@ -61,7 +61,7 @@ export const adminApi = {
             email: email,
             role: 'admin',
             isApproved: true,
-            memberBadge: 'Last Class Administrator'
+            memberBadge: 'TCM One Administrator'
           }
         };
       }

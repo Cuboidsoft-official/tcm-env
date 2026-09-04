@@ -81,7 +81,7 @@ function ProfileAvatar({ name = "", uri, size = 74 }) {
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
-    .toUpperCase() || "Last Class";
+    .toUpperCase() || "TCM One";
 
   const isInvalidWebUri = Platform.OS === "web" && typeof uri === "string" && uri.startsWith("file://");
 
@@ -291,9 +291,9 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
   }
 
   function handleSendEmailSupport() {
-    const subject = encodeURIComponent("Last Class App Technical Support & Feedback");
+    const subject = encodeURIComponent("TCM One App Technical Support & Feedback");
     const body = encodeURIComponent(
-      `Hello Last Class Support Team,\n\nI need help with my Last Class app account.\n\nUser ID: ${user.id || session?.user?.id || "N/A"}\nUser Name: ${user.name || "Last Class Learner"}\n\nDescription of my issue:\n`
+      `Hello TCM One Support Team,\n\nI need help with my TCM One app account.\n\nUser ID: ${user.id || session?.user?.id || "N/A"}\nUser Name: ${user.name || "TCM One Learner"}\n\nDescription of my issue:\n`
     );
     const mailtoUrl = `mailto:support@cuboidsoft.in?subject=${subject}&body=${body}`;
 
@@ -434,7 +434,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
       location: user.location || "India",
       website: user.website || "thecodemunk.in",
       avatarUrl: user.avatarUrl || "",
-      mentorCategory: user.mentorCategory || "Last Class Information Tech",
+      mentorCategory: user.mentorCategory || "TCM One Information Tech",
       yearsExperience: user.yearsExperience || "5+ Yrs Exp",
       subjectsStr: subjectsArray.length ? subjectsArray.join(", ") : "Full Stack Development, Node.js, React Native, System Design",
       skillsStr: skillsArray.length ? skillsArray.join(", ") : ""
@@ -612,7 +612,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
           </View>
           <View style={styles.userInfoCol}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text style={[styles.userNameText, { color: activeAppTheme.text }]}>{user.name || "Last Class Member"}</Text>
+              <Text style={[styles.userNameText, { color: activeAppTheme.text }]}>{user.name || "TCM One Member"}</Text>
               {isMentorUser && (
                 <View style={[styles.mentorRoleBadge, { backgroundColor: activeAppTheme.badgeBg }]}>
                   <Text style={[styles.mentorRoleBadgeText, { color: activeAppTheme.primary }]}>Mentor</Text>
@@ -652,7 +652,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
               </View>
               <View>
                 <Text style={[styles.rowTitle, rowTitleStyle]}>Mentor Category</Text>
-                <Text style={[styles.rowSub, rowSubStyle]}>{user.mentorCategory || "Last Class Information Tech"}</Text>
+                <Text style={[styles.rowSub, rowSubStyle]}>{user.mentorCategory || "TCM One Information Tech"}</Text>
               </View>
             </View>
             <View style={[styles.infoPillBadge, { backgroundColor: activeAppTheme.badgeBg }]}>
@@ -857,11 +857,11 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
               <FontAwesome5 name="crown" size={16} color="#FFD700" />
             </View>
             <View>
-              <Text style={[styles.rowTitle, rowTitleStyle]}>Active Plan: Last Class Pro Member</Text>
+              <Text style={[styles.rowTitle, rowTitleStyle]}>Active Plan: TCM One Pro Member</Text>
               <Text style={styles.rowSub}>Unlimited access • Verified Badge Active</Text>
             </View>
           </View>
-          <TouchableOpacity onPress={() => Alert.alert("Plan Status", "Your Last Class Pro subscription is active!")} style={styles.activePlanBadge}>
+          <TouchableOpacity onPress={() => Alert.alert("Plan Status", "Your TCM One Pro subscription is active!")} style={styles.activePlanBadge}>
             <Text style={styles.activePlanText}>Active</Text>
           </TouchableOpacity>
         </View>
@@ -904,7 +904,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
               </View>
               <View>
                 <Text style={[styles.rowTitle, rowTitleStyle]}>Redeemed Referral Code</Text>
-                <Text style={[styles.rowSub, rowSubStyle]}>Code: {user.referredBy} • +25 Last Class Coins Credited</Text>
+                <Text style={[styles.rowSub, rowSubStyle]}>Code: {user.referredBy} • +25 TCM One Coins Credited</Text>
               </View>
             </View>
             <View style={styles.appliedRefBadge}>
@@ -914,7 +914,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
         ) : (
           <View style={{ paddingVertical: 4 }}>
             <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: activeAppTheme.subtext, marginBottom: 12 }}>
-              Have a friend's referral code? Enter it below to claim +25 Last Class Coins! (Can be redeemed once per account).
+              Have a friend's referral code? Enter it below to claim +25 TCM One Coins! (Can be redeemed once per account).
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <TextInput
@@ -974,7 +974,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
           <Feather name="chevron-right" size={18} color="#8A879F" />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => Alert.alert("Privacy Policy", "Last Class protects your privacy and personal data.")} style={styles.settingRowNoBorder}>
+        <TouchableOpacity onPress={() => Alert.alert("Privacy Policy", "TCM One protects your privacy and personal data.")} style={styles.settingRowNoBorder}>
           <View style={styles.rowLeft}>
             <View style={[styles.iconWrap, { backgroundColor: "#EAF5FF" }]}>
               <Feather name="file-text" size={18} color="#2F79B9" />
@@ -1013,7 +1013,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
         </TouchableOpacity>
       ) : null}
 
-      <Text style={[styles.appVersionText, { color: activeAppTheme.subtext }]}>Last Class Mobile App v2.4.0 • Built for Curious Minds</Text>
+      <Text style={[styles.appVersionText, { color: activeAppTheme.subtext }]}>TCM One Mobile App v2.4.0 • Built for Curious Minds</Text>
 
       {/* --- MODALS --- */}
 
@@ -1051,7 +1051,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
                     <TextInput
                       value={form.mentorCategory}
                       onChangeText={(t) => setForm((p) => ({ ...p, mentorCategory: t }))}
-                      placeholder="e.g. Last Class Information Tech"
+                      placeholder="e.g. TCM One Information Tech"
                       placeholderTextColor={activeAppTheme.subtext}
                       style={[styles.textInput, inputStyle]}
                     />
@@ -1160,7 +1160,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
           <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, modalCardStyle]}>
             <View style={[styles.sheetHandleBar, { backgroundColor: activeAppTheme.border }]} />
             <Text style={[styles.modalTitle, { color: activeAppTheme.text }]}>Choose App Theme</Text>
-            <Text style={[styles.modalSubText, { color: activeAppTheme.subtext }]}>Select your visual theme preference for Last Class Mobile</Text>
+            <Text style={[styles.modalSubText, { color: activeAppTheme.subtext }]}>Select your visual theme preference for TCM One Mobile</Text>
 
             <View style={{ gap: 10, marginVertical: 14 }}>
               {appThemesList.map((item) => {
@@ -1697,7 +1697,7 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             </View>
             <Text style={[styles.confirmTitle, { color: activeAppTheme.text }]}>Logout Confirmation</Text>
             <Text style={[styles.confirmSub, { color: activeAppTheme.subtext }]}>
-              Are you sure you want to logout from your Last Class account?
+              Are you sure you want to logout from your TCM One account?
             </Text>
             <View style={styles.confirmActionsRow}>
               <TouchableOpacity onPress={() => setLogoutConfirmVisible(false)} style={[styles.confirmCancelBtn, subtleButtonStyle]}>

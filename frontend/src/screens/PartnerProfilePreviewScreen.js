@@ -27,7 +27,7 @@ export default function PartnerProfilePreviewScreen({ partner = {}, onBack }) {
   const [activeImageIndex, setActiveImageIndex] = useState(null);
 
   const instituteName = partner.instituteName || partner.name || 'Future Tech Institute';
-  const partnerCategory = partner.partnerCategory || 'Last Class Partner Institute';
+  const partnerCategory = partner.partnerCategory || 'TCM One Partner Institute';
   const location = partner.location || 'Bilaspur, Chhattisgarh';
   const distance = partner.distance || '1.2 km away';
   const rating = partner.rating !== undefined ? partner.rating : 4.6;
@@ -74,7 +74,7 @@ export default function PartnerProfilePreviewScreen({ partner = {}, onBack }) {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Check out ${instituteName} on Last Class App! Accredited IT lab access & courses in ${location}.`
+        message: `Check out ${instituteName} on TCM One App! Accredited IT lab access & courses in ${location}.`
       });
     } catch (e) {}
   };
@@ -164,7 +164,7 @@ export default function PartnerProfilePreviewScreen({ partner = {}, onBack }) {
               </View>
               <View style={[styles.statusTagPill, { backgroundColor: '#F0F5FF' }]}>
                 <Ionicons name="checkmark-circle" size={13} color="#2563EB" style={{ marginRight: 3 }} />
-                <Text style={[styles.statusTagText, { color: '#2563EB' }]}>Last Class Verified Partner</Text>
+                <Text style={[styles.statusTagText, { color: '#2563EB' }]}>TCM One Verified Partner</Text>
               </View>
             </View>
           </View>

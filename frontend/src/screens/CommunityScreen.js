@@ -417,7 +417,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
       if (!newPost) {
         newPost = {
           id: `community_post_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          authorName: user?.name || "Last Class Mentor",
+          authorName: user?.name || "TCM One Mentor",
           authorAvatarUrl: user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
           authorRole: user?.role || "Mentor",
           isMentor: true,
@@ -574,8 +574,8 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
         : (media.imageUrl || post.imageUrl || carouselImages[0] || media.thumbnailUrl || post.thumbnailUrl || "");
 
       await sharePostWithMedia({
-        title: post.title || post.text || "Last Class Community Post",
-        authorName: post.authorName || "Last Class Educator",
+        title: post.title || post.text || "TCM One Community Post",
+        authorName: post.authorName || "TCM One Educator",
         targetId: targetPostId,
         mediaUrl: rawMediaUrl,
         images: carouselImages,
@@ -835,7 +835,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                   </View>
 
                   <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: theme.subtext, marginTop: 3 }} numberOfLines={1}>
-                    {ch.category ? `${ch.category} • ` : ""}{ch.description || `Official broadcast channel by ${ch.creatorName || "Last Class Mentor"}`}
+                    {ch.category ? `${ch.category} • ` : ""}{ch.description || `Official broadcast channel by ${ch.creatorName || "TCM One Mentor"}`}
                   </Text>
                 </View>
 
@@ -871,7 +871,7 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
     );
   }
 
-  // RENDER FUNCTION: Dedicated Channel Chat Feed (Last Class Theme)
+  // RENDER FUNCTION: Dedicated Channel Chat Feed (TCM One Theme)
   function renderDedicatedChannelChatView() {
     return (
       <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
@@ -1988,7 +1988,7 @@ function JobCardItem({ job, theme, isMentor, currentUserIdStr, handleDeleteJob, 
                 <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: theme.primary }}>Mentor</Text>
               </View>
             </View>
-            <Text style={{ fontSize: 11, color: theme.subtext }}>{job.company || "Last Class Partner"}</Text>
+            <Text style={{ fontSize: 11, color: theme.subtext }}>{job.company || "TCM One Partner"}</Text>
           </View>
         </View>
 

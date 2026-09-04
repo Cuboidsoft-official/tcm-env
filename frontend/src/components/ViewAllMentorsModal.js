@@ -124,7 +124,7 @@ export default function ViewAllMentorsModal({ visible, session, onClose, onSelec
                     <Text style={[styles.mentorRole, { color: theme.primary }]}>{mentor.role}</Text>
 
                     <View style={[styles.badgePill, { backgroundColor: theme.badgeBg }]}>
-                      <Text style={[styles.badgeText, { color: theme.primary }]}>{mentor.category || "Last Class Mentor"}</Text>
+                      <Text style={[styles.badgeText, { color: theme.primary }]}>{mentor.category || "TCM One Mentor"}</Text>
                     </View>
                   </View>
 

@@ -282,7 +282,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         {
           id: course.id || `course_${Date.now()}`,
           title: course.title,
-          subtitle: `Enrolled • ${course.category || "Last Class Course"}`,
+          subtitle: `Enrolled • ${course.category || "TCM One Course"}`,
           progress: 5,
           icon: "book-open",
           iconColor: "#0A6836",
@@ -633,9 +633,9 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       </Pressable>
 
-      {/* LAST CLASS AI EXAMINATIONS CARD - Vector Illustration Concept */}
+      {/* TCM ONE AI EXAMINATIONS CARD - Vector Illustration Concept */}
       <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitleText, { color: theme.text }]}>Last Class AI Examinations</Text>
+        <Text style={[styles.sectionTitleText, { color: theme.text }]}>TCM One AI Examinations</Text>
         <Pressable onPress={() => setAiExamModalVisible(true)}>
           <Text style={[styles.viewAllText, { color: theme.primary }]}>Take Exam →</Text>
         </Pressable>
@@ -689,7 +689,7 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             </View>
 
             <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: theme.text || colors.ink, marginBottom: 2 }}>
-              Last Class AI Skill Examinations & Scorecards
+              TCM One AI Skill Examinations & Scorecards
             </Text>
             <Text style={{ fontSize: 10.5, fontFamily: fonts.regular, color: theme.subtext || colors.muted }} numberOfLines={1}>
               10-minute adaptive test with instant AI scorecard & certificate.
@@ -1748,7 +1748,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }]
   },
 
-  // Explore Last Class Styles
+  // Explore TCM One Styles
   exploreTcmSection: {
     marginVertical: 14,
     paddingHorizontal: 2

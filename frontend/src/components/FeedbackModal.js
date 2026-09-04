@@ -40,7 +40,7 @@ export default function FeedbackModal({ visible, onClose, user = {} }) {
     setSubmitting(true);
     setTimeout(() => {
       setSubmitting(false);
-      Alert.alert("Feedback Submitted", "Thank you for rating and helping us improve Last Class Academy!");
+      Alert.alert("Feedback Submitted", "Thank you for rating and helping us improve TCM One Academy!");
       setFeedbackText("");
       onClose();
     }, 600);
@@ -137,7 +137,7 @@ export default function FeedbackModal({ visible, onClose, user = {} }) {
                 numberOfLines={4}
                 value={feedbackText}
                 onChangeText={setFeedbackText}
-                placeholder="Tell us what you loved or how we can improve Last Class Academy..."
+                placeholder="Tell us what you loved or how we can improve TCM One Academy..."
                 placeholderTextColor={theme.subtext}
                 style={[
                   styles.multilineInput,

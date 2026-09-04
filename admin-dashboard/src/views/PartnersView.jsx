@@ -512,7 +512,7 @@ export function PartnersView({ partners, onCreatePartner, onUpdatePartner, onDel
                         />
                         <div>
                           <div style={{ fontWeight: '700', color: '#0F172A' }}>{partner.instituteName || partner.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#0284C7' }}>{partner.partnerCategory || 'Last Class Partner'}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#0284C7' }}>{partner.partnerCategory || 'TCM One Partner'}</div>
                         </div>
                       </div>
                     </td>

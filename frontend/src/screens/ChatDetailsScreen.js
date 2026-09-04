@@ -54,8 +54,8 @@ export default function ChatDetailsScreen({
   // Filter media items from messages
   const mediaMessages = messages.filter((m) => m.imageUrl || m.documentUrl);
 
-  const creatorName = targetUser?.creatorName || (isUserMentor ? (user?.name || "Verified Mentor") : "Last Class Faculty");
-  const creatorRole = targetUser?.creatorRole || "Last Class Mentor";
+  const creatorName = targetUser?.creatorName || (isUserMentor ? (user?.name || "Verified Mentor") : "TCM One Faculty");
+  const creatorRole = targetUser?.creatorRole || "TCM One Mentor";
   const creatorAvatar = targetUser?.creatorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150";
 
   async function handleSaveTitle() {
@@ -119,8 +119,8 @@ export default function ChatDetailsScreen({
     try {
       const shareUrl = `https://app.thecodemunk.in/community/${targetUser?.id || "channel"}`;
       await Share.share({
-        title: targetUser?.name || "Last Class Channel",
-        message: `Join ${targetUser?.name || "Last Class Community Channel"} on Last Class App: ${shareUrl}`
+        title: targetUser?.name || "TCM One Channel",
+        message: `Join ${targetUser?.name || "TCM One Community Channel"} on TCM One App: ${shareUrl}`
       });
     } catch (e) {}
   }
@@ -287,7 +287,7 @@ export default function ChatDetailsScreen({
                 ) : (
                   <View style={{ flexDirection: "row", alignItems: "flex-start", marginTop: 4 }}>
                     <Text style={[styles.descriptionText, { color: theme.subtext }]}>
-                      {targetUser?.description || descInput || "Official Last Class community channel for batch updates, class schedules and notes."}
+                      {targetUser?.description || descInput || "Official TCM One community channel for batch updates, class schedules and notes."}
                     </Text>
                     {isUserMentor ? (
                       <Pressable onPress={() => setIsEditingDesc(true)} style={{ marginLeft: 8, marginTop: 2 }}>
@@ -316,7 +316,7 @@ export default function ChatDetailsScreen({
               style={styles.userAvatarLarge}
             />
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12 }}>
-              <Text style={[styles.userNameLarge, { color: theme.text }]}>{targetUser?.name || "Last Class Member"}</Text>
+              <Text style={[styles.userNameLarge, { color: theme.text }]}>{targetUser?.name || "TCM One Member"}</Text>
               {targetUser?.role?.toLowerCase().includes("mentor") || targetUser?.isMentor ? (
                 <View style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
                   <Text style={{ fontSize: 10, fontWeight: "700", color: "#D97706" }}>Mentor</Text>

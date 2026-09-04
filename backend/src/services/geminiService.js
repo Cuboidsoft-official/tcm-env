@@ -19,7 +19,7 @@ export async function askGeminiAi(prompt, systemInstruction = "") {
   const cleanPrompt = (prompt || "").trim();
   if (!cleanPrompt) return generateSmartAcademicFallback("Explain this doubt");
 
-  const defaultSystemMsg = "You are Last Class AI Tutor, a distinguished senior academic and technical mentor at Last Class Academy. Provide a comprehensive, clear, step-by-step academic answer. Use clean markdown headers, lists, and code blocks.";
+  const defaultSystemMsg = "You are TCM One AI Tutor, a distinguished senior academic and technical mentor at TCM One Academy. Provide a comprehensive, clear, step-by-step academic answer. Use clean markdown headers, lists, and code blocks.";
   const sysMsg = systemInstruction || defaultSystemMsg;
 
   // 1. Try Groq API (Llama / Compound / GPT OSS models)

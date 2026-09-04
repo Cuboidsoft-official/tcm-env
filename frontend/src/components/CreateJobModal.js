@@ -24,7 +24,7 @@ import { uploadImageToServer } from "../api/client";
 export default function CreateJobModal({ visible, user = {}, token, jobToEdit = null, onClose, onSubmitJob }) {
   const { theme } = useTheme();
   const [title, setTitle] = useState("");
-  const [company, setCompany] = useState(user.company || "Last Class Hiring Partner");
+  const [company, setCompany] = useState(user.company || "TCM One Hiring Partner");
   const [description, setDescription] = useState("");
   const [minSalary, setMinSalary] = useState("3,50,000");
   const [maxSalary, setMaxSalary] = useState("6,50,000");
@@ -42,7 +42,7 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
       const targetJob = jobToEdit?.jobData || jobToEdit;
       if (targetJob) {
         setTitle(targetJob.title || targetJob.text?.split("\n")[0] || "");
-        setCompany(targetJob.company || user.company || "Last Class Hiring Partner");
+        setCompany(targetJob.company || user.company || "TCM One Hiring Partner");
         setDescription(targetJob.description || targetJob.text || "");
         setMinSalary(targetJob.minSalary !== undefined ? String(targetJob.minSalary) : "");
         setMaxSalary(targetJob.maxSalary !== undefined ? String(targetJob.maxSalary) : "");
@@ -55,7 +55,7 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
         setDocumentName(targetJob.documentName || "");
       } else {
         setTitle("");
-        setCompany(user.company || "Last Class Hiring Partner");
+        setCompany(user.company || "TCM One Hiring Partner");
         setDescription("");
         setMinSalary("3,50,000");
         setMaxSalary("6,50,000");
@@ -125,7 +125,7 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
       }
       const payload = {
         title: title.trim(),
-        company: company.trim() || "Last Class Hiring Partner",
+        company: company.trim() || "TCM One Hiring Partner",
         mentorName: user.name || "Mentor",
         mentorAvatarUrl: user.avatarUrl || user.avatar || "",
         mentorRole: user.role || "Senior Mentor",
@@ -195,7 +195,7 @@ export default function CreateJobModal({ visible, user = {}, token, jobToEdit = 
             <Text style={[styles.label, { color: theme.text }]}>Company / Organization Name</Text>
             <TextInput
               style={[styles.input, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border, color: theme.text }]}
-              placeholder="e.g. Last Class Tech Studio"
+              placeholder="e.g. TCM One Tech Studio"
               placeholderTextColor={theme.subtext}
               value={company}
               onChangeText={setCompany}

@@ -89,7 +89,7 @@ async function callGeminiApi(prompt) {
   return null;
 }
 
-export async function generateSyllabusWithAI(courseTitle, category = "Last Class Tech", duration = "20 Days") {
+export async function generateSyllabusWithAI(courseTitle, category = "TCM One Tech", duration = "20 Days") {
   const daysMatch = (duration || "").match(/(\d+)\s*(days?|weeks?)/i);
   let totalDays = 20;
   if (daysMatch) {
@@ -99,7 +99,7 @@ export async function generateSyllabusWithAI(courseTitle, category = "Last Class
   }
   totalDays = Math.min(Math.max(totalDays, 5), 45);
 
-  const prompt = `You are an elite Senior Curriculum Architect at Last Class Academy (Decoding The Mind). Design an IN-DEPTH, highly specific, DAY-BY-DAY day-wise curriculum for a course titled "${courseTitle}" under category "${category}" planned for a total duration of "${totalDays} Days".
+  const prompt = `You are an elite Senior Curriculum Architect at TCM One Academy (Decoding The Mind). Design an IN-DEPTH, highly specific, DAY-BY-DAY day-wise curriculum for a course titled "${courseTitle}" under category "${category}" planned for a total duration of "${totalDays} Days".
 
 CRITICAL REQUIREMENTS:
 1. Generate EXACTLY ${totalDays} Day-by-Day modules. Title each module clearly starting with "Day 1:", "Day 2:", "Day 3:", ..., "Day ${totalDays}:".
@@ -181,8 +181,8 @@ Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational 
   return fallbackModules;
 }
 
-export async function generateCourseOverviewInsightsWithAI(courseTitle, category = "Last Class Academy", level = "All Levels") {
-  const prompt = `You are a Lead Career Counselor & Industry Analyst at Last Class Academy. Provide highly accurate, professional career and salary insights for a course titled "${courseTitle}" in category "${category}" for level "${level}".
+export async function generateCourseOverviewInsightsWithAI(courseTitle, category = "TCM One Academy", level = "All Levels") {
+  const prompt = `You are a Lead Career Counselor & Industry Analyst at TCM One Academy. Provide highly accurate, professional career and salary insights for a course titled "${courseTitle}" in category "${category}" for level "${level}".
 
 Return ONLY raw valid JSON (no markdown fences, no backticks, no conversational text):
 {

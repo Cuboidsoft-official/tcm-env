@@ -412,7 +412,7 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
                     </View>
 
                     <Text style={[styles.roomSubInfoText, { color: theme.subtext }]} numberOfLines={1}>
-                      Mentor: {roomItem.assignedMentor?.name || "Last Class Mentor"} • {roomItem.membersCount || "1.2K"} Members • {roomItem.onlineCount || 86} Online
+                      Mentor: {roomItem.assignedMentor?.name || "TCM One Mentor"} • {roomItem.membersCount || "1.2K"} Members • {roomItem.onlineCount || 86} Online
                     </Text>
                   </View>
 

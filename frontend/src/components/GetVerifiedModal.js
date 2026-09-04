@@ -42,14 +42,14 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
       iconName: "trending-up",
       iconType: "feather",
       title: "Rank Your Profile",
-      desc: "Boost your profile ranking & visibility across Last Class community leaderboards."
+      desc: "Boost your profile ranking & visibility across TCM One community leaderboards."
     },
     {
       id: "ats_resume",
       iconName: "file-text",
       iconType: "feather",
-      title: "Make Highly ATS-Optimized Resume with Last Class",
-      desc: "Build, format & export ATS-compliant resumes with verified Last Class badges & skill ratings."
+      title: "Make Highly ATS-Optimized Resume with TCM One",
+      desc: "Build, format & export ATS-compliant resumes with verified TCM One badges & skill ratings."
     }
   ];
 
@@ -59,7 +59,7 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
       setLoading(false);
       Alert.alert(
         "Subscription Successful! 🎉",
-        `Welcome to Last Class Verified ${selectedPlan === "yearly" ? "Annual" : "Pro"}! Your verified shield badge is now active on your profile.`,
+        `Welcome to TCM One Verified ${selectedPlan === "yearly" ? "Annual" : "Pro"}! Your verified shield badge is now active on your profile.`,
         [
           {
             text: "Awesome!",
@@ -106,7 +106,7 @@ export default function GetVerifiedModal({ visible, onClose, onVerifySuccess, cu
               <View style={[styles.crownBadgeIcon, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
                 <MaterialCommunityIcons name="shield-check" size={34} color={theme.primary} />
               </View>
-              <Text style={[styles.heroTitle, { color: theme.text }]}>Get Last Class Verified</Text>
+              <Text style={[styles.heroTitle, { color: theme.text }]}>Get TCM One Verified</Text>
               <Text style={[styles.heroSub, { color: theme.subtext }]}>
                 Unlock elite developer tools, top recruiter visibility & industry domain projects.
               </Text>

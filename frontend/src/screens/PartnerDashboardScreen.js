@@ -101,7 +101,7 @@ export default function PartnerDashboardScreen({ session, onBack }) {
   const [ticketDescription, setTicketDescription] = useState('');
 
   const instituteName = user.instituteName || user.name || 'Partner Institute';
-  const partnerCategory = user.partnerCategory || 'Last Class Partner Institute';
+  const partnerCategory = user.partnerCategory || 'TCM One Partner Institute';
   const location = user.location || 'Bilaspur, Chhattisgarh';
   const rating = user.rating !== undefined && user.rating !== null ? user.rating : 0;
   const reviewsCount = user.reviewsCount !== undefined && user.reviewsCount !== null ? user.reviewsCount : '0 Reviews';
@@ -187,7 +187,7 @@ export default function PartnerDashboardScreen({ session, onBack }) {
           color: colors.primary,
           title: 'Institute Profile Logo',
           subtitle: 'Official Brand Asset',
-          details: 'Your official verified institute emblem displayed across Last Class search & student course cards.',
+          details: 'Your official verified institute emblem displayed across TCM One search & student course cards.',
           image: logoUrl
         });
         break;
@@ -209,7 +209,7 @@ export default function PartnerDashboardScreen({ session, onBack }) {
           color: colors.primary,
           title: 'Institute Description',
           subtitle: 'About Your Educational Center',
-          details: user.bio || `${instituteName} is an accredited educational partner with Last Class.`
+          details: user.bio || `${instituteName} is an accredited educational partner with TCM One.`
         });
         break;
       case 'existing_courses':
@@ -219,7 +219,7 @@ export default function PartnerDashboardScreen({ session, onBack }) {
           color: colors.primary,
           title: 'Courses Offered',
           subtitle: `${existingCourses.length} Certified Training Programs`,
-          details: existingCourses.length > 0 ? 'Programs currently offered at your institute under Last Class accreditation.' : 'No courses registered yet.',
+          details: existingCourses.length > 0 ? 'Programs currently offered at your institute under TCM One accreditation.' : 'No courses registered yet.',
           coursesList: existingCourses
         });
         break;
@@ -241,7 +241,7 @@ export default function PartnerDashboardScreen({ session, onBack }) {
           color: colors.primary,
           title: 'Campus Location & Address',
           subtitle: location,
-          details: `Address: ${location}.\nPin Code: 495001\nLandmark: Near Last Class Tech Hub`
+          details: `Address: ${location}.\nPin Code: 495001\nLandmark: Near TCM One Tech Hub`
         });
         break;
       case 'reviews_ratings':
@@ -390,7 +390,7 @@ export default function PartnerDashboardScreen({ session, onBack }) {
                   <Text style={[styles.statBoxSub, { color: colors.primary }]} numberOfLines={1}>{activeDateFilter.tag}</Text>
                 </TouchableOpacity>
 
-                {/* Card 2: Students from Last Class */}
+                {/* Card 2: Students from TCM One */}
                 <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={() => Alert.alert('Students Count', `Total Students enrolled: ${totalStudents}`)}
@@ -399,7 +399,7 @@ export default function PartnerDashboardScreen({ session, onBack }) {
                   <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
                     <Ionicons name="people-outline" size={18} color="#FFFFFF" />
                   </View>
-                  <Text style={styles.statBoxTitle} numberOfLines={1}>Students from Last Class</Text>
+                  <Text style={styles.statBoxTitle} numberOfLines={1}>Students from TCM One</Text>
                   <Text style={[styles.statBoxVal, { color: colors.ink }]} numberOfLines={1}>{totalStudents}</Text>
                   <Text style={[styles.statBoxSub, { color: colors.primary }]} numberOfLines={1}>Total Students</Text>
                 </TouchableOpacity>
@@ -448,7 +448,7 @@ export default function PartnerDashboardScreen({ session, onBack }) {
 
             <View style={styles.summaryGrid}>
               <View style={[styles.summaryCard, { backgroundColor: theme.cardBg || colors.card, borderColor: theme.border || colors.border }]}>
-                <Text style={[styles.summaryLabel, { color: theme.subtext || colors.muted }]}>Students from Last Class</Text>
+                <Text style={[styles.summaryLabel, { color: theme.subtext || colors.muted }]}>Students from TCM One</Text>
                 <Text style={[styles.summaryVal, { color: theme.text || colors.ink }]}>{totalStudents}</Text>
                 <View style={styles.growthRow}>
                   <Ionicons name="arrow-up" size={12} color={colors.primary} />
@@ -524,7 +524,7 @@ export default function PartnerDashboardScreen({ session, onBack }) {
                   <Ionicons name="school" size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: 'Poppins_600SemiBold', color: colors.ink, fontSize: 14 }}>Last Class Certified Instructors</Text>
+                  <Text style={{ fontFamily: 'Poppins_600SemiBold', color: colors.ink, fontSize: 14 }}>TCM One Certified Instructors</Text>
                   <Text style={{ fontFamily: 'Poppins_400Regular', color: colors.muted, fontSize: 12 }}>{activeMentors} instructors assigned to institute courses.</Text>
                 </View>
               </View>

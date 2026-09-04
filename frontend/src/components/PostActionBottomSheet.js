@@ -51,7 +51,7 @@ export default function PostActionBottomSheet({
   const isJob = post.postType === "job_news" || Boolean(post.jobData);
   const job = post.jobData || {};
   const displayTitle = post.title || job.title || post.text || post.content || "Feed Post";
-  const displayAuthor = post.authorName || job.mentorName || post.author?.name || "Last Class User";
+  const displayAuthor = post.authorName || job.mentorName || post.author?.name || "TCM One User";
   const displayRole = post.authorRole || job.mentorRole || post.author?.role || (isJob ? "Hiring Partner" : "Community Member");
 
   const handleCopyLink = async () => {

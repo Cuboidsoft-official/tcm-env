@@ -46,9 +46,9 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
           const formatted = partners.map((p, idx) => ({
             id: p.id || p._id || `backend-${idx}`,
             instituteName: p.instituteName || p.name,
-            partnerCategory: p.partnerCategory || 'Last Class Partner Institute',
+            partnerCategory: p.partnerCategory || 'TCM One Partner Institute',
             categoryType: (p.partnerCategory || '').toLowerCase().includes('gov') ? 'gov' : (p.partnerCategory || '').toLowerCase().includes('academic') ? 'academics' : 'it',
-            tagline: p.bio || 'Last Class Accredited Partner Institute',
+            tagline: p.bio || 'TCM One Accredited Partner Institute',
             location: p.location || 'Bilaspur, Chhattisgarh',
             city: p.city || (p.location || 'Bilaspur').split(',')[0].trim(),
             gmbLink: p.gmbLink || '',
@@ -70,7 +70,7 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
             badges: [
               { text: 'Lab Access', icon: 'desktop-outline', bg: colors.mint, color: colors.primary },
               { text: 'Verified', icon: 'checkmark-circle-outline', bg: colors.blueSoft, color: '#0284C7' },
-              { text: 'Last Class Support', icon: 'ribbon-outline', bg: colors.yellowSoft, color: '#D97706' }
+              { text: 'TCM One Support', icon: 'ribbon-outline', bg: colors.yellowSoft, color: '#D97706' }
             ],
             contactNumber: p.contactNumber || '',
             email: p.email,
@@ -116,7 +116,7 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
     }
     Alert.alert(
       'Request Submitted!',
-      `Thank you! Our Last Class partnership team will reach out to connect ${reqName} in ${reqCity || 'your area'}.`
+      `Thank you! Our TCM One partnership team will reach out to connect ${reqName} in ${reqCity || 'your area'}.`
     );
     setReqName('');
     setReqCity('');
@@ -348,7 +348,7 @@ export default function DiscoverPartnersScreen({ session, onBack, onSelectPartne
           >
             <View style={styles.sheetHandle} />
             <Text style={[styles.modalTitle, { color: theme.text || colors.ink, marginBottom: 4 }]}>Request New Partner</Text>
-            <Text style={[styles.modalSub, { color: colors.muted, marginBottom: 12 }]}>Tell us which lab or institute you want on Last Class!</Text>
+            <Text style={[styles.modalSub, { color: colors.muted, marginBottom: 12 }]}>Tell us which lab or institute you want on TCM One!</Text>
 
             <TextInput
               value={reqName}

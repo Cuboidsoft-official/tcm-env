@@ -484,7 +484,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
     try {
       Clipboard.setString(inviteUrl);
       await Share.share({
-        message: `Join our Last Class Doubt Room "${room?.title || "Learning Group"}":\n${inviteUrl}`,
+        message: `Join our TCM One Doubt Room "${room?.title || "Learning Group"}":\n${inviteUrl}`,
         url: inviteUrl,
         title: `Join ${room?.title}`
       });
@@ -550,7 +550,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
             </View>
           ) : (
             <View style={styles.titleRow}>
-              <Text style={[styles.roomTitle, { color: theme.text }]}>{room?.title || "Last Class Doubt Room"}</Text>
+              <Text style={[styles.roomTitle, { color: theme.text }]}>{room?.title || "TCM One Doubt Room"}</Text>
               {isAdmin ? (
                 <Pressable onPress={() => setIsEditingTitle(true)} style={styles.pencilBtn}>
                   <Feather name="edit-2" size={14} color="#6366F1" />
@@ -585,7 +585,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
           ) : (
             <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
               <Text style={[styles.descText, { color: theme.subtext }]}>
-                {room?.description || "A place for learners to ask doubts, share resources and grow together with Last Class Academy Mentors!"}
+                {room?.description || "A place for learners to ask doubts, share resources and grow together with TCM One Academy Mentors!"}
               </Text>
               {isAdmin ? (
                 <Pressable onPress={() => setIsEditingDesc(true)} style={{ padding: 4, marginLeft: 6 }}>
@@ -977,8 +977,8 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
               <Feather name="x" size={20} color="#64748B" />
             </Pressable>
 
-            <Text style={styles.qrHeaderTitle}>{room?.title || "Last Class Doubt Room"}</Text>
-            <Text style={styles.qrHeaderSub}>{room?.category || "Last Class Academic Group"} • ID: {room?.roomId}</Text>
+            <Text style={styles.qrHeaderTitle}>{room?.title || "TCM One Doubt Room"}</Text>
+            <Text style={styles.qrHeaderSub}>{room?.category || "TCM One Academic Group"} • ID: {room?.roomId}</Text>
 
             {/* VISUAL QR CARD */}
             <View style={styles.qrCardContainer}>
@@ -992,7 +992,7 @@ export default function RoomDetailsScreen({ session, room: initialRoom, isAdmin 
               </View>
             </View>
 
-            <Text style={styles.qrScanText}>Scan to join room on Last Class Academy</Text>
+            <Text style={styles.qrScanText}>Scan to join room on TCM One Academy</Text>
             <Text style={styles.qrUrlText}>app.thecodemunk.in/community/{room?.roomId}</Text>
 
             <View style={{ flexDirection: "row", gap: 10, marginTop: 16, width: "100%" }}>

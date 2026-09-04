@@ -253,7 +253,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
     setQuizSubmitted(false);
     setQuizAnswers({});
     try {
-      const questions = await generateMcqQuizWithGemini(modTitle, payload?.courseTitle || "Last Class Masterclass");
+      const questions = await generateMcqQuizWithGemini(modTitle, payload?.courseTitle || "TCM One Masterclass");
       setQuizQuestions(questions || []);
     } catch (err) {
       Alert.alert("Quiz Error", "Could not generate 10 MCQs for this day class topic.");
@@ -308,7 +308,7 @@ export default function ContinueLearningScreen({ session, user = {}, onBack, onN
           onPress: () =>
             Share.share({
               title: finalTitle,
-              message: `Official Last Class Class Notes: ${finalTitle}\nURL: ${finalUrl}`
+              message: `Official TCM One Class Notes: ${finalTitle}\nURL: ${finalUrl}`
             })
         },
         {

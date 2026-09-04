@@ -28,7 +28,7 @@ export default function SidebarDrawer({
     ? user.handle.replace(/^@/, "")
     : (name ? name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") : "tcm_student");
   const handle = `@${rawHandle}`;
-  const memberBadge = user.memberBadge || (user.role === "mentor" ? "Verified Mentor" : user.verified ? "Verified Member" : "Last Class Student");
+  const memberBadge = user.memberBadge || (user.role === "mentor" ? "Verified Mentor" : user.verified ? "Verified Member" : "TCM One Student");
   const rawAvatar = user.avatarUrl || "";
   const isInvalidWebUri = Platform.OS === "web" && typeof rawAvatar === "string" && rawAvatar.startsWith("file://");
   const avatarUri = isInvalidWebUri ? null : rawAvatar;
@@ -124,7 +124,7 @@ export default function SidebarDrawer({
               <TouchableOpacity activeOpacity={0.8} onPress={() => handleNavigate("Wallet")} style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
                 <FontAwesome5 name="coins" size={16} color="#FFB800" />
                 <Text style={[styles.metricVal, { color: theme.text }]}>{typeof tcmCoins === "number" ? tcmCoins.toLocaleString() : tcmCoins}</Text>
-                <Text style={[styles.metricLbl, { color: theme.subtext }]}>Last Class Coins</Text>
+                <Text style={[styles.metricLbl, { color: theme.subtext }]}>TCM One Coins</Text>
               </TouchableOpacity>
 
               <TouchableOpacity activeOpacity={0.8} onPress={() => handleNavigate("Profile")} style={[styles.metricCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
@@ -217,7 +217,7 @@ export default function SidebarDrawer({
               ) : null}
               <MenuItem
                 icon={<Feather name="download" size={18} color={theme.primary} />}
-                label="Install Last Class App (PWA)"
+                label="Install TCM One App (PWA)"
                 active={false}
                 onPress={() => {
                   onClose();
@@ -226,9 +226,9 @@ export default function SidebarDrawer({
               />
               <MenuItem
                 icon={<Feather name="users" size={18} />}
-                label="Last Class Community"
-                active={activeItem === "Last Class Community" || activeItem === "Community" || activeItem === "Last Class Community"}
-                onPress={() => handleNavigate("Last Class Community")}
+                label="TCM One Community"
+                active={activeItem === "TCM One Community" || activeItem === "Community" || activeItem === "TCM One Community"}
+                onPress={() => handleNavigate("TCM One Community")}
               />
               <MenuItem
                 icon={<Feather name="tv" size={18} />}
@@ -250,7 +250,7 @@ export default function SidebarDrawer({
 
               <MenuItem
                 icon={<Feather name="credit-card" size={18} />}
-                label="Last Class Wallet & Balance"
+                label="TCM One Wallet & Balance"
                 active={activeItem === "Wallet"}
                 onPress={() => handleNavigate("Wallet")}
               />
@@ -306,7 +306,7 @@ export default function SidebarDrawer({
                 <FontAwesome5 name="crown" size={14} color="#FFFFFF" />
               </View>
               <View style={styles.premiumTextWrap}>
-                <Text style={[styles.premiumTitle, { color: theme.badgeText || theme.primary }]}>Get Last Class Verified Pro</Text>
+                <Text style={[styles.premiumTitle, { color: theme.badgeText || theme.primary }]}>Get TCM One Verified Pro</Text>
                 <Text style={[styles.premiumSub, { color: theme.subtext }]}>Verified Badge, Real Projects & ATS Resume from ₹29/mo</Text>
               </View>
               <Feather name="chevron-right" size={18} color={theme.primary} />

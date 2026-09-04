@@ -41,7 +41,7 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
     user.experiences?.length
       ? user.experiences
       : [
-          { id: "exp1", role: "Senior Software Engineer & Mentor", company: "Last Class Academy", durationPill: "3+ Years" }
+          { id: "exp1", role: "Senior Software Engineer & Mentor", company: "TCM One Academy", durationPill: "3+ Years" }
         ]
   );
 
@@ -91,7 +91,7 @@ export default function EditMentorProfileModal({ visible, session, user = {}, on
       setExperiences(
         user.experiences?.length
           ? user.experiences
-          : [{ id: "exp1", role: "Senior Software Engineer & Mentor", company: "Last Class Academy", durationPill: "3+ Years" }]
+          : [{ id: "exp1", role: "Senior Software Engineer & Mentor", company: "TCM One Academy", durationPill: "3+ Years" }]
       );
     }
   }, [visible, user]);

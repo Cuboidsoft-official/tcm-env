@@ -603,7 +603,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
               <MaterialCommunityIcons name="brain" size={36} color={theme.primary} />
             </View>
             <Text style={{ fontSize: 22, fontFamily: fonts.bold, color: theme.text, textAlign: "center" }}>
-              Last Class AI Interview & Skill Examinations
+              TCM One AI Interview & Skill Examinations
             </Text>
             <Text style={{ fontSize: 13, color: theme.subtext, textAlign: "center", marginTop: 4, marginBottom: 24, paddingHorizontal: 20 }}>
               Top-tier GeeksforGeeks & Toptal level interview questions with zero repetition tracking!
@@ -1029,7 +1029,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
               Assessment Completed
             </Text>
             <Text style={{ fontSize: 12, color: theme.subtext, textAlign: "center", marginTop: 4, marginBottom: 20 }}>
-              Official Last Class Verified Student Achievement Record
+              Official TCM One Verified Student Achievement Record
             </Text>
 
             {/* HIGH QUALITY CERTIFICATE CARD */}
@@ -1087,7 +1087,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
                   {user?.name || "Student"}
                 </Text>
                 <Text style={{ fontSize: 11.5, color: theme.subtext, marginTop: 2 }}>
-                  Last Class Verified Learner • {user?.handle ? `@${user.handle}` : "Achievement Credentials"}
+                  TCM One Verified Learner • {user?.handle ? `@${user.handle}` : "Achievement Credentials"}
                 </Text>
               </View>
 
@@ -1113,7 +1113,7 @@ export default function TcmAiExamModal({ visible, onClose, user, onSaveResult })
                 </View>
                 <View style={{ flex: 1, backgroundColor: theme.bg, borderRadius: 12, padding: 10, alignItems: "center", borderWidth: 1, borderColor: theme.border }}>
                   <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: "#7C3AED" }}>Verified</Text>
-                  <Text style={{ fontSize: 10, color: theme.subtext, marginTop: 2 }}>Last Class AI Badge</Text>
+                  <Text style={{ fontSize: 10, color: theme.subtext, marginTop: 2 }}>TCM One AI Badge</Text>
                 </View>
               </View>
             </View>

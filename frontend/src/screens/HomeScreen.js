@@ -96,7 +96,7 @@ const postModes = {
     title: "Create Post",
     placeholder: "Share your learning update, notes, doubt or insight...",
     category: "Community",
-    tags: "#Last Class #Learning",
+    tags: "#TCM One #Learning",
     media: { kind: "none" }
   },
   doubt: {
@@ -116,8 +116,8 @@ const postModes = {
       label: "Student Notes",
       labelIcon: "file-document-outline",
       title: "Shared Notes",
-      subtitle: "Last Class Notes.pdf",
-      fileName: "Last Class Notes.pdf",
+      subtitle: "TCM One Notes.pdf",
+      fileName: "TCM One Notes.pdf",
       fileSize: "2.1 MB"
     }
   },
@@ -137,7 +137,7 @@ const postModes = {
   }
 };
 
-const initialsFor = (name = "Last Class") =>
+const initialsFor = (name = "TCM One") =>
   name
     .split(" ")
     .filter(Boolean)
@@ -178,7 +178,7 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
       label: "Video Post",
       labelIcon: "play-circle",
       title: title || "New Video",
-      subtitle: "Last Class COMMUNITY",
+      subtitle: "TCM One COMMUNITY",
       duration: "0:30",
       frameKey,
       imageUrl: thumbnailSrc,
@@ -199,8 +199,8 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
       label: "Shared Document",
       labelIcon: "file-document-outline",
       title: title || "Shared Notes",
-      subtitle: draft.fileName.trim() || "Last Class Document.pdf",
-      fileName: draft.fileName.trim() || "Last Class Document.pdf",
+      subtitle: draft.fileName.trim() || "TCM One Document.pdf",
+      fileName: draft.fileName.trim() || "TCM One Document.pdf",
       fileSize: draft.fileSize.trim() || "2.1 MB",
       frameKey,
       imageUrl: mediaUrl,
@@ -217,7 +217,7 @@ function buildMediaPayload(config, draft, uploadType, frameKey = "none") {
         label: "Image Post",
         labelIcon: "image-multiple",
         title: title || "Photo Update",
-        subtitle: "Last Class Community",
+        subtitle: "TCM One Community",
         frameKey,
         imageUrl: primaryUrl,
         carouselImages: carouselImages
@@ -421,8 +421,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
               if (!knownNotifIds.current.has(notifKey)) {
                 knownNotifIds.current.add(notifKey);
                 sendLocalNotification({
-                  title: n.title || "Last Class Notification 🔔",
-                  body: n.subtitle || n.message || "You have a new update on Last Class Mobile",
+                  title: n.title || "TCM One Notification 🔔",
+                  body: n.subtitle || n.message || "You have a new update on TCM One Mobile",
                   data: n
                 });
                 break;
@@ -618,17 +618,17 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
       setActiveTab("Learn");
     } else if (itemKey === "Doubts") {
       setActiveTab("Doubts");
-    } else if (itemKey === "Last Class Community" || itemKey === "Community") {
+    } else if (itemKey === "TCM One Community" || itemKey === "Community") {
       setShowCommunityScreen(true);
     } else if (itemKey === "Notifications") {
       setShowNotificationsScreen(true);
-    } else if (itemKey === "Wallet" || itemKey === "Last Class Wallet & Referrals" || itemKey === "Last Class Wallet & Balance" || itemKey === "Referrals" || itemKey === "Refer & Earn (₹500 Bonus)" || itemKey === "Referral") {
+    } else if (itemKey === "Wallet" || itemKey === "TCM One Wallet & Referrals" || itemKey === "TCM One Wallet & Balance" || itemKey === "Referrals" || itemKey === "Refer & Earn (₹500 Bonus)" || itemKey === "Referral") {
       setShowWalletScreen(true);
     } else if (itemKey === "Profile") {
       setActiveTab("Profile");
     } else if (itemKey === "Settings") {
       setActiveTab("ProfileSettings");
-    } else if (itemKey === "Go Premium" || itemKey === "Get Premium" || itemKey === "Get Last Class Verified Pro" || itemKey === "Premium Features" || itemKey === "Premium Features ⭐") {
+    } else if (itemKey === "Go Premium" || itemKey === "Get Premium" || itemKey === "Get TCM One Verified Pro" || itemKey === "Premium Features" || itemKey === "Premium Features ⭐") {
       setGetVerifiedModalOpen(true);
     } else if (itemKey === "Feedback" || itemKey === "Feedback & Suggestions") {
       setShowFeedbackModal(true);
@@ -773,7 +773,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
       if (!newPost) {
         newPost = {
           id: `post_local_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          authorName: user?.name || "Last Class Learner",
+          authorName: user?.name || "TCM One Learner",
           authorAvatarUrl: user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
           authorRole: user?.role || "Student",
           isMentor: Boolean(user?.role?.toLowerCase?.().includes("mentor")),
@@ -1920,7 +1920,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
   const job = post.jobData || {
     id: post.id,
     title: post.title || post.text?.split("\n")[0] || "Software Developer Opening",
-    company: post.company || "Last Class Hiring Partner",
+    company: post.company || "TCM One Hiring Partner",
     mentorName: post.authorName || "Mentor",
     mentorAvatarUrl: post.authorAvatarUrl,
     mentorRole: post.authorRole,
@@ -2013,7 +2013,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
                   <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: theme.badgeText || theme.primary }}>Mentor Drive</Text>
                 </View>
               </View>
-              <Text numberOfLines={1} style={[styles.authorRole, { color: theme.subtext, fontSize: 11 }]}>{job.company || "Last Class Hiring Partner"} • {job.mentorRole || "Mentor"}</Text>
+              <Text numberOfLines={1} style={[styles.authorRole, { color: theme.subtext, fontSize: 11 }]}>{job.company || "TCM One Hiring Partner"} • {job.mentorRole || "Mentor"}</Text>
             </View>
           </Pressable>
 
@@ -2101,7 +2101,7 @@ function PostCard({ session, post, onComment, onPreview, onSelectUser, onDeleteP
                 onPreview({
                   type: "image",
                   title: job.title || "Job Cover",
-                  subtitle: job.company || "Last Class Hiring Partner",
+                  subtitle: job.company || "TCM One Hiring Partner",
                   imageUrl: job.imageUrl
                 })
               }
@@ -2476,7 +2476,7 @@ function SingleFeedImage({ singleImage, fKey, onPreview, mediaTitle, mediaSubtit
         onPreview({
           type: "image",
           title: mediaTitle || "Photo Post",
-          subtitle: mediaSubtitle || "Last Class Community",
+          subtitle: mediaSubtitle || "TCM One Community",
           imageUrl: singleImage
         })
       }
@@ -2510,7 +2510,7 @@ function PostMedia({ post, onPreview }) {
     const documentItem = {
       type: "document",
       title: media.fileName || post.documentName || media.subtitle || media.title || "Document",
-      subtitle: media.title || media.label || "Last Class Document",
+      subtitle: media.title || media.label || "TCM One Document",
       fileSize: media.fileSize || post.documentSize || "PDF Document",
       imageUrl: media.imageUrl || post.imageUrl || "",
       fileUri: resolvedDocUri,
@@ -2524,7 +2524,7 @@ function PostMedia({ post, onPreview }) {
           <MaterialCommunityIcons name="file-pdf-box" size={34} color="#FF465F" />
         </View>
         <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text numberOfLines={1} style={styles.pdfTitle}>{media.fileName || media.subtitle || "Last Class Document.pdf"}</Text>
+          <Text numberOfLines={1} style={styles.pdfTitle}>{media.fileName || media.subtitle || "TCM One Document.pdf"}</Text>
           <Text style={styles.pdfSize}>{media.fileSize || "PDF Document"} • Tap to view</Text>
         </View>
         <Feather name="external-link" size={18} color="#6366F1" style={{ marginLeft: 8 }} />
@@ -2577,7 +2577,7 @@ function PostMedia({ post, onPreview }) {
                 onPreview({
                   type: "image",
                   title: media.title || "Photo Post",
-                  subtitle: media.subtitle || "Last Class Community",
+                  subtitle: media.subtitle || "TCM One Community",
                   imageUrl: sanitizeImageUri(imageUrl)
                 })
               }
@@ -2620,7 +2620,7 @@ function PostMedia({ post, onPreview }) {
 
   if (media.kind === "video" && post.category === "Coding") {
     const codeLines = [
-      'String str = "Last Class is awesome";',
+      'String str = "TCM One is awesome";',
       "String rev = new StringBuilder(str).reverse().toString();",
       "System.out.println(rev);"
     ];
@@ -2878,7 +2878,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
       <Pressable onPressIn={handleTouchStart} onPress={handleTapPress} style={styles.videoTapLayer} />
       <View style={styles.videoCopy}>
         <Text numberOfLines={1} style={styles.videoTitle}>{media.title || "Video Post"}</Text>
-        <Text numberOfLines={1} style={styles.videoSmall}>{media.subtitle || "Last Class Community"}</Text>
+        <Text numberOfLines={1} style={styles.videoSmall}>{media.subtitle || "TCM One Community"}</Text>
       </View>
 
       {/* Auto-Hiding Play/Pause Icon Overlay */}
@@ -2899,7 +2899,7 @@ function VideoFeedPlayer({ media, onPreviewItem }) {
                 type: "video",
                 kind: "video",
                 title: media.title || "Video Post",
-                subtitle: media.subtitle || "Last Class Community",
+                subtitle: media.subtitle || "TCM One Community",
                 imageUrl: posterUri,
                 videoUrl: sourceUri,
                 fileUri: sourceUri
@@ -3074,15 +3074,15 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     : (postMedia.imageUrl || post?.imageUrl || carouselImages[0] || post?.jobData?.imageUrl || post?.jobData?.media?.imageUrl || postMedia.thumbnailUrl || post?.thumbnailUrl || "");
 
   const hasMediaUrl = typeof rawMediaUrl === "string" && /^https?:\/\//i.test(rawMediaUrl);
-  const rawTitle = (post?.title || post?.text || post?.content || "Last Class Update")
+  const rawTitle = (post?.title || post?.text || post?.content || "TCM One Update")
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\s+/g, " ")
     .trim();
   const cleanTitle = rawTitle.length > 70 ? `${rawTitle.slice(0, 67)}...` : rawTitle;
-  const authorName = post?.authorName || "Last Class Educator";
+  const authorName = post?.authorName || "TCM One Educator";
 
   // Sleek, professional message formatting
-  const captionBody = `✨ ${cleanTitle}\n— by ${authorName} on Last Class`;
+  const captionBody = `✨ ${cleanTitle}\n— by ${authorName} on TCM One`;
   const formattedShareMsg = `${captionBody}\n\n🔗 ${shareUrl}`;
 
   async function handleNativeShare() {
@@ -3160,7 +3160,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     } else if (platform === "linkedin") {
       Linking.openURL(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`).catch(() => {});
     } else if (platform === "twitter" || platform === "x") {
-      Linking.openURL(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`✨ ${cleanTitle}\n— by ${authorName} on Last Class`)}`).catch(() => {});
+      Linking.openURL(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`✨ ${cleanTitle}\n— by ${authorName} on TCM One`)}`).catch(() => {});
     } else if (platform === "copy") {
       handleCopyLink();
     } else {
@@ -3180,7 +3180,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   const currentUserAvatar = session?.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80";
 
   function cleanMemberName(u, idx) {
-    if (!u) return post?.authorName || "Last Class Member";
+    if (!u) return post?.authorName || "TCM One Member";
     if (typeof u === "object") {
       const uid = String(u.id || u._id || "");
       if (uid && String(uid) === String(currentUserId)) {
@@ -3203,7 +3203,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
         return u;
       }
     }
-    return post?.authorName || "Last Class Member";
+    return post?.authorName || "TCM One Member";
   }
 
   let rawUsers = [];
@@ -3211,7 +3211,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     rawUsers = post.likedByUsers.map((u, idx) => ({
       id: u.id || u._id || `user_${idx}`,
       name: cleanMemberName(u, idx),
-      role: u.role || "Last Class Member",
+      role: u.role || "TCM One Member",
       avatarUrl: u.avatarUrl || u.avatar || (String(u.id || u._id) === String(currentUserId) ? currentUserAvatar : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"),
       isMentor: Boolean(u.isMentor || u.role === "mentor")
     }));
@@ -3222,7 +3222,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
           return {
             id: item.id || item._id || `user_${idx}`,
             name: cleanMemberName(item, idx),
-            role: item.role || "Last Class Member",
+            role: item.role || "TCM One Member",
             avatarUrl: item.avatarUrl || item.avatar || (String(item.id || item._id) === String(currentUserId) ? currentUserAvatar : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"),
             isMentor: Boolean(item.isMentor || item.role === "mentor")
           };
@@ -3232,7 +3232,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
           return {
             id: item,
             name: resolvedName,
-            role: isMe ? (session?.user?.role || "Last Class Member") : "Last Class Member",
+            role: isMe ? (session?.user?.role || "TCM One Member") : "TCM One Member",
             avatarUrl: isMe ? currentUserAvatar : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
             isMentor: false
           };
@@ -3247,7 +3247,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     realLikedUsers.unshift({
       id: currentUserId,
       name: currentUserName,
-      role: session?.user?.role || "Last Class Member",
+      role: session?.user?.role || "TCM One Member",
       avatarUrl: currentUserAvatar,
       isMentor: Boolean(session?.user?.role === "mentor" || session?.user?.isMentor)
     });
@@ -3421,7 +3421,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
                         </View>
                       ) : null}
                     </View>
-                    <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: theme.subtext, marginTop: 2 }}>{likedUser.role || "Last Class Member"}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: theme.subtext, marginTop: 2 }}>{likedUser.role || "TCM One Member"}</Text>
                   </View>
                   <View style={{ backgroundColor: theme.badgeBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, flexDirection: "row", alignItems: "center", gap: 4 }}>
                     <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: theme.primary }}>Profile</Text>
@@ -3612,7 +3612,7 @@ function MediaPreviewModal({ item, onClose }) {
             <View style={styles.previewTitleWrap}>
               <Text numberOfLines={1} style={styles.previewTitle}>{item.title}</Text>
               <Text numberOfLines={1} style={styles.previewSub}>
-                {item.fileSize || "Document"} | {item.authorName || "Last Class"}
+                {item.fileSize || "Document"} | {item.authorName || "TCM One"}
               </Text>
             </View>
             <Pressable hitSlop={10} onPress={onClose} style={styles.previewClose}>
@@ -3641,7 +3641,7 @@ function MediaPreviewModal({ item, onClose }) {
               <TouchableOpacity
                 onPress={() => {
                   const docShareUrl = `https://app.thecodemunk.in/document/${item.id || item._id || "doc1"}`;
-                  Share.share({ url: docShareUrl, message: `Check out this document on Last Class: ${item.title || "File Attachment"}\n\nLink: ${docShareUrl}` }).catch(() => {});
+                  Share.share({ url: docShareUrl, message: `Check out this document on TCM One: ${item.title || "File Attachment"}\n\nLink: ${docShareUrl}` }).catch(() => {});
                 }}
                 activeOpacity={0.8}
                 style={[styles.documentButton, { backgroundColor: "rgba(100, 116, 139, 0.12)", borderWidth: 1, borderColor: "rgba(100, 116, 139, 0.25)", paddingVertical: 5, paddingHorizontal: 8, borderRadius: 10 }]}
@@ -3712,7 +3712,7 @@ function MediaPreviewModal({ item, onClose }) {
           <View style={[styles.imageCaption, { paddingTop: safeTopPadding }]}>
             <View style={styles.imageCaptionCopy}>
               <Text numberOfLines={1} style={styles.imageCaptionTitle}>{item.title || "Video Preview"}</Text>
-              <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle || "Last Class Video Update"}</Text>
+              <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle || "TCM One Video Update"}</Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <TouchableOpacity
@@ -3736,7 +3736,7 @@ function MediaPreviewModal({ item, onClose }) {
           <View style={[styles.imageCaption, { paddingTop: safeTopPadding }]}>
             <View style={styles.imageCaptionCopy}>
               <Text numberOfLines={1} style={styles.imageCaptionTitle}>{item.title || "Photo Attachment"}</Text>
-              <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle || "Last Class Photo Update"}</Text>
+              <Text numberOfLines={1} style={styles.imageCaptionSub}>{item.subtitle || "TCM One Photo Update"}</Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <TouchableOpacity
@@ -4130,7 +4130,7 @@ function LearnDashboard({ learn, user, onSelectUser }) {
         </View>
       </LinearGradient>
 
-      <Text style={styles.sectionTitle}>Explore Last Class</Text>
+      <Text style={styles.sectionTitle}>Explore TCM One</Text>
       <View style={styles.exploreGrid}>
         {(learn.explore || []).map((item) => (
           <Pressable key={item.id} style={styles.exploreCard}>
@@ -4448,7 +4448,7 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
             <View style={styles.createUserRow}>
               <Avatar name={user?.name} uri={user?.avatarUrl} size={42} />
               <View style={styles.createUserCopy}>
-                <Text numberOfLines={1} style={[styles.createUserName, { color: theme.text }]}>{user?.name || "Last Class Learner"}</Text>
+                <Text numberOfLines={1} style={[styles.createUserName, { color: theme.text }]}>{user?.name || "TCM One Learner"}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
                   <View style={[styles.audiencePill, { backgroundColor: theme.isDark ? "#1E263B" : "#F1EDFF" }]}>
                     <Feather name="globe" size={11} color={theme.primary} />
@@ -4680,7 +4680,7 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
             </View>
             <View style={styles.guidelineCopy}>
               <Text style={[styles.guidelineTitle, { color: theme.text }]}>Community Guidelines</Text>
-              <Text style={[styles.guidelineText, { color: theme.subtext }]}>Be respectful and follow Last Class community guidelines.</Text>
+              <Text style={[styles.guidelineText, { color: theme.subtext }]}>Be respectful and follow TCM One community guidelines.</Text>
             </View>
             <Feather name="chevron-right" size={20} color={theme.subtext} />
           </Pressable>
@@ -5063,7 +5063,7 @@ function DrawerFeatureModal({ feature, onClose, user }) {
                   const success = await setupPushNotifications(session?.token, true);
                   if (success) {
                     sendLocalNotification({
-                      title: "Last Class Push Notifications Active 🔔",
+                      title: "TCM One Push Notifications Active 🔔",
                       body: "System notifications are active! You will receive live updates even when outside the app.",
                       data: { test: true }
                     });
@@ -5130,7 +5130,7 @@ function DrawerFeatureModal({ feature, onClose, user }) {
               <View style={[styles.genericFeatureCard, modalSurface]}>
                 <MaterialCommunityIcons name="star-shooting" size={44} color={theme.primary} />
                 <Text style={[styles.genericTitle, { color: theme.text }]}>{feature}</Text>
-                <Text style={[styles.genericSub, { color: theme.subtext }]}>Welcome to {feature} section in Last Class.</Text>
+                <Text style={[styles.genericSub, { color: theme.subtext }]}>Welcome to {feature} section in TCM One.</Text>
               </View>
             </View>
           )}
@@ -5186,7 +5186,7 @@ function LoadingState() {
       >
         <ActivityIndicator size="small" color={theme.primary} />
         <Text style={{ fontFamily: fonts.semiBold, fontSize: 13, color: theme.primary }}>
-          Curating live LastClass feed & stories...
+          Curating live TCM One feed & stories...
         </Text>
       </View>
 

@@ -8,8 +8,8 @@ export function createVisualSeedData(passwordHash = "") {
     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
     handle: "ayushman",
     verified: true,
-    memberBadge: "Last Class Member",
-    bio: "Building Last Class to help curious minds learn, grow & create impact.",
+    memberBadge: "TCM One Member",
+    bio: "Building TCM One to help curious minds learn, grow & create impact.",
     location: "India",
     joinedDate: "Joined Jan 2024",
     website: "thecodemunk.in",
@@ -38,8 +38,8 @@ export function createVisualSeedData(passwordHash = "") {
     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
     handle: "admin",
     verified: true,
-    memberBadge: "Last Class Administrator",
-    bio: "Last Class Platform Administrator"
+    memberBadge: "TCM One Administrator",
+    bio: "TCM One Platform Administrator"
   };
 
   const partnerUser = {
@@ -190,7 +190,7 @@ export function createVisualSeedData(passwordHash = "") {
     explore: [
       {
         id: "inform-tech",
-        title: "Last Class Inform Tech",
+        title: "TCM One Inform Tech",
         subtitle: "Live Classes, Notes,\nAssignments & More",
         icon: "play-circle",
         color: "#5B3CF5",
@@ -198,7 +198,7 @@ export function createVisualSeedData(passwordHash = "") {
       },
       {
         id: "academy",
-        title: "Last Class Academy",
+        title: "TCM One Academy",
         subtitle: "Premium Courses,\nSpecialized Programs",
         icon: "school",
         color: "#2E7D32",
@@ -206,7 +206,7 @@ export function createVisualSeedData(passwordHash = "") {
       },
       {
         id: "guide",
-        title: "Last Class Guide",
+        title: "TCM One Guide",
         subtitle: "Guidance, Career Paths,\nMentorship",
         icon: "book-open-page-variant",
         color: "#E7A900",
@@ -214,7 +214,7 @@ export function createVisualSeedData(passwordHash = "") {
       },
       {
         id: "career",
-        title: "Last Class Career",
+        title: "TCM One Career",
         subtitle: "Internships, Jobs,\nPlacements",
         icon: "briefcase",
         color: "#2F79B9",

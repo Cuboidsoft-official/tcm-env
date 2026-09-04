@@ -52,7 +52,7 @@ export default function JobDetailsModal({ visible, job, isMentor, onClose, onApp
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.modalTitle, { color: theme.text }]} numberOfLines={1}>{job.title}</Text>
-                <Text style={[styles.modalSub, { color: theme.subtext }]}>{job.company || "Last Class Partner"}</Text>
+                <Text style={[styles.modalSub, { color: theme.subtext }]}>{job.company || "TCM One Partner"}</Text>
               </View>
             </View>
 
@@ -62,7 +62,7 @@ export default function JobDetailsModal({ visible, job, isMentor, onClose, onApp
                   const shareUrl = `https://app.thecodemunk.in/job/${job.id || job._id || "job"}`;
                   Share.share({
                     title: job.title,
-                    message: `Check out this Job Opportunity on TCM: "${job.title}" at ${job.company || "Last Class Partner"}\n\nApply via TCM: ${shareUrl}`
+                    message: `Check out this Job Opportunity on TCM: "${job.title}" at ${job.company || "TCM One Partner"}\n\nApply via TCM: ${shareUrl}`
                   }).catch(() => {});
                 }}
                 style={[styles.closeBtn, { backgroundColor: theme.isDark ? "#1E263B" : theme.badgeBg }]}
