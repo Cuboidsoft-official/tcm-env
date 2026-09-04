@@ -21,6 +21,7 @@ import { colors, shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 import RazorpayPaymentModal from "../components/RazorpayPaymentModal";
+import ComingSoonCategoryModal from "../components/ComingSoonCategoryModal";
 
 const { width } = Dimensions.get("window");
 
@@ -65,51 +66,57 @@ const defaultPopularCourses = [];
 const defaultTopCategories = [
   {
     id: "cat1",
-    name: "Programming",
+    name: "Programming & IT",
     coursesCount: "124 Courses",
     icon: "code-tags",
     color: "#0A6836",
-    bgColor: "#E8F5E9"
+    bgColor: "#E8F5E9",
+    isUnlocked: true
   },
   {
     id: "cat2",
-    name: "Data Science",
+    name: "Data Science & AI",
     coursesCount: "86 Courses",
     icon: "chart-line",
     color: "#2E7D32",
-    bgColor: "#ECF9E9"
+    bgColor: "#ECF9E9",
+    isUnlocked: true
   },
   {
     id: "cat3",
-    name: "Web Dev",
+    name: "Web Development",
     coursesCount: "95 Courses",
     icon: "web",
     color: "#2F79B9",
-    bgColor: "#EAF5FF"
+    bgColor: "#EAF5FF",
+    isUnlocked: true
   },
   {
     id: "cat4",
-    name: "Design",
-    coursesCount: "62 Courses",
+    name: "Design & UX",
+    coursesCount: "Coming Soon",
     icon: "palette-outline",
     color: "#E76F51",
-    bgColor: "#FFF2EE"
+    bgColor: "#FFF2EE",
+    isUnlocked: false
   },
   {
     id: "cat5",
-    name: "Mobile Dev",
+    name: "Mobile App Dev",
     coursesCount: "54 Courses",
     icon: "cellphone",
     color: "#00A6A6",
-    bgColor: "#E6F7F7"
+    bgColor: "#E6F7F7",
+    isUnlocked: true
   },
   {
     id: "cat6",
-    name: "Exam Prep",
-    coursesCount: "73 Courses",
+    name: "NEET & JEE Prep",
+    coursesCount: "Coming Soon",
     icon: "book-open-outline",
     color: "#9C27B0",
-    bgColor: "#FBEAFE"
+    bgColor: "#FBEAFE",
+    isUnlocked: false
   }
 ];
 
@@ -129,6 +136,8 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
   const [roadmapModalVisible, setRoadmapModalVisible] = useState(false);
   const [selectedPaymentCourse, setSelectedPaymentCourse] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [comingSoonModalVisible, setComingSoonModalVisible] = useState(false);
+  const [comingSoonCatName, setComingSoonCatName] = useState("Medical & Competitive Exams");
 
   const bannerScrollRef = useRef(null);
   const safeLearn = learn || {};
@@ -409,62 +418,82 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
       </Pressable>
 
       <View style={styles.exploreTcmSection}>
-        <Text style={[styles.exploreTcmHeaderTitle, { color: theme.text }]}>Explore Last Class</Text>
+        <Text style={[styles.exploreTcmHeaderTitle, { color: theme.text }]}>Explore TCM One</Text>
         <View style={styles.exploreTcmGrid}>
+          {/* 1. IT & Tech - UNLOCKED */}
           <Pressable
-            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("inform") : Alert.alert("Last Class Tech", "Opening Live Classes, Notes & Assignments..."))}
+            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("inform") : Alert.alert("TCM One Tech", "Opening Live IT Classes & Projects..."))}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
               <View style={[styles.exploreIconBox, { backgroundColor: theme.isDark ? "#1E1B4B" : "#EEECFE" }]}>
-                <MaterialCommunityIcons name="play" size={20} color={theme.isDark ? "#A78BFA" : "#0A6836"} />
+                <MaterialCommunityIcons name="code-tags" size={20} color={theme.isDark ? "#A78BFA" : "#0A6836"} />
               </View>
-              <Feather name="chevron-right" size={16} color={theme.subtext} />
+              <View style={{ backgroundColor: "#E8F5E9", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ fontSize: 9, fontFamily: fonts.bold, color: "#0A6836" }}>UNLOCKED</Text>
+              </View>
             </View>
-            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Tech</Text>
-            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Live Classes & Notes</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM One IT & Tech</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Live Classes & Projects</Text>
           </Pressable>
 
+          {/* 2. Academy (NEET/JEE) - LOCKED (COMING SOON) */}
           <Pressable
-            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("academy") : Alert.alert("Last Class Academy", "Opening Premium Courses & Specialized Programs..."))}
+            onPress={() => {
+              setComingSoonCatName("NEET, JEE & School Academy");
+              setComingSoonModalVisible(true);
+            }}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
-              <View style={[styles.exploreIconBox, { backgroundColor: theme.isDark ? "#064E3B" : "#EAF7EC" }]}>
-                <MaterialCommunityIcons name="school" size={20} color={theme.isDark ? "#34D399" : "#2E7D32"} />
+              <View style={[styles.exploreIconBox, { backgroundColor: theme.isDark ? "#064E3B" : "#FEE2E2" }]}>
+                <MaterialCommunityIcons name="school" size={20} color="#D13B45" />
               </View>
-              <Feather name="chevron-right" size={16} color={theme.subtext} />
+              <View style={{ backgroundColor: "#FEE2E2", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: "row", alignItems: "center", gap: 3 }}>
+                <Feather name="lock" size={9} color="#D13B45" />
+                <Text style={{ fontSize: 9, fontFamily: fonts.bold, color: "#D13B45" }}>SOON</Text>
+              </View>
             </View>
-            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Academy</Text>
-            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Specialized Programs</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM One Academy</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>NEET & JEE Prep (Soon)</Text>
           </Pressable>
 
+          {/* 3. Government Exams - LOCKED (COMING SOON) */}
           <Pressable
-            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("govt") : Alert.alert("Last Class Government", "Opening UPSC, SSC, Banking & Govt Exams..."))}
+            onPress={() => {
+              setComingSoonCatName("UPSC & Government Exams");
+              setComingSoonModalVisible(true);
+            }}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
               <View style={[styles.exploreIconBox, { backgroundColor: theme.isDark ? "#78350F" : "#FFF8EC" }]}>
                 <MaterialCommunityIcons name="bank" size={20} color={theme.isDark ? "#FBBF24" : "#E7A900"} />
               </View>
-              <Feather name="chevron-right" size={16} color={theme.subtext} />
+              <View style={{ backgroundColor: "#FFF8EC", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: "row", alignItems: "center", gap: 3 }}>
+                <Feather name="lock" size={9} color="#E7A900" />
+                <Text style={{ fontSize: 9, fontFamily: fonts.bold, color: "#E7A900" }}>SOON</Text>
+              </View>
             </View>
-            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Government</Text>
-            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>UPSC, SSC & Govt Exams</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM One Govt</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>UPSC & Govt (Soon)</Text>
           </Pressable>
 
+          {/* 4. IT Placement Track - UNLOCKED */}
           <Pressable
-            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("career") : Alert.alert("Last Class Career", "Opening Internships, Jobs & Placements..."))}
+            onPress={() => (onOpenExploreCategory ? onOpenExploreCategory("inform") : Alert.alert("TCM One IT Placements", "Opening IT Jobs & Placement Track..."))}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
               <View style={[styles.exploreIconBox, { backgroundColor: theme.isDark ? "#1E3A8A" : "#EBF5FF" }]}>
                 <MaterialCommunityIcons name="briefcase" size={20} color={theme.isDark ? "#60A5FA" : "#2F79B9"} />
               </View>
-              <Feather name="chevron-right" size={16} color={theme.subtext} />
+              <View style={{ backgroundColor: "#EAF5FF", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ fontSize: 9, fontFamily: fonts.bold, color: "#2F79B9" }}>UNLOCKED</Text>
+              </View>
             </View>
-            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Last Class Career</Text>
-            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Jobs & Placements</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM One IT Career</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>Software Placements</Text>
           </Pressable>
         </View>
       </View>
@@ -871,20 +900,49 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             {topCategories.map((cat) => (
               <Pressable
                 key={cat.id}
-                onPress={() => Alert.alert("Category Selected", `Browsing ${cat.name} courses...`)}
-                style={[styles.categoryCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+                onPress={() => {
+                  if (cat.isUnlocked === false) {
+                    setComingSoonCatName(cat.name);
+                    setComingSoonModalVisible(true);
+                  } else {
+                    if (onOpenExploreCategory) {
+                      onOpenExploreCategory("inform");
+                    } else {
+                      Alert.alert(cat.name, `Exploring ${cat.name} live courses...`);
+                    }
+                  }
+                }}
+                style={[styles.categoryCard, { backgroundColor: theme.cardBg, borderColor: theme.border, position: "relative" }]}
               >
+                {cat.isUnlocked === false ? (
+                  <View style={{ position: "absolute", top: 6, right: 6, backgroundColor: "#FEE2E2", borderRadius: 8, paddingHorizontal: 4, paddingVertical: 1 }}>
+                    <Feather name="lock" size={10} color="#D13B45" />
+                  </View>
+                ) : null}
                 <View style={[styles.categoryIconWrap, { backgroundColor: cat.bgColor || (theme.isDark ? "#1E1B4B" : "#E8F5E9") }]}>
                   <MaterialCommunityIcons name={cat.icon || "code-tags"} size={22} color={cat.color || theme.primary} />
                 </View>
                 <Text style={[styles.categoryName, { color: theme.text }]} numberOfLines={1}>{cat.name}</Text>
-                <Text style={[styles.categoryCount, { color: theme.subtext }]}>{cat.coursesCount || "12+"} Courses</Text>
+                <Text style={[styles.categoryCount, { color: theme.subtext }]}>{cat.coursesCount || "12+ Courses"}</Text>
               </Pressable>
             ))}
           </ScrollView>
         </React.Fragment>
       ) : null}
       </ScrollView>
+
+      <ComingSoonCategoryModal
+        visible={comingSoonModalVisible}
+        categoryName={comingSoonCatName}
+        onClose={() => setComingSoonModalVisible(false)}
+        onExploreIt={() => {
+          setComingSoonModalVisible(false);
+          if (onOpenExploreCategory) onOpenExploreCategory("inform");
+        }}
+        onNotify={(cat) => {
+          Alert.alert("Preference Recorded 🔔", `We'll notify you as soon as ${cat} course batches launch on TCM One!`);
+        }}
+      />
     </View>
   );
 }

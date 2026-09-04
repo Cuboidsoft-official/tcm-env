@@ -202,7 +202,7 @@ export default function PwaInstallBottomSheet({ visible: propVisible, onClose, o
 
               <View style={styles.headerInfo}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Text style={[styles.appTitle, { color: theme.text }]}>Last Class</Text>
+                  <Text style={[styles.appTitle, { color: theme.text }]}>TCM One</Text>
                   <View style={[styles.pwaTag, { backgroundColor: theme.primary }]}>
                     <Text style={styles.pwaTagText}>PWA APP</Text>
                   </View>

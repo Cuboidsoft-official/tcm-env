@@ -20,8 +20,8 @@ export default function TcmLogo({ compact = false }) {
         resizeMode="contain"
       />
       <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-        <Text style={[styles.title, compact && styles.titleCompact, { color: lastColor }]}>Last</Text>
-        <Text style={[styles.title, compact && styles.titleCompact, { color: classColor, fontWeight: "900" }]}>Class</Text>
+        <Text style={[styles.title, compact && styles.titleCompact, { color: lastColor }]}>TCM </Text>
+        <Text style={[styles.title, compact && styles.titleCompact, { color: classColor, fontWeight: "900" }]}>One</Text>
       </View>
       <View style={styles.subtitleRow}>
         <View style={[styles.line, { backgroundColor: primaryColor }]} />
