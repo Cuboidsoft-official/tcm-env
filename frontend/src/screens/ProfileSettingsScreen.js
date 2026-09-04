@@ -600,12 +600,21 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: activeAppTheme.bg }]} contentContainerStyle={{ paddingTop: 12 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: activeAppTheme.bg }]} showsVerticalScrollIndicator={false}>
+      {/* Top Inline Header Row */}
+      <View style={styles.topBackHeader}>
+        <TouchableOpacity onPress={onBack} activeOpacity={0.8} style={[styles.inlineBackRow, { backgroundColor: activeAppTheme.badgeBg, borderColor: activeAppTheme.border }]}>
+          <Feather name="arrow-left" size={16} color={activeAppTheme.primary} />
+          <Text style={[styles.inlineBackText, { color: activeAppTheme.primary }]}>Back to Profile</Text>
+        </TouchableOpacity>
+        <Text style={[styles.topHeaderTitle, { color: activeAppTheme.text }]}>Account Settings</Text>
+      </View>
+
       {/* 1. User Overview Card */}
       <View style={[styles.userSummaryCard, { backgroundColor: activeAppTheme.cardBg, borderColor: activeAppTheme.border }]}>
         <View style={styles.userSummaryLeft}>
           <View style={styles.avatarWrapper}>
-            <ProfileAvatar name={user.name} uri={user.avatarUrl} size={56} />
+            <ProfileAvatar name={user.name} uri={user.avatarUrl} size={70} />
             <TouchableOpacity onPress={openEditModal} activeOpacity={0.8} style={[styles.avatarEditBadge, { backgroundColor: activeAppTheme.primary, borderColor: activeAppTheme.cardBg }]}>
               <Feather name="camera" size={12} color="#FFFFFF" />
             </TouchableOpacity>
@@ -1824,8 +1833,8 @@ const styles = StyleSheet.create({
     flex: 1
   },
   userNameText: {
-    fontFamily: fonts.semiBold,
-    fontSize: 14.5,
+    fontFamily: fonts.bold,
+    fontSize: 17,
     color: "#181725"
   },
   mentorRoleBadge: {
@@ -1843,12 +1852,12 @@ const styles = StyleSheet.create({
   },
   userHandleText: {
     fontFamily: fonts.regular,
-    fontSize: 12,
+    fontSize: 13,
     color: "#7C7C9A"
   },
   userEmailText: {
     fontFamily: fonts.regular,
-    fontSize: 11,
+    fontSize: 12,
     color: "#94A3B8"
   },
   editProfileBtn: {
@@ -1910,14 +1919,14 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontFamily: fonts.semiBold,
-    fontSize: 13.5,
+    fontSize: 14,
     color: "#181725"
   },
   rowSub: {
     fontFamily: fonts.regular,
-    fontSize: 10.5,
+    fontSize: 12,
     color: "#7C7C9A",
-    marginTop: 1
+    marginTop: 2
   },
   badgePill: {
     flexDirection: "row",

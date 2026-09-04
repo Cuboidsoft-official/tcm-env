@@ -348,9 +348,6 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
   const [showContinueLearning, setShowContinueLearning] = useState(false);
   const [showPopularCourses, setShowPopularCourses] = useState(false);
   const [showSearchScreen, setShowSearchScreen] = useState(false);
-  const [showChatSearch, setShowChatSearch] = useState(false);
-  const [chatCreateTrigger, setChatCreateTrigger] = useState(0);
-  const [commCreateTrigger, setCommCreateTrigger] = useState(0);
   const [selectedMentorId, setSelectedMentorId] = useState(null);
   const [activeChatUser, setActiveChatUser] = useState(null);
   const [isCommChannelOpen, setIsCommChannelOpen] = useState(false);
@@ -1030,7 +1027,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
 
   const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen);
 
-  const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || selectedCourseId || exploreCategoryKey || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard || activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community" || activeTab === "Home" || activeTab === "home" || activeTab === "Learn" || activeTab === "Profile" || activeTab === "ProfileSettings");
+  const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard || activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community" || activeTab === "Home" || activeTab === "home");
 
   return (
     <SwipeBackWrapper onBack={activeBackAction} enabled={Boolean(activeBackAction)}>
@@ -1316,9 +1313,8 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
             }
           >
             <View style={[styles.page, { width: (activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community") ? "100%" : contentWidth }]}>
-              {isFullScreenView ? null : (
+              {!targetUserProfile && (activeTab === "Community" || activeTab === "community" || activeTab === "Chats" || activeTab === "chats" || activeTab === "Doubts" || activeTab === "doubts") ? null : (
                 <Header
-                  title={activeTab}
                   user={user}
                   notifications={unreadNotifCount || home?.notifications || 0}
                   onOpenSidebar={() => setSidebarOpen(true)}
@@ -1335,23 +1331,9 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
                   isSelfProfile={activeTab === "Profile" && !targetUserProfile}
                   onNotifications={() => handleSelectDrawerItem("Notifications")}
                   onOpenWallet={() => setShowWalletScreen(true)}
-                  showBack={!!targetUserProfile || !!activeChatUser || !!activeDoubtRoom || activeTab === "ProfileSettings" || activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Learn" || activeTab === "Community" || activeTab === "community"}
-                  backLabel={targetUserProfile ? targetUserProfile.name : (activeTab === "ProfileSettings" ? "Settings" : activeTab)}
-                  onBack={() => {
-                    if (targetUserProfile) {
-                      setTargetUserProfile(null);
-                    } else if (activeChatUser) {
-                      setActiveChatUser(null);
-                    } else if (activeDoubtRoom) {
-                      setActiveDoubtRoom(null);
-                    } else if (activeTab === "ProfileSettings") {
-                      setActiveTab("Profile");
-                    } else if (activeTab !== "Home" && activeTab !== "home") {
-                      setActiveTab("Home");
-                    }
-                  }}
-                  onSearch={activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" ? () => setShowChatSearch((prev) => !prev) : null}
-                  onCreate={activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" ? () => setChatCreateTrigger(Date.now()) : (activeTab === "Community" || activeTab === "community" ? () => setCommCreateTrigger(Date.now()) : null)}
+                  showBack={!!targetUserProfile}
+                  backLabel={targetUserProfile?.name}
+                  onBack={() => setTargetUserProfile(null)}
                 />
               )}
 
@@ -1413,7 +1395,6 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
             ) : activeTab === "Community" ? (
               <CommunityScreen
                 session={session}
-                commCreateTrigger={commCreateTrigger}
                 navigation={{ goBack: () => setActiveTab("Home") }}
                 onChannelStateChange={(isOpen) => setIsCommChannelOpen(isOpen)}
                 onOpenChannelChat={(targetChannel) => setActiveChatUser(targetChannel)}
@@ -1438,9 +1419,6 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
             ) : activeTab === "Chats" || activeTab === "Doubts" ? (
               <ChatListScreen
                 session={session}
-                showSearchInput={showChatSearch}
-                onToggleSearch={() => setShowChatSearch((prev) => !prev)}
-                chatCreateTrigger={chatCreateTrigger}
                 onSelectChat={(chatUser) => {
                   setActiveChatUser(chatUser);
                 }}
@@ -1688,8 +1666,7 @@ function ZigZagFlowTcmOneLogo({ fontSize = 18, showIcon = true, subtitle = "Deco
           source={homeHeaderLogo}
           style={{
             width: logoSize,
-            height: logoSize,
-            borderRadius: Math.round(logoSize * 0.22)
+            height: logoSize
           }}
           resizeMode="contain"
         />
@@ -1709,92 +1686,55 @@ function ZigZagFlowTcmOneLogo({ fontSize = 18, showIcon = true, subtitle = "Deco
   );
 }
 
-function Header({ title, user, notifications, onOpenSidebar, onProfile, onOpenSettings, isSelfProfile, onNotifications, showBack, backLabel, onBack, onOpenWallet, onSearch, onCreate }) {
+function Header({ user, notifications, onOpenSidebar, onProfile, onOpenSettings, isSelfProfile, onNotifications, showBack, backLabel, onBack, onOpenWallet }) {
   const { theme } = useTheme();
   const iconColor = theme.isDark ? "#81C784" : colors.primary;
-  const subtextColor = theme.isDark ? "#94A3B8" : "#64748B";
 
-  const isHomePage = (!title || title === "Home" || title === "home") && !showBack;
-
-  // 1. ORIGINAL HOME PAGE HEADER (Logo with Image + Click Logo to Open Sidebar)
-  if (isHomePage) {
+  if (showBack) {
     return (
-      <View style={[styles.header, { backgroundColor: theme.bg }]}>
-        <View style={styles.brandRow}>
-          <Pressable onPress={onOpenSidebar} style={({ pressed }) => [styles.brandWrap, pressed && styles.pressed]}>
-            <ZigZagFlowTcmOneLogo logoSize={34} showIcon={true} />
-          </Pressable>
+      <View style={[styles.header, { backgroundColor: theme.bg, height: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14 }]}>
+        <Pressable onPress={onBack} hitSlop={12} style={{ width: 40, height: 40, justifyContent: "center", alignItems: "flex-start" }}>
+          <Feather name="chevron-left" size={24} color={theme.text} />
+        </Pressable>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ fontFamily: fonts.semiBold, fontSize: 16, color: theme.text }} numberOfLines={1}>
+            {title || backLabel || "Back"}
+          </Text>
         </View>
-        <View style={styles.headerActions}>
-          <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={[styles.iconButton, { backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F4F3F8" }]}>
-            <Feather name="bell" size={19} color={iconColor} />
-            {notifications ? (
-              <View style={styles.headerBadge}>
-                <Text style={styles.headerBadgeText}>{notifications > 9 ? "9+" : notifications}</Text>
-              </View>
-            ) : null}
-          </Pressable>
-          <Pressable onPress={onProfile} style={[styles.profileRing, { backgroundColor: theme.cardBg, borderColor: theme.primary }]}>
-            <Avatar name={user.name} uri={user.avatarUrl} size={28} />
-          </Pressable>
-        </View>
+        <View style={{ width: 40 }} />
       </View>
     );
   }
 
-  // 2. ALL OTHER PAGES HEADER (Clean, Sticky, White Card, Left Back Button, Centered Title, Right Action Icons)
-  const displayTitle = showBack
-    ? (backLabel || "Details")
-    : (title === "ProfileSettings" ? "Settings" : (title || "Page"));
-
-  const handleBackAction = () => {
-    if (onBack) {
-      onBack();
-    } else if (typeof window !== "undefined" && window.history && window.history.length > 1) {
-      window.history.back();
-    }
-  };
-
-  const hasRightIcons = onCreate || onSearch;
-
   return (
-    <View style={[styles.header, { backgroundColor: theme.cardBg, borderBottomColor: theme.border, position: "relative", justifyContent: "center", minHeight: 48 }]}>
-      <Pressable
-        onPress={handleBackAction}
-        style={({ pressed }) => [
-          {
-            position: "absolute",
-            left: 14,
-            top: 10,
-            zIndex: 10,
-            padding: 4,
-            flexDirection: "row",
-            alignItems: "center"
-          },
-          pressed && styles.pressed
-        ]}
-      >
-        <Feather name="chevron-left" size={24} color={theme.text} />
-      </Pressable>
-
-      <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center", justifyContent: "center" }} pointerEvents="none">
-        <Text style={[styles.screenTitle, { color: theme.text, textAlign: "center" }]}>{displayTitle}</Text>
-      </View>
-
-      {hasRightIcons ? (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 14, position: "absolute", right: 14, top: 10, zIndex: 10 }}>
-          {onCreate ? (
-            <Pressable onPress={onCreate} style={({ pressed }) => [{ padding: 4 }, pressed && styles.pressed]}>
-              <Feather name="plus" size={22} color={theme.text} />
-            </Pressable>
-          ) : null}
-          {onSearch ? (
-            <Pressable onPress={onSearch} style={({ pressed }) => [{ padding: 4 }, pressed && styles.pressed]}>
-              <Feather name="search" size={20} color={theme.text} />
-            </Pressable>
-          ) : null}
+    <View style={[styles.header, { backgroundColor: theme.bg }]}>
+      <View style={styles.brandRow}>
+        <View style={styles.brandWrap}>
+          <ZigZagFlowTcmOneLogo subtitle="Decoding The Mind" />
         </View>
-      ) : null}
+      </View>
+      <View style={styles.headerActions}>
+        <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", `${notifications} learning updates.`))} style={[styles.iconButton, { backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F4F3F8" }]}>
+          <Feather name="bell" size={19} color={iconColor} />
+          {notifications ? (
+            <View style={styles.headerBadge}>
+              <Text style={styles.headerBadgeText}>{notifications > 9 ? "9+" : notifications}</Text>
+            </View>
+          ) : null}
+        </Pressable>
+        {isSelfProfile ? (
+          <Pressable onPress={onOpenSettings} style={[styles.iconButton, { backgroundColor: theme.badgeBg }]}>
+            <Feather name="settings" size={19} color={theme.primary} />
+          </Pressable>
+        ) : (
+          <Pressable onPress={onProfile} style={[styles.profileRing, { backgroundColor: theme.cardBg, borderColor: theme.primary }]}>
+            <Avatar name={user.name} uri={user.avatarUrl} size={28} />
+          </Pressable>
+        )}
+        <Pressable onPress={onOpenSidebar} style={({ pressed }) => [styles.menuButton, { backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F4F3F8" }, pressed && styles.pressed]}>
+          <Ionicons name="grid-outline" size={20} color={iconColor} />
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -4390,51 +4330,43 @@ function CreatePostScreen({ config, draft, posting, user, uploadType, setUploadT
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
       <View style={[styles.createScreen, { backgroundColor: theme.bg }]}>
-        {/* Standardized App Header (iOS/Samsung Flagship Architecture) */}
-        <View style={[styles.header, { backgroundColor: theme.cardBg, borderBottomColor: theme.border, position: "relative", justifyContent: "center", minHeight: 48 }]}>
-          <Pressable
-            onPress={onClose}
-            style={({ pressed }) => [
-              {
-                position: "absolute",
-                left: 14,
-                top: 10,
-                zIndex: 10,
-                padding: 4,
-                flexDirection: "row",
-                alignItems: "center"
-              },
-              pressed && styles.pressed
-            ]}
-          >
-            <Feather name="chevron-left" size={24} color={theme.text} />
+        <View style={[styles.createHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
+          <Pressable hitSlop={10} onPress={onClose} style={[styles.createIconButton, { backgroundColor: theme.isDark ? "#1E263B" : "#F3F4F8" }]}>
+            <Feather name="x" size={20} color={theme.text} />
           </Pressable>
-
-          <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center", justifyContent: "center" }} pointerEvents="none">
-            <Text style={[styles.screenTitle, { color: theme.text, textAlign: "center" }]}>{config?.title || "Create Post"}</Text>
+          <View style={styles.createHeaderCopy}>
+            <Text style={[styles.createTitle, { color: theme.text }]}>New Post</Text>
           </View>
-
-          <View style={{ position: "absolute", right: 14, top: 9, zIndex: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <TouchableOpacity
+              onPress={() => {
+                if (!hasMediaPreview && !hasDocumentPreview && !draft.text.trim()) {
+                  Alert.alert("Preview Post", "Write text or attach media to preview your post.");
+                  return;
+                }
+                onPreviewMedia?.({
+                  type: uploadType === "document" ? "document" : uploadType === "video" ? "video" : "photo",
+                  kind: uploadType,
+                  title: draft.title || "Post Preview",
+                  subtitle: draft.text || "Last Class Community Post",
+                  imageUrl: previewImage || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80",
+                  videoUrl: draft.fileUri || previewImage,
+                  fileUri: draft.fileUri,
+                  fileName: draft.fileName
+                });
+              }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: theme.badgeBg || colors.badgeBg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}
+            >
+              <Feather name="eye" size={13} color={theme.primary} />
+              <Text style={{ fontSize: 11, fontWeight: "700", color: theme.primary }}>Preview</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={!canSubmit || posting}
               onPress={onSubmit}
-              style={[
-                {
-                  backgroundColor: theme.primary,
-                  paddingHorizontal: 18,
-                  paddingVertical: 7,
-                  borderRadius: 20,
-                  elevation: 2,
-                  shadowColor: theme.primary,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 4,
-                  opacity: (!canSubmit || posting) ? 0.5 : 1
-                }
-              ]}
+              style={[styles.createPublish, { backgroundColor: theme.primary }, (!canSubmit || posting) && styles.createPublishDisabled]}
             >
-              <Text style={{ color: "#FFFFFF", fontFamily: fonts.bold, fontSize: 13 }}>{posting ? "..." : "Post"}</Text>
+              <Text style={styles.createPublishText}>{posting ? "..." : "Post"}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -5440,13 +5372,6 @@ const styles = StyleSheet.create({
   brandWrap: {
     flexShrink: 1,
     minWidth: 0
-  },
-  screenTitle: {
-    fontFamily: fonts.semiBold,
-    fontSize: 19,
-    lineHeight: 23,
-    letterSpacing: -0.2,
-    color: "#181725"
   },
   brand: {
     color: colors.primaryDark,

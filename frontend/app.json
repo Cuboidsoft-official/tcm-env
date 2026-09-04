@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#261B94"
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -26,16 +26,18 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "in.thecodemunk.app",
-      "buildNumber": "2"
+      "buildNumber": "2",
+      "newArchEnabled": true
     },
     "android": {
       "package": "com.tcm.app",
       "versionCode": 2,
       "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json",
+      "newArchEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#261B94"
+        "backgroundColor": "#FFFFFF"
       }
     },
     "web": {

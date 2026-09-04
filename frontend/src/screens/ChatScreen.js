@@ -633,18 +633,7 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
       <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center", flex: 1 }}>
         {/* 1. Redesigned Responsive Header Bar */}
         <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.border }]}>
-        <Pressable
-          onPress={() => {
-            if (onClose) {
-              onClose();
-            } else if (navigation?.goBack) {
-              navigation.goBack();
-            } else if (typeof window !== "undefined" && window.history && window.history.length > 1) {
-              window.history.back();
-            }
-          }}
-          style={({ pressed }) => [styles.backBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }, pressed && styles.pressed]}
-        >
+        <Pressable onPress={onClose || (() => navigation?.goBack())} style={[styles.backBtn, { backgroundColor: theme.isDark ? "#1E263B" : "#F1F5F9" }]}>
           <Feather name="chevron-left" size={24} color={theme.primary} />
         </Pressable>
 

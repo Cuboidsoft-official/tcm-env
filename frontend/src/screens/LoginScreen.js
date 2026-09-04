@@ -109,16 +109,18 @@ export default function LoginScreen({ onLogin }) {
   }
 
   useEffect(() => {
-    if (NativeModules.RNGoogleSignin) {
-      try {
+    try {
+      if (NativeModules && NativeModules.RNGoogleSignin) {
         const { GoogleSignin } = require("@react-native-google-signin/google-signin");
-        GoogleSignin.configure({
-          webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID || "1018503930810-nuht0vf2crgh0k5e5da65f6hb4g3p7qn.apps.googleusercontent.com",
-          offlineAccess: true,
-          forceCodeForRefreshToken: true
-        });
-      } catch (e) {}
-    }
+        if (GoogleSignin && typeof GoogleSignin.configure === "function") {
+          GoogleSignin.configure({
+            webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID || "1018503930810-nuht0vf2crgh0k5e5da65f6hb4g3p7qn.apps.googleusercontent.com",
+            offlineAccess: true,
+            forceCodeForRefreshToken: true
+          });
+        }
+      }
+    } catch (e) {}
   }, []);
 
   useEffect(() => {
@@ -180,26 +182,28 @@ export default function LoginScreen({ onLogin }) {
       }
 
       // 1. Try Native Google Sign-In sheet (Android / iOS native account picker)
-      if (NativeModules.RNGoogleSignin) {
+      if (NativeModules && NativeModules.RNGoogleSignin) {
         try {
           const { GoogleSignin } = require("@react-native-google-signin/google-signin");
-          await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-          try {
-            await GoogleSignin.signOut();
-          } catch (e) {}
+          if (GoogleSignin && typeof GoogleSignin.signIn === "function") {
+            await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+            try {
+              await GoogleSignin.signOut();
+            } catch (e) {}
 
-          const userInfo = await GoogleSignin.signIn();
-          const userObj = userInfo.data?.user || userInfo.user;
-          if (userObj && userObj.email) {
-            const session = await googleLogin(
-              userObj.email,
-              userObj.name || userObj.givenName || "Google User",
-              userObj.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(userObj.name || "Google User")}&background=4285F4&color=fff`,
-              userInfo.data?.idToken || userInfo.idToken || "google_id_token",
-              role
-            );
-            onLogin(session);
-            return;
+            const userInfo = await GoogleSignin.signIn();
+            const userObj = userInfo.data?.user || userInfo.user;
+            if (userObj && userObj.email) {
+              const session = await googleLogin(
+                userObj.email,
+                userObj.name || userObj.givenName || "Google User",
+                userObj.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(userObj.name || "Google User")}&background=4285F4&color=fff`,
+                userInfo.data?.idToken || userInfo.idToken || "google_id_token",
+                role
+              );
+              onLogin(session);
+              return;
+            }
           }
         } catch (nativeErr) {
           console.log("Native GoogleSignin error/fallback:", nativeErr.message);

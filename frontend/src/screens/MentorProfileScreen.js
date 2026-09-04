@@ -168,44 +168,20 @@ export default function MentorProfileScreen({ session, user = {}, targetMentor =
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* Standardized App Header */}
-      <View style={[styles.header, { backgroundColor: theme.cardBg, borderBottomColor: theme.border, position: "relative", justifyContent: "center", minHeight: 48 }]}>
-        <Pressable
-          onPress={() => {
-            if (onClose) {
-              onClose();
-            } else if (typeof window !== "undefined" && window.history && window.history.length > 1) {
-              window.history.back();
-            }
-          }}
-          style={({ pressed }) => [
-            {
-              position: "absolute",
-              left: 14,
-              top: 10,
-              zIndex: 10,
-              padding: 4,
-              flexDirection: "row",
-              alignItems: "center"
-            },
-            pressed && styles.pressed
-          ]}
-        >
+      {/* 1. Top Header Bar */}
+      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderColor: theme.border, height: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14 }]}>
+        <Pressable onPress={onClose} hitSlop={12} style={{ width: 40, height: 40, justifyContent: "center", alignItems: "flex-start" }}>
           <Feather name="chevron-left" size={24} color={theme.text} />
         </Pressable>
-
-        <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center", justifyContent: "center" }} pointerEvents="none">
-          <Text numberOfLines={1} style={[styles.screenTitle, { color: theme.text, textAlign: "center" }]}>{data.name || "Mentor Profile"}</Text>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ fontFamily: fonts.semiBold, fontSize: 16, color: theme.text }} numberOfLines={1}>
+            Mentor Profile
+          </Text>
         </View>
-
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, position: "absolute", right: 14, top: 10, zIndex: 10 }}>
-          <Pressable onPress={() => setBookmarked((p) => !p)} style={({ pressed }) => [{ padding: 4 }, pressed && styles.pressed]}>
-            <Feather name="bookmark" size={20} color={bookmarked ? theme.primary : theme.text} fill={bookmarked ? theme.primary : "none"} />
-          </Pressable>
-        </View>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingTop: 12 }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* 2. Top Mentor Header Card */}
         <View style={[styles.mentorHeroCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.heroTopRow}>
@@ -557,23 +533,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F4F3FA",
     alignItems: "center",
     justifyContent: "center"
-  },
-  header: {
-    height: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    zIndex: 100
-  },
-  pressed: {
-    opacity: 0.7
-  },
-  screenTitle: {
-    fontSize: 19,
-    fontFamily: fonts.semiBold,
-    color: "#181725"
   },
   headerRightActions: {
     flexDirection: "row",
