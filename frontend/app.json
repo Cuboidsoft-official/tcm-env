@@ -2,6 +2,7 @@
   "expo": {
     "name": "Last Class",
     "slug": "the-code-munk",
+    "sdkVersion": "57.0.0",
     "scheme": "com.tcm.app",
     "version": "0.1.0",
     "orientation": "portrait",
