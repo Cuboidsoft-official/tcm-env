@@ -1683,7 +1683,7 @@ const homeHeaderLogo = require("../../assets/icon.png");
 function ZigZagFlowTcmOneLogo({ fontSize = 18, showIcon = true, subtitle = "Decoding The Mind", logoSize = 36 }) {
   const { theme } = useTheme();
   const lastColor = theme.isDark ? "#F8FAFC" : "#0F172A";
-  const classColor = "#EF4444";
+  const classColor = theme.isDark ? "#FFFFFF" : "#000000";
   const subtextColor = theme.isDark ? "#94A3B8" : "#64748B";
 
   return (
@@ -1700,8 +1700,8 @@ function ZigZagFlowTcmOneLogo({ fontSize = 18, showIcon = true, subtitle = "Deco
       ) : null}
       <View style={{ justifyContent: "center", alignItems: "flex-start" }}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Text style={{ fontFamily: fonts.extraBold, fontSize, lineHeight: 20, color: lastColor, letterSpacing: -0.2 }}>Last</Text>
-          <Text style={{ fontFamily: fonts.extraBold, fontSize, lineHeight: 20, color: classColor, letterSpacing: -0.2 }}>Class</Text>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize, lineHeight: 20, color: lastColor, letterSpacing: -0.2 }}>TCM </Text>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize, lineHeight: 20, color: classColor, letterSpacing: -0.2 }}>One</Text>
         </View>
         {subtitle ? (
           <Text style={{ color: subtextColor, fontFamily: fonts.medium, fontSize: 9.5, lineHeight: 12, marginTop: 1 }} numberOfLines={1}>
