@@ -991,7 +991,10 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
       return false;
     }
 
-    const backSubscription = BackHandler.addEventListener("hardwareBackPress", handleHardwareOrBrowserBack);
+    let backSubscription = null;
+    if (Platform.OS === "android") {
+      backSubscription = BackHandler.addEventListener("hardwareBackPress", handleHardwareOrBrowserBack);
+    }
 
     let handlePopState = null;
     if (Platform.OS === "web" && typeof window !== "undefined") {
@@ -1004,7 +1007,9 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
     }
 
     return () => {
-      backSubscription.remove();
+      if (backSubscription) {
+        backSubscription.remove();
+      }
       if (Platform.OS === "web" && typeof window !== "undefined" && handlePopState) {
         window.removeEventListener("popstate", handlePopState);
       }
