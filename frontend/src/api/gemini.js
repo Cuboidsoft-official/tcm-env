@@ -724,12 +724,7 @@ System Knowledge about TCM One Academy App Available Courses & Pricing:
 - Python & Data Structures Algorithms (DSA): ₹2,999 (2 Months Live Batch)
 - NEET & JEE Rank Booster Exam Prep: ₹3,499 (3 Months Live Batch)
 
-System Knowledge about TCM One Premium Features & Subscriptions Available in App:
-- TCM One Verified Pro Membership: ₹499/month or ₹2,999/year (Includes all Pro features below)
-- Featured Profile Service: Verified profile badge & recruiter highlight (Included in Pro)
-- Real Domain Project Service: Live domain hosting, production project & certificate (Included in Pro / ₹1,499 standalone)
-- ATS Resume Builder: AI ATS resume creation & PDF export (Included in Pro / ₹299 standalone)
-- Cloud Lab Access: On-demand cloud IT coding lab environment (Included in Pro / ₹499 standalone)
+IMPORTANT: On TCM One, users only purchase individual live courses. DO NOT recommend any premium subscriptions or Pro membership packages.
 
 Chat History:
 ${historyText}

@@ -144,77 +144,7 @@ export default function SidebarDrawer({
                 active={activeItem === "Home"}
                 onPress={() => handleNavigate("Home")}
               />
-              {/* Premium Features Collapsible Header */}
-              <Pressable
-                onPress={() => setPremiumExpanded(!premiumExpanded)}
-                style={({ pressed }) => [
-                  styles.menuItem,
-                  (activeItem === "Premium Features" || activeItem === "Go Premium") && { backgroundColor: theme.badgeBg },
-                  pressed && styles.pressed
-                ]}
-              >
-                <View style={styles.menuLeft}>
-                  <View style={styles.iconWrap}>
-                    <FontAwesome5 name="crown" size={15} color="#FFB800" />
-                  </View>
-                  <Text style={[styles.menuLabel, { color: theme.text, fontFamily: fonts.bold }]}>
-                    Premium Features
-                  </Text>
-                </View>
 
-                <View style={styles.menuRight}>
-                  <View style={{ backgroundColor: "#FFB80022", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: "#D97706" }}>PRO</Text>
-                  </View>
-                  <Feather name={premiumExpanded ? "chevron-up" : "chevron-down"} size={16} color={theme.primary} />
-                </View>
-              </Pressable>
-
-              {/* Nested Expandable Submenu Items */}
-              {premiumExpanded ? (
-                <View style={{ marginLeft: 18, paddingLeft: 10, borderLeftWidth: 2, borderLeftColor: theme.badgeBorder || (theme.isDark ? "#334155" : "#E2E8F0"), marginTop: 2, marginBottom: 6 }}>
-                  <SubMenuItem
-                    icon={<Ionicons name="sparkles" size={14} color="#FFB800" />}
-                    label="Feature Profile"
-                    badge="Verified"
-                    onPress={() => {
-                      onClose();
-                      if (onOpenGetVerified) onOpenGetVerified();
-                      else handleNavigate("Feature Profile");
-                    }}
-                  />
-                  <SubMenuItem
-                    icon={<Feather name="code" size={14} color={theme.primary} />}
-                    label="Get A Real Domain Project"
-                    badge="Live"
-                    onPress={() => {
-                      onClose();
-                      if (onOpenGetVerified) onOpenGetVerified();
-                      else handleNavigate("Real Domain Project");
-                    }}
-                  />
-                  <SubMenuItem
-                    icon={<MaterialCommunityIcons name="file-account-outline" size={15} color="#10B981" />}
-                    label="Build Your ATS Resume"
-                    badge="AI"
-                    onPress={() => {
-                      onClose();
-                      if (onOpenGetVerified) onOpenGetVerified();
-                      else handleNavigate("ATS Resume");
-                    }}
-                  />
-                  <SubMenuItem
-                    icon={<Feather name="cpu" size={14} color="#6366F1" />}
-                    label="Take A Lab Access"
-                    badge="Cloud"
-                    onPress={() => {
-                      onClose();
-                      if (onOpenGetVerified) onOpenGetVerified();
-                      else handleNavigate("Lab Access");
-                    }}
-                  />
-                </View>
-              ) : null}
               <MenuItem
                 icon={<Feather name="download" size={18} color={theme.primary} />}
                 label="Install TCM One App (PWA)"
@@ -286,31 +216,7 @@ export default function SidebarDrawer({
               />
             </View>
 
-            {/* 6. Go Premium Banner */}
-            <Pressable
-              onPress={() => {
-                onClose();
-                if (onOpenGetVerified) {
-                  onOpenGetVerified();
-                } else {
-                  handleNavigate("Go Premium");
-                }
-              }}
-              style={({ pressed }) => [
-                styles.premiumCard,
-                { backgroundColor: theme.badgeBg, borderColor: activeItem === "Go Premium" ? theme.primary : theme.badgeBorder || theme.border },
-                pressed && styles.pressed
-              ]}
-            >
-              <View style={[styles.premiumIconWrap, { backgroundColor: theme.primary }]}>
-                <FontAwesome5 name="crown" size={14} color="#FFFFFF" />
-              </View>
-              <View style={styles.premiumTextWrap}>
-                <Text style={[styles.premiumTitle, { color: theme.badgeText || theme.primary }]}>Get TCM One Verified Pro</Text>
-                <Text style={[styles.premiumSub, { color: theme.subtext }]}>Verified Badge, Real Projects & ATS Resume from ₹29/mo</Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={theme.primary} />
-            </Pressable>
+
 
 
             {/* 7. Logout Button */}

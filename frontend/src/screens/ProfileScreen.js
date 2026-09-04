@@ -422,24 +422,11 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                 ? Boolean(profileUser.verified && (profileUser.isPremium || profileUser.isPro || profileUser.hasVerifiedSubscription))
                 : Boolean(profileUser.verified);
               return isVerifiedBadgeActive ? (
-                <TouchableOpacity
-                  onPress={() => setGetVerifiedModalOpen(true)}
-                  activeOpacity={0.85}
-                  style={[styles.verifiedPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}
-                >
+                <View style={[styles.verifiedPill, { backgroundColor: theme.badgeBg, borderColor: theme.border }]}>
                   <MaterialCommunityIcons name="check-decagram" size={13} color={theme.primary} />
                   <Text style={[styles.verifiedPillText, { color: theme.primary }]}>Verified</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  onPress={() => setGetVerifiedModalOpen(true)}
-                  activeOpacity={0.85}
-                  style={[styles.getVerifiedPill, { backgroundColor: theme.primary }]}
-                >
-                  <Ionicons name="sparkles" size={11} color="#FFFFFF" />
-                  <Text style={styles.getVerifiedPillText}>Get Verified</Text>
-                </TouchableOpacity>
-              );
+                </View>
+              ) : null;
             })()}
           </View>
 
