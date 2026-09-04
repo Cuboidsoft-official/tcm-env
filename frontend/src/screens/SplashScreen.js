@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { StyleSheet, Text, View, Image, Animated, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { fonts } from "../constants/fonts";
 
@@ -11,55 +11,76 @@ export default function SplashScreen() {
   const { theme } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.92)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 700,
+        duration: 800,
         useNativeDriver: true
       }),
       Animated.spring(scaleAnim, {
         toValue: 1,
-        friction: 6,
-        tension: 40,
+        friction: 7,
+        tension: 35,
         useNativeDriver: true
       })
     ]).start();
+
+    // Soft pulse for AI badge icon
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.15,
+          duration: 1000,
+          useNativeDriver: true
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true
+        })
+      ])
+    ).start();
   }, []);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
       <Animated.View style={[styles.centerContainer, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
         
-        {/* App Logo with Glowing Ring */}
+        {/* App Logo with Minimalist Ring */}
         <View style={styles.logoRingWrapper}>
-          <View style={[styles.logoOuterRing, { borderColor: theme.isDark ? "rgba(16, 185, 129, 0.25)" : "rgba(91, 60, 245, 0.15)" }]} />
+          <View style={[styles.logoOuterRing, { borderColor: theme.isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)" }]} />
           <Image source={logoImg} style={styles.logoImage} resizeMode="contain" />
         </View>
 
-        {/* Indian Flag Tricolor Brand Title */}
+        {/* Crisp Solid Brand Title */}
         <View style={styles.brandTitleRow}>
-          <Text style={[styles.brandLetter, { color: "#FF9933" }]}>T</Text>
-          <Text style={[styles.brandLetter, { color: theme.isDark ? "#FFFFFF" : "#000080" }]}>C</Text>
-          <Text style={[styles.brandLetter, { color: "#138808" }]}>M</Text>
-          <Text style={[styles.brandLetter, { color: theme.text }]}> </Text>
-          <Text style={[styles.brandLetter, { color: "#FF9933" }]}>O</Text>
-          <Text style={[styles.brandLetter, { color: theme.isDark ? "#FFFFFF" : theme.primary }]}>n</Text>
-          <Text style={[styles.brandLetter, { color: "#138808" }]}>e</Text>
+          <Text style={[styles.brandTitle, { color: theme.text }]}>TCM </Text>
+          <Text style={[styles.brandTitleAccent, { color: theme.isDark ? "#FFFFFF" : "#000000" }]}>One</Text>
         </View>
 
-        {/* Subtitle */}
-        <Text style={[styles.subTitle, { color: theme.subtext }]}>Talent & Career Mission</Text>
-        
-        {/* Tagline */}
-        <Text style={[styles.tagline, { color: theme.text }]}>
-          Learn. Build. Achieve.{"\n"}Your <Text style={[styles.futureHighlight, { color: theme.primary }]}>Future</Text> Starts Here.
-        </Text>
+        {/* Subtitle Divider Row */}
+        <View style={styles.subtitleRow}>
+          <View style={[styles.accentLine, { backgroundColor: theme.isDark ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.2)" }]} />
+          <Text style={[styles.subTitle, { color: theme.subtext }]}>Decoding The Mind</Text>
+          <View style={[styles.accentLine, { backgroundColor: theme.isDark ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.2)" }]} />
+        </View>
+
+        {/* Lappy AI Badge */}
+        <View style={[styles.aiBadge, { backgroundColor: theme.isDark ? "#18181B" : "#F4F4F5", borderColor: theme.border }]}>
+          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <Ionicons name="sparkles" size={14} color={theme.isDark ? "#E4E4E7" : "#18181B"} />
+          </Animated.View>
+          <Text style={[styles.aiBadgeText, { color: theme.text }]}>
+            Powered by <Text style={styles.aiBadgeHighlight}>Lappy AI</Text> & Mentors
+          </Text>
+        </View>
 
         {/* Slogan Pill Card */}
         <View style={[styles.sloganCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          <MaterialCommunityIcons name="shield-check-outline" size={15} color={theme.primary} style={{ marginRight: 6 }} />
+          <MaterialCommunityIcons name="shield-check" size={15} color={theme.text} style={{ marginRight: 6 }} />
           <Text style={[styles.sloganText, { color: theme.text }]} numberOfLines={1}>
             "Hum wada wahi karte hain jo hum nibha paayein."
           </Text>
@@ -67,8 +88,8 @@ export default function SplashScreen() {
 
         {/* Sleek Loader Indicator */}
         <View style={styles.loaderWrap}>
-          <ActivityIndicator size="small" color={theme.primary} />
-          <Text style={[styles.loadingText, { color: theme.subtext }]}>Launching AI Workspace & Mentors...</Text>
+          <ActivityIndicator size="small" color={theme.text} />
+          <Text style={[styles.loadingText, { color: theme.subtext }]}>Launching AI Workspace...</Text>
         </View>
 
       </Animated.View>
@@ -94,94 +115,116 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingVertical: 16
   },
   logoRingWrapper: {
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16
+    marginBottom: 20
   },
   logoOuterRing: {
     position: "absolute",
-    width: 92,
-    height: 92,
-    borderRadius: 28,
-    borderWidth: 2
+    width: 100,
+    height: 100,
+    borderRadius: 30,
+    borderWidth: 1.5
   },
   logoImage: {
-    width: 76,
-    height: 76,
-    borderRadius: 20
+    width: 82,
+    height: 82,
+    borderRadius: 24
   },
   brandTitleRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "baseline",
     marginBottom: 4
   },
-  brandLetter: {
+  brandTitle: {
     fontFamily: fonts.bold,
-    fontSize: 30,
+    fontSize: 34,
     letterSpacing: -0.5
+  },
+  brandTitleAccent: {
+    fontFamily: fonts.bold,
+    fontSize: 34,
+    fontWeight: "900",
+    letterSpacing: -0.5
+  },
+  subtitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 20
+  },
+  accentLine: {
+    height: 1,
+    width: 18
   },
   subTitle: {
     fontFamily: fonts.semiBold,
-    fontSize: 11,
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    marginBottom: 12
+    fontSize: 11.5,
+    letterSpacing: 1.8,
+    textTransform: "uppercase"
   },
-  tagline: {
-    fontFamily: fonts.medium,
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: "center",
+  aiBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
     marginBottom: 16
   },
-  futureHighlight: {
+  aiBadgeText: {
+    fontFamily: fonts.medium,
+    fontSize: 12
+  },
+  aiBadgeHighlight: {
     fontFamily: fonts.bold
   },
   sloganCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 20,
     borderWidth: 1,
-    marginBottom: 20,
-    maxWidth: "94%",
+    marginBottom: 24,
+    maxWidth: "96%",
     alignSelf: "center"
   },
   sloganText: {
     fontFamily: fonts.semiBold,
-    fontSize: 11.5,
+    fontSize: 12,
     textAlign: "center"
   },
   loaderWrap: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginTop: 4
+    gap: 10,
+    marginTop: 6
   },
   loadingText: {
     fontFamily: fonts.medium,
-    fontSize: 11.5
+    fontSize: 12
   },
   footerBadgeRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 16,
+    paddingBottom: 20,
     paddingTop: 8,
     gap: 6
   },
   indiaFlagEmoji: {
-    fontSize: 13
+    fontSize: 14
   },
   footerBadgeText: {
     fontFamily: fonts.medium,
-    fontSize: 10.5
+    fontSize: 11
   }
 });
