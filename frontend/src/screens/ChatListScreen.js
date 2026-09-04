@@ -21,7 +21,7 @@ import { shadow } from "../constants/theme";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
-export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoom, onOpenSidebar, onNotifications }) {
+export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoom, onOpenSidebar, onNotifications, onBack }) {
   const [activeTab, setActiveTab] = useState("chats"); // "chats" | "doubts"
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchInput, setShowSearchInput] = useState(false);
@@ -235,12 +235,16 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={{ width: "100%", maxWidth: 1200, alignSelf: "center", flex: 1, paddingHorizontal: 14 }}>
         {/* Native App Messages Header */}
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 0, marginBottom: 14, borderBottomWidth: 1, borderBottomColor: theme.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)" }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: theme.isDark ? "#312E81" : "#EEF2FF", alignItems: "center", justifyContent: "center" }}>
-            <Feather name="message-square" size={17} color={theme.primary} />
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 48, borderBottomWidth: 1, borderBottomColor: theme.border || (theme.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"), marginBottom: 14 }}>
+          <Pressable onPress={onBack || onOpenSidebar} hitSlop={12} style={{ width: 40, height: 40, justifyContent: "center", alignItems: "flex-start" }}>
+            <Feather name="chevron-left" size={24} color={theme.text} />
+          </Pressable>
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ fontFamily: fonts.semiBold, fontSize: 16, color: theme.text }} numberOfLines={1}>
+              Chats
+            </Text>
           </View>
-          <Text style={{ fontSize: 19, fontFamily: fonts.bold, color: theme.text }}>Chats</Text>
+          <View style={{ width: 40 }} />
         </View>
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>

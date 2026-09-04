@@ -50,7 +50,7 @@ import {
   uploadFile
 } from "../api/client";
 
-export default function CommunityScreen({ navigation, route, session, onChannelStateChange, onOpenChannelChat, onOpenSidebar, onNotifications }) {
+export default function CommunityScreen({ navigation, route, session, onChannelStateChange, onOpenChannelChat, onOpenSidebar, onNotifications, onBack }) {
   const { theme } = useTheme();
   const user = session?.user || {};
   const currentUserIdStr = String(session?.user?.id || session?.user?._id || user?.id || user?._id || "");
@@ -671,13 +671,17 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
       <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} showsVerticalScrollIndicator={false}>
         <View style={{ width: "100%", maxWidth: 1200, alignSelf: "center", flex: 1, paddingHorizontal: 14 }}>
           {/* Native App Community Screen Header */}
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 0, paddingTop: 10, paddingBottom: 10, marginBottom: 14, borderBottomWidth: 1, borderBottomColor: theme.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)" }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: theme.isDark ? "#064E3B" : "#EAF7EC", alignItems: "center", justifyContent: "center" }}>
-                <Feather name="users" size={18} color={theme.isDark ? "#34D399" : "#2E7D32"} />
-              </View>
-              <Text style={{ fontSize: 19, fontFamily: fonts.bold, color: theme.text }}>Community</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 48, borderBottomWidth: 1, borderBottomColor: theme.border || (theme.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"), marginBottom: 14 }}>
+            <Pressable onPress={onBack || onOpenSidebar} hitSlop={12} style={{ width: 40, height: 40, justifyContent: "center", alignItems: "flex-start" }}>
+              <Feather name="chevron-left" size={24} color={theme.text} />
+            </Pressable>
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ fontFamily: fonts.semiBold, fontSize: 16, color: theme.text }} numberOfLines={1}>
+                Community
+              </Text>
             </View>
+            <View style={{ width: 40 }} />
+          </View>
 
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <Pressable onPress={onNotifications || (() => Alert.alert("Notifications", "You have community updates."))} style={({ pressed }) => [{ width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9", borderWidth: 1, borderColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0" }, pressed && { opacity: 0.75 }]}>

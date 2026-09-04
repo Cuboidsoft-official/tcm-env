@@ -601,13 +601,17 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: activeAppTheme.bg }]} showsVerticalScrollIndicator={false}>
-      {/* Top Inline Header Row */}
-      <View style={styles.topBackHeader}>
-        <TouchableOpacity onPress={onBack} activeOpacity={0.8} style={[styles.inlineBackRow, { backgroundColor: activeAppTheme.badgeBg, borderColor: activeAppTheme.border }]}>
-          <Feather name="arrow-left" size={16} color={activeAppTheme.primary} />
-          <Text style={[styles.inlineBackText, { color: activeAppTheme.primary }]}>Back to Profile</Text>
+      {/* Top Inline Header Row with left history back icon and dead-centered title */}
+      <View style={{ backgroundColor: activeAppTheme.cardBg, borderBottomWidth: 1, borderBottomColor: activeAppTheme.border, height: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, marginBottom: 14 }}>
+        <TouchableOpacity onPress={onBack} activeOpacity={0.8} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ width: 40, height: 40, justifyContent: "center", alignItems: "flex-start" }}>
+          <Feather name="chevron-left" size={24} color={activeAppTheme.text} />
         </TouchableOpacity>
-        <Text style={[styles.topHeaderTitle, { color: activeAppTheme.text }]}>Account Settings</Text>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ fontFamily: fonts.semiBold, fontSize: 16, color: activeAppTheme.text }} numberOfLines={1}>
+            Account Settings
+          </Text>
+        </View>
+        <View style={{ width: 40 }} />
       </View>
 
       {/* 1. User Overview Card */}

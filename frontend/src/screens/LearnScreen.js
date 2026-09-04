@@ -122,7 +122,7 @@ function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694
   return url;
 }
 
-export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory, onOpenDiscoverPartners }) {
+export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory, onOpenDiscoverPartners, onBack }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [allMentorsModalVisible, setAllMentorsModalVisible] = useState(false);
@@ -138,13 +138,13 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 
   const [popularCourses, setPopularCourses] = useState(initialPopular);
   const [aiExamModalVisible, setAiExamModalVisible] = useState(false);
-  const [continueLearningList, setContinueLearningList] = useState(
-    (safeLearn.continueLearning && safeLearn.continueLearning.length) ? safeLearn.continueLearning : []
-  );
+  const [continueLearningList, setContinueLearningList] = useState([]);
 
   // Dynamic Auto-Generated Hero Banners (Exactly 4 Slides)
   const heroBanners = useMemo(() => {
-    if (safeLearn.heroBanners && safeLearn.heroBanners.length >= 4) return safeLearn.heroBanners.slice(0, 4);
+    if (safeLearn.heroBanners && Array.isArray(safeLearn.heroBanners) && safeLearn.heroBanners.length > 0) {
+      return safeLearn.heroBanners;
+    }
 
     const generated = [];
     const sourceCourses = Array.isArray(popularCourses) && popularCourses.length > 0 ? popularCourses : [];
@@ -185,12 +185,8 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
       setActiveBannerIndex((prevIndex) => {
         const nextIndex = (prevIndex + 1) % heroBanners.length;
         if (bannerScrollRef.current) {
-          try {
-            bannerScrollRef.current.scrollTo({
-              x: nextIndex * (width - 32),
-              animated: true
-            });
-          } catch (e) {}
+          const bannerWidth = Dimensions.get("window").width - 32;
+          bannerScrollRef.current.scrollTo({ x: nextIndex * bannerWidth, animated: true });
         }
         return nextIndex;
       });
@@ -264,16 +260,16 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
     setShowPaymentModal(true);
   }
 
-  function handlePaymentComplete(course) {
-    if (!course) return;
+  function handleEnrollSuccess(enrolledCourse) {
+    if (!enrolledCourse) return;
     setContinueLearningList((prev) => {
-      const exists = prev.some((c) => c.id === course.id);
+      const exists = prev.some((c) => c.id === enrolledCourse.id);
       if (exists) return prev;
       return [
         {
-          id: course.id || `course_${Date.now()}`,
-          title: course.title,
-          subtitle: `Enrolled • ${course.category || "Last Class Course"}`,
+          id: enrolledCourse.id || `course_${Date.now()}`,
+          title: enrolledCourse.title,
+          subtitle: `Enrolled • ${enrolledCourse.category || "Last Class Course"}`,
           progress: 5,
           icon: "book-open",
           iconColor: "#0A6836",
@@ -301,6 +297,19 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      {/* Top Header Bar with left history back icon and dead-centered title */}
+      <View style={{ backgroundColor: theme.cardBg, borderBottomWidth: 1, borderBottomColor: theme.border, height: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14 }}>
+        <Pressable onPress={onBack || onOpenSidebar} hitSlop={12} style={{ width: 40, height: 40, justifyContent: "center", alignItems: "flex-start" }}>
+          <Feather name="chevron-left" size={24} color={theme.text} />
+        </Pressable>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ fontFamily: fonts.semiBold, fontSize: 16, color: theme.text }} numberOfLines={1}>
+            Learn
+          </Text>
+        </View>
+        <View style={{ width: 40 }} />
+      </View>
+
       {/* 1. Hero Sliders Carousel */}
       {heroBanners.length > 0 ? (
         <View style={styles.bannerContainer}>
