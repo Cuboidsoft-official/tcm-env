@@ -16,7 +16,7 @@
     "seed": "npm run seed -w backend"
   },
   "devDependencies": {
-    "react": "19.1.0"
+    "react": "19.2.3"
   },
   "dependencies": {
     "expo-crypto": "15.0.9"
