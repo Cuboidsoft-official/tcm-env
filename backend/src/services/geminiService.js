@@ -2,29 +2,27 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY || ["gsk_", "hM85ICZwGCPpXgcNIFj0W
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "AQ.Ab8RN6Ipj1uRaigDXlfQnUpAgHP1MldOR1zte9lZn5WBqZYe9A";
 
 const GROQ_MODELS = [
-  "groq/compound",
-  "openai/gpt-oss-20b",
   "groq/compound-mini",
-  "qwen/qwen3.8-27b",
-  "openai/gpt-oss-120b"
+  "groq/compound",
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b",
+  "qwen/qwen3.8-27b"
 ];
 
 const GEMINI_MODELS = [
-  "gemini-1.5-flash",
-  "gemini-1.5-pro",
   "gemini-2.0-flash",
-  "gemini-2.0-flash-lite",
-  "gemini-2.5-pro"
+  "gemini-1.5-flash",
+  "gemini-1.5-pro"
 ];
 
 export async function askGeminiAi(prompt, systemInstruction = "") {
   const cleanPrompt = (prompt || "").trim();
   if (!cleanPrompt) return generateSmartAcademicFallback("Explain this doubt");
 
-  const defaultSystemMsg = "You are Oveta AI Tutor, a distinguished senior academic and technical mentor at LastClass Academy. Provide a comprehensive, clear, step-by-step academic answer. Use clean markdown headers, lists, and code blocks.";
+  const defaultSystemMsg = "You are Last Class AI Tutor, a distinguished senior academic and technical mentor at Last Class Academy. Provide a comprehensive, clear, step-by-step academic answer. Use clean markdown headers, lists, and code blocks.";
   const sysMsg = systemInstruction || defaultSystemMsg;
 
-  // 1. Try Groq API (Llama 3.3 70B & fast inference models)
+  // 1. Try Groq API (Llama / Compound / GPT OSS models)
   if (GROQ_API_KEY) {
     for (const modelName of GROQ_MODELS) {
       try {
@@ -36,7 +34,7 @@ export async function askGeminiAi(prompt, systemInstruction = "") {
             { role: "user", content: cleanPrompt }
           ],
           temperature: 0.6,
-          max_tokens: 2500
+          max_tokens: 1200
         };
 
         const response = await fetch(url, {
