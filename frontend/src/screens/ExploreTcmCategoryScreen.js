@@ -248,17 +248,35 @@ export default function ExploreTcmCategoryScreen({ session, categoryKey = "infor
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* 1. Top Header Bar */}
-      <View style={[styles.topHeader, { backgroundColor: theme.cardBg, borderColor: theme.border, height: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14 }]}>
-        <Pressable onPress={onBack} hitSlop={12} style={{ width: 40, height: 40, justifyContent: "center", alignItems: "flex-start" }}>
+      {/* Standardized App Header */}
+      <View style={[styles.header, { backgroundColor: theme.cardBg, borderBottomColor: theme.border, position: "relative", justifyContent: "center", minHeight: 48 }]}>
+        <Pressable
+          onPress={() => {
+            if (onBack) {
+              onBack();
+            } else if (typeof window !== "undefined" && window.history && window.history.length > 1) {
+              window.history.back();
+            }
+          }}
+          style={({ pressed }) => [
+            {
+              position: "absolute",
+              left: 14,
+              top: 10,
+              zIndex: 10,
+              padding: 4,
+              flexDirection: "row",
+              alignItems: "center"
+            },
+            pressed && styles.pressed
+          ]}
+        >
           <Feather name="chevron-left" size={24} color={theme.text} />
         </Pressable>
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontFamily: fonts.semiBold, fontSize: 16, color: theme.text }} numberOfLines={1}>
-            {cat.title}
-          </Text>
+
+        <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center", justifyContent: "center" }} pointerEvents="none">
+          <Text numberOfLines={1} style={[styles.screenTitle, { color: theme.text, textAlign: "center" }]}>{cat.title}</Text>
         </View>
-        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -423,6 +441,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0
   },
 
+  header: {
+    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    zIndex: 100
+  },
+  pressed: {
+    opacity: 0.7
+  },
+  screenTitle: {
+    fontSize: 19,
+    fontFamily: fonts.semiBold,
+    color: "#181725"
+  },
   topHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -511,7 +546,12 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingBottom: 100
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 100,
+    maxWidth: 1200,
+    width: "100%",
+    alignSelf: "center"
   },
 
   // Hero Carousel Banner (Reused LearnScreen Design System)
@@ -519,7 +559,7 @@ const styles = StyleSheet.create({
     marginBottom: 18
   },
   bannerCard: {
-    width: width - 40,
+    width: Math.min(width - 28, 560),
     borderRadius: 22,
     padding: 18,
     flexDirection: "row",
