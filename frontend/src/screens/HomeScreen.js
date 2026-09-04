@@ -1094,6 +1094,11 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
                   setActiveDoubtRoom(null);
                   handleSelectUser(typeof mId === "object" ? mId : { id: mId || "m1", name: "Rahul Sharma", role: "Mentor" });
                 }}
+                onOpenMentorChat={(mentorObj, prefilledMsg) => {
+                  setActiveDoubtRoom(null);
+                  const targetUserObj = typeof mentorObj === "object" ? { ...mentorObj, initialMessage: prefilledMsg } : { id: mentorObj || "m1", name: "Rahul Sharma", role: "Senior Mentor", initialMessage: prefilledMsg };
+                  setActiveChatUser(targetUserObj);
+                }}
               />
             ) : activeChatUser ? (
               <ChatScreen

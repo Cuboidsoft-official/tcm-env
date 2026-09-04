@@ -112,7 +112,7 @@ function dedupeMessages(list) {
 
 import ChatDetailsScreen from "./ChatDetailsScreen";
 
-export default function ChatScreen({ session, user = {}, targetUser: initialTargetUser, targetUserId = "m1", onClose, onDeleteChannel, onOpenUserProfile }) {
+export default function ChatScreen({ session, user = {}, targetUser: initialTargetUser, targetUserId = "m1", initialMessage = "", onClose, onDeleteChannel, onOpenUserProfile }) {
   const insets = useSafeAreaInsets();
   const [targetUser, setTargetUser] = useState(initialTargetUser || null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -154,7 +154,14 @@ export default function ChatScreen({ session, user = {}, targetUser: initialTarg
     !isChannelChat ? isUserMentor : (isChannelOwner || userRole.includes("admin") || !session?.token)
   );
   const [messages, setMessages] = useState([]);
-  const [inputText, setInputText] = useState("");
+  const [inputText, setInputText] = useState(initialMessage || initialTargetUser?.initialMessage || "");
+
+  useEffect(() => {
+    const prefill = initialMessage || initialTargetUser?.initialMessage;
+    if (prefill) {
+      setInputText(prefill);
+    }
+  }, [initialMessage, initialTargetUser]);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [likedMessageIds, setLikedMessageIds] = useState(new Set());
