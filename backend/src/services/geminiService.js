@@ -19,7 +19,14 @@ export async function askGeminiAi(prompt, systemInstruction = "") {
   const cleanPrompt = (prompt || "").trim();
   if (!cleanPrompt) return generateSmartAcademicFallback("Explain this doubt");
 
-  const defaultSystemMsg = "You are TCM One AI Tutor, a distinguished senior academic and technical mentor at TCM One Academy. Provide a comprehensive, clear, step-by-step academic answer. Use clean markdown headers, lists, and code blocks.";
+  const defaultSystemMsg = `You are Lappy AI (TCM One Lappy AI 🤖), a friendly, highly intelligent expert academic and coding tutor at TCM One Academy.
+
+INSTRUCTIONS FOR LAPPY AI:
+1. Identify yourself as Lappy AI if asked.
+2. Adapt to the student's language naturally (Hinglish/Hindi/English). If the student asks in Hinglish (e.g. "mujhe batao ki html ka code likh kar", "Python smjhao", "kaise kare"), answer in clear, friendly Hinglish with code & bullet points!
+3. DO NOT use rigid robotic headings like "Executive Concept Overview" or "Step 1 (Core Fundamentals)".
+4. Give a direct, easy-to-understand, engaging explanation with real-world analogies, code examples with comments, and key tips.
+5. Keep formatting clean using bold headings, code blocks (\`\`\`html, \`\`\`js, etc.), and bullet points.`;
   const sysMsg = systemInstruction || defaultSystemMsg;
 
   // 1. Try Groq API (Llama / Compound / GPT OSS models)
@@ -34,7 +41,7 @@ export async function askGeminiAi(prompt, systemInstruction = "") {
             { role: "user", content: cleanPrompt }
           ],
           temperature: 0.6,
-          max_tokens: 1200
+          max_tokens: 1500
         };
 
         const response = await fetch(url, {
@@ -103,128 +110,90 @@ export function generateSmartAcademicFallback(query) {
   const text = (query || "").toLowerCase().trim();
   const rawTopic = query.replace(/(sir|bhai|mujhe|tell me|explain|what is|how to|about|ke bare me|batao|bataye|\?)/gi, '').trim() || 'Programming & Academic Doubt';
 
-  if (text.includes("python")) {
-    return `🐍 **Python Programming & Execution Architecture**
+  if (text.includes("html")) {
+    return `🌐 **HTML Code & Explanation by Lappy AI**
 
-1. **Core Concept Overview**:
-   Python is a high-level, interpreted programming language renowned for its elegant syntax, dynamic typing, and beginner-to-advanced versatility.
+HTML (HyperText Markup Language) web pages ka basic structure banane ke liye use hota hai.
 
-2. **Key Capabilities & Highlights**:
-   • **Readable Syntax**: Clean, human-like structure using indentation instead of curly braces.
-   • **Multi-Paradigm Support**: Seamlessly combines Object-Oriented, Functional, and Procedural programming paradigms.
-   • **PVM Execution Loop**: Source code (\`.py\`) compiles into bytecode (\`.pyc\`), which is executed line-by-line by the **Python Virtual Machine (PVM)**.
-   • **Extensive Ecosystem**: Powerhouse for Web Backend (Django, FastAPI), Data Analysis (Pandas, NumPy), Artificial Intelligence (PyTorch, TensorFlow), and Automation.
-
-3. **Practical Code Example**:
-\`\`\`python
-# Example: Student Grade & Performance Evaluator
-def evaluate_student(name, score):
-    status = "Distinction" if score >= 80 else ("Pass" if score >= 40 else "Needs Improvement")
-    return f"Student {name}: {score}/100 -> Grade: {status}"
-
-# Execution
-print(evaluate_student("Aman", 85))
+### 📝 Basic HTML Code Example:
+\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lappy AI Web Page</title>
+</head>
+<body>
+    <h1>Welcome to TCM One Lappy AI 🚀</h1>
+    <p>Yeh simple HTML structure hai.</p>
+    <button onclick="alert('Hello from Lappy AI!')">Click Me</button>
+</body>
+</html>
 \`\`\`
 
-4. **Recommended Next Steps**:
-   Master fundamental data structures (Lists, Dictionaries, Sets), practice writing modular functions, and explore libraries related to your specialization (Web Dev or AI/Data Science).`;
+### 🎯 Key HTML Tags:
+- \`<html>\`: Root element of HTML document.
+- \`<head>\`: Page title aur metadata hold karta hai.
+- \`<body>\`: Visible content (headings, paragraphs, buttons) show karta hai.
+- \`<h1>\` to \`<h6>\`: Headings ke liye.
+- \`<p>\`: Paragraph text ke liye.
+
+🚀 **Tip**: Save file as \`index.html\` aur Chrome/Edge browser me double-click karke run karo!`;
+  }
+
+  if (text.includes("python")) {
+    return `🐍 **Python Code & Explanation by Lappy AI**
+
+Python ek simple, powerful aur high-level programming language hai!
+
+### 📝 Python Code Example:
+\`\`\`python
+# Simple Python Program
+def greet(name):
+    return f"Hello {name}, welcome to Lappy AI Learning!"
+
+print(greet("Student"))
+\`\`\`
+
+🎯 **Tip**: Variables aur functions se start karo, phr loops & data structures seekho!`;
   }
 
   if (text.includes("django")) {
-    return `🎓 **Python & Django MVT Architecture Overview**
+    return `🎓 **Django Overview by Lappy AI**
 
-1. **Architecture Mechanics (MVT Pattern)**:
-   - **Model (\`models.py\`)**: Maps Python classes directly to relational database schemas via Django ORM.
-   - **View (\`views.py\`)**: Implements business logic, evaluates authentication, processes queries, and returns JSON/HTML responses.
-   - **Template (\`templates/\`)**: Renders the frontend presentation layer.
+Django ek Python web framework hai jo MVT (Model, View, Template) architecture follow karta hai.
 
-2. **Production-Ready View Pattern**:
 \`\`\`python
 from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
 
-@require_http_methods(["GET"])
-def get_user_dashboard(request):
-    try:
-        data = {"status": "success", "message": "Welcome to TCM Academy", "active_courses": 4}
-        return JsonResponse(data, status=200)
-    except Exception as err:
-        return JsonResponse({"error": str(err)}, status=500)
-\`\`\`
-
-3. **Key Best Practices**:
-   Keep view functions light by isolating core business logic inside modular service layers, and always load credentials via environment variables.`;
+def home_view(request):
+    return JsonResponse({"message": "Hello from Lappy AI and Django!"})
+\`\`\``;
   }
 
   if (text.includes("react") || text.includes("javascript") || text.includes("js")) {
-    return `⚡ **Modern Web Development: React & JavaScript Architecture**
+    return `⚡ **React & JS Guide by Lappy AI**
 
-1. **Core Concept Overview**:
-   Modern web applications rely on declarative UI components, reactive state management, and non-blocking asynchronous event loops.
+React component-based UI build karne me help karta hai.
 
-2. **Key Architectural Pillars**:
-   • **Virtual DOM Diffing**: React maintains an in-memory Virtual DOM to compute precise structural updates, avoiding costly real-DOM re-renders.
-   • **Component Scoping**: UIs are composed of reusable functions encapsulating state (\`useState\`) and side effects (\`useEffect\`).
-   • **Async Event Processing**: Non-blocking IO utilizing Promises and \`async/await\`.
-
-3. **Production Implementation Example**:
 \`\`\`javascript
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
-export function DataFetcher({ endpoint }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadData() {
-      try {
-        const res = await fetch(endpoint);
-        const json = await res.json();
-        if (isMounted) setData(json);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-    loadData();
-    return () => { isMounted = false; };
-  }, [endpoint]);
-
-  if (loading) return <p>Loading data...</p>;
-  return <div>{JSON.stringify(data)}</div>;
+export function App() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(c => c + 1)}>Count: {count}</button>;
 }
-\`\`\`
-
-4. **Best Practices**:
-   Keep state immutable, clean up event listeners/timers in \`useEffect\`, and optimize component renders using \`useMemo\` and \`useCallback\`.`;
+\`\`\``;
   }
 
-  if (text.includes("neet") || text.includes("biology") || text.includes("physics") || text.includes("chemistry") || text.includes("jee") || text.includes("math")) {
-    return `🔬 **Academic Solution & Concept Breakdown: ${rawTopic}**
+  return `🤖 **Lappy AI Explanation on "${rawTopic}"**
 
-1. **Fundamental Principle & Overview**:
-   Mastering competitive exam topics requires breaking down core definitions, understanding governing formulas/laws, and applying them step-by-step to numerical and analytical questions.
+Aapke doubt **"${query}"** ka quick explanation:
 
-2. **Step-by-Step Problem Solving Methodology**:
-   • **Step 1 (Parameter Identification)**: Extract given values, boundary conditions, and target variables.
-   • **Step 2 (Formula Application)**: Apply the fundamental theorem or law with strict unit consistency.
-   • **Step 3 (Logical Verification)**: Cross-verify results with boundary checks and standard syllabus guidelines (NCERT / Exam standards).
+1. **Core Concept**: Topic ko smaller components me divide karo.
+2. **Implementation**: Logic ko clean structured code me write karo.
+3. **Best Practice**: Testing aur comments add karo.
 
-3. **Exam Performance Strategy**:
-   Regularly solve past-year MCQs, maintain a dedicated formula sheet, and revisit weak concepts with targeted practice tests.`;
-  }
-
-  return `📚 **Comprehensive Guide & Explanation: ${rawTopic}**
-
-1. **Executive Concept Overview**:
-   Regarding **"${query}"**: This topic involves understanding underlying principles, operational steps, and practical applications.
-
-2. **Step-by-Step Resolution & Methodology**:
-   • **Step 1 (Core Fundamentals)**: Define basic terms, inputs, and expected outcomes.
-   • **Step 2 (Execution Strategy)**: Structure logic into clean, modular steps to ensure clarity and accuracy.
-   • **Step 3 (Edge Case Handling)**: Validate outputs against boundary conditions and verify syntax/parameters.
-
-3. **Key Takeaways & Best Practices**:
-   Break down complex problems into smaller manageable sub-tasks, write clean self-documenting solutions, and test with realistic edge cases.`;
+Agar specific code sample chahiye to specify karke puch sakte ho! 🚀`;
 }
 

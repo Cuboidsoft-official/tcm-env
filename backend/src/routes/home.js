@@ -4201,7 +4201,14 @@ homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => 
     const roomTitle = room?.title || "TCM Academy";
     const roomCategory = room?.category || "TCM Learning";
 
-    const systemInstruction = `You are TCM One AI Tutor, a distinguished senior academic and technical mentor at TCM One Academy for ${roomTitle}. Provide a direct, comprehensive, highly mature, in-depth answer for "${questionToAsk}". Structure your response clearly with headings and code/examples where applicable. Do not use generic filler templates.`;
+    const systemInstruction = `You are Lappy AI (TCM One Lappy AI 🤖), a friendly, highly intelligent expert academic and coding tutor at TCM One Academy for ${roomTitle}.
+
+INSTRUCTIONS FOR LAPPY AI:
+1. Identify yourself as Lappy AI if asked.
+2. Adapt to the student's language naturally (Hinglish/Hindi/English). If the student asks in Hinglish (e.g. "mujhe batao ki html ka code likh kar", "Python smjhao", "kaise kare"), answer in clear, friendly Hinglish with code & bullet points!
+3. DO NOT use rigid robotic headings like "Executive Concept Overview" or "Step 1 (Core Fundamentals)".
+4. Give a direct, easy-to-understand, engaging explanation with real-world analogies, code examples with comments, and key tips for "${questionToAsk}".
+5. Keep formatting clean using bold headings, code blocks (\`\`\`html, \`\`\`js, etc.), and bullet points.`;
     
     let geminiResponse = null;
     try {
@@ -4216,14 +4223,13 @@ homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => 
 
     const aiMsg = {
       id: `msg_ai_${Date.now()}`,
-      authorName: "TCM One AI Tutor 🤖",
+      authorName: "Lappy AI Tutor 🤖",
       authorRole: "AI Assistant",
       authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       text: aiAnswerText,
       isAi: true,
-      type: "ai_response",
-      canRequestMentorHelp: true
+      type: "ai_response"
     };
 
     if (room) {
@@ -4238,14 +4244,13 @@ homeRouter.post("/doubt-rooms/:roomId/ask-ai", requireAuth, async (req, res) => 
     const smartFallbackText = generateSmartAcademicFallback(questionToAsk);
     const fallbackAiMsg = {
       id: `msg_ai_${Date.now()}`,
-      authorName: "Oveta AI Tutor 🤖",
+      authorName: "Lappy AI Tutor 🤖",
       authorRole: "AI Assistant",
       authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       text: smartFallbackText,
       isAi: true,
-      type: "ai_response",
-      canRequestMentorHelp: true
+      type: "ai_response"
     };
     return res.json({ success: true, aiMessage: fallbackAiMsg, room: null });
   }
@@ -4260,7 +4265,7 @@ homeRouter.post("/support/ask-ai", requireAuth, async (req, res) => {
     }
 
     const questionToAsk = query.trim();
-    const systemInstruction = `You are Oveta AI Support Specialist, an intelligent and polite customer support AI assistant for the TCM One App (Decoding The Mind). Help the user resolve app issues, doubt rooms access, course subscriptions, mentor bookings, wallet withdrawals, profile settings, or technical bugs. Provide step-by-step guidance. If the issue requires human intervention, remind the user they can email support@cuboidsoft.in. Keep answers concise, clear, and encouraging.`;
+    const systemInstruction = `You are Lappy AI Support Specialist, an intelligent and polite customer support AI assistant for the TCM One App (Decoding The Mind). Help the user resolve app issues, doubt rooms access, course subscriptions, mentor bookings, wallet withdrawals, profile settings, or technical bugs in friendly Hinglish/English. Provide step-by-step guidance. If the issue requires human intervention, remind the user they can email support@cuboidsoft.in. Keep answers concise, clear, and encouraging.`;
 
     let geminiResponse = null;
     try {
