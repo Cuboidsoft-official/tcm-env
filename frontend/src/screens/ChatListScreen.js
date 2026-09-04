@@ -302,10 +302,6 @@ export default function ChatListScreen({ session, onSelectChat, onSelectDoubtRoo
               Doubts ({doubts.length})
             </Text>
           </Pressable>
-
-          <Pressable onPress={onOpenSidebar} style={({ pressed }) => [{ width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: theme.isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9", borderWidth: 1, borderColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0" }, pressed && { opacity: 0.75 }]}>
-            <Ionicons name="grid-outline" size={17} color={theme.primary} />
-          </Pressable>
         </View>
 
       {/* 4. Tab Content */}
