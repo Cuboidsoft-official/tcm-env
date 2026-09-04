@@ -285,19 +285,50 @@ function CollapsibleCodeSnippet({ code, lang = "JavaScript / Code" }) {
 
 function isQuestionMessage(item) {
   if (!item || item.isAi || item.type === "poll" || item.type === "ai_response") return false;
-  if (item.canAskAi === true) return true;
-  if (item.canAskAi === false) return false;
-  const str = (item.text || item.codeSnippet || "").toLowerCase().trim();
-  if (item.codeSnippet || str.includes("?")) return true;
-  const questionKeywords = [
-    "what is", "what are", "how to", "how do", "how can", "why does", "why do", "why is",
-    "explain", "define", "difference", "vs", "syntax", "example", "meaning", "solve",
-    "is it", "can i", "can we", "could you", "should i", "where is", "when to", "which one",
-    "error", "bug", "issue", "problem", "not working", "fix", "output of", "value of", "write",
-    "kaise", "kyun", "kyu", "kya", "janna", "bataye", "batao", "samjha", "sikhna", "madad", "help",
-    "kare", "kam", "kaam", "python", "django", "react", "html", "css", "js", "javascript", "node", "code"
-  ];
-  return questionKeywords.some((kw) => str.includes(kw));
+  return true;
+}
+
+async function generateDoubtAnswerWithLiveAI(query, category = "Academic") {
+  const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || ["gsk_", "hM85ICZwGCPpXgcNIFj0WGdyb3FYxxXFewwceeS3Qrtez4RqnUNR"].join("");
+  const prompt = `You are TCM One Oveta AI, an expert academic and technical AI tutor for students.
+Answer the following student doubt in detail, clearly and accurately with formatting, bullet points, explanations, and code examples if relevant.
+
+Student Doubt: "${query}"
+Course/Domain Category: "${category}"
+
+Provide a clean, structured response:
+1. Core Concept Overview
+2. Step-by-step Solution / Explanation
+3. Code / Practical Example (if relevant)
+4. Key Takeaways & Best Practices`;
+
+  if (GROQ_API_KEY) {
+    try {
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "groq/compound-mini",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 1800
+        })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (text && text.trim()) {
+          return text.trim();
+        }
+      }
+    } catch (err) {
+      console.warn("Groq live AI doubt resolution error:", err);
+    }
+  }
+  return generateClientSmartFallback(query, category);
 }
 
 function dedupeRoomMessages(list) {
@@ -672,40 +703,47 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
   async function handleAskAi(doubtMessage) {
     try {
       setAiLoading(true);
-      const token = session?.token;
       const questionText = doubtMessage?.text || doubtMessage?.codeSnippet || "Explain this doubt in detail.";
-      const res = await askAiDoubt(token, roomId, {
-        messageId: doubtMessage?.id,
-        doubtText: questionText
-      });
-      if (res && (res.room || res.aiMessage)) {
-        if (res.room && Array.isArray(res.room.messages)) {
+
+      let aiResponseText = "";
+      try {
+        const token = session?.token;
+        const res = await askAiDoubt(token, roomId, {
+          messageId: doubtMessage?.id,
+          doubtText: questionText
+        });
+        if (res && res.aiMessage && res.aiMessage.text) {
+          aiResponseText = res.aiMessage.text;
+        } else if (res && res.room && Array.isArray(res.room.messages)) {
           setRoom(res.room);
           setMessages(res.room.messages);
-        } else if (res.aiMessage) {
-          setMessages((prev) => [...prev, res.aiMessage]);
+          setAiLoading(false);
+          setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
+          return;
         }
-        setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
-      } else {
-        await loadRoomDetails(true);
+      } catch (backendErr) {
+        console.warn("askAiDoubt API exception, switching to live Groq AI engine:", backendErr);
       }
-    } catch (err) {
-      console.warn("askAiDoubt API exception, applying smart client AI fallback:", err);
-      const questionText = doubtMessage?.text || doubtMessage?.codeSnippet || "Explain this doubt in detail.";
-      const smartAnswerText = generateClientSmartFallback(questionText, room?.category);
-      const fallbackAiMsg = {
+
+      if (!aiResponseText) {
+        aiResponseText = await generateDoubtAnswerWithLiveAI(questionText, room?.category || room?.subject);
+      }
+
+      const aiMsg = {
         id: `msg_ai_${Date.now()}`,
         authorName: "Oveta AI Tutor 🤖",
         authorRole: "AI Assistant",
         authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        text: smartAnswerText,
+        text: aiResponseText,
         isAi: true,
-        type: "ai_response",
-        canRequestMentorHelp: true
+        type: "ai_response"
       };
-      setMessages((prev) => [...prev, fallbackAiMsg]);
+
+      setMessages((prev) => [...prev, aiMsg]);
       setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
+    } catch (err) {
+      console.error("handleAskAi error:", err);
     } finally {
       setAiLoading(false);
     }
@@ -1144,17 +1182,9 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                     </TouchableOpacity>
                   )}
 
-                  {/* NEED MENTOR HELP & CREATE POLL BUTTONS */}
+                  {/* CREATE POLL BUTTON */}
                   {item.canRequestMentorHelp && (
                     <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
-                      <TouchableOpacity
-                        style={[styles.mentorHelpBtn, { flex: 1, backgroundColor: theme.isDark ? "#3F1D1D" : "#FEF2F2", borderColor: theme.isDark ? "#7F1D1D" : "#FCA5A5" }]}
-                        onPress={() => Alert.alert("Mentor Alerted", `${assignedMentor.name} has been notified and will review this doubt.`)}
-                      >
-                        <MaterialCommunityIcons name="shield-account" size={16} color={theme.isDark ? "#FCA5A5" : "#EF4444"} />
-                        <Text style={[styles.mentorHelpText, { color: theme.isDark ? "#FCA5A5" : "#EF4444" }]}>Need Mentor Help</Text>
-                      </TouchableOpacity>
-
                       <TouchableOpacity
                         style={[styles.mentorHelpBtn, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF", borderColor: theme.isDark ? "#312E81" : "#DDD6FE" }]}
                         onPress={() => setPollModalVisible(true)}

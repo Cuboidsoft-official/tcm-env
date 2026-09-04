@@ -2,10 +2,9 @@ const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || ["gsk_", "hM85ICZwG
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "AQ.Ab8RN6Ipj1uRaigDXlfQnUpAgHP1MldOR1zte9lZn5WBqZYe9A";
 
 const GROQ_MODELS = [
-  "groq/compound",
-  "openai/gpt-oss-20b",
   "groq/compound-mini",
   "qwen/qwen3.8-27b",
+  "openai/gpt-oss-20b",
   "openai/gpt-oss-120b"
 ];
 
