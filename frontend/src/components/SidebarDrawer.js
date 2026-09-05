@@ -70,6 +70,15 @@ export default function SidebarDrawer({
         {/* Sliding Sidebar Panel */}
         <View style={[styles.drawerPanel, { backgroundColor: theme.bg }]}>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {/* 0. Brand Banner with Mascot Logo */}
+            <View style={[styles.drawerBrandBanner, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <Image source={require("../../assets/icon.png")} style={styles.drawerBrandLogo} resizeMode="contain" />
+              <View style={styles.drawerBrandTextWrap}>
+                <Text style={[styles.drawerBrandTitle, { color: theme.text }]}>TCM <Text style={{ color: "#EF4444", fontWeight: "900" }}>One</Text></Text>
+                <Text style={[styles.drawerBrandSub, { color: theme.subtext }]}>Decoding The Mind</Text>
+              </View>
+            </View>
+
             {/* 1. Header Section */}
             <View style={styles.headerSection}>
               <View style={styles.headerTopRow}>
@@ -347,6 +356,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === "ios" ? 52 : 44,
     paddingBottom: 40
+  },
+
+  // 0. Brand Banner
+  drawerBrandBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 16,
+    gap: 12
+  },
+  drawerBrandLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 10
+  },
+  drawerBrandTextWrap: {
+    flex: 1
+  },
+  drawerBrandTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    letterSpacing: -0.3
+  },
+  drawerBrandSub: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10.5,
+    letterSpacing: 0.5
   },
 
   // 1. Header Section
