@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Modal, NativeModules, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { Alert, Image, Modal, NativeModules, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
@@ -51,9 +51,14 @@ function TcmOneBrandHeader({ compact = false }) {
 
   return (
     <View style={{ alignItems: "center", marginBottom: compact ? 8 : 16 }}>
+      <Image
+        source={require("../../assets/icon.png")}
+        style={{ width: compact ? 56 : 72, height: compact ? 56 : 72, marginBottom: 8, borderRadius: 14 }}
+        resizeMode="contain"
+      />
       <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-        <Text style={{ fontFamily: fonts.extraBold, fontSize, color: lastColor, letterSpacing: -0.2 }}>Last</Text>
-        <Text style={{ fontFamily: fonts.extraBold, fontSize, color: classColor, letterSpacing: -0.2 }}>Class</Text>
+        <Text style={{ fontFamily: fonts.extraBold, fontSize, color: lastColor, letterSpacing: -0.2 }}>TCM </Text>
+        <Text style={{ fontFamily: fonts.extraBold, fontSize, color: classColor, letterSpacing: -0.2, fontWeight: "900" }}>One</Text>
       </View>
       <Text style={{ fontFamily: fonts.semiBold, fontSize: compact ? 10 : 11, color: theme.subtext, letterSpacing: 1.5, textTransform: "uppercase", marginTop: 2 }}>
         Decoding The Mind

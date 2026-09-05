@@ -162,7 +162,7 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {}, cou
     const lastAiMsg = [...messages].reverse().find((m) => m.sender === "ai")?.text || "Personalized Day-by-Day AI Learning Roadmap";
 
     const waMsg =
-      `🎓 *LASTCLASS ACADEMY - DAY-BY-DAY & MONTHLY ROADMAP* 🎓\n\n` +
+      `🎓 *TCM ONE ACADEMY - DAY-BY-DAY & MONTHLY ROADMAP* 🎓\n\n` +
       `👤 *Student Name:* ${userName}\n` +
       `----------------------------------------\n` +
       `⚡ *LAPPY AI ROADMAP & SCHEDULE:*\n\n` +
