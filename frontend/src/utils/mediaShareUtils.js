@@ -20,11 +20,60 @@ export function resolveFullMediaUrl(rawUrl) {
 }
 
 /**
- * Main helper to share post as a real image file attachment (WhatsApp / Instagram style) + text permalink
+ * Helper for Web to fetch or canvas-convert media URL to a valid File object (bypassing CORS)
+ */
+async function getWebFileFromUrl(url, targetId, isVideo = false, isDoc = false) {
+  if (!url || typeof window === "undefined") return null;
+  const ext = isVideo ? "mp4" : isDoc ? "pdf" : "jpg";
+  const mime = isVideo ? "video/mp4" : isDoc ? "application/pdf" : "image/jpeg";
+  const fileName = `tcm_post_${targetId || Date.now()}.${ext}`;
+
+  // Try direct fetch
+  try {
+    const resp = await fetch(url, { mode: "cors" });
+    if (resp.ok) {
+      const blob = await resp.blob();
+      return new File([blob], fileName, { type: blob.type || mime });
+    }
+  } catch (e) {}
+
+  // Canvas fallback for images to bypass CORS
+  if (!isVideo && !isDoc) {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth || img.width || 800;
+          canvas.height = img.naturalHeight || img.height || 600;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(new File([blob], fileName, { type: "image/jpeg" }));
+            } else {
+              resolve(null);
+            }
+          }, "image/jpeg", 0.92);
+        } catch (err) {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
+  return null;
+}
+
+/**
+ * Main helper to share post as a real image file attachment + caption & permalink
  */
 export async function sharePostWithMedia({
   title = "",
-  authorName = "TCM Member",
+  authorName = "TCM One Member",
   targetId = "",
   mediaUrl = "",
   images = [],
@@ -35,47 +84,47 @@ export async function sharePostWithMedia({
 }) {
   onStart();
   const shareUrl = `https://app.thecodemunk.in/post/${targetId || "p1"}`;
-  const rawTitle = (title || "TCM Update").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
-  const cleanTitle = rawTitle.length > 70 ? `${rawTitle.slice(0, 67)}...` : rawTitle;
+  const rawTitle = (title || "TCM One Update").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
+  const cleanTitle = rawTitle.length > 120 ? `${rawTitle.slice(0, 117)}...` : rawTitle;
 
   const validImages = (Array.isArray(images) ? images : []).map((u) => resolveFullMediaUrl(u)).filter(Boolean);
   const primaryMediaUrl = mediaUrl || validImages[0] || "";
   const primaryFullUrl = resolveFullMediaUrl(primaryMediaUrl);
 
-  const captionBody = `✨ ${cleanTitle}\n— by ${authorName} on TCM`;
+  const captionBody = `✨ ${cleanTitle}\n— by ${authorName} on TCM One`;
   const formattedShareMsg = `${captionBody}\n\n🔗 ${shareUrl}`;
 
   try {
     // A. Web Browser Share (Chrome / Safari / Edge / Web PWA)
     if (Platform.OS === "web" && typeof navigator !== "undefined") {
       let fileShared = false;
-      if (primaryFullUrl && typeof fetch === "function" && navigator.canShare) {
-        try {
-          const resp = await fetch(primaryFullUrl, { mode: "cors" });
-          if (resp.ok) {
-            const blob = await resp.blob();
-            const ext = isVideo ? "mp4" : isDoc ? "pdf" : "jpg";
-            const fileMime = isVideo ? "video/mp4" : isDoc ? "application/pdf" : "image/jpeg";
-            const file = new File([blob], `tcm_post_${targetId || Date.now()}.${ext}`, { type: fileMime });
-            
+      
+      // If post has an image or media URL, try converting to File for native Web Share API
+      if (primaryFullUrl && typeof navigator.canShare === "function") {
+        const file = await getWebFileFromUrl(primaryFullUrl, targetId, isVideo, isDoc);
+        if (file) {
+          try {
+            // Note: We do NOT pass `url` when passing `files`, because Web Share API rejects both together in Chrome/Safari.
+            // `formattedShareMsg` already contains caption + link!
             if (navigator.canShare({ files: [file] })) {
               await navigator.share({
                 title: cleanTitle,
-                text: captionBody,
-                url: shareUrl,
+                text: formattedShareMsg,
                 files: [file]
               });
               fileShared = true;
             }
+          } catch (shareErr) {
+            console.log("Web Share API files error:", shareErr);
           }
-        } catch (e) {}
+        }
       }
 
       if (!fileShared) {
-        if (navigator.share) {
+        if (typeof navigator.share === "function") {
           await navigator.share({
             title: cleanTitle,
-            text: captionBody,
+            text: formattedShareMsg,
             url: shareUrl
           }).catch(() => {});
         } else if (navigator.clipboard) {
@@ -128,7 +177,16 @@ export async function sharePostWithMedia({
       uti = "public.image";
     }
 
-    // 3. Share actual JPG/MP4 file via Native Sharing Sheet directly into WhatsApp / Instagram / Telegram
+    // 3. Share actual JPG/MP4 file via Native Sharing Sheet
+    if (Platform.OS === "ios" && targetImageUri) {
+      await Share.share({
+        message: formattedShareMsg,
+        url: targetImageUri
+      });
+      onComplete();
+      return;
+    }
+
     if (targetImageUri && (await Sharing.isAvailableAsync().catch(() => false))) {
       await Sharing.shareAsync(targetImageUri, {
         mimeType,
@@ -140,14 +198,7 @@ export async function sharePostWithMedia({
     }
 
     // 4. Fallback if native file sharing is unavailable
-    if (Platform.OS === "ios") {
-      await Share.share({
-        message: `✨ ${cleanTitle}\n— by ${authorName} on TCM`,
-        url: primaryFullUrl || shareUrl
-      });
-    } else {
-      await Share.share({ message: formattedShareMsg });
-    }
+    await Share.share({ message: formattedShareMsg });
   } catch (error) {
     console.log("Error sharing post with media:", error);
     try {
