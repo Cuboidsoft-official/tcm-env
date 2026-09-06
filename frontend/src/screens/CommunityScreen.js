@@ -477,17 +477,19 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
   }
 
   async function handleToggleLike(postId) {
-    const userId = session?.user?.id;
+    const userId = String(session?.user?.id || session?.user?._id || "").trim();
+    if (!postId) return;
+
     setPosts((prev) =>
       prev.map((p) => {
         if (String(p.id || p._id) === String(postId)) {
-          const currentlyLiked = (p.likedBy || []).map(String).includes(String(userId)) || Boolean(p.isLiked);
+          const currentlyLiked = (userId && (p.likedBy || []).map(String).includes(userId)) || Boolean(p.isLiked);
           const nextLiked = !currentlyLiked;
           const currentLikes = p.metrics?.likes !== undefined ? p.metrics.likes : (p.likes || 0);
           const nextLikesCount = Math.max(0, currentLikes + (nextLiked ? 1 : -1));
           const updatedLikedBy = nextLiked
-            ? [...(p.likedBy || []), userId].filter(Boolean)
-            : (p.likedBy || []).filter((id) => String(id) !== String(userId));
+            ? [...(p.likedBy || []).map(String), userId].filter(Boolean)
+            : (p.likedBy || []).map(String).filter((id) => id !== userId);
           return {
             ...p,
             isLiked: nextLiked,
@@ -510,8 +512,8 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
                 isLiked: Boolean(res.isLiked),
                 metrics: { ...p.metrics, likes: res.likes },
                 likedBy: res.isLiked
-                  ? [...(p.likedBy || []), userId].filter(Boolean)
-                  : (p.likedBy || []).filter((id) => String(id) !== String(userId))
+                  ? [...(p.likedBy || []).map(String), userId].filter(Boolean)
+                  : (p.likedBy || []).map(String).filter((id) => id !== userId)
               };
             }
             return p;
@@ -550,7 +552,19 @@ export default function CommunityScreen({ navigation, route, session, onChannelS
 
   async function handleShare(post) {
     if (!post) return;
-    const targetPostId = post.id || post._id;
+    const targetPostId = String(post.id || post._id || "").trim();
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (String(p.id || p._id) === String(targetPostId)) {
+          return {
+            ...p,
+            metrics: { ...(p.metrics || {}), shares: ((p.metrics?.shares || 0) + 1) }
+          };
+        }
+        return p;
+      })
+    );
+
     try {
       if (targetPostId && session?.token) {
         sharePost(session.token, targetPostId).catch(() => {});

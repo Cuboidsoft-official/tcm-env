@@ -809,22 +809,25 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
   }
 
   const handleTogglePostLike = useCallback((postId) => {
-    const userId = session?.user?.id;
+    const userId = String(session?.user?.id || session?.user?._id || "").trim();
+    if (!postId) return;
+
     setHome((current) => {
       if (!current || !Array.isArray(current.posts)) return current;
       const updatedPosts = current.posts.map((p) => {
-        const pId = p.id || p._id;
-        if (String(pId) === String(postId)) {
+        const pId = String(p.id || p._id || "");
+        if (pId === String(postId)) {
           const currentLiked = Boolean(
             p.isLiked ||
-            (Array.isArray(p.likedBy) && p.likedBy.map(String).includes(String(userId)))
+            (userId && Array.isArray(p.likedBy) && p.likedBy.map(String).includes(userId))
           );
           const nextLiked = !currentLiked;
           const currentLikes = p.metrics?.likes !== undefined ? p.metrics.likes : (p.likes || 0);
           const nextLikesCount = Math.max(0, currentLikes + (nextLiked ? 1 : -1));
           const updatedLikedBy = nextLiked
-            ? [...(p.likedBy || []), userId].filter(Boolean)
-            : (p.likedBy || []).filter((id) => String(id) !== String(userId));
+            ? [...(p.likedBy || []).map(String), userId].filter(Boolean)
+            : (p.likedBy || []).map(String).filter((id) => id !== userId);
+
           return {
             ...p,
             isLiked: nextLiked,
@@ -839,11 +842,35 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
     });
 
     if (session?.token && postId) {
-      togglePostLike(session.token, postId).catch((e) => {
+      togglePostLike(session.token, postId).then((res) => {
+        if (res && typeof res.likes === "number") {
+          setHome((current) => {
+            if (!current || !Array.isArray(current.posts)) return current;
+            const updatedPosts = current.posts.map((p) => {
+              const pId = String(p.id || p._id || "");
+              if (pId === String(postId)) {
+                const isLikedRes = Boolean(res.isLiked);
+                const updatedLikedBy = isLikedRes
+                  ? [...(p.likedBy || []).map(String), userId].filter(Boolean)
+                  : (p.likedBy || []).map(String).filter((id) => id !== userId);
+                return {
+                  ...p,
+                  isLiked: isLikedRes,
+                  likedBy: updatedLikedBy,
+                  metrics: { ...(p.metrics || {}), likes: res.likes },
+                  likes: res.likes
+                };
+              }
+              return p;
+            });
+            return { ...current, posts: updatedPosts };
+          });
+        }
+      }).catch((e) => {
         console.warn("Failed to sync post like with backend:", e);
       });
     }
-  }, [session?.token, session?.user?.id]);
+  }, [session?.token, session?.user?.id, session?.user?._id]);
 
   const feedPosts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -2980,10 +3007,11 @@ function DocumentThumbnail({ title }) {
 
 function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onSelectUser }) {
   const { theme } = useTheme();
-  const targetPostId = post?.id || post?._id;
+  const targetPostId = String(post?.id || post?._id || "").trim();
+  const userIdStr = String(session?.user?.id || session?.user?._id || "").trim();
   const isLikedByMe = Boolean(
     post?.isLiked ||
-    (Array.isArray(post?.likedBy) && post.likedBy.map(String).includes(String(session?.user?.id)))
+    (userIdStr && Array.isArray(post?.likedBy) && post.likedBy.map(String).includes(userIdStr))
   );
   const [liked, setLiked] = useState(isLikedByMe);
   const currentLikesCount = post?.metrics?.likes !== undefined ? post.metrics.likes : (post?.likes !== undefined ? post.likes : (metrics?.likes || 0));
@@ -3016,17 +3044,15 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
     setLiked(nextLiked);
     setLikesCount((prev) => Math.max(0, prev + (nextLiked ? 1 : -1)));
 
-    if (onToggleLike) {
-      onToggleLike(targetPostId);
-    }
-
     // Pop / bounce spring animation for clapping
     Animated.sequence([
       Animated.timing(clapScaleAnim, { toValue: 1.5, duration: 110, useNativeDriver: true }),
       Animated.spring(clapScaleAnim, { toValue: 1, friction: 3, tension: 150, useNativeDriver: true })
     ]).start();
 
-    if (session?.token && targetPostId) {
+    if (onToggleLike) {
+      onToggleLike(targetPostId);
+    } else if (session?.token && targetPostId) {
       try {
         const res = await togglePostLike(session.token, targetPostId);
         if (res && typeof res.likes === "number") setLikesCount(res.likes);
@@ -3059,7 +3085,7 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   const isDoc = Boolean(post?.isDocument || postMedia.documentUrl || post?.documentUrl || postMedia.kind === "document");
   const isJob = Boolean(post?.isJob || post?.postType === "job_news" || post?.jobData);
   const shareType = isJob ? "job" : isDoc ? "document" : isVideo ? "video" : "post";
-  const targetId = post?.id || post?._id || "p1";
+  const targetId = targetPostId || "p1";
   const shareUrl = `https://app.thecodemunk.in/post/${targetId}`;
 
   const carouselImages = (Array.isArray(postMedia.carouselImages) && postMedia.carouselImages.length > 0)
@@ -3103,8 +3129,8 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
         isVideo,
         isDoc
       });
-      if (session?.token && post?.id) {
-        sharePost(session.token, post.id).catch(() => {});
+      if (session?.token && targetPostId) {
+        sharePost(session.token, targetPostId).catch(() => {});
       }
     } catch (e) {}
   }
@@ -3112,8 +3138,8 @@ function PostActions({ post, session, metrics = {}, onComment, onToggleLike, onS
   function handleShareWhatsApp() {
     setShareModalOpen(false);
     setSharesCount((prev) => prev + 1);
-    if (session?.token && post?.id) {
-      sharePost(session.token, post.id).catch(() => {});
+    if (session?.token && targetPostId) {
+      sharePost(session.token, targetPostId).catch(() => {});
     }
     sharePostWithMedia({
       title: cleanTitle,
