@@ -491,99 +491,51 @@ function getTimeLabel(date) {
 // Routes
 homeRouter.get("/", requireAuth, async (req, res) => {
   const memoryStore = req.app.locals.memoryStore;
+  const currentUserIdStr = String(req.user._id || req.user.id);
+  const globalComments = req.app.locals.globalPostComments || {};
 
-  if (memoryStore) {
-    const stories = (memoryStore.stories || []).sort((a, b) => a.order - b.order);
-    const posts = (memoryStore.posts || []).sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-    const jobs = memoryStore.jobs || [];
+  let dbStories = [];
+  let dbPosts = [];
+  let dbJobs = [];
+  let dbMentors = [];
 
-    const currentUserIdStr = String(req.user._id || req.user.id);
-    const jobPostCards = jobs.map((j) => {
-      const selectedCount = (j.applicants || []).filter((a) => a.status === "selected").length;
-      const reqLimit = Number(j.requiredCandidates || 1);
-      const isFilled = selectedCount >= reqLimit;
-      const likedByArr = j.likedBy || [];
-      const isLiked = Boolean(j.isLiked || (currentUserIdStr && likedByArr.map(String).includes(currentUserIdStr)));
-
-      return {
-        id: String(j.id),
-        authorName: j.mentorName || "Mentor",
-        authorAvatarUrl: j.mentorAvatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-        authorRole: j.mentorRole || "Senior Mentor",
-        publishedAt: j.createdAt || new Date().toISOString(),
-        category: "💼 Jobs & Hiring",
-        postType: "job_news",
-        text: j.description || `${j.title} at ${j.company}`,
-        isMentor: true,
-        jobData: {
-          ...j,
-          id: String(j.id),
-          selectedCandidates: selectedCount,
-          status: isFilled ? "filled" : j.status || "active"
-        },
-        likedBy: likedByArr,
-        isLiked,
-        metrics: { likes: j.metrics?.likes || likedByArr.length || 12, comments: (j.applicants || []).length, reposts: 3 },
-        userAction: { liked: isLiked, saved: false }
-      };
-    });
-
-    const globalComments = req.app.locals.globalPostComments || {};
-    const allHomePosts = [...posts.map((p) => mapPost(p, globalComments, currentUserIdStr)), ...jobPostCards].sort(
-      (a, b) => new Date(b.publishedAt || b.createdAt || 0) - new Date(a.publishedAt || a.createdAt || 0)
-    );
-
-    return res.json({
-      user: {
-        id: req.user.id || req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        role: req.user.role,
-        avatarUrl: req.user.avatarUrl,
-        progress: req.user.progress,
-        wallet: getOrCreateUserWallet(req, req.user._id || req.user.id)
-      },
-      notifications: getUnreadNotifCount(req, req.user._id || req.user.id),
-      progress: {
-        label: "Today's Progress",
-        value: req.user.progress
-      },
-      tabs,
-      categories,
-      learn: await buildLearnPayload(req.user, memoryStore.mentors || [], memoryStore.learn, memoryStore, req.app?.locals?.globalCourses || []),
-      stories: [
-        {
-          id: "me",
-          name: "Your Story",
-          avatarUrl: req.user.avatarUrl,
-          badge: "add",
-          ringColors: ["#6E42F5", "#7D45EA"]
-        },
-        ...stories.map((story) => ({
-          id: story._id,
-          name: story.name,
-          avatarUrl: story.avatarUrl,
-          icon: story.icon,
-          iconColor: story.iconColor,
-          backgroundColor: story.backgroundColor,
-          ringColors: story.ringColors,
-          badge: story.badge
-        }))
-      ],
-      posts: allHomePosts
-    });
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const [stories, posts, jobs, legacyMentors, registeredMentorUsers] = await Promise.all([
+        Story.find().sort({ order: 1, createdAt: 1 }).lean(),
+        CommunityPost.find().sort({ publishedAt: -1 }).limit(50).lean(),
+        Job.find().sort({ createdAt: -1 }).lean(),
+        Mentor.find({ isApproved: { $ne: false } }).sort({ rating: -1 }).limit(6).lean(),
+        User.find({ role: "mentor", isApproved: { $ne: false } }).lean()
+      ]);
+      dbStories = stories || [];
+      dbPosts = posts || [];
+      dbJobs = jobs || [];
+      dbMentors = [...(registeredMentorUsers || []), ...(legacyMentors || [])];
+    } catch (dbErr) {
+      console.warn("MongoDB home query failed, falling back to memoryStore:", dbErr.message);
+    }
   }
 
-  const [stories, posts, dbJobs, legacyMentors, registeredMentorUsers] = await Promise.all([
-    Story.find().sort({ order: 1, createdAt: 1 }).lean(),
-    CommunityPost.find().sort({ publishedAt: -1 }).limit(20).lean(),
-    Job.find().sort({ createdAt: -1 }).lean(),
-    Mentor.find({ isApproved: { $ne: false } }).sort({ rating: -1 }).limit(6).lean(),
-    User.find({ role: "mentor", isApproved: { $ne: false } }).lean()
-  ]);
+  let rawPosts = [];
+  if (dbPosts.length > 0) {
+    rawPosts = [...dbPosts];
+    if (memoryStore?.posts?.length) {
+      memoryStore.posts.forEach((memP) => {
+        const memId = String(memP._id || memP.id);
+        if (!rawPosts.some((p) => String(p._id || p.id) === memId)) {
+          rawPosts.push(memP);
+        }
+      });
+    }
+  } else if (memoryStore?.posts?.length) {
+    rawPosts = memoryStore.posts;
+  }
 
-  const currentUserIdStr = String(req.user._id || req.user.id);
-  const dbJobCards = (dbJobs || []).map((j) => {
+  let rawJobs = dbJobs.length > 0 ? dbJobs : (memoryStore?.jobs || []);
+  let rawStories = dbStories.length > 0 ? dbStories : (memoryStore?.stories || []);
+
+  const jobPostCards = rawJobs.map((j) => {
     const selectedCount = (j.applicants || []).filter((a) => a.status === "selected").length;
     const reqLimit = Number(j.requiredCandidates || 1);
     const isFilled = selectedCount >= reqLimit;
@@ -591,7 +543,7 @@ homeRouter.get("/", requireAuth, async (req, res) => {
     const isLiked = Boolean(j.isLiked || (currentUserIdStr && likedByArr.map(String).includes(currentUserIdStr)));
 
     return {
-      id: String(j._id),
+      id: String(j._id || j.id),
       authorName: j.mentorName || "Mentor",
       authorAvatarUrl: j.mentorAvatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
       authorRole: j.mentorRole || "Senior Mentor",
@@ -602,7 +554,7 @@ homeRouter.get("/", requireAuth, async (req, res) => {
       isMentor: true,
       jobData: {
         ...j,
-        id: String(j._id),
+        id: String(j._id || j.id),
         selectedCandidates: selectedCount,
         status: isFilled ? "filled" : j.status || "active"
       },
@@ -613,12 +565,16 @@ homeRouter.get("/", requireAuth, async (req, res) => {
     };
   });
 
-  const mentors = [...registeredMentorUsers, ...legacyMentors];
-  const globalComments = req.app.locals.globalPostComments || {};
+  const allHomePosts = [
+    ...rawPosts.map((p) => mapPost(p, globalComments, currentUserIdStr)),
+    ...jobPostCards
+  ].sort(
+    (a, b) => new Date(b.publishedAt || b.createdAt || 0) - new Date(a.publishedAt || a.createdAt || 0)
+  );
 
   res.json({
     user: {
-      id: req.user._id,
+      id: req.user._id || req.user.id,
       name: req.user.name,
       email: req.user.email,
       role: req.user.role,
@@ -633,7 +589,13 @@ homeRouter.get("/", requireAuth, async (req, res) => {
     },
     tabs,
     categories,
-    learn: await buildLearnPayload(req.user, mentors, memoryStore?.learn, memoryStore, req.app?.locals?.globalCourses || []),
+    learn: await buildLearnPayload(
+      req.user,
+      dbMentors.length > 0 ? dbMentors : (memoryStore?.mentors || []),
+      memoryStore?.learn,
+      memoryStore,
+      req.app?.locals?.globalCourses || []
+    ),
     stories: [
       {
         id: "me",
@@ -642,8 +604,8 @@ homeRouter.get("/", requireAuth, async (req, res) => {
         badge: "add",
         ringColors: ["#6E42F5", "#7D45EA"]
       },
-      ...stories.map((story) => ({
-        id: story._id,
+      ...rawStories.map((story) => ({
+        id: story._id || story.id,
         name: story.name,
         avatarUrl: story.avatarUrl,
         icon: story.icon,
@@ -653,9 +615,7 @@ homeRouter.get("/", requireAuth, async (req, res) => {
         badge: story.badge
       }))
     ],
-    posts: [...posts.map((p) => mapPost(p, globalComments, currentUserIdStr)), ...dbJobCards].sort(
-      (a, b) => new Date(b.publishedAt || b.createdAt || 0) - new Date(a.publishedAt || a.createdAt || 0)
-    )
+    posts: allHomePosts
   });
 });
 
@@ -1131,6 +1091,15 @@ homeRouter.post("/post/:postId/like", requireAuth, async (req, res) => {
     }
   }
 
+  if (memoryStore && Array.isArray(memoryStore.posts)) {
+    const memPost = memoryStore.posts.find((p) => String(p.id || p._id) === String(postId));
+    if (memPost) {
+      memPost.likedBy = post.likedBy;
+      memPost.metrics = post.metrics;
+      memPost.isLiked = isLiked;
+    }
+  }
+
   if (isLiked && post.authorId && String(post.authorId) !== userId) {
     notifyPostLiked({
       likerName: req.user.name || "A learner",
@@ -1203,6 +1172,15 @@ homeRouter.post("/post/:postId/repost", requireAuth, async (req, res) => {
           { $set: { repostedBy: post.repostedBy, metrics: post.metrics } }
         ).catch(() => {});
       }
+    }
+  }
+
+  if (memoryStore && Array.isArray(memoryStore.posts)) {
+    const memPost = memoryStore.posts.find((p) => String(p.id || p._id) === String(postId));
+    if (memPost) {
+      memPost.repostedBy = post.repostedBy;
+      memPost.metrics = post.metrics;
+      memPost.isReposted = isReposted;
     }
   }
 
@@ -1284,6 +1262,16 @@ homeRouter.post("/post/:postId/comment", requireAuth, async (req, res) => {
         commentText: text.trim(),
         postId: String(post._id || post.id)
       }).catch(() => {});
+    }
+  }
+
+  if (memoryStore && Array.isArray(memoryStore.posts)) {
+    const memPost = memoryStore.posts.find((p) => String(p.id || p._id) === String(postId));
+    if (memPost) {
+      if (!memPost.commentsList) memPost.commentsList = [];
+      memPost.commentsList.unshift(newComment);
+      if (!memPost.metrics) memPost.metrics = { likes: 0, comments: 0, shares: 0 };
+      memPost.metrics.comments = post ? post.metrics.comments : memPost.commentsList.length;
     }
   }
 
@@ -1384,6 +1372,14 @@ homeRouter.post("/post/:postId/share", requireAuth, async (req, res) => {
 
   if (typeof post.save === "function") {
     await post.save();
+  }
+
+  if (memoryStore && Array.isArray(memoryStore.posts)) {
+    const memPost = memoryStore.posts.find((p) => String(p.id || p._id) === String(postId));
+    if (memPost) {
+      if (!memPost.metrics) memPost.metrics = { likes: 0, comments: 0, shares: 0 };
+      memPost.metrics.shares = post.metrics.shares;
+    }
   }
 
   res.json({
