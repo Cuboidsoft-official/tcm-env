@@ -490,13 +490,36 @@ const DEFAULT_QUESTIONS = [
 
 const DEFAULT_STATES = [
   "All States",
-  "Uttar Pradesh",
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
   "Bihar",
-  "Rajasthan",
-  "Madhya Pradesh",
+  "Chhattisgarh",
   "Delhi",
+  "Goa",
+  "Gujarat",
   "Haryana",
-  "Maharashtra"
+  "Himachal Pradesh",
+  "Jammu & Kashmir",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal"
 ];
 
 export default function GovPrepScreen({ session, user, onBack }) {
@@ -996,7 +1019,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
             {/* Step 1: Exam Category Selector */}
             <View style={styles.stepSectionHeader}>
               <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>1</Text>
-              <Text style={[styles.stepTitle, { color: theme.text }]}>Select Exam Category</Text>
+              <Text style={[styles.stepTitle, { color: theme.text }]}>Category</Text>
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScrollRow}>
@@ -1026,9 +1049,9 @@ export default function GovPrepScreen({ session, user, onBack }) {
             </ScrollView>
 
             {/* Step 2: Exam Grid Cards */}
-            <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
+            <View style={[styles.stepSectionHeader, { marginTop: 18 }]}>
               <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>2</Text>
-              <Text style={[styles.stepTitle, { color: theme.text }]}>Choose Target Exam</Text>
+              <Text style={[styles.stepTitle, { color: theme.text }]}>Target Exam</Text>
             </View>
 
             {filteredExams.length > 0 ? (
@@ -1084,9 +1107,9 @@ export default function GovPrepScreen({ session, user, onBack }) {
             {/* Step 3: Custom Dropdown for Year Selection with Checkboxes */}
             {selectedExam ? (
               <>
-                <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
+                <View style={[styles.stepSectionHeader, { marginTop: 18 }]}>
                   <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>3</Text>
-                  <Text style={[styles.stepTitle, { color: theme.text }]}>Select Exam Year (Official Papers)</Text>
+                  <Text style={[styles.stepTitle, { color: theme.text }]}>Exam Year</Text>
                 </View>
 
                 <View style={styles.yearDropdownContainer}>
@@ -1162,10 +1185,10 @@ export default function GovPrepScreen({ session, user, onBack }) {
                   )}
                 </View>
 
-                {/* Step 4: State / Region Selection (Custom Dropdown) */}
-                <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
+                {/* Step 4: State / Region Selection (Custom Dropdown with ScrollView) */}
+                <View style={[styles.stepSectionHeader, { marginTop: 18 }]}>
                   <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>4</Text>
-                  <Text style={[styles.stepTitle, { color: theme.text }]}>Select Target State / Region (राज्य चुनें)</Text>
+                  <Text style={[styles.stepTitle, { color: theme.text }]}>Select State (राज्य)</Text>
                 </View>
 
                 <View style={styles.yearDropdownContainer}>
@@ -1178,7 +1201,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                       <MaterialCommunityIcons name="map-marker-radius" size={18} color="#09090B" />
                       <Text style={[styles.yearDropdownTriggerText, { color: theme.text }]}>
                         {selectedState === "All States"
-                          ? "All States & Union Territories (All India Level)"
+                          ? "All States & Union Territories (All India)"
                           : `${selectedState} State Exam Papers`}
                       </Text>
                     </View>
@@ -1191,34 +1214,36 @@ export default function GovPrepScreen({ session, user, onBack }) {
 
                   {isStateDropdownOpen && (
                     <View style={[styles.yearDropdownMenu, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-                      {DEFAULT_STATES.map((stName, idx) => {
-                        const isSelected = selectedState === stName;
-                        const isLast = idx === DEFAULT_STATES.length - 1;
+                      <ScrollView style={{ maxHeight: 240 }} nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
+                        {DEFAULT_STATES.map((stName, idx) => {
+                          const isSelected = selectedState === stName;
+                          const isLast = idx === DEFAULT_STATES.length - 1;
 
-                        return (
-                          <TouchableOpacity
-                            key={`st_dd_${stName}`}
-                            style={[
-                              styles.yearDropdownItem,
-                              !isLast && { borderBottomColor: theme.border },
-                              isSelected && { backgroundColor: theme.isDark ? "#18181B" : "#F4F4F5" }
-                            ]}
-                            onPress={() => {
-                              handleSelectState(stName);
-                              setIsStateDropdownOpen(false);
-                            }}
-                          >
-                            <MaterialCommunityIcons
-                              name={isSelected ? "radiobox-marked" : "radiobox-blank"}
-                              size={20}
-                              color={isSelected ? "#09090B" : theme.subtext}
-                            />
-                            <Text style={[styles.yearDropdownItemText, { color: theme.text }, isSelected && { fontWeight: "700" }]}>
-                              {stName === "All States" ? "All States / All India Level" : `${stName} State Exams`}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
+                          return (
+                            <TouchableOpacity
+                              key={`st_dd_${stName}`}
+                              style={[
+                                styles.yearDropdownItem,
+                                !isLast && { borderBottomColor: theme.border },
+                                isSelected && { backgroundColor: theme.isDark ? "#18181B" : "#F4F4F5" }
+                              ]}
+                              onPress={() => {
+                                handleSelectState(stName);
+                                setIsStateDropdownOpen(false);
+                              }}
+                            >
+                              <MaterialCommunityIcons
+                                name={isSelected ? "radiobox-marked" : "radiobox-blank"}
+                                size={20}
+                                color={isSelected ? "#09090B" : theme.subtext}
+                              />
+                              <Text style={[styles.yearDropdownItemText, { color: theme.text }, isSelected && { fontWeight: "700" }]}>
+                                {stName === "All States" ? "All States / All India Level" : `${stName} State Exams`}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
                     </View>
                   )}
                 </View>
@@ -1226,9 +1251,9 @@ export default function GovPrepScreen({ session, user, onBack }) {
                 {/* Step 5: Subject Selection (Optional) */}
                 {subjects.length > 0 ? (
                   <>
-                    <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
+                    <View style={[styles.stepSectionHeader, { marginTop: 18 }]}>
                       <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>5</Text>
-                      <Text style={[styles.stepTitle, { color: theme.text }]}>Choose Subject (Optional)</Text>
+                      <Text style={[styles.stepTitle, { color: theme.text }]}>Subject (Optional)</Text>
                     </View>
 
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScrollRow}>
@@ -1269,9 +1294,9 @@ export default function GovPrepScreen({ session, user, onBack }) {
                 ) : null}
 
                 {/* Step 6: Question Count & Live Setup Summary Card */}
-                <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
+                <View style={[styles.stepSectionHeader, { marginTop: 18 }]}>
                   <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>6</Text>
-                  <Text style={[styles.stepTitle, { color: theme.text }]}>Questions Per Session</Text>
+                  <Text style={[styles.stepTitle, { color: theme.text }]}>Questions Count</Text>
                 </View>
 
                 <View style={styles.pillsWrapRow}>
@@ -1296,9 +1321,9 @@ export default function GovPrepScreen({ session, user, onBack }) {
                 </View>
 
                 {/* Step 7: Question Language (Optional) */}
-                <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
+                <View style={[styles.stepSectionHeader, { marginTop: 18 }]}>
                   <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>7</Text>
-                  <Text style={[styles.stepTitle, { color: theme.text }]}>Question Language (भाषा चुनिए)</Text>
+                  <Text style={[styles.stepTitle, { color: theme.text }]}>Language (भाषा)</Text>
                 </View>
 
                 <View style={styles.pillsWrapRow}>
