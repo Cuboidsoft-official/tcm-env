@@ -422,30 +422,46 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         onPress={() => (onOpenGovPrep ? onOpenGovPrep() : Alert.alert("Government Preparation", "Opening Government Exam Module..."))}
         style={({ pressed }) => [
           styles.govPrepCardContainer,
-          { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF", borderColor: "#C4B5FD" },
+          {
+            backgroundColor: theme.isDark ? "#09090B" : "#F4F4F5",
+            borderColor: theme.isDark ? "#27272A" : "#E4E4E7"
+          },
           pressed && styles.pressed
         ]}
       >
         <View style={styles.govCardContent}>
           <View style={styles.govBadgeRow}>
-            <MaterialCommunityIcons name="bank" size={16} color="#5B3CF5" />
-            <Text style={styles.govBadgeLabel}>GOVERNMENT EXAM PREPARATION</Text>
+            <View style={[styles.govBadgePill, { backgroundColor: theme.isDark ? "#18181B" : "#FFFFFF", borderColor: theme.isDark ? "#27272A" : "#E4E4E7" }]}>
+              <MaterialCommunityIcons name="bank" size={13} color={theme.isDark ? "#FFFFFF" : "#09090B"} />
+              <Text style={[styles.govBadgeLabel, { color: theme.isDark ? "#FFFFFF" : "#09090B" }]}>
+                GOVERNMENT EXAM PREPARATION
+              </Text>
+            </View>
           </View>
-          <Text style={[styles.govCardMainTitle, { color: theme.isDark ? "#FFFFFF" : "#0F172A" }]}>
+          <Text style={[styles.govCardMainTitle, { color: theme.isDark ? "#FFFFFF" : "#09090B" }]}>
             Prepare Smarter. Crack Your Exam.
           </Text>
-          <Text style={[styles.govCardSubText, { color: theme.isDark ? "#CBD5E1" : "#475569" }]}>
-            Practice real exam questions from SSC, Railway, Banking, UPSC & more with instant Groq AI explanations.
+          <Text style={[styles.govCardSubText, { color: theme.isDark ? "#A1A1AA" : "#52525B" }]}>
+            Official PYQs for SSC, Railway, Banking, UPSC & State Exams with AI solutions.
           </Text>
           <View style={styles.govCardFooterRow}>
             <Pressable
               onPress={() => (onOpenGovPrep ? onOpenGovPrep() : Alert.alert("Government Preparation", "Opening Government Exam Module..."))}
-              style={({ pressed }) => [styles.govStartPracticeBtn, pressed && { opacity: 0.8 }]}
+              style={({ pressed }) => [
+                styles.govStartPracticeBtn,
+                { backgroundColor: theme.isDark ? "#FFFFFF" : "#09090B" },
+                pressed && { opacity: 0.85 }
+              ]}
             >
-              <Text style={styles.govStartPracticeText}>Start Practice →</Text>
+              <Text style={[styles.govStartPracticeText, { color: theme.isDark ? "#09090B" : "#FFFFFF" }]}>
+                Start Practice →
+              </Text>
             </Pressable>
-            <View style={styles.govTagPill}>
-              <Text style={styles.govTagPillText}>1,250+ PYQs & Practice Sets</Text>
+            <View style={[styles.govTagPill, { backgroundColor: theme.isDark ? "#18181B" : "#FFFFFF", borderColor: theme.isDark ? "#27272A" : "#E4E4E7" }]}>
+              <MaterialCommunityIcons name="checkbox-marked-circle-outline" size={13} color={theme.isDark ? "#A1A1AA" : "#52525B"} />
+              <Text style={[styles.govTagPillText, { color: theme.isDark ? "#A1A1AA" : "#52525B" }]}>
+                1,250+ PYQs & Mocks
+              </Text>
             </View>
           </View>
         </View>
@@ -1905,19 +1921,27 @@ const styles = StyleSheet.create({
   govBadgeRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6
+    marginBottom: 10
+  },
+  govBadgePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1
   },
   govBadgeLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: fonts.bold,
-    color: "#5B3CF5",
-    marginLeft: 4,
     letterSpacing: 0.5
   },
   govCardMainTitle: {
     fontFamily: fonts.bold,
-    fontSize: 17,
-    marginBottom: 4
+    fontSize: 16.5,
+    marginBottom: 4,
+    letterSpacing: -0.2
   },
   govCardSubText: {
     fontFamily: fonts.regular,
@@ -1928,30 +1952,29 @@ const styles = StyleSheet.create({
   govCardFooterRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    gap: 8
   },
   govStartPracticeBtn: {
-    backgroundColor: "#5B3CF5",
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 8.5,
     borderRadius: 10
   },
   govStartPracticeText: {
-    color: "#FFFFFF",
     fontFamily: fonts.bold,
     fontSize: 12
   },
   govTagPill: {
-    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#DDD6FE"
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1
   },
   govTagPillText: {
-    color: "#5B3CF5",
-    fontFamily: fonts.bold,
-    fontSize: 10.5
+    fontFamily: fonts.medium,
+    fontSize: 11
   }
 });
