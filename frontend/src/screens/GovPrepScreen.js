@@ -367,8 +367,136 @@ const DEFAULT_QUESTIONS = [
     correctAnswer: "B",
     explanation: "Article 14 guarantees equality before law and equal protection of laws to all persons within India.",
     explanationHi: "अनुच्छेद 14 भारत के सभी नागरिकों को कानून के समक्ष समानता की गारंटी देता है।",
+    language: "en",
+    state: "All"
+  },
+  {
+    id: "q_up_1",
+    examId: "ex_state_psc",
+    examName: "State PSC",
+    year: 2024,
+    state: "Uttar Pradesh",
+    subjectId: "sub_psc_gk",
+    subjectName: "State GK & Culture",
+    topicName: "UP Geography & Parks",
+    type: "pyq",
+    questionText: "In which district of Uttar Pradesh is the Dudhwa National Park located?",
+    questionTextHi: "उत्तर प्रदेश के किस जिले में दुधवा राष्ट्रीय उद्यान स्थित है?",
+    options: [
+      { label: "A", text: "Lakhimpur Kheri" },
+      { label: "B", text: "Pilibhit" },
+      { label: "C", text: "Varanasi" },
+      { label: "D", text: "Gorakhpur" }
+    ],
+    optionsHi: [
+      { label: "A", text: "लखीमपुर खीरी" },
+      { label: "B", text: "पीलीभीत" },
+      { label: "C", text: "वाराणसी" },
+      { label: "D", text: "गोरखपुर" }
+    ],
+    correctAnswer: "A",
+    explanation: "Dudhwa National Park is located in the Lakhimpur Kheri district of Uttar Pradesh, near the Nepal border.",
+    explanationHi: "दुधवा राष्ट्रीय उद्यान उत्तर प्रदेश के लखीमपुर खीरी जिले में भारत-नेपाल सीमा के पास स्थित है।",
+    language: "en"
+  },
+  {
+    id: "q_bih_1",
+    examId: "ex_state_psc",
+    examName: "State PSC",
+    year: 2024,
+    state: "Bihar",
+    subjectId: "sub_psc_gk",
+    subjectName: "State GK & Culture",
+    topicName: "Bihar Geography",
+    type: "pyq",
+    questionText: "Which river is popularly known as the 'Sorrow of Bihar' due to frequent flooding?",
+    questionTextHi: "बार-बार आने वाली बाढ़ के कारण किस नदी को 'बिहार का शोक' (Sorrow of Bihar) कहा जाता है?",
+    options: [
+      { label: "A", text: "Ganga" },
+      { label: "B", text: "Kosi" },
+      { label: "C", text: "Gandak" },
+      { label: "D", text: "Son" }
+    ],
+    optionsHi: [
+      { label: "A", text: "गंगा" },
+      { label: "B", text: "कोशी" },
+      { label: "C", text: "गंडक" },
+      { label: "D", text: "सोन" }
+    ],
+    correctAnswer: "B",
+    explanation: "Kosi river is known as the Sorrow of Bihar because of its frequent and unpredictable flooding.",
+    explanationHi: "कोशी नदी को बार-बार मार्ग बदलने और विनाशकारी बाढ़ के कारण 'बिहार का शोक' कहा जाता है।",
+    language: "en"
+  },
+  {
+    id: "q_raj_1",
+    examId: "ex_state_psc",
+    examName: "State PSC",
+    year: 2024,
+    state: "Rajasthan",
+    subjectId: "sub_psc_gk",
+    subjectName: "State GK & Culture",
+    topicName: "Rajasthan History & Forts",
+    type: "pyq",
+    questionText: "Which city in Rajasthan is famously known as the 'Sun City'?",
+    questionTextHi: "राजस्थान के किस शहर को 'सूर्य नगरी' (Sun City) के नाम से जाना जाता है?",
+    options: [
+      { label: "A", text: "Jaipur" },
+      { label: "B", text: "Jodhpur" },
+      { label: "C", text: "Udaipur" },
+      { label: "D", text: "Bikaner" }
+    ],
+    optionsHi: [
+      { label: "A", text: "जयपुर" },
+      { label: "B", text: "जोधपुर" },
+      { label: "C", text: "उदयपुर" },
+      { label: "D", text: "बीकानेर" }
+    ],
+    correctAnswer: "B",
+    explanation: "Jodhpur is called the 'Sun City' for its bright, sunny weather year-round, and 'Blue City' for its blue-painted houses.",
+    explanationHi: "जोधपुर को पूरे वर्ष चमकदार धूप के कारण 'सूर्य नगरी' (Sun City) और नीले घरों के कारण 'ब्लू सिटी' कहा जाता है।",
+    language: "en"
+  },
+  {
+    id: "q_mp_1",
+    examId: "ex_state_psc",
+    examName: "State PSC",
+    year: 2024,
+    state: "Madhya Pradesh",
+    subjectId: "sub_psc_gk",
+    subjectName: "State GK & Culture",
+    topicName: "MP General Knowledge",
+    type: "pyq",
+    questionText: "Which city in Madhya Pradesh has consistently been ranked as India's Cleanest City in Swachh Survekshan?",
+    questionTextHi: "स्वच्छ सर्वेक्षण में मध्य प्रदेश के किस शहर को लगातार भारत का सबसे स्वच्छ शहर चुना गया है?",
+    options: [
+      { label: "A", text: "Bhopal" },
+      { label: "B", text: "Indore" },
+      { label: "C", text: "Gwalior" },
+      { label: "D", text: "Jabalpur" }
+    ],
+    optionsHi: [
+      { label: "A", text: "भोपाल" },
+      { label: "B", text: "इंदौर" },
+      { label: "C", text: "ग्वालियर" },
+      { label: "D", text: "जबलपुर" }
+    ],
+    correctAnswer: "B",
+    explanation: "Indore in Madhya Pradesh has consistently won the Cleanest City award in India for multiple consecutive years.",
+    explanationHi: "इंदौर (मध्य प्रदेश) लगातार कई वर्षों से भारत के सबसे स्वच्छ शहर का पुरस्कार जीत रहा है।",
     language: "en"
   }
+];
+
+const DEFAULT_STATES = [
+  "All States",
+  "Uttar Pradesh",
+  "Bihar",
+  "Rajasthan",
+  "Madhya Pradesh",
+  "Delhi",
+  "Haryana",
+  "Maharashtra"
 ];
 
 export default function GovPrepScreen({ session, user, onBack }) {
@@ -386,6 +514,8 @@ export default function GovPrepScreen({ session, user, onBack }) {
   const [years, setYears] = useState([]);
   const [selectedYears, setSelectedYears] = useState([]);
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
+
+  const [selectedState, setSelectedState] = useState("All States");
 
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(null);
@@ -513,6 +643,12 @@ export default function GovPrepScreen({ session, user, onBack }) {
     updateAvailableCount(selectedExam?.id, yearParam, selectedSubject?.id, selectedTopic?.id);
   }
 
+  function handleSelectState(stName) {
+    setSelectedState(stName);
+    const yearParam = selectedYears.length > 0 ? selectedYears.join(",") : "";
+    updateAvailableCount(selectedExam?.id, yearParam, selectedSubject?.id, selectedTopic?.id, stName);
+  }
+
   function handleCategoryChange(catName) {
     setActiveCategory(catName);
     const available = catName === "All" ? allExams : allExams.filter((ex) => (ex.category || "").toLowerCase() === catName.toLowerCase());
@@ -556,11 +692,13 @@ export default function GovPrepScreen({ session, user, onBack }) {
     updateAvailableCount(selectedExam?.id, yearParam, selectedSubject?.id, topic?.id);
   }
 
-  async function updateAvailableCount(examId, year, subjectId, topicId) {
+  async function updateAvailableCount(examId, year, subjectId, topicId, state) {
     try {
       const params = {};
       if (examId) params.examId = examId;
       if (year) params.year = year;
+      const targetState = state !== undefined ? state : selectedState;
+      if (targetState && targetState !== "All States") params.state = targetState;
       if (subjectId) params.subjectId = subjectId;
       if (topicId) params.topicId = topicId;
 
@@ -589,6 +727,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
       const params = {};
       if (selectedExam?.id) params.examId = selectedExam.id;
       if (selectedYears.length > 0) params.year = selectedYears.join(",");
+      if (selectedState && selectedState !== "All States") params.state = selectedState;
       if (selectedSubject?.id) params.subjectId = selectedSubject.id;
       if (selectedTopic?.id) params.topicId = selectedTopic.id;
       params.limit = targetLimit;
@@ -602,14 +741,18 @@ export default function GovPrepScreen({ session, user, onBack }) {
         qList = fallbackRes?.questions || [];
       }
 
-      // If network/API returns 0 questions, use DEFAULT_QUESTIONS fallback filtered by subject
+      // If network/API returns 0 questions, use DEFAULT_QUESTIONS fallback filtered by state & subject
       if (qList.length === 0) {
-        if (selectedSubject?.id) {
-          const filteredBySub = DEFAULT_QUESTIONS.filter((q) => q.subjectId === selectedSubject.id || q.subjectName === selectedSubject.name);
-          qList = filteredBySub.length > 0 ? [...filteredBySub] : [...DEFAULT_QUESTIONS];
-        } else {
-          qList = [...DEFAULT_QUESTIONS];
+        let pool = [...DEFAULT_QUESTIONS];
+        if (selectedState && selectedState !== "All States") {
+          const stateFiltered = pool.filter((q) => !q.state || q.state === "All" || q.state === selectedState);
+          if (stateFiltered.length > 0) pool = stateFiltered;
         }
+        if (selectedSubject?.id) {
+          const filteredBySub = pool.filter((q) => q.subjectId === selectedSubject.id || q.subjectName === selectedSubject.name);
+          if (filteredBySub.length > 0) pool = filteredBySub;
+        }
+        qList = pool;
       }
 
       // Augment qList if it contains fewer items than targetLimit requested
@@ -640,10 +783,16 @@ export default function GovPrepScreen({ session, user, onBack }) {
       setFollowUpResponses([]);
       setInPractice(true);
     } catch (err) {
-      const filteredBySub = selectedSubject?.id
-        ? DEFAULT_QUESTIONS.filter((q) => q.subjectId === selectedSubject.id || q.subjectName === selectedSubject.name)
-        : DEFAULT_QUESTIONS;
-      let finalQList = filteredBySub.length > 0 ? [...filteredBySub] : [...DEFAULT_QUESTIONS];
+      let pool = [...DEFAULT_QUESTIONS];
+      if (selectedState && selectedState !== "All States") {
+        const stateFiltered = pool.filter((q) => !q.state || q.state === "All" || q.state === selectedState);
+        if (stateFiltered.length > 0) pool = stateFiltered;
+      }
+      if (selectedSubject?.id) {
+        const filteredBySub = pool.filter((q) => q.subjectId === selectedSubject.id || q.subjectName === selectedSubject.name);
+        if (filteredBySub.length > 0) pool = filteredBySub;
+      }
+      let finalQList = [...pool];
 
       if (finalQList.length > 0 && finalQList.length < targetLimit) {
         const basePool = [...finalQList];
@@ -1012,11 +1161,43 @@ export default function GovPrepScreen({ session, user, onBack }) {
                   )}
                 </View>
 
-                {/* Step 4: Subject Selection (Optional) */}
+                {/* Step 4: State / Region Selection (State-wise Filter) */}
+                <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
+                  <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>4</Text>
+                  <Text style={[styles.stepTitle, { color: theme.text }]}>Select Target State / Region (राज्य चुनें)</Text>
+                </View>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScrollRow}>
+                  {DEFAULT_STATES.map((stName) => {
+                    const isStActive = selectedState === stName;
+                    return (
+                      <TouchableOpacity
+                        key={`st_${stName}`}
+                        style={[
+                          styles.subjectChip,
+                          { backgroundColor: theme.cardBg, borderColor: theme.border },
+                          isStActive && styles.subjectChipActive
+                        ]}
+                        onPress={() => handleSelectState(stName)}
+                      >
+                        <MaterialCommunityIcons
+                          name={stName === "All States" ? "earth" : "map-marker-radius"}
+                          size={14}
+                          color={isStActive ? "#FFFFFF" : "#09090B"}
+                        />
+                        <Text style={[styles.subjectChipText, { color: theme.text }, isStActive && styles.subjectChipTextActive]}>
+                          {stName}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* Step 5: Subject Selection (Optional) */}
                 {subjects.length > 0 ? (
                   <>
                     <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
-                      <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>4</Text>
+                      <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>5</Text>
                       <Text style={[styles.stepTitle, { color: theme.text }]}>Choose Subject (Optional)</Text>
                     </View>
 
@@ -1057,9 +1238,9 @@ export default function GovPrepScreen({ session, user, onBack }) {
                   </>
                 ) : null}
 
-                {/* Step 5: Question Count & Live Setup Summary Card */}
+                {/* Step 6: Question Count & Live Setup Summary Card */}
                 <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
-                  <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>5</Text>
+                  <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>6</Text>
                   <Text style={[styles.stepTitle, { color: theme.text }]}>Questions Per Session</Text>
                 </View>
 
@@ -1084,9 +1265,9 @@ export default function GovPrepScreen({ session, user, onBack }) {
                   })}
                 </View>
 
-                {/* Step 6: Question Language (Optional) */}
+                {/* Step 7: Question Language (Optional) */}
                 <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
-                  <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>6</Text>
+                  <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>7</Text>
                   <Text style={[styles.stepTitle, { color: theme.text }]}>Question Language (भाषा चुनिए)</Text>
                 </View>
 
@@ -1135,7 +1316,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                     {selectedExam.name} • {selectedYears.length > 0 ? `${selectedYears.slice().sort().reverse().join(", ")} PYQ` : "All Years"}
                   </Text>
                   <Text style={[styles.summarySubText, { color: theme.isDark ? "#CBD5E1" : "#475569" }]}>
-                    Subject: {selectedSubject ? selectedSubject.name : "All Subjects"} • Lang: {selectedLanguage === "hi" ? "Hindi" : "English"} • Limit: {questionCountLimit === "all" ? "All Available" : `${questionCountLimit} Questions`}
+                    State: {selectedState} • Subject: {selectedSubject ? selectedSubject.name : "All Subjects"} • Lang: {selectedLanguage === "hi" ? "Hindi" : "English"} • Limit: {questionCountLimit === "all" ? "All Available" : `${questionCountLimit} Questions`}
                   </Text>
 
                   <View style={styles.availableCounterBadge}>
@@ -1225,6 +1406,11 @@ export default function GovPrepScreen({ session, user, onBack }) {
             <View style={styles.questionMetaRow}>
               <View style={[styles.metaBadge, { backgroundColor: "#F4F4F5" }]}>
                 <Text style={[styles.metaBadgeText, { color: "#09090B" }]}>{currentQ.examName || selectedExam?.name}</Text>
+              </View>
+              <View style={[styles.metaBadge, { backgroundColor: "#EEF2FF" }]}>
+                <Text style={[styles.metaBadgeText, { color: "#4F46E5" }]}>
+                  {currentQ.state && currentQ.state !== "All" ? `${currentQ.state} State` : selectedState !== "All States" ? `${selectedState}` : "All India"}
+                </Text>
               </View>
               <View style={[styles.metaBadge, { backgroundColor: "#ECFDF5" }]}>
                 <Text style={[styles.metaBadgeText, { color: "#059669" }]}>{currentQ.subjectName || "General Paper"}</Text>

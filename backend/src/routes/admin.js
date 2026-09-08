@@ -1184,10 +1184,13 @@ adminRouter.post("/government/questions/import", requireAdmin, async (req, res) 
           continue;
         }
 
+        const state = (q.state || "All").trim();
+
         await GovQuestion.create({
           examId: exam._id,
           examName: exam.name,
           year,
+          state,
           subjectId: subject._id,
           subjectName: subject.name,
           topicId: topic._id,

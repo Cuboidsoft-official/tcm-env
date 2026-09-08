@@ -234,6 +234,7 @@ async function getQuestionsData(filter = {}) {
         }
       }
       if (filter.year) dbFilter.year = Number(filter.year);
+      if (filter.state && filter.state !== "All States" && filter.state !== "All") dbFilter.state = filter.state;
       if (filter.subjectId) dbFilter.subjectId = filter.subjectId;
       if (filter.topicId) dbFilter.topicId = filter.topicId;
       if (filter.type) dbFilter.type = filter.type;
@@ -256,6 +257,7 @@ async function getQuestionsData(filter = {}) {
   if (!questions || questions.length === 0) {
     questions = FALLBACK_QUESTIONS.filter((q) => {
       if (filter.year && Number(q.year) !== Number(filter.year)) return false;
+      if (filter.state && filter.state !== "All States" && filter.state !== "All" && q.state && q.state !== "All" && q.state !== filter.state) return false;
       if (filter.type && q.type !== filter.type) return false;
       return true;
     });
@@ -393,10 +395,11 @@ governmentRouter.get("/subjects/:subjectId/topics", async (req, res) => {
 // 6. Question Count matching filters
 governmentRouter.get("/questions/count", async (req, res) => {
   try {
-    const { examId, year, subjectId, topicId, type } = req.query;
+    const { examId, year, state, subjectId, topicId, type } = req.query;
     const filter = {};
     if (examId) filter.examId = examId;
     if (year) filter.year = Number(year);
+    if (state) filter.state = state;
     if (subjectId) filter.subjectId = subjectId;
     if (topicId) filter.topicId = topicId;
     if (type) filter.type = type;
@@ -411,10 +414,11 @@ governmentRouter.get("/questions/count", async (req, res) => {
 // 7. Get Questions List
 governmentRouter.get("/questions", async (req, res) => {
   try {
-    const { examId, year, subjectId, topicId, type, limit = 20, page = 1 } = req.query;
+    const { examId, year, state, subjectId, topicId, type, limit = 20, page = 1 } = req.query;
     const filter = {};
     if (examId) filter.examId = examId;
     if (year) filter.year = Number(year);
+    if (state) filter.state = state;
     if (subjectId) filter.subjectId = subjectId;
     if (topicId) filter.topicId = topicId;
     if (type) filter.type = type;
@@ -444,10 +448,11 @@ governmentRouter.get("/questions", async (req, res) => {
 // 8. Random Questions for Practice Mode
 governmentRouter.get("/questions/random", async (req, res) => {
   try {
-    const { examId, year, subjectId, topicId, type, limit = 10 } = req.query;
+    const { examId, year, state, subjectId, topicId, type, limit = 10 } = req.query;
     const filter = {};
     if (examId) filter.examId = examId;
     if (year) filter.year = Number(year);
+    if (state) filter.state = state;
     if (subjectId) filter.subjectId = subjectId;
     if (topicId) filter.topicId = topicId;
     if (type) filter.type = type;

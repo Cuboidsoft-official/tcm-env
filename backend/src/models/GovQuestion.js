@@ -78,6 +78,11 @@ const govQuestionSchema = new mongoose.Schema(
       enum: ["en", "hi", "hinglish"],
       default: "en"
     },
+    state: {
+      type: String,
+      default: "All",
+      index: true
+    },
     source: {
       type: String,
       default: "licensed_dataset"
@@ -94,7 +99,7 @@ const govQuestionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-govQuestionSchema.index({ examId: 1, year: 1, subjectId: 1, topicId: 1, type: 1 });
+govQuestionSchema.index({ examId: 1, year: 1, state: 1, subjectId: 1, topicId: 1, type: 1 });
 govQuestionSchema.index({ examId: 1, year: 1 });
 
 export const GovQuestion = mongoose.model("GovQuestion", govQuestionSchema);
