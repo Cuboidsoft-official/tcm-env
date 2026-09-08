@@ -623,9 +623,19 @@ governmentRouter.get("/questions", async (req, res) => {
 
     let questions = await getQuestionsData(filter);
 
-    // If specific filter resulted in 0 questions, return empty state as required
-    const total = questions.length;
-    const paginated = questions.slice(skip, skip + parsedLimit);
+    // Deduplicate questions by text/id
+    const seenMap = new Map();
+    const uniqueQuestions = [];
+    for (const q of questions) {
+      const key = (q.questionText || q.id || q._id || "").trim().toLowerCase();
+      if (key && !seenMap.has(key)) {
+        seenMap.set(key, true);
+        uniqueQuestions.push(q);
+      }
+    }
+
+    const total = uniqueQuestions.length;
+    const paginated = uniqueQuestions.slice(skip, skip + parsedLimit);
 
     return res.json({
       success: true,
@@ -654,8 +664,23 @@ governmentRouter.get("/questions/random", async (req, res) => {
     const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100);
     const allQuestions = await getQuestionsData(filter);
 
-    const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, parsedLimit);
+    const seenMap = new Map();
+    const uniqueQuestions = [];
+    for (const q of allQuestions) {
+      const key = (q.questionText || q.id || q._id || "").trim().toLowerCase();
+      if (key && !seenMap.has(key)) {
+        seenMap.set(key, true);
+        uniqueQuestions.push(q);
+      }
+    }
+
+    // Fisher-Yates Shuffle
+    for (let i = uniqueQuestions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [uniqueQuestions[i], uniqueQuestions[j]] = [uniqueQuestions[j], uniqueQuestions[i]];
+    }
+
+    const selected = uniqueQuestions.slice(0, parsedLimit);
 
     return res.json({
       success: true,

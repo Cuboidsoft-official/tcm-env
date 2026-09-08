@@ -9,9 +9,12 @@ import {
   TextInput,
   Alert,
   Pressable,
-  Dimensions
+  Dimensions,
+  Image
 } from "react-native";
 import { MaterialCommunityIcons, Feather, FontAwesome5 } from "@expo/vector-icons";
+
+const phlappyLogo = require("../../assets/icon.png");
 import { useTheme } from "../context/ThemeContext";
 import { fonts } from "../constants/fonts";
 import { shadow } from "../constants/theme";
@@ -971,6 +974,25 @@ export default function GovPrepScreen({ session, user, onBack }) {
       targetLimit = 50;
     }
 
+    // Helper: Deduplicate by question text/id and Fisher-Yates Shuffle
+    const deduplicateAndShuffle = (rawList) => {
+      const seen = new Set();
+      const unique = [];
+      for (const q of rawList) {
+        const key = (q.questionText || q.id || "").trim().toLowerCase();
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          unique.push(q);
+        }
+      }
+      // Fisher-Yates random shuffle
+      for (let i = unique.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [unique[i], unique[j]] = [unique[j], unique[i]];
+      }
+      return unique;
+    };
+
     try {
       const params = {};
       if (selectedExam?.id) params.examId = selectedExam.id;
@@ -1003,21 +1025,10 @@ export default function GovPrepScreen({ session, user, onBack }) {
         qList = pool;
       }
 
-      // Augment qList if it contains fewer items than targetLimit requested
-      if (qList.length > 0 && qList.length < targetLimit) {
-        const basePool = [...qList];
-        let seedIndex = 0;
-        while (qList.length < targetLimit) {
-          const baseItem = basePool[seedIndex % basePool.length];
-          qList.push({
-            ...baseItem,
-            id: `${baseItem.id || "q"}_aug_${qList.length + 1}`
-          });
-          seedIndex++;
-        }
-      }
+      // Deduplicate & Random Shuffle
+      const cleanList = deduplicateAndShuffle(qList);
 
-      const formattedQuestions = qList.slice(0, targetLimit).map((q) => ({
+      const formattedQuestions = cleanList.slice(0, targetLimit).map((q) => ({
         ...q,
         examName: q.examName || selectedExam?.name || "Government Exam",
         subjectName: q.subjectName || selectedSubject?.name || "General Practice Paper"
@@ -1040,22 +1051,10 @@ export default function GovPrepScreen({ session, user, onBack }) {
         const filteredBySub = pool.filter((q) => q.subjectId === selectedSubject.id || q.subjectName === selectedSubject.name);
         if (filteredBySub.length > 0) pool = filteredBySub;
       }
-      let finalQList = [...pool];
 
-      if (finalQList.length > 0 && finalQList.length < targetLimit) {
-        const basePool = [...finalQList];
-        let seedIndex = 0;
-        while (finalQList.length < targetLimit) {
-          const baseItem = basePool[seedIndex % basePool.length];
-          finalQList.push({
-            ...baseItem,
-            id: `${baseItem.id || "q"}_aug_${finalQList.length + 1}`
-          });
-          seedIndex++;
-        }
-      }
+      const cleanList = deduplicateAndShuffle(pool);
 
-      const formattedQuestions = finalQList.slice(0, targetLimit).map((q) => ({
+      const formattedQuestions = cleanList.slice(0, targetLimit).map((q) => ({
         ...q,
         examName: selectedExam?.name || "Government Exam",
         subjectName: selectedSubject?.name || "General Practice Paper"
@@ -1793,27 +1792,27 @@ export default function GovPrepScreen({ session, user, onBack }) {
                     </View>
                   ) : null}
 
-                  {/* Groq AI Explanation Button */}
+                  {/* Phlappy AI Explanation Button */}
                   <TouchableOpacity style={styles.aiExplainTriggerBtn} onPress={() => handleExplainWithAI(aiLanguage)}>
                     {aiLoading ? (
                       <ActivityIndicator color="#09090B" />
                     ) : (
                       <>
-                        <MaterialCommunityIcons name="sparkles" size={18} color="#09090B" />
-                        <Text style={styles.aiExplainTriggerBtnText}>Explain with Groq AI ✨</Text>
+                        <Image source={phlappyLogo} style={styles.phlappyAvatarSmall} resizeMode="contain" />
+                        <Text style={styles.aiExplainTriggerBtnText}>Ask Phlappy AI ✨</Text>
                       </>
                     )}
                   </TouchableOpacity>
                 </View>
               )}
 
-              {/* GROQ AI EXPLANATION SECTION */}
+              {/* PHLAPPY AI EXPLANATION SECTION */}
               {aiExplanation ? (
                 <View style={[styles.aiExplanationWrapper, { backgroundColor: theme.isDark ? "#18181B" : "#FAFAFA", borderColor: "#E4E4E7" }]}>
                   <View style={styles.aiCardHeaderRow}>
                     <View style={styles.aiRobotBadge}>
-                      <MaterialCommunityIcons name="robot" size={18} color="#09090B" />
-                      <Text style={styles.aiRobotBadgeText}>GROQ AI TUTOR</Text>
+                      <Image source={phlappyLogo} style={styles.phlappyAvatarBadgeLogo} resizeMode="contain" />
+                      <Text style={styles.aiRobotBadgeText}>PHLAPPY AI TUTOR</Text>
                     </View>
 
                     {/* Language Pills */}
@@ -1989,6 +1988,9 @@ const styles = StyleSheet.create({
     flex: 1
   },
   headerContainer: {
+    width: "100%",
+    maxWidth: 900,
+    alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -2016,6 +2018,9 @@ const styles = StyleSheet.create({
 
   // Main Tab Switcher
   tabBarContainer: {
+    width: "100%",
+    maxWidth: 900,
+    alignSelf: "center",
     flexDirection: "row",
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -2047,6 +2052,9 @@ const styles = StyleSheet.create({
     flex: 1
   },
   scrollBodyContent: {
+    width: "100%",
+    maxWidth: 900,
+    alignSelf: "center",
     padding: 16,
     paddingBottom: 60
   },
@@ -2459,6 +2467,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 13
   },
+  phlappyAvatarSmall: {
+    width: 18,
+    height: 18,
+    borderRadius: 9
+  },
 
   // AI Explanation Wrapper
   aiExplanationWrapper: {
@@ -2477,6 +2490,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6
+  },
+  phlappyAvatarBadgeLogo: {
+    width: 22,
+    height: 22,
+    borderRadius: 11
   },
   aiRobotBadgeText: {
     fontSize: 11,
