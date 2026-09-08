@@ -46,12 +46,45 @@ const DEFAULT_EXAM_LIST = [
   { id: "ex_defence", name: "CDS Defence", category: "Defence", description: "Combined Defence Services Examination", isActive: true }
 ];
 
-const DEFAULT_SUBJECTS = [
-  { id: "sub_reasoning", name: "Reasoning", icon: "brain" },
-  { id: "sub_quant", name: "Quantitative Aptitude", icon: "calculator" },
-  { id: "sub_ga", name: "General Awareness", icon: "book-open" },
-  { id: "sub_english", name: "English Comprehension", icon: "format-title" }
-];
+const EXAM_CATEGORY_SUBJECTS = {
+  SSC: [
+    { id: "sub_reasoning", name: "Reasoning", icon: "brain" },
+    { id: "sub_quant", name: "Quantitative Aptitude", icon: "calculator" },
+    { id: "sub_ga", name: "General Awareness", icon: "book-open" },
+    { id: "sub_english", name: "English Comprehension", icon: "format-title" }
+  ],
+  Railway: [
+    { id: "sub_rrb_math", name: "Mathematics", icon: "calculator" },
+    { id: "sub_rrb_reasoning", name: "General Intelligence & Reasoning", icon: "brain" },
+    { id: "sub_rrb_sci", name: "General Science", icon: "flask" },
+    { id: "sub_rrb_ga", name: "General Awareness & Current Affairs", icon: "globe-model" }
+  ],
+  Banking: [
+    { id: "sub_ibps_reasoning", name: "Reasoning Ability", icon: "brain" },
+    { id: "sub_ibps_quant", name: "Quantitative Aptitude", icon: "calculator" },
+    { id: "sub_ibps_english", name: "English Language", icon: "format-title" },
+    { id: "sub_ibps_banking", name: "Banking & Financial Awareness", icon: "bank" }
+  ],
+  UPSC: [
+    { id: "sub_upsc_gs", name: "General Studies (Polity, History, Geo)", icon: "scale-balance" },
+    { id: "sub_upsc_csat", name: "CSAT (Aptitude & Comprehension)", icon: "notebook-text" }
+  ],
+  "State PSC": [
+    { id: "sub_psc_gk", name: "State GK & Culture", icon: "map-marker-path" },
+    { id: "sub_psc_gs", name: "General Studies & Polity", icon: "bank" },
+    { id: "sub_psc_apt", name: "Mental Ability & Aptitude", icon: "brain" }
+  ],
+  Police: [
+    { id: "sub_pol_gk", name: "General Knowledge & Science", icon: "shield-half-full" },
+    { id: "sub_pol_reasoning", name: "Reasoning & Mental Ability", icon: "brain" },
+    { id: "sub_pol_num", name: "Numerical Ability", icon: "calculator" }
+  ],
+  Defence: [
+    { id: "sub_def_math", name: "Elementary Mathematics", icon: "calculator" },
+    { id: "sub_def_eng", name: "English Language", icon: "format-title" },
+    { id: "sub_def_gk", name: "General Knowledge & Science", icon: "shield-star" }
+  ]
+};
 
 const DEFAULT_QUESTIONS = [
   {
@@ -64,14 +97,22 @@ const DEFAULT_QUESTIONS = [
     topicName: "Analogy",
     type: "pyq",
     questionText: "Book : Read :: Food : ?",
+    questionTextHi: "पुस्तक : पढ़ना :: भोजन : ?",
     options: [
       { label: "A", text: "Cook" },
       { label: "B", text: "Eat" },
       { label: "C", text: "Buy" },
       { label: "D", text: "Sell" }
     ],
+    optionsHi: [
+      { label: "A", text: "पकाना" },
+      { label: "B", text: "खाना" },
+      { label: "C", text: "खरीदना" },
+      { label: "D", text: "बेचना" }
+    ],
     correctAnswer: "B",
     explanation: "Just as a 'Book' is meant to be 'Read', 'Food' is meant to be 'Eaten'. Therefore, 'Eat' is the correct relationship.",
+    explanationHi: "जिस प्रकार 'पुस्तक' का सम्बन्ध 'पढ़ने' से है, उसी प्रकार 'भोजन' का सम्बन्ध 'खाने' से है।",
     language: "en"
   },
   {
@@ -84,7 +125,14 @@ const DEFAULT_QUESTIONS = [
     topicName: "Number Series",
     type: "pyq",
     questionText: "Find the missing number in the series: 4, 9, 19, 39, 79, ?",
+    questionTextHi: "श्रृंखला में लुप्त संख्या ज्ञात कीजिए: 4, 9, 19, 39, 79, ?",
     options: [
+      { label: "A", text: "159" },
+      { label: "B", text: "149" },
+      { label: "C", text: "169" },
+      { label: "D", text: "139" }
+    ],
+    optionsHi: [
       { label: "A", text: "159" },
       { label: "B", text: "149" },
       { label: "C", text: "169" },
@@ -92,6 +140,7 @@ const DEFAULT_QUESTIONS = [
     ],
     correctAnswer: "A",
     explanation: "Pattern: Each number is (Previous × 2) + 1. So 79×2+1 = 159.",
+    explanationHi: "पैटर्न: प्रत्येक संख्या (पिछली × 2) + 1 है। अतः 79 × 2 + 1 = 159।",
     language: "en"
   },
   {
@@ -104,14 +153,22 @@ const DEFAULT_QUESTIONS = [
     topicName: "Percentage",
     type: "pyq",
     questionText: "If a number is increased by 20% and then decreased by 20%, what is the net percentage change?",
+    questionTextHi: "यदि किसी संख्या में 20% की वृद्धि की जाती है और फिर 20% की कमी की जाती है, तो शुद्ध प्रतिशत परिवर्तन क्या है?",
     options: [
       { label: "A", text: "No change" },
       { label: "B", text: "4% Increase" },
       { label: "C", text: "4% Decrease" },
       { label: "D", text: "2% Decrease" }
     ],
+    optionsHi: [
+      { label: "A", text: "कोई परिवर्तन नहीं" },
+      { label: "B", text: "4% वृद्धि" },
+      { label: "C", text: "4% कमी" },
+      { label: "D", text: "2% कमी" }
+    ],
     correctAnswer: "C",
     explanation: "Net Change = +20 - 20 + (20 × -20)/100 = -4%. A net 4% decrease.",
+    explanationHi: "शुद्ध परिवर्तन = +20 - 20 + (20 × -20)/100 = -4% (अर्थात 4% की कमी)।",
     language: "en"
   },
   {
@@ -124,14 +181,22 @@ const DEFAULT_QUESTIONS = [
     topicName: "Ratio & Proportion",
     type: "pyq",
     questionText: "The ratio of ages of A and B is 3:4. After 5 years, the ratio becomes 4:5. What is the present age of A?",
+    questionTextHi: "A और B की आयु का अनुपात 3:4 है। 5 वर्ष बाद अनुपात 4:5 हो जाता है। A की वर्तमान आयु क्या है?",
     options: [
       { label: "A", text: "12 years" },
       { label: "B", text: "15 years" },
       { label: "C", text: "20 years" },
       { label: "D", text: "25 years" }
     ],
+    optionsHi: [
+      { label: "A", text: "12 वर्ष" },
+      { label: "B", text: "15 वर्ष" },
+      { label: "C", text: "20 वर्ष" },
+      { label: "D", text: "25 वर्ष" }
+    ],
     correctAnswer: "B",
     explanation: "Let present ages be 3x and 4x. (3x + 5)/(4x + 5) = 4/5 => 5(3x + 5) = 4(4x + 5) => 15x + 25 = 16x + 20 => x = 5. Present age of A = 3 × 5 = 15 years.",
+    explanationHi: "माना आयु 3x और 4x है। (3x + 5)/(4x + 5) = 4/5 => x = 5। A की वर्तमान आयु = 3 × 5 = 15 वर्ष।",
     language: "en"
   },
   {
@@ -144,14 +209,22 @@ const DEFAULT_QUESTIONS = [
     topicName: "Indian History",
     type: "pyq",
     questionText: "Who was the founder of the Maurya Empire in ancient India?",
+    questionTextHi: "प्राचीन भारत में मौर्य साम्राज्य के संस्थापक कौन थे?",
     options: [
       { label: "A", text: "Ashoka the Great" },
       { label: "B", text: "Chandragupta Maurya" },
       { label: "C", text: "Bindusara" },
       { label: "D", text: "Bimbisara" }
     ],
+    optionsHi: [
+      { label: "A", text: "सम्राट अशोक" },
+      { label: "B", text: "चंद्रगुप्त मौर्य" },
+      { label: "C", text: "बिंदुसर" },
+      { label: "D", text: "बिंबिसार" }
+    ],
     correctAnswer: "B",
     explanation: "Chandragupta Maurya founded the Maurya Empire in 322 BCE.",
+    explanationHi: "चंद्रगुप्त मौर्य ने 322 ईसा पूर्व में मौर्य साम्राज्य की स्थापना की थी।",
     language: "en"
   },
   {
@@ -164,14 +237,22 @@ const DEFAULT_QUESTIONS = [
     topicName: "Geography",
     type: "pyq",
     questionText: "Which Indian city is famously known as the 'Pink City' of India?",
+    questionTextHi: "भारत के किस शहर को 'गुलाबी नगरी' (Pink City) के नाम से जाना जाता है?",
     options: [
       { label: "A", text: "Udaipur" },
       { label: "B", text: "Jaipur" },
       { label: "C", text: "Jodhpur" },
       { label: "D", text: "Jaisalmer" }
     ],
+    optionsHi: [
+      { label: "A", text: "उदयपुर" },
+      { label: "B", text: "जयपुर" },
+      { label: "C", text: "जोधपुर" },
+      { label: "D", text: "जैसलमेर" }
+    ],
     correctAnswer: "B",
     explanation: "Jaipur is known as the Pink City of India due to the distinctive color of its buildings.",
+    explanationHi: "जयपुर को इसकी इमारतों के विशिष्ट गुलाबी रंग के कारण गुलाबी नगरी के रूप में जाना जाता है।",
     language: "en"
   },
   {
@@ -184,14 +265,22 @@ const DEFAULT_QUESTIONS = [
     topicName: "Vocabulary",
     type: "pyq",
     questionText: "Select the most appropriate SYNONYM of the word 'BENEVOLENT':",
+    questionTextHi: "'BENEVOLENT' शब्द का सबसे उपयुक्त पर्यायवाची (Synonym) चुनिए:",
     options: [
       { label: "A", text: "Cruel" },
       { label: "B", text: "Kind" },
       { label: "C", text: "Greedy" },
       { label: "D", text: "Hateful" }
     ],
+    optionsHi: [
+      { label: "A", text: "Cruel (क्रूर)" },
+      { label: "B", text: "Kind (दयालु)" },
+      { label: "C", text: "Greedy (लालची)" },
+      { label: "D", text: "Hateful (घृणास्पद)" }
+    ],
     correctAnswer: "B",
     explanation: "'Benevolent' means well-meaning and kindly. Therefore, 'Kind' is the correct synonym.",
+    explanationHi: "'Benevolent' का अर्थ दयालु/परोपकारी होता है। अतः 'Kind' सही उत्तर है।",
     language: "en"
   },
   {
@@ -204,7 +293,14 @@ const DEFAULT_QUESTIONS = [
     topicName: "Spelling",
     type: "pyq",
     questionText: "Select the correctly spelt word:",
+    questionTextHi: "सही वर्तनी (Correct Spelling) वाला शब्द चुनिए:",
     options: [
+      { label: "A", text: "Recieve" },
+      { label: "B", text: "Receive" },
+      { label: "C", text: "Receave" },
+      { label: "D", text: "Receeve" }
+    ],
+    optionsHi: [
       { label: "A", text: "Recieve" },
       { label: "B", text: "Receive" },
       { label: "C", text: "Receave" },
@@ -212,6 +308,7 @@ const DEFAULT_QUESTIONS = [
     ],
     correctAnswer: "B",
     explanation: "The correct spelling is 'Receive' (rule: 'i' before 'e' except after 'c').",
+    explanationHi: "सही वर्तनी 'Receive' है।",
     language: "en"
   },
   {
@@ -224,14 +321,22 @@ const DEFAULT_QUESTIONS = [
     topicName: "Physics",
     type: "pyq",
     questionText: "What is the SI unit of electrical resistance?",
+    questionTextHi: "विद्युत प्रतिरोध का SI मात्रक क्या है?",
     options: [
       { label: "A", text: "Volt" },
       { label: "B", text: "Ampere" },
       { label: "C", text: "Ohm" },
       { label: "D", text: "Watt" }
     ],
+    optionsHi: [
+      { label: "A", text: "वोल्ट" },
+      { label: "B", text: "एम्पीयर" },
+      { label: "C", text: "ओम (Ohm)" },
+      { label: "D", text: "वाट" }
+    ],
     correctAnswer: "C",
     explanation: "The SI unit of electrical resistance is Ohm (Ω).",
+    explanationHi: "विद्युत प्रतिरोध का SI मात्रक ओम (Ohm - Ω) होता है।",
     language: "en"
   },
   {
@@ -244,14 +349,22 @@ const DEFAULT_QUESTIONS = [
     topicName: "Indian Polity",
     type: "pyq",
     questionText: "Which Article of the Indian Constitution guarantees 'Equality before Law'?",
+    questionTextHi: "भारतीय संविधान का कौन सा अनुच्छेद 'विधि के समक्ष समता' की गारंटी देता है?",
     options: [
       { label: "A", text: "Article 12" },
       { label: "B", text: "Article 14" },
       { label: "C", text: "Article 19" },
       { label: "D", text: "Article 21" }
     ],
+    optionsHi: [
+      { label: "A", text: "अनुच्छेद 12" },
+      { label: "B", text: "अनुच्छेद 14" },
+      { label: "C", text: "अनुच्छेद 19" },
+      { label: "D", text: "अनुच्छेद 21" }
+    ],
     correctAnswer: "B",
     explanation: "Article 14 guarantees equality before law and equal protection of laws to all persons within India.",
+    explanationHi: "अनुच्छेद 14 भारत के सभी नागरिकों को कानून के समक्ष समानता की गारंटी देता है।",
     language: "en"
   }
 ];
@@ -279,6 +392,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
 
   const [questionCountLimit, setQuestionCountLimit] = useState("20");
   const [availableCount, setAvailableCount] = useState(0);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   // Practice State
   const [inPractice, setInPractice] = useState(false);
@@ -352,6 +466,10 @@ export default function GovPrepScreen({ session, user, onBack }) {
   async function loadExamDetails(examId) {
     if (!examId) return;
     try {
+      const targetExam = allExams.find((ex) => ex.id === examId || ex._id === examId) || selectedExam;
+      const catKey = targetExam?.category || "SSC";
+      const catSubjects = EXAM_CATEGORY_SUBJECTS[catKey] || EXAM_CATEGORY_SUBJECTS["SSC"];
+
       const [yearRes, subRes] = await Promise.all([
         getGovYears(examId).catch(() => ({ years: [] })),
         getGovSubjects(examId).catch(() => ({ subjects: [] }))
@@ -363,7 +481,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
       setSelectedYear(defaultYr);
 
       const fetchedSubs = subRes?.subjects || [];
-      const subList = fetchedSubs.length > 0 ? fetchedSubs : DEFAULT_SUBJECTS;
+      const subList = fetchedSubs.length > 0 ? fetchedSubs : catSubjects;
       setSubjects(subList);
       setSelectedSubject(null);
       setSelectedTopic(null);
@@ -372,7 +490,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
       updateAvailableCount(examId, defaultYr, null, null);
     } catch (e) {
       console.warn("Error loading exam details:", e);
-      setSubjects(DEFAULT_SUBJECTS);
+      setSubjects(EXAM_CATEGORY_SUBJECTS["SSC"]);
     }
   }
 
@@ -611,6 +729,10 @@ export default function GovPrepScreen({ session, user, onBack }) {
   const currentQ = questions[currentIndex];
   const progressPct = questions.length > 0 ? Math.round(((currentIndex + 1) / questions.length) * 100) : 0;
   const isSavedCurrent = currentQ ? savedIds.includes(currentQ.id || currentQ._id) : false;
+
+  const displayQuestionText = currentQ ? (selectedLanguage === "hi" && currentQ.questionTextHi ? currentQ.questionTextHi : currentQ.questionText) : "";
+  const displayOptions = currentQ ? (selectedLanguage === "hi" && currentQ.optionsHi ? currentQ.optionsHi : currentQ.options) : [];
+  const displayExplanation = currentQ ? (selectedLanguage === "hi" && currentQ.explanationHi ? currentQ.explanationHi : currentQ.explanation) : "";
 
   return (
     <View style={[styles.screenContainer, { backgroundColor: theme.bg }]}>
@@ -884,6 +1006,46 @@ export default function GovPrepScreen({ session, user, onBack }) {
                   })}
                 </View>
 
+                {/* Step 6: Question Language (Optional) */}
+                <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
+                  <Text style={[styles.stepNumberBadge, { backgroundColor: "#DC2626" }]}>6</Text>
+                  <Text style={[styles.stepTitle, { color: theme.text }]}>Question Language (भाषा चुनिए)</Text>
+                </View>
+
+                <View style={styles.pillsWrapRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.limitPill,
+                      { backgroundColor: theme.cardBg, borderColor: theme.border },
+                      selectedLanguage === "en" && styles.limitPillActive
+                    ]}
+                    onPress={() => {
+                      setSelectedLanguage("en");
+                      setAiLanguage("en");
+                    }}
+                  >
+                    <Text style={[styles.limitPillText, { color: theme.text }, selectedLanguage === "en" && styles.limitPillTextActive]}>
+                      🇬🇧 English Medium
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.limitPill,
+                      { backgroundColor: theme.cardBg, borderColor: theme.border },
+                      selectedLanguage === "hi" && styles.limitPillActive
+                    ]}
+                    onPress={() => {
+                      setSelectedLanguage("hi");
+                      setAiLanguage("hi");
+                    }}
+                  >
+                    <Text style={[styles.limitPillText, { color: theme.text }, selectedLanguage === "hi" && styles.limitPillTextActive]}>
+                      🇮🇳 हिंदी माध्यम (Hindi)
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
                 {/* Live Setup Summary Banner */}
                 <View style={[styles.summaryBannerCard, { backgroundColor: theme.isDark ? "#450A0A" : "#FEF2F2", borderColor: "#FCA5A5" }]}>
                   <View style={styles.summaryTopRow}>
@@ -895,7 +1057,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                     {selectedExam.name} • {selectedYear ? `${selectedYear} PYQ` : "All Years"}
                   </Text>
                   <Text style={[styles.summarySubText, { color: theme.isDark ? "#CBD5E1" : "#475569" }]}>
-                    Subject: {selectedSubject ? selectedSubject.name : "All Subjects"} • Limit: {questionCountLimit === "all" ? "All Available" : `${questionCountLimit} Questions`}
+                    Subject: {selectedSubject ? selectedSubject.name : "All Subjects"} • Lang: {selectedLanguage === "hi" ? "Hindi" : "English"} • Limit: {questionCountLimit === "all" ? "All Available" : `${questionCountLimit} Questions`}
                   </Text>
 
                   <View style={styles.availableCounterBadge}>
@@ -925,7 +1087,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
         {/* VIEW 2: ACTIVE QUESTION PRACTICE SESSION */}
         {inPractice && currentQ ? (
           <View style={styles.practiceSessionContainer}>
-            {/* Header Progress & Exit */}
+            {/* Header Progress, Exit & Live Language Toggle */}
             <View style={[styles.practiceTopNav, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <TouchableOpacity style={styles.exitSessionBtn} onPress={() => setInPractice(false)}>
                 <Feather name="x" size={18} color={theme.text} />
@@ -934,8 +1096,37 @@ export default function GovPrepScreen({ session, user, onBack }) {
 
               <View style={styles.progressCounterBox}>
                 <Text style={[styles.progressCounterText, { color: theme.text }]}>
-                  Question <Text style={{ color: "#DC2626", fontWeight: "700" }}>{currentIndex + 1}</Text> / {questions.length}
+                  Q<Text style={{ color: "#DC2626", fontWeight: "700" }}>{currentIndex + 1}</Text>/{questions.length}
                 </Text>
+              </View>
+
+              {/* Live Language Switcher: EN | Hindi */}
+              <View style={[styles.langToggleHeaderBox, { borderColor: theme.border, backgroundColor: theme.isDark ? "#1E293B" : "#F1F5F9" }]}>
+                <TouchableOpacity
+                  style={[
+                    styles.langTogglePill,
+                    selectedLanguage === "en" && { backgroundColor: "#DC2626" }
+                  ]}
+                  onPress={() => {
+                    setSelectedLanguage("en");
+                    setAiLanguage("en");
+                  }}
+                >
+                  <Text style={[styles.langToggleText, { color: selectedLanguage === "en" ? "#FFFFFF" : theme.subtext }]}>EN</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.langTogglePill,
+                    selectedLanguage === "hi" && { backgroundColor: "#DC2626" }
+                  ]}
+                  onPress={() => {
+                    setSelectedLanguage("hi");
+                    setAiLanguage("hi");
+                  }}
+                >
+                  <Text style={[styles.langToggleText, { color: selectedLanguage === "hi" ? "#FFFFFF" : theme.subtext }]}>हिंदी</Text>
+                </TouchableOpacity>
               </View>
 
               <TouchableOpacity style={styles.bookmarkHeaderBtn} onPress={() => handleToggleSaveQuestion(currentQ)}>
@@ -970,12 +1161,12 @@ export default function GovPrepScreen({ session, user, onBack }) {
             {/* Question Text Box */}
             <View style={[styles.questionCardBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <Text style={[styles.questionTextTitle, { color: theme.text }]}>
-                Q{currentIndex + 1}. {currentQ.questionText}
+                Q{currentIndex + 1}. {displayQuestionText}
               </Text>
 
               {/* Options List */}
               <View style={styles.optionsListContainer}>
-                {currentQ.options?.map((opt) => {
+                {displayOptions?.map((opt) => {
                   const isSelected = selectedOption === opt.label;
                   const isCorrectOpt = String(opt.label).toUpperCase() === String(currentQ.correctAnswer).toUpperCase();
 
@@ -1050,6 +1241,14 @@ export default function GovPrepScreen({ session, user, onBack }) {
                       </Text>
                     </View>
                   )}
+
+                  {/* Solution & Explanation Box */}
+                  {displayExplanation ? (
+                    <View style={[styles.explanationCard, { backgroundColor: theme.isDark ? "#1E293B" : "#F8FAFC", borderColor: theme.border }]}>
+                      <Text style={[styles.explanationHeadingText, { color: theme.text }]}>Solution / व्याख्या:</Text>
+                      <Text style={[styles.explanationBodyText, { color: theme.subtext }]}>{displayExplanation}</Text>
+                    </View>
+                  ) : null}
 
                   {/* Groq AI Explanation Button */}
                   <TouchableOpacity style={styles.aiExplainTriggerBtn} onPress={() => handleExplainWithAI(aiLanguage)}>
@@ -1974,5 +2173,40 @@ const styles = StyleSheet.create({
     marginTop: 14,
     fontSize: 13.5,
     fontFamily: fonts.medium
+  },
+
+  langToggleHeaderBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 2,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 2
+  },
+  langTogglePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12
+  },
+  langToggleText: {
+    fontSize: 10.5,
+    fontFamily: fonts.bold
+  },
+
+  explanationCard: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginVertical: 10
+  },
+  explanationHeadingText: {
+    fontSize: 12.5,
+    fontFamily: fonts.bold,
+    marginBottom: 4
+  },
+  explanationBodyText: {
+    fontSize: 12,
+    fontFamily: fonts.regular,
+    lineHeight: 18
   }
 });
