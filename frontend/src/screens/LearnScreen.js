@@ -129,7 +129,7 @@ function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694
   return url;
 }
 
-export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory, onOpenDiscoverPartners, onBack }) {
+export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory, onOpenDiscoverPartners, onOpenGovPrep, onBack }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [allMentorsModalVisible, setAllMentorsModalVisible] = useState(false);
@@ -417,6 +417,37 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
         </View>
       </Pressable>
 
+      {/* GOVERNMENT PREPARATION SECTION CARD */}
+      <Pressable
+        onPress={() => (onOpenGovPrep ? onOpenGovPrep() : Alert.alert("Government Preparation", "Opening Government Exam Module..."))}
+        style={({ pressed }) => [
+          styles.govPrepCardContainer,
+          { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF", borderColor: "#C4B5FD" },
+          pressed && styles.pressed
+        ]}
+      >
+        <View style={styles.govCardContent}>
+          <View style={styles.govBadgeRow}>
+            <MaterialCommunityIcons name="bank" size={16} color="#5B3CF5" />
+            <Text style={styles.govBadgeLabel}>GOVERNMENT EXAM PREPARATION</Text>
+          </View>
+          <Text style={[styles.govCardMainTitle, { color: theme.isDark ? "#FFFFFF" : "#0F172A" }]}>
+            Prepare Smarter. Crack Your Exam.
+          </Text>
+          <Text style={[styles.govCardSubText, { color: theme.isDark ? "#CBD5E1" : "#475569" }]}>
+            Practice real exam questions from SSC, Railway, Banking, UPSC & more with instant Groq AI explanations.
+          </Text>
+          <View style={styles.govCardFooterRow}>
+            <View style={styles.govStartPracticeBtn}>
+              <Text style={styles.govStartPracticeText}>Start Practice →</Text>
+            </View>
+            <View style={styles.govTagPill}>
+              <Text style={styles.govTagPillText}>1,250+ PYQs & Practice Sets</Text>
+            </View>
+          </View>
+        </View>
+      </Pressable>
+
       <View style={styles.exploreTcmSection}>
         <Text style={[styles.exploreTcmHeaderTitle, { color: theme.text }]}>Explore TCM One</Text>
         <View style={styles.exploreTcmGrid}>
@@ -458,25 +489,21 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>NEET & JEE Prep (Soon)</Text>
           </Pressable>
 
-          {/* 3. Government Exams - LOCKED (COMING SOON) */}
+          {/* 3. Government Preparation - UNLOCKED */}
           <Pressable
-            onPress={() => {
-              setComingSoonCatName("UPSC & Government Exams");
-              setComingSoonModalVisible(true);
-            }}
+            onPress={() => (onOpenGovPrep ? onOpenGovPrep() : Alert.alert("Government Preparation", "Opening Government Exam Module..."))}
             style={({ pressed }) => [styles.exploreTcmCard, { backgroundColor: theme.cardBg, borderColor: theme.border }, pressed && styles.pressed]}
           >
             <View style={styles.exploreTcmHeaderRow}>
               <View style={[styles.exploreIconBox, { backgroundColor: theme.isDark ? "#78350F" : "#FFF8EC" }]}>
                 <MaterialCommunityIcons name="bank" size={20} color={theme.isDark ? "#FBBF24" : "#E7A900"} />
               </View>
-              <View style={{ backgroundColor: "#FFF8EC", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: "row", alignItems: "center", gap: 3 }}>
-                <Feather name="lock" size={9} color="#E7A900" />
-                <Text style={{ fontSize: 9, fontFamily: fonts.bold, color: "#E7A900" }}>SOON</Text>
+              <View style={{ backgroundColor: "#E8F5E9", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ fontSize: 9, fontFamily: fonts.bold, color: "#0A6836" }}>UNLOCKED</Text>
               </View>
             </View>
-            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>TCM One Govt</Text>
-            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>UPSC & Govt (Soon)</Text>
+            <Text style={[styles.exploreTcmTitle, { color: theme.text }]}>Government Prep</Text>
+            <Text style={[styles.exploreTcmSub, { color: theme.subtext }]}>SSC, Railway, UPSC & Banking</Text>
           </Pressable>
 
           {/* 4. IT Placement Track - UNLOCKED */}
@@ -1861,5 +1888,67 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontFamily: fonts.bold,
     fontSize: 11.5
+  },
+
+  // Government Preparation Card Styles
+  govPrepCardContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 18,
+    ...shadow.soft
+  },
+  govCardContent: {},
+  govBadgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6
+  },
+  govBadgeLabel: {
+    fontSize: 11,
+    fontFamily: fonts.bold,
+    color: "#5B3CF5",
+    marginLeft: 4,
+    letterSpacing: 0.5
+  },
+  govCardMainTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 17,
+    marginBottom: 4
+  },
+  govCardSubText: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 14
+  },
+  govCardFooterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  govStartPracticeBtn: {
+    backgroundColor: "#5B3CF5",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10
+  },
+  govStartPracticeText: {
+    color: "#FFFFFF",
+    fontFamily: fonts.bold,
+    fontSize: 12
+  },
+  govTagPill: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#DDD6FE"
+  },
+  govTagPillText: {
+    color: "#5B3CF5",
+    fontFamily: fonts.bold,
+    fontSize: 10.5
   }
 });

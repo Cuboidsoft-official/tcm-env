@@ -12,6 +12,7 @@ import { profileRouter } from "./routes/profile.js";
 import { chatRouter } from "./routes/chat.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { adminRouter } from "./routes/admin.js";
+import { governmentRouter } from "./routes/government.js";
 import { uploadsRouter, UPLOADS_DIR } from "./routes/uploads.js";
 
 dotenv.config();
@@ -51,6 +52,7 @@ app.use("/api/home", homeRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/jobs", jobsRouter);
+app.use("/api/government", governmentRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/uploads", uploadsRouter);
 

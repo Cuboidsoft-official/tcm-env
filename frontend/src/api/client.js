@@ -1220,5 +1220,77 @@ export async function getExamResults(token) {
   }
 }
 
+// GOVERNMENT PREPARATION MODULE API METHODS
+export function getGovCategories() {
+  return request("/government/categories");
+}
+
+export function getGovExams(category = "") {
+  const q = category ? `?category=${encodeURIComponent(category)}` : "";
+  return request(`/government/exams${q}`);
+}
+
+export function getGovYears(examId) {
+  return request(`/government/exams/${examId}/years`);
+}
+
+export function getGovSubjects(examId) {
+  return request(`/government/exams/${examId}/subjects`);
+}
+
+export function getGovTopics(subjectId) {
+  return request(`/government/subjects/${subjectId}/topics`);
+}
+
+export function getGovQuestionCount(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return request(`/government/questions/count?${query}`);
+}
+
+export function getGovQuestions(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return request(`/government/questions?${query}`);
+}
+
+export function getGovRandomQuestions(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return request(`/government/questions/random?${query}`);
+}
+
+export function attemptGovQuestion(token, questionId, payload) {
+  return request(`/government/questions/${questionId}/attempt`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload)
+  });
+}
+
+export function saveGovQuestion(token, questionId) {
+  return request(`/government/questions/${questionId}/save`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+export function getSavedGovQuestions(token) {
+  return request("/government/saved", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+export function getGovProgress(token) {
+  return request("/government/progress", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+export function explainGovQuestionWithAI(token, questionId, payload = {}) {
+  return request(`/government/questions/${questionId}/explain-ai`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload)
+  });
+}
+
 
 

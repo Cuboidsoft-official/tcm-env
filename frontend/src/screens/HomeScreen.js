@@ -46,6 +46,7 @@ import ProfileScreen from "./ProfileScreen";
 import UserProfileScreen from "./UserProfileScreen";
 import ProfileSettingsScreen from "./ProfileSettingsScreen";
 import LearnScreen from "./LearnScreen";
+import GovPrepScreen from "./GovPrepScreen";
 import CourseDetailsScreen from "./CourseDetailsScreen";
 import ContinueLearningScreen from "./ContinueLearningScreen";
 import PopularCoursesScreen from "./PopularCoursesScreen";
@@ -367,6 +368,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
   const [showDiscoverPartnersScreen, setShowDiscoverPartnersScreen] = useState(false);
   const [selectedPartnerForPreview, setSelectedPartnerForPreview] = useState(null);
   const [courseToEdit, setCourseToEdit] = useState(null);
+  const [showGovPrepScreen, setShowGovPrepScreen] = useState(false);
   const [activeDoubtRoom, setActiveDoubtRoom] = useState(null);
   const [getVerifiedModalOpen, setGetVerifiedModalOpen] = useState(false);
   const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
@@ -513,6 +515,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
     setShowCreateWebinarScreen(false);
     setShowAllMentorsScreen(false);
     setShowCommunityScreen(false);
+    setShowGovPrepScreen(false);
     setTargetUserProfile(null);
     setCourseToEdit(null);
   }
@@ -1250,6 +1253,12 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
                 session={session}
                 navigation={{ goBack: () => setShowCommunityScreen(false) }}
               />
+            ) : showGovPrepScreen ? (
+              <GovPrepScreen
+                session={session}
+                user={user}
+                onBack={() => setShowGovPrepScreen(false)}
+              />
             ) : showWalletScreen ? (
               <WalletScreen
                 session={session}
@@ -1471,6 +1480,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
                 onOpenAllMentors={() => setShowAllMentorsScreen(true)}
                 onOpenExploreCategory={(catKey) => setExploreCategoryKey(catKey)}
                 onOpenDiscoverPartners={() => setShowDiscoverPartnersScreen(true)}
+                onOpenGovPrep={() => setShowGovPrepScreen(true)}
               />
             ) : activeTab === "Chats" || activeTab === "Doubts" ? (
               <ChatListScreen

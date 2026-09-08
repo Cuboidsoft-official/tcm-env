@@ -1061,3 +1061,163 @@ adminRouter.patch("/courses/:id/schedule", requireAuth, async (req, res) => {
     return res.status(500).json({ message: "Could not update course schedule", error: error.message });
   }
 });
+
+// GOVERNMENT QUESTION BANK ADMIN ENDPOINTS
+import { GovExam } from "../models/GovExam.js";
+import { GovSubject } from "../models/GovSubject.js";
+import { GovTopic } from "../models/GovTopic.js";
+import { GovQuestion } from "../models/GovQuestion.js";
+
+// Add / Create Government Exam
+adminRouter.post("/government/exams", requireAdmin, async (req, res) => {
+  try {
+    const { name, category = "SSC", description = "", logo = "" } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Exam name is required." });
+    }
+
+    const exam = await GovExam.create({
+      name: name.trim(),
+      category,
+      description,
+      logo
+    });
+
+    res.status(201).json({ success: true, exam });
+  } catch (err) {
+    res.status(500).json({ message: "Could not create government exam", error: err.message });
+  }
+});
+
+// Add / Create Government Subject
+adminRouter.post("/government/subjects", requireAdmin, async (req, res) => {
+  try {
+    const { examId, name, icon = "book-open" } = req.body;
+    if (!examId || !name) {
+      return res.status(400).json({ message: "examId and subject name are required." });
+    }
+
+    const subject = await GovSubject.create({
+      examId,
+      name: name.trim(),
+      icon
+    });
+
+    res.status(201).json({ success: true, subject });
+  } catch (err) {
+    res.status(500).json({ message: "Could not create subject", error: err.message });
+  }
+});
+
+// Add / Create Government Topic
+adminRouter.post("/government/topics", requireAdmin, async (req, res) => {
+  try {
+    const { subjectId, name } = req.body;
+    if (!subjectId || !name) {
+      return res.status(400).json({ message: "subjectId and topic name are required." });
+    }
+
+    const topic = await GovTopic.create({
+      subjectId,
+      name: name.trim()
+    });
+
+    res.status(201).json({ success: true, topic });
+  } catch (err) {
+    res.status(500).json({ message: "Could not create topic", error: err.message });
+  }
+});
+
+// Bulk Import Questions (JSON / CSV payload)
+adminRouter.post("/government/questions/import", requireAdmin, async (req, res) => {
+  try {
+    const { questions = [] } = req.body;
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ message: "Array of questions is required." });
+    }
+
+    let importedCount = 0;
+    const errors = [];
+
+    for (let idx = 0; idx < questions.length; idx++) {
+      const q = questions[idx];
+      try {
+        const examName = (q.exam || q.examName || "SSC CGL").trim();
+        const category = (q.category || "SSC").trim();
+        const year = Number(q.year || 2024);
+        const subjectName = (q.subject || q.subjectName || "Reasoning").trim();
+        const topicName = (q.topic || q.topicName || "General").trim();
+        const type = (q.type || "pyq").toLowerCase();
+
+        // 1. Resolve/Create Exam
+        let exam = await GovExam.findOne({ name: examName });
+        if (!exam) {
+          exam = await GovExam.create({ name: examName, category });
+        }
+
+        // 2. Resolve/Create Subject
+        let subject = await GovSubject.findOne({ examId: exam._id, name: subjectName });
+        if (!subject) {
+          subject = await GovSubject.create({ examId: exam._id, name: subjectName });
+        }
+
+        // 3. Resolve/Create Topic
+        let topic = await GovTopic.findOne({ subjectId: subject._id, name: topicName });
+        if (!topic) {
+          topic = await GovTopic.create({ subjectId: subject._id, name: topicName });
+        }
+
+        // Form Options Array
+        let optionsArr = [];
+        if (Array.isArray(q.options)) {
+          optionsArr = q.options.map((opt, oIdx) => {
+            if (typeof opt === "string") {
+              const labels = ["A", "B", "C", "D"];
+              return { label: labels[oIdx] || String(oIdx + 1), text: opt.trim() };
+            }
+            return { label: opt.label || String(oIdx + 1), text: opt.text || String(opt) };
+          });
+        }
+
+        if (optionsArr.length === 0 || !q.question || !q.correctAnswer) {
+          errors.push(`Item ${idx}: Missing questionText, options, or correctAnswer.`);
+          continue;
+        }
+
+        await GovQuestion.create({
+          examId: exam._id,
+          examName: exam.name,
+          year,
+          subjectId: subject._id,
+          subjectName: subject.name,
+          topicId: topic._id,
+          topicName: topic.name,
+          type: ["pyq", "practice", "mock"].includes(type) ? type : "pyq",
+          questionText: q.question.trim(),
+          options: optionsArr,
+          correctAnswer: String(q.correctAnswer).trim(),
+          explanation: (q.explanation || "").trim(),
+          language: q.language || "en",
+          source: q.source || "admin_import",
+          isVerified: q.isVerified !== false,
+          isActive: true
+        });
+
+        importedCount++;
+      } catch (itemErr) {
+        errors.push(`Item ${idx}: ${itemErr.message}`);
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: `Successfully imported ${importedCount} out of ${questions.length} questions!`,
+      importedCount,
+      total: questions.length,
+      errors
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Bulk import failed", error: err.message });
+  }
+});
+
