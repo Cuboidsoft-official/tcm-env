@@ -33,7 +33,7 @@ import {
 
 const { width } = Dimensions.get("window");
 
-const DEFAULT_YEARS = [2024, 2023, 2022, 2021, 2020];
+const DEFAULT_YEARS = [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
 
 const DEFAULT_EXAM_LIST = [
   { id: "ex_ssc_cgl", name: "SSC CGL", category: "SSC", description: "Staff Selection Commission Combined Graduate Level", isActive: true },
@@ -484,6 +484,230 @@ const DEFAULT_QUESTIONS = [
     correctAnswer: "B",
     explanation: "Indore in Madhya Pradesh has consistently won the Cleanest City award in India for multiple consecutive years.",
     explanationHi: "इंदौर (मध्य प्रदेश) लगातार कई वर्षों से भारत के सबसे स्वच्छ शहर का पुरस्कार जीत रहा है।",
+    language: "en"
+  },
+  {
+    id: "q_ssc_2022_1",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2022,
+    subjectId: "sub_reasoning",
+    subjectName: "Reasoning",
+    topicName: "Blood Relations",
+    type: "pyq",
+    questionText: "Pointing to a photograph, a man said: 'She is the daughter of the only son of my grandfather.' How is the woman in the photo related to the man?",
+    questionTextHi: "एक तस्वीर की ओर इशारा करते हुए एक व्यक्ति ने कहा: 'वह मेरे दादाजी के इकलौते बेटे की बेटी है।' तस्वीर वाली महिला का उस व्यक्ति से क्या संबंध है?",
+    options: [
+      { label: "A", text: "Mother" },
+      { label: "B", text: "Sister" },
+      { label: "C", text: "Daughter" },
+      { label: "D", text: "Aunt" }
+    ],
+    optionsHi: [
+      { label: "A", text: "माता" },
+      { label: "B", text: "बहन" },
+      { label: "C", text: "पुत्री" },
+      { label: "D", text: "चाची" }
+    ],
+    correctAnswer: "B",
+    explanation: "Only son of grandfather = Father. Daughter of father = Sister.",
+    explanationHi: "दादाजी का इकलौता बेटा = पिता। पिता की बेटी = बहन।",
+    language: "en"
+  },
+  {
+    id: "q_ssc_2021_1",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2021,
+    subjectId: "sub_quant",
+    subjectName: "Quantitative Aptitude",
+    topicName: "Profit & Loss",
+    type: "pyq",
+    questionText: "A shopkeeper marks his goods 25% above cost price and allows a discount of 10%. What is his profit percentage?",
+    questionTextHi: "एक दुकानदार अपने सामान पर क्रय मूल्य से 25% अधिक मूल्य अंकित करता है और 10% की छूट देता है। उसका लाभ प्रतिशत क्या है?",
+    options: [
+      { label: "A", text: "12.5%" },
+      { label: "B", text: "15%" },
+      { label: "C", text: "10%" },
+      { label: "D", text: "14%" }
+    ],
+    optionsHi: [
+      { label: "A", text: "12.5%" },
+      { label: "B", text: "15%" },
+      { label: "C", text: "10%" },
+      { label: "D", text: "14%" }
+    ],
+    correctAnswer: "A",
+    explanation: "CP = 100 => MP = 125. Discount = 10% of 125 = 12.5. SP = 112.5. Profit = 12.5%.",
+    explanationHi: "क्रय मूल्य = 100 => अंकित मूल्य = 125। छूट = 12.5 => विक्रय मूल्य = 112.5। लाभ = 12.5%।",
+    language: "en"
+  },
+  {
+    id: "q_ssc_2020_1",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2020,
+    subjectId: "sub_ga",
+    subjectName: "General Awareness",
+    topicName: "Indian History",
+    type: "pyq",
+    questionText: "In which year was the historic Battle of Plassey fought?",
+    questionTextHi: "ऐतिहासिक प्लासी का युद्ध किस वर्ष लड़ा गया था?",
+    options: [
+      { label: "A", text: "1757" },
+      { label: "B", text: "1764" },
+      { label: "C", text: "1857" },
+      { label: "D", text: "1707" }
+    ],
+    optionsHi: [
+      { label: "A", text: "1757" },
+      { label: "B", text: "1764" },
+      { label: "C", text: "1857" },
+      { label: "D", text: "1707" }
+    ],
+    correctAnswer: "A",
+    explanation: "Battle of Plassey was fought on 23 June 1757 between the East India Company led by Robert Clive and Nawab Siraj-ud-Daulah.",
+    explanationHi: "प्लासी का युद्ध 23 जून 1757 को रोबर्ट क्लाइव की ईस्ट इंडिया कंपनी और बंगाल के नवाब सिराजुद्दौला के बीच हुआ था।",
+    language: "en"
+  },
+  {
+    id: "q_ssc_2019_1",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2019,
+    subjectId: "sub_english",
+    subjectName: "English Comprehension",
+    topicName: "Idioms & Phrases",
+    type: "pyq",
+    questionText: "Select the most appropriate meaning of the idiom: 'Burn the midnight oil'",
+    questionTextHi: "मुहावरे 'Burn the midnight oil' का सबसे सही अर्थ चुनिए:",
+    options: [
+      { label: "A", text: "To waste electricity" },
+      { label: "B", text: "To work or study late into the night" },
+      { label: "C", text: "To burn household items" },
+      { label: "D", text: "To wake up early morning" }
+    ],
+    optionsHi: [
+      { label: "A", text: "बिजली बर्बाद करना" },
+      { label: "B", text: "देर रात तक पढ़ाई या काम करना" },
+      { label: "C", text: "सामान जलाना" },
+      { label: "D", text: "सुबह जल्दी उठना" }
+    ],
+    correctAnswer: "B",
+    explanation: "'Burn the midnight oil' means to read or work hard late into the night.",
+    explanationHi: "'Burn the midnight oil' का अर्थ होता है कठिन परिश्रम के साथ देर रात तक पढ़ाई या काम करना।",
+    language: "en"
+  },
+  {
+    id: "q_ssc_2018_1",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2018,
+    subjectId: "sub_reasoning",
+    subjectName: "Reasoning",
+    topicName: "Direction Sense",
+    type: "pyq",
+    questionText: "A person walks 5 km North, then turns Right and walks 3 km, then turns Right again and walks 5 km. How far is he from the starting point?",
+    questionTextHi: "एक व्यक्ति 5 किमी उत्तर दिशा में चलता है, फिर दाएँ मुड़कर 3 किमी चलता है, फिर दाएँ मुड़कर 5 किमी चलता है। वह प्रारंभिक बिंदु से कितनी दूर है?",
+    options: [
+      { label: "A", text: "3 km" },
+      { label: "B", text: "5 km" },
+      { label: "C", text: "8 km" },
+      { label: "D", text: "13 km" }
+    ],
+    optionsHi: [
+      { label: "A", text: "3 किमी" },
+      { label: "B", text: "5 किमी" },
+      { label: "C", text: "8 किमी" },
+      { label: "D", text: "13 किमी" }
+    ],
+    correctAnswer: "A",
+    explanation: "The North 5 km and South 5 km cancel out, leaving 3 km East from starting position.",
+    explanationHi: "उत्तर 5 किमी और दक्षिण 5 किमी एक-दूसरे को निरस्त कर देते हैं, जिससे व्यक्ति प्रारंभिक बिंदु से केवल 3 किमी पूर्व में रहता है।",
+    language: "en"
+  },
+  {
+    id: "q_ssc_2017_1",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2017,
+    subjectId: "sub_quant",
+    subjectName: "Quantitative Aptitude",
+    topicName: "Simple Interest",
+    type: "pyq",
+    questionText: "What is the Simple Interest on ₹4,000 for 3 years at a rate of 5% per annum?",
+    questionTextHi: "₹4,000 की राशि पर 5% वार्षिक दर से 3 वर्ष का साधारण ब्याज कितना होगा?",
+    options: [
+      { label: "A", text: "₹500" },
+      { label: "B", text: "₹600" },
+      { label: "C", text: "₹700" },
+      { label: "D", text: "₹800" }
+    ],
+    optionsHi: [
+      { label: "A", text: "₹500" },
+      { label: "B", text: "₹600" },
+      { label: "C", text: "₹700" },
+      { label: "D", text: "₹800" }
+    ],
+    correctAnswer: "B",
+    explanation: "SI = (P × R × T)/100 = (4000 × 5 × 3)/100 = ₹600.",
+    explanationHi: "साधारण ब्याज = (मूलधन × दर × समय)/100 = (4000 × 5 × 3)/100 = ₹600।",
+    language: "en"
+  },
+  {
+    id: "q_ssc_2016_1",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2016,
+    subjectId: "sub_ga",
+    subjectName: "General Awareness",
+    topicName: "Geography",
+    type: "pyq",
+    questionText: "Which river is widely known as 'Dakshin Ganga' (Ganga of the South)?",
+    questionTextHi: "किस नदी को 'दक्षिण गंगा' के नाम से जाना जाता है?",
+    options: [
+      { label: "A", text: "Krishna" },
+      { label: "B", text: "Kaveri" },
+      { label: "C", text: "Godavari" },
+      { label: "D", text: "Narmada" }
+    ],
+    optionsHi: [
+      { label: "A", text: "कृष्णा" },
+      { label: "B", text: "कावेरी" },
+      { label: "C", text: "गोदावरी" },
+      { label: "D", text: "नर्मदा" }
+    ],
+    correctAnswer: "C",
+    explanation: "Godavari is the largest river system of Peninsular India and is called 'Dakshin Ganga'.",
+    explanationHi: "गोदावरी प्रायद्वीपीय भारत की सबसे बड़ी नदी प्रणाली है और इसे 'दक्षिण गंगा' कहा जाता है।",
+    language: "en"
+  },
+  {
+    id: "q_ssc_2015_1",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2015,
+    subjectId: "sub_ga",
+    subjectName: "General Awareness",
+    topicName: "Indian History",
+    type: "pyq",
+    questionText: "Who among the following freedom fighters was popularly known as 'Frontier Gandhi'?",
+    questionTextHi: "निम्नलिखित में से किस स्वतंत्रता सेनानी को 'सीमान्त गांधी' (Frontier Gandhi) के नाम से जाना जाता था?",
+    options: [
+      { label: "A", text: "Khan Abdul Ghaffar Khan" },
+      { label: "B", text: "Maulana Abul Kalam Azad" },
+      { label: "C", text: "Subhash Chandra Bose" },
+      { label: "D", text: "Muhammad Ali Jinnah" }
+    ],
+    optionsHi: [
+      { label: "A", text: "खान अब्दुल गफ्फार खान" },
+      { label: "B", text: "मौलाना अबुल कलाम आज़ाद" },
+      { label: "C", text: "सुभाष चंद्र बोस" },
+      { label: "D", text: "मोहम्मद अली जिन्ना" }
+    ],
+    correctAnswer: "A",
+    explanation: "Khan Abdul Ghaffar Khan founded the Khudai Khidmatgar movement and was revered as Frontier Gandhi.",
+    explanationHi: "खान अब्दुल गफ्फार खान ने 'खुदाई खिदमतगार' आंदोलन की स्थापना की थी और उन्हें सीमान्त गांधी कहा जाता था।",
     language: "en"
   }
 ];
@@ -1122,7 +1346,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                       <MaterialCommunityIcons name="calendar-multiselect" size={18} color="#09090B" />
                       <Text style={[styles.yearDropdownTriggerText, { color: theme.text }]}>
                         {selectedYears.length === 0
-                          ? "All Available Years (2020 - 2024)"
+                          ? "All 10 Years (2015 - 2024)"
                           : `${selectedYears.slice().sort().reverse().join(", ")} Papers (${selectedYears.length} Selected)`}
                       </Text>
                     </View>
@@ -1150,7 +1374,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                           color={selectedYears.length === 0 ? "#09090B" : theme.subtext}
                         />
                         <Text style={[styles.yearDropdownItemText, { color: theme.text }, selectedYears.length === 0 && { fontWeight: "700" }]}>
-                          All Available Years (2020 - 2024)
+                          All 10 Years (2015 - 2024)
                         </Text>
                       </TouchableOpacity>
 
