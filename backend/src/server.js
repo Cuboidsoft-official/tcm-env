@@ -13,7 +13,7 @@ import { chatRouter } from "./routes/chat.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { adminRouter } from "./routes/admin.js";
 import { governmentRouter } from "./routes/government.js";
-import { uploadsRouter, UPLOADS_DIR } from "./routes/uploads.js";
+import { uploadsRouter, UPLOADS_DIR, getMediaFromDb } from "./routes/uploads.js";
 
 dotenv.config();
 
@@ -61,6 +61,33 @@ try {
 } catch (e) {
   console.warn(`Could not create uploads dir ${UPLOADS_DIR}: ${e.message}`);
 }
+
+async function serveOrRestoreMedia(filename, res, next) {
+  if (!/^[a-z0-9_-]+\.(png|jpg|jpeg|webp|gif|heic|heif|avif|pdf|mp4)$/i.test(filename)) {
+    return next();
+  }
+  const filePath = path.join(UPLOADS_DIR, filename);
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+
+  // Auto-heal: If missing on disk (e.g. server restarted), restore from MongoDB database backup!
+  try {
+    const dbMedia = await getMediaFromDb(filename);
+    if (dbMedia && dbMedia.data) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+      fs.writeFileSync(filePath, dbMedia.data);
+      if (dbMedia.mimeType) {
+        res.setHeader("Content-Type", dbMedia.mimeType);
+      }
+      return res.send(dbMedia.data);
+    }
+  } catch (err) {
+    console.warn(`Could not restore ${filename} from DB: ${err.message}`);
+  }
+  next();
+}
+
 app.use(
   "/uploads",
   express.static(UPLOADS_DIR, {
@@ -77,17 +104,8 @@ app.use(
   })
 );
 
-// Fallback static handler for direct root requests to uploaded files (e.g. /mtocaq7p-6bdd1d6e8191.png)
-app.get("/:filename", (req, res, next) => {
-  const filename = req.params.filename;
-  if (/^[a-z0-9_-]+\.(png|jpg|jpeg|webp|gif|heic|heif|avif|pdf|mp4)$/i.test(filename)) {
-    const filePath = path.join(UPLOADS_DIR, filename);
-    if (fs.existsSync(filePath)) {
-      return res.sendFile(filePath);
-    }
-  }
-  next();
-});
+app.get("/uploads/:filename", (req, res, next) => serveOrRestoreMedia(req.params.filename, res, next));
+app.get("/:filename", (req, res, next) => serveOrRestoreMedia(req.params.filename, res, next));
 
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });

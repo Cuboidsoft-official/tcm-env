@@ -4,10 +4,38 @@ import path from "path";
 import { execFile } from "child_process";
 import express from "express";
 import { requireAuth } from "../middleware/auth.js";
+import { UploadedMedia } from "../models/UploadedMedia.js";
 
 const uploadsRouter = express.Router();
 
 export const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads");
+
+async function saveMediaToDb(filename, mimeType, filePath) {
+  try {
+    const fileBuf = fs.readFileSync(filePath);
+    if (fileBuf && fileBuf.length > 0 && fileBuf.length <= 15 * 1024 * 1024) {
+      await UploadedMedia.findOneAndUpdate(
+        { filename },
+        { filename, mimeType, data: fileBuf },
+        { upsert: true, new: true }
+      );
+    }
+  } catch (err) {
+    console.warn("UploadedMedia DB backup warning:", err.message);
+  }
+}
+
+export async function getMediaFromDb(filename) {
+  try {
+    const doc = await UploadedMedia.findOne({ filename }).lean();
+    if (doc && doc.data) {
+      return { mimeType: doc.mimeType, data: doc.data };
+    }
+  } catch (err) {
+    console.warn("UploadedMedia DB restore error:", err.message);
+  }
+  return null;
+}
 
 function getPublicOrigin(req) {
   if (process.env.PUBLIC_ORIGIN) {
@@ -107,7 +135,6 @@ function isContainerContent(mime, buf) {
     if (mime === "video/ogg") return ascii(buf, 0, 4) === "OggS";
     if (mime === "video/x-flv") return ascii(buf, 0, 3) === "FLV";
     if (mime === "video/x-ms-wmv") return startsWith(buf, 0, [0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11, 0xa6, 0xd9]);
-    // mp4 / mov / m4v / 3gp all use an ISO BMFF ftyp box
     return isFtyp(buf);
   }
 
@@ -186,9 +213,6 @@ function isPlayable({ videoCodec, audioCodec }) {
   return PLAYABLE_VIDEO_CODECS.has(videoCodec) && PLAYABLE_AUDIO_CODECS.has(audioCodec);
 }
 
-// Browsers only reliably play mp4/webm/ogv. For anything else we remux or
-// re-encode to an H.264/AAC mp4 so the file actually plays in the app.
-// Falls back to the original file whenever ffmpeg/ffprobe is unavailable.
 async function maybeTranscodeVideo(mime, origPath, baseName) {
   const ext = MIME_MAP[mime];
   const finalPath = `${baseName}.mp4`;
@@ -219,9 +243,6 @@ async function maybeTranscodeVideo(mime, origPath, baseName) {
   return origPath;
 }
 
-// Persist a raw payload (data URI or base64) to disk and return its public URL.
-// Returns "" for remote/relative URLs or invalid input so callers can treat it
-// as a pass-through when the value is already a usable hosted reference.
 export async function resolveMediaUrl(data) {
   if (typeof data !== "string" || !data.trim()) return "";
   const trimmed = data.trim();
@@ -236,10 +257,14 @@ export async function resolveMediaUrl(data) {
 
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
   const baseName = `${Date.now().toString(36)}-${crypto.randomBytes(6).toString("hex")}`;
-  const filePath = path.join(UPLOADS_DIR, `${baseName}.${MIME_MAP[parsed.mime]}`);
+  const filename = `${baseName}.${MIME_MAP[parsed.mime]}`;
+  const filePath = path.join(UPLOADS_DIR, filename);
   fs.writeFileSync(filePath, parsed.buf, { mode: 0o644 });
+
+  await saveMediaToDb(filename, parsed.mime, filePath);
+
   const origin = getPublicOrigin();
-  return `${origin}/uploads/${path.basename(filePath)}`;
+  return `${origin}/uploads/${filename}`;
 }
 
 uploadsRouter.post("/file", requireAuth, async (req, res) => {
@@ -265,6 +290,9 @@ uploadsRouter.post("/file", requireAuth, async (req, res) => {
 
     const finalPath = await maybeTranscodeVideo(parsed.mime, origPath, path.join(UPLOADS_DIR, baseName));
     const name = path.basename(finalPath);
+
+    await saveMediaToDb(name, parsed.mime, finalPath);
+
     const origin = getPublicOrigin(req);
 
     res.json({ url: `${origin}/uploads/${name}` });
