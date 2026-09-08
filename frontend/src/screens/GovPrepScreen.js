@@ -1199,10 +1199,10 @@ export default function GovPrepScreen({ session, user, onBack }) {
                   >
                     <View style={styles.yearDropdownTriggerLeft}>
                       <MaterialCommunityIcons name="map-marker-radius" size={18} color="#09090B" />
-                      <Text style={[styles.yearDropdownTriggerText, { color: theme.text }]}>
+                      <Text style={[styles.yearDropdownTriggerText, { color: theme.text }]} numberOfLines={1}>
                         {selectedState === "All States"
-                          ? "All States & Union Territories (All India)"
-                          : `${selectedState} State Exam Papers`}
+                          ? "All States (All India)"
+                          : selectedState}
                       </Text>
                     </View>
                     <MaterialCommunityIcons
@@ -1238,7 +1238,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                                 color={isSelected ? "#09090B" : theme.subtext}
                               />
                               <Text style={[styles.yearDropdownItemText, { color: theme.text }, isSelected && { fontWeight: "700" }]}>
-                                {stName === "All States" ? "All States / All India Level" : `${stName} State Exams`}
+                                {stName === "All States" ? "All States (All India)" : stName}
                               </Text>
                             </TouchableOpacity>
                           );

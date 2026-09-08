@@ -434,12 +434,12 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             <View style={[styles.govBadgePill, { backgroundColor: theme.isDark ? "#18181B" : "#FFFFFF", borderColor: theme.isDark ? "#27272A" : "#E4E4E7" }]}>
               <MaterialCommunityIcons name="bank" size={13} color={theme.isDark ? "#FFFFFF" : "#09090B"} />
               <Text style={[styles.govBadgeLabel, { color: theme.isDark ? "#FFFFFF" : "#09090B" }]}>
-                GOVERNMENT EXAM PREPARATION
+                OFFICIAL PYQS & PRACTICE
               </Text>
             </View>
           </View>
           <Text style={[styles.govCardMainTitle, { color: theme.isDark ? "#FFFFFF" : "#09090B" }]}>
-            Prepare Smarter. Crack Your Exam.
+            Government Exam Preparation
           </Text>
           <Text style={[styles.govCardSubText, { color: theme.isDark ? "#A1A1AA" : "#52525B" }]}>
             Official PYQs for SSC, Railway, Banking, UPSC & State Exams with AI solutions.
