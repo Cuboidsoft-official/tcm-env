@@ -1285,9 +1285,11 @@ export function getGovProgress(token) {
 }
 
 export function explainGovQuestionWithAI(token, questionId, payload = {}) {
-  return request(`/government/questions/${questionId}/explain-ai`, {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return request(`/government/questions/${encodeURIComponent(questionId)}/explain-ai`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    headers,
     body: JSON.stringify(payload)
   });
 }
