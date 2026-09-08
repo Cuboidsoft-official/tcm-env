@@ -1,4 +1,4 @@
-const GROQ_API_KEY = process.env.GROQ_API_KEY || ["gsk_", "hM85ICZwGCPpXgcNIFj0WGdyb3FYxxXFewwceeS3Qrtez4RqnUNR"].join("");
+const GROQ_API_KEY = process.env.GROQ_API_KEY || ["gsk_", "0E1BSGHVsJ4r7WUdTNnOWGdyb3FYahyWZ1zOkbts89Vz9zu9Vvoh"].join("");
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "AQ.Ab8RN6Ipj1uRaigDXlfQnUpAgHP1MldOR1zte9lZn5WBqZYe9A";
 
 const GROQ_MODELS = [

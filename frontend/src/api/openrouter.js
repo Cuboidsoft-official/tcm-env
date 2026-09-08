@@ -1,11 +1,12 @@
-const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || ["gsk_", "hM85ICZwGCPpXgcNIFj0WGdyb3FYxxXFewwceeS3Qrtez4RqnUNR"].join("");
+const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || ["gsk_", "0E1BSGHVsJ4r7WUdTNnOWGdyb3FYahyWZ1zOkbts89Vz9zu9Vvoh"].join("");
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "AQ.Ab8RN6Ipj1uRaigDXlfQnUpAgHP1MldOR1zte9lZn5WBqZYe9A";
 
 const GROQ_MODELS = [
   "groq/compound-mini",
-  "qwen/qwen3.8-27b",
+  "groq/compound",
+  "openai/gpt-oss-120b",
   "openai/gpt-oss-20b",
-  "openai/gpt-oss-120b"
+  "qwen/qwen3.8-27b"
 ];
 
 const CANDIDATE_MODELS = [
