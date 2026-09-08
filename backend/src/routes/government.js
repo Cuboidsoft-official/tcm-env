@@ -14,8 +14,13 @@ const FALLBACK_EXAMS = [
   { _id: "ex_ssc_cgl", id: "ex_ssc_cgl", name: "SSC CGL", category: "SSC", description: "Staff Selection Commission Combined Graduate Level", isActive: true },
   { _id: "ex_ssc_chsl", id: "ex_ssc_chsl", name: "SSC CHSL", category: "SSC", description: "Combined Higher Secondary Level Examination", isActive: true },
   { _id: "ex_rrb_ntpc", id: "ex_rrb_ntpc", name: "Railway NTPC", category: "Railway", description: "RRB Non-Technical Popular Categories", isActive: true },
+  { _id: "ex_rrb_groupd", id: "ex_rrb_groupd", name: "RRB Group D", category: "Railway", description: "Railway Level 1 Recruitment Examination", isActive: true },
   { _id: "ex_ibps_po", id: "ex_ibps_po", name: "IBPS PO", category: "Banking", description: "Institute of Banking Personnel Selection PO", isActive: true },
-  { _id: "ex_upsc_cse", id: "ex_upsc_cse", name: "UPSC Civil Services", category: "UPSC", description: "Civil Services Examination General Studies & CSAT", isActive: true }
+  { _id: "ex_sbi_po", id: "ex_sbi_po", name: "SBI PO", category: "Banking", description: "State Bank of India Probationary Officer", isActive: true },
+  { _id: "ex_upsc_cse", id: "ex_upsc_cse", name: "UPSC Civil Services", category: "UPSC", description: "Civil Services Examination General Studies & CSAT", isActive: true },
+  { _id: "ex_state_psc", id: "ex_state_psc", name: "State PSC", category: "State PSC", description: "State Public Service Commission General Studies", isActive: true },
+  { _id: "ex_police", id: "ex_police", name: "Police Constable", category: "Police", description: "State Police Recruitment Examination", isActive: true },
+  { _id: "ex_defence", id: "ex_defence", name: "CDS Defence", category: "Defence", description: "Combined Defence Services Examination", isActive: true }
 ];
 
 const FALLBACK_SUBJECTS = [
@@ -161,6 +166,31 @@ const FALLBACK_QUESTIONS = [
     source: "official_pyq",
     isVerified: true,
     isActive: true
+  },
+  {
+    _id: "q_upsc_1",
+    id: "q_upsc_1",
+    examId: "ex_upsc_cse",
+    examName: "UPSC Civil Services",
+    year: 2024,
+    subjectId: "sub_upsc_polity",
+    subjectName: "General Studies",
+    topicId: "top_polity",
+    topicName: "Indian Polity",
+    type: "pyq",
+    questionText: "Which Article of the Indian Constitution guarantees 'Equality before Law'?",
+    options: [
+      { label: "A", text: "Article 12" },
+      { label: "B", text: "Article 14" },
+      { label: "C", text: "Article 19" },
+      { label: "D", text: "Article 21" }
+    ],
+    correctAnswer: "B",
+    explanation: "Article 14 guarantees equality before law and equal protection of laws to all persons within India.",
+    language: "en",
+    source: "official_pyq",
+    isVerified: true,
+    isActive: true
   }
 ];
 
@@ -171,11 +201,18 @@ async function getExamsData(filter = {}) {
   let exams = [];
   if (mongoose.connection.readyState === 1) {
     try {
-      exams = await GovExam.find({ isActive: true, ...filter }).sort({ name: 1 }).lean();
+      const query = { isActive: true };
+      if (filter.category && filter.category !== "All") {
+        query.category = filter.category;
+      }
+      exams = await GovExam.find(query).sort({ name: 1 }).lean();
     } catch (e) {}
   }
   if (!exams || exams.length === 0) {
-    exams = FALLBACK_EXAMS.filter((e) => !filter.category || e.category === filter.category);
+    exams = FALLBACK_EXAMS.filter((e) => !filter.category || filter.category === "All" || e.category.toLowerCase() === filter.category.toLowerCase());
+    if (exams.length === 0) {
+      exams = FALLBACK_EXAMS;
+    }
   }
   return exams;
 }

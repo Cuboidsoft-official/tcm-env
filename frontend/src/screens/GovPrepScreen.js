@@ -33,6 +33,19 @@ import {
 
 const { width } = Dimensions.get("window");
 
+const DEFAULT_EXAM_LIST = [
+  { id: "ex_ssc_cgl", name: "SSC CGL", category: "SSC", description: "Staff Selection Commission Combined Graduate Level", isActive: true },
+  { id: "ex_ssc_chsl", name: "SSC CHSL", category: "SSC", description: "Combined Higher Secondary Level Examination", isActive: true },
+  { id: "ex_rrb_ntpc", name: "Railway NTPC", category: "Railway", description: "RRB Non-Technical Popular Categories", isActive: true },
+  { id: "ex_rrb_groupd", name: "RRB Group D", category: "Railway", description: "Railway Level 1 Recruitment Examination", isActive: true },
+  { id: "ex_ibps_po", name: "IBPS PO", category: "Banking", description: "Institute of Banking Personnel Selection PO", isActive: true },
+  { id: "ex_sbi_po", name: "SBI PO", category: "Banking", description: "State Bank of India Probationary Officer", isActive: true },
+  { id: "ex_upsc_cse", name: "UPSC Civil Services", category: "UPSC", description: "Civil Services Examination General Studies & CSAT", isActive: true },
+  { id: "ex_state_psc", name: "State PSC", category: "State PSC", description: "State Public Service Commission General Studies", isActive: true },
+  { id: "ex_police", name: "Police Constable", category: "Police", description: "State Police Recruitment Examination", isActive: true },
+  { id: "ex_defence", name: "CDS Defence", category: "Defence", description: "Combined Defence Services Examination", isActive: true }
+];
+
 export default function GovPrepScreen({ session, user, onBack }) {
   const { theme } = useTheme();
 
@@ -92,10 +105,12 @@ export default function GovPrepScreen({ session, user, onBack }) {
         getGovExams().catch(() => ({ exams: [] }))
       ]);
 
-      const catList = catRes?.categories || [];
+      const fetchedCats = catRes?.categories || [];
+      const catList = fetchedCats.length > 0 ? fetchedCats : ["All", "SSC", "Railway", "Banking", "UPSC", "State PSC", "Police", "Defence"];
       setCategories(catList);
 
-      const examList = examRes?.exams || [];
+      const fetchedExams = examRes?.exams || [];
+      const examList = fetchedExams.length > 0 ? fetchedExams : DEFAULT_EXAM_LIST;
       setAllExams(examList);
 
       if (examList.length > 0) {
@@ -105,6 +120,12 @@ export default function GovPrepScreen({ session, user, onBack }) {
       }
     } catch (err) {
       console.warn("Error loading GovPrep initial data:", err);
+      setCategories(["All", "SSC", "Railway", "Banking", "UPSC", "State PSC", "Police", "Defence"]);
+      setAllExams(DEFAULT_EXAM_LIST);
+      if (DEFAULT_EXAM_LIST.length > 0) {
+        setSelectedExam(DEFAULT_EXAM_LIST[0]);
+        loadExamDetails(DEFAULT_EXAM_LIST[0].id);
+      }
     } finally {
       setLoading(false);
     }
@@ -113,7 +134,8 @@ export default function GovPrepScreen({ session, user, onBack }) {
   // Filter exams by category
   const filteredExams = useMemo(() => {
     if (!activeCategory || activeCategory === "All") return allExams;
-    return allExams.filter((ex) => (ex.category || "").toLowerCase() === activeCategory.toLowerCase());
+    const filtered = allExams.filter((ex) => (ex.category || "").toLowerCase() === activeCategory.toLowerCase());
+    return filtered.length > 0 ? filtered : allExams;
   }, [allExams, activeCategory]);
 
   async function loadExamDetails(examId) {
@@ -144,9 +166,10 @@ export default function GovPrepScreen({ session, user, onBack }) {
   function handleCategoryChange(catName) {
     setActiveCategory(catName);
     const available = catName === "All" ? allExams : allExams.filter((ex) => (ex.category || "").toLowerCase() === catName.toLowerCase());
-    if (available.length > 0) {
-      setSelectedExam(available[0]);
-      loadExamDetails(available[0].id);
+    const listToUse = available.length > 0 ? available : allExams;
+    if (listToUse.length > 0) {
+      setSelectedExam(listToUse[0]);
+      loadExamDetails(listToUse[0].id);
     } else {
       setSelectedExam(null);
       setYears([]);
