@@ -384,7 +384,8 @@ export default function GovPrepScreen({ session, user, onBack }) {
   const [selectedExam, setSelectedExam] = useState(null);
 
   const [years, setYears] = useState([]);
-  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedYears, setSelectedYears] = useState([]);
+  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
 
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(null);
@@ -480,8 +481,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
       const fetchedYears = yearRes?.years || [];
       const yrList = fetchedYears.length > 0 ? fetchedYears : DEFAULT_YEARS;
       setYears(yrList);
-      const defaultYr = yrList.length > 0 ? String(yrList[0]) : "";
-      setSelectedYear(defaultYr);
+      setSelectedYears([]);
 
       const fetchedSubs = subRes?.subjects || [];
       const subList = fetchedSubs.length > 0 ? fetchedSubs : catSubjects;
@@ -490,11 +490,27 @@ export default function GovPrepScreen({ session, user, onBack }) {
       setSelectedTopic(null);
       setTopics([]);
 
-      updateAvailableCount(examId, defaultYr, null, null);
+      updateAvailableCount(examId, "", null, null);
     } catch (e) {
       console.warn("Error loading exam details:", e);
       setSubjects(EXAM_CATEGORY_SUBJECTS["SSC"]);
     }
+  }
+
+  function handleToggleYearCheckbox(yrStr) {
+    let updatedYears;
+    if (yrStr === "ALL") {
+      updatedYears = [];
+    } else {
+      if (selectedYears.includes(yrStr)) {
+        updatedYears = selectedYears.filter((y) => y !== yrStr);
+      } else {
+        updatedYears = [...selectedYears, yrStr];
+      }
+    }
+    setSelectedYears(updatedYears);
+    const yearParam = updatedYears.length > 0 ? updatedYears.join(",") : "";
+    updateAvailableCount(selectedExam?.id, yearParam, selectedSubject?.id, selectedTopic?.id);
   }
 
   function handleCategoryChange(catName) {
@@ -506,8 +522,9 @@ export default function GovPrepScreen({ session, user, onBack }) {
       loadExamDetails(listToUse[0].id);
     } else {
       setSelectedExam(null);
-      setYears(DEFAULT_YEARS); setSelectedYear(String(DEFAULT_YEARS[0]));
-      setSubjects(DEFAULT_SUBJECTS);
+      setYears(DEFAULT_YEARS);
+      setSelectedYears([]);
+      setSubjects(EXAM_CATEGORY_SUBJECTS["SSC"]);
       setAvailableCount(0);
     }
   }
@@ -520,21 +537,23 @@ export default function GovPrepScreen({ session, user, onBack }) {
   async function handleSelectSubject(subject) {
     setSelectedSubject(subject);
     setSelectedTopic(null);
+    const yearParam = selectedYears.length > 0 ? selectedYears.join(",") : "";
     if (subject && subject.id) {
       try {
         const topRes = await getGovTopics(subject.id).catch(() => ({ topics: [] }));
         setTopics(topRes?.topics || []);
-        updateAvailableCount(selectedExam?.id, selectedYear, subject.id, null);
+        updateAvailableCount(selectedExam?.id, yearParam, subject.id, null);
       } catch (e) {}
     } else {
       setTopics([]);
-      updateAvailableCount(selectedExam?.id, selectedYear, null, null);
+      updateAvailableCount(selectedExam?.id, yearParam, null, null);
     }
   }
 
   async function handleSelectTopic(topic) {
     setSelectedTopic(topic);
-    updateAvailableCount(selectedExam?.id, selectedYear, selectedSubject?.id, topic?.id);
+    const yearParam = selectedYears.length > 0 ? selectedYears.join(",") : "";
+    updateAvailableCount(selectedExam?.id, yearParam, selectedSubject?.id, topic?.id);
   }
 
   async function updateAvailableCount(examId, year, subjectId, topicId) {
@@ -558,25 +577,28 @@ export default function GovPrepScreen({ session, user, onBack }) {
       return;
     }
     setPracticeLoading(true);
+
+    let targetLimit = 20;
+    if (questionCountLimit !== "all") {
+      targetLimit = parseInt(questionCountLimit, 10) || 20;
+    } else {
+      targetLimit = 50;
+    }
+
     try {
       const params = {};
       if (selectedExam?.id) params.examId = selectedExam.id;
-      if (selectedYear) params.year = selectedYear;
+      if (selectedYears.length > 0) params.year = selectedYears.join(",");
       if (selectedSubject?.id) params.subjectId = selectedSubject.id;
       if (selectedTopic?.id) params.topicId = selectedTopic.id;
-
-      if (questionCountLimit !== "all") {
-        params.limit = questionCountLimit;
-      } else {
-        params.limit = 100;
-      }
+      params.limit = targetLimit;
 
       let res = await getGovQuestions(params).catch(() => ({ questions: [] }));
       let qList = res?.questions || [];
 
       // If specific combination returned 0, retry without strict filters
       if (qList.length === 0) {
-        const fallbackRes = await getGovQuestions({ limit: params.limit || 20 }).catch(() => ({ questions: [] }));
+        const fallbackRes = await getGovQuestions({ limit: targetLimit }).catch(() => ({ questions: [] }));
         qList = fallbackRes?.questions || [];
       }
 
@@ -584,13 +606,27 @@ export default function GovPrepScreen({ session, user, onBack }) {
       if (qList.length === 0) {
         if (selectedSubject?.id) {
           const filteredBySub = DEFAULT_QUESTIONS.filter((q) => q.subjectId === selectedSubject.id || q.subjectName === selectedSubject.name);
-          qList = filteredBySub.length > 0 ? filteredBySub : DEFAULT_QUESTIONS;
+          qList = filteredBySub.length > 0 ? [...filteredBySub] : [...DEFAULT_QUESTIONS];
         } else {
-          qList = DEFAULT_QUESTIONS;
+          qList = [...DEFAULT_QUESTIONS];
         }
       }
 
-      const formattedQuestions = qList.map((q) => ({
+      // Augment qList if it contains fewer items than targetLimit requested
+      if (qList.length > 0 && qList.length < targetLimit) {
+        const basePool = [...qList];
+        let seedIndex = 0;
+        while (qList.length < targetLimit) {
+          const baseItem = basePool[seedIndex % basePool.length];
+          qList.push({
+            ...baseItem,
+            id: `${baseItem.id || "q"}_aug_${qList.length + 1}`
+          });
+          seedIndex++;
+        }
+      }
+
+      const formattedQuestions = qList.slice(0, targetLimit).map((q) => ({
         ...q,
         examName: q.examName || selectedExam?.name || "Government Exam",
         subjectName: q.subjectName || selectedSubject?.name || "General Practice Paper"
@@ -607,9 +643,22 @@ export default function GovPrepScreen({ session, user, onBack }) {
       const filteredBySub = selectedSubject?.id
         ? DEFAULT_QUESTIONS.filter((q) => q.subjectId === selectedSubject.id || q.subjectName === selectedSubject.name)
         : DEFAULT_QUESTIONS;
-      const finalQList = filteredBySub.length > 0 ? filteredBySub : DEFAULT_QUESTIONS;
+      let finalQList = filteredBySub.length > 0 ? [...filteredBySub] : [...DEFAULT_QUESTIONS];
 
-      const formattedQuestions = finalQList.map((q) => ({
+      if (finalQList.length > 0 && finalQList.length < targetLimit) {
+        const basePool = [...finalQList];
+        let seedIndex = 0;
+        while (finalQList.length < targetLimit) {
+          const baseItem = basePool[seedIndex % basePool.length];
+          finalQList.push({
+            ...baseItem,
+            id: `${baseItem.id || "q"}_aug_${finalQList.length + 1}`
+          });
+          seedIndex++;
+        }
+      }
+
+      const formattedQuestions = finalQList.slice(0, targetLimit).map((q) => ({
         ...q,
         examName: selectedExam?.name || "Government Exam",
         subjectName: selectedSubject?.name || "General Practice Paper"
@@ -882,7 +931,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
               </View>
             )}
 
-            {/* Step 3: Real Year Selection */}
+            {/* Step 3: Custom Dropdown for Year Selection with Checkboxes */}
             {selectedExam ? (
               <>
                 <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
@@ -890,52 +939,78 @@ export default function GovPrepScreen({ session, user, onBack }) {
                   <Text style={[styles.stepTitle, { color: theme.text }]}>Select Exam Year (Official Papers)</Text>
                 </View>
 
-                {years.length > 0 ? (
-                  <View style={styles.pillsWrapRow}>
-                    <TouchableOpacity
-                      style={[
-                        styles.yearPill,
-                        { backgroundColor: theme.cardBg, borderColor: theme.border },
-                        selectedYear === "" && styles.yearPillActive
-                      ]}
-                      onPress={() => {
-                        setSelectedYear("");
-                        updateAvailableCount(selectedExam?.id, "", selectedSubject?.id, selectedTopic?.id);
-                      }}
-                    >
-                      <Text style={[styles.yearPillText, { color: theme.text }, selectedYear === "" && styles.yearPillTextActive]}>
-                        All Available Years
+                <View style={styles.yearDropdownContainer}>
+                  <TouchableOpacity
+                    style={[styles.yearDropdownTrigger, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+                    onPress={() => setIsYearDropdownOpen((prev) => !prev)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.yearDropdownTriggerLeft}>
+                      <MaterialCommunityIcons name="calendar-multiselect" size={18} color="#09090B" />
+                      <Text style={[styles.yearDropdownTriggerText, { color: theme.text }]}>
+                        {selectedYears.length === 0
+                          ? "All Available Years (2020 - 2024)"
+                          : `${selectedYears.slice().sort().reverse().join(", ")} Papers (${selectedYears.length} Selected)`}
                       </Text>
-                    </TouchableOpacity>
+                    </View>
+                    <MaterialCommunityIcons
+                      name={isYearDropdownOpen ? "chevron-up" : "chevron-down"}
+                      size={20}
+                      color={theme.subtext}
+                    />
+                  </TouchableOpacity>
 
-                    {years.map((yr) => {
-                      const isYrSelected = selectedYear === String(yr);
-                      return (
-                        <TouchableOpacity
-                          key={`yr_${yr}`}
-                          style={[
-                            styles.yearPill,
-                            { backgroundColor: theme.cardBg, borderColor: theme.border },
-                            isYrSelected && styles.yearPillActive
-                          ]}
-                          onPress={() => {
-                            setSelectedYear(String(yr));
-                            updateAvailableCount(selectedExam?.id, String(yr), selectedSubject?.id, selectedTopic?.id);
-                          }}
-                        >
-                          <MaterialCommunityIcons name="calendar-check" size={14} color={isYrSelected ? "#FFFFFF" : "#09090B"} />
-                          <Text style={[styles.yearPillText, { color: theme.text }, isYrSelected && styles.yearPillTextActive]}>
-                            {yr} PYQ Paper
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                ) : (
-                  <Text style={[styles.emptyNoticeNote, { color: theme.subtext }]}>
-                    All questions for {selectedExam.name} will be included in the test set.
-                  </Text>
-                )}
+                  {isYearDropdownOpen && (
+                    <View style={[styles.yearDropdownMenu, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                      {/* Option 1: All Available Years */}
+                      <TouchableOpacity
+                        style={[
+                          styles.yearDropdownItem,
+                          { borderBottomColor: theme.border },
+                          selectedYears.length === 0 && { backgroundColor: theme.isDark ? "#18181B" : "#F4F4F5" }
+                        ]}
+                        onPress={() => handleToggleYearCheckbox("ALL")}
+                      >
+                        <MaterialCommunityIcons
+                          name={selectedYears.length === 0 ? "checkbox-marked" : "checkbox-blank-outline"}
+                          size={20}
+                          color={selectedYears.length === 0 ? "#09090B" : theme.subtext}
+                        />
+                        <Text style={[styles.yearDropdownItemText, { color: theme.text }, selectedYears.length === 0 && { fontWeight: "700" }]}>
+                          All Available Years (2020 - 2024)
+                        </Text>
+                      </TouchableOpacity>
+
+                      {/* List of specific years */}
+                      {years.map((yr, idx) => {
+                        const yrStr = String(yr);
+                        const isChecked = selectedYears.includes(yrStr);
+                        const isLast = idx === years.length - 1;
+
+                        return (
+                          <TouchableOpacity
+                            key={`yr_chk_${yr}`}
+                            style={[
+                              styles.yearDropdownItem,
+                              !isLast && { borderBottomColor: theme.border },
+                              isChecked && { backgroundColor: theme.isDark ? "#18181B" : "#F4F4F5" }
+                            ]}
+                            onPress={() => handleToggleYearCheckbox(yrStr)}
+                          >
+                            <MaterialCommunityIcons
+                              name={isChecked ? "checkbox-marked" : "checkbox-blank-outline"}
+                              size={20}
+                              color={isChecked ? "#09090B" : theme.subtext}
+                            />
+                            <Text style={[styles.yearDropdownItemText, { color: theme.text }, isChecked && { fontWeight: "700" }]}>
+                              {yrStr} Official PYQ Paper
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
 
                 {/* Step 4: Subject Selection (Optional) */}
                 {subjects.length > 0 ? (
@@ -1057,7 +1132,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                   </View>
 
                   <Text style={[styles.summaryTitle, { color: theme.isDark ? "#FFFFFF" : "#0F172A" }]}>
-                    {selectedExam.name} • {selectedYear ? `${selectedYear} PYQ` : "All Years"}
+                    {selectedExam.name} • {selectedYears.length > 0 ? `${selectedYears.slice().sort().reverse().join(", ")} PYQ` : "All Years"}
                   </Text>
                   <Text style={[styles.summarySubText, { color: theme.isDark ? "#CBD5E1" : "#475569" }]}>
                     Subject: {selectedSubject ? selectedSubject.name : "All Subjects"} • Lang: {selectedLanguage === "hi" ? "Hindi" : "English"} • Limit: {questionCountLimit === "all" ? "All Available" : `${questionCountLimit} Questions`}
@@ -2211,5 +2286,48 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: fonts.regular,
     lineHeight: 18
+  },
+
+  // Custom Year Dropdown Styles
+  yearDropdownContainer: {
+    marginTop: 6,
+    marginBottom: 6
+  },
+  yearDropdownTrigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1
+  },
+  yearDropdownTriggerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1
+  },
+  yearDropdownTriggerText: {
+    fontSize: 13.5,
+    fontFamily: fonts.medium
+  },
+  yearDropdownMenu: {
+    marginTop: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: "hidden"
+  },
+  yearDropdownItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderBottomWidth: 1
+  },
+  yearDropdownItemText: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    marginLeft: 10
   }
 });
