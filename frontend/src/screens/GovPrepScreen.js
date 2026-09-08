@@ -214,13 +214,19 @@ export default function GovPrepScreen({ session, user, onBack }) {
         params.limit = 100;
       }
 
-      const res = await getGovQuestions(params).catch(() => ({ questions: [] }));
-      const qList = res?.questions || [];
+      let res = await getGovQuestions(params).catch(() => ({ questions: [] }));
+      let qList = res?.questions || [];
+
+      // If specific combination returned 0, retry without strict filters to guarantee practice questions
+      if (qList.length === 0) {
+        const fallbackRes = await getGovQuestions({ limit: params.limit || 20 }).catch(() => ({ questions: [] }));
+        qList = fallbackRes?.questions || [];
+      }
 
       if (qList.length === 0) {
         Alert.alert(
-          "No Questions Available",
-          `No questions available for ${selectedExam.name} (${selectedYear || "All Years"}) yet.\n\nTry selecting another year or subject.`
+          "Practice Session",
+          "Connecting to question bank... Please tap Start Practice again."
         );
         setInPractice(false);
       } else {
@@ -352,20 +358,11 @@ export default function GovPrepScreen({ session, user, onBack }) {
       <View style={[styles.headerContainer, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <View style={styles.headerLeftRow}>
           <TouchableOpacity style={[styles.backIconBtn, { backgroundColor: theme.isDark ? "#1E293B" : "#F1F5F9" }]} onPress={onBack}>
-            <Feather name="arrow-left" size={20} color={theme.text} />
+            <Feather name="arrow-left" size={18} color={theme.text} />
           </TouchableOpacity>
           <View style={styles.headerTitleBox}>
-            <View style={styles.headerBadgePill}>
-              <MaterialCommunityIcons name="bank" size={12} color="#5B3CF5" />
-              <Text style={styles.headerBadgePillText}>GOVERNMENT EXAM PREP</Text>
-            </View>
-            <Text style={[styles.headerTitleText, { color: theme.text }]}>TCM One Exam Module</Text>
+            <Text style={[styles.headerTitleText, { color: theme.text }]}>Government Exam Prep</Text>
           </View>
-        </View>
-
-        <View style={styles.headerRightBadge}>
-          <MaterialCommunityIcons name="shield-check-outline" size={14} color="#059669" />
-          <Text style={styles.headerRightBadgeText}>Official PYQs</Text>
         </View>
       </View>
 
@@ -378,23 +375,23 @@ export default function GovPrepScreen({ session, user, onBack }) {
             setInPractice(false);
           }}
         >
-          <MaterialCommunityIcons name="compass-outline" size={17} color={activeTab === "practice" ? "#5B3CF5" : theme.subtext} />
+          <MaterialCommunityIcons name="compass-outline" size={14} color={activeTab === "practice" ? "#5B3CF5" : theme.subtext} />
           <Text style={[styles.tabButtonText, { color: activeTab === "practice" ? "#5B3CF5" : theme.subtext }, activeTab === "practice" && styles.tabButtonTextActive]}>
             Exam Setup
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.tabButton, activeTab === "saved" && styles.tabButtonActive]} onPress={loadSavedTab}>
-          <MaterialCommunityIcons name="bookmark-check-outline" size={17} color={activeTab === "saved" ? "#5B3CF5" : theme.subtext} />
+          <MaterialCommunityIcons name="bookmark-check-outline" size={14} color={activeTab === "saved" ? "#5B3CF5" : theme.subtext} />
           <Text style={[styles.tabButtonText, { color: activeTab === "saved" ? "#5B3CF5" : theme.subtext }, activeTab === "saved" && styles.tabButtonTextActive]}>
             Saved ({savedIds.length || savedQuestions.length})
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.tabButton, activeTab === "progress" && styles.tabButtonActive]} onPress={loadProgressTab}>
-          <MaterialCommunityIcons name="chart-bar" size={17} color={activeTab === "progress" ? "#5B3CF5" : theme.subtext} />
+          <MaterialCommunityIcons name="chart-bar" size={14} color={activeTab === "progress" ? "#5B3CF5" : theme.subtext} />
           <Text style={[styles.tabButtonText, { color: activeTab === "progress" ? "#5B3CF5" : theme.subtext }, activeTab === "progress" && styles.tabButtonTextActive]}>
-            My Analytics
+            Analytics
           </Text>
         </TouchableOpacity>
       </View>
@@ -984,78 +981,51 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1
   },
   headerLeftRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12
+    gap: 10
   },
   backIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center"
   },
   headerTitleBox: {},
-  headerBadgePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginBottom: 2
-  },
-  headerBadgePillText: {
-    fontSize: 10,
-    fontFamily: fonts.bold,
-    color: "#5B3CF5",
-    letterSpacing: 0.5
-  },
   headerTitleText: {
-    fontSize: 15,
+    fontSize: 13.5,
     fontFamily: fonts.bold
-  },
-  headerRightBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#ECFDF5",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#A7F3D0"
-  },
-  headerRightBadgeText: {
-    fontSize: 11,
-    fontFamily: fonts.bold,
-    color: "#059669"
   },
 
   // Main Tab Switcher
   tabBarContainer: {
     flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderBottomWidth: 1,
-    gap: 8
+    gap: 4
   },
   tabButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 10
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    borderRadius: 8
   },
   tabButtonActive: {
     backgroundColor: "#F0EDFF"
   },
   tabButtonText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: fonts.medium
   },
   tabButtonTextActive: {

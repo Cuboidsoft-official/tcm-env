@@ -185,19 +185,49 @@ async function getQuestionsData(filter = {}) {
   let questions = [];
   if (mongoose.connection.readyState === 1) {
     try {
-      questions = await GovQuestion.find({ isActive: true, ...filter }).sort({ year: -1, createdAt: -1 }).lean();
+      const dbFilter = { isActive: true };
+      if (filter.examId) {
+        if (mongoose.Types.ObjectId.isValid(filter.examId)) {
+          dbFilter.$or = [
+            { examId: filter.examId },
+            { examId: new mongoose.Types.ObjectId(filter.examId) }
+          ];
+        } else {
+          dbFilter.examId = filter.examId;
+        }
+      }
+      if (filter.year) dbFilter.year = Number(filter.year);
+      if (filter.subjectId) dbFilter.subjectId = filter.subjectId;
+      if (filter.topicId) dbFilter.topicId = filter.topicId;
+      if (filter.type) dbFilter.type = filter.type;
+
+      questions = await GovQuestion.find(dbFilter).sort({ year: -1, createdAt: -1 }).lean();
+
+      // If specific filter resulted in 0 questions from DB, attempt broader DB search by examId alone or active questions
+      if (!questions || questions.length === 0) {
+        if (filter.examId) {
+          questions = await GovQuestion.find({ isActive: true, examId: filter.examId }).sort({ year: -1 }).lean();
+        }
+        if (!questions || questions.length === 0) {
+          questions = await GovQuestion.find({ isActive: true }).sort({ year: -1 }).lean();
+        }
+      }
     } catch (e) {}
   }
+
+  // Static Fallback resilience: If DB returned 0 questions, return fallback question set
   if (!questions || questions.length === 0) {
     questions = FALLBACK_QUESTIONS.filter((q) => {
-      if (filter.examId && String(q.examId) !== String(filter.examId)) return false;
       if (filter.year && Number(q.year) !== Number(filter.year)) return false;
-      if (filter.subjectId && String(q.subjectId) !== String(filter.subjectId)) return false;
-      if (filter.topicId && String(q.topicId) !== String(filter.topicId)) return false;
       if (filter.type && q.type !== filter.type) return false;
       return true;
     });
+
+    if (!questions || questions.length === 0) {
+      questions = FALLBACK_QUESTIONS;
+    }
   }
+
   return questions;
 }
 

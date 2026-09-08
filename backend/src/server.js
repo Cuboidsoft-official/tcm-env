@@ -194,6 +194,12 @@ async function start() {
     } catch (e) {
       console.warn("Push token hydration skipped:", e.message);
     }
+    try {
+      const { seedGovData } = await import("./seedGovData.js");
+      await seedGovData();
+    } catch (e) {
+      console.warn("Gov data auto-seed skipped:", e.message);
+    }
   } catch (error) {
     console.warn("MongoDB unavailable. Starting with in-memory visual seed data.");
     const passwordHash = await bcrypt.hash("password123", 12);
