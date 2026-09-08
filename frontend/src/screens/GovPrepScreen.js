@@ -516,6 +516,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
 
   const [selectedState, setSelectedState] = useState("All States");
+  const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
 
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(null);
@@ -1161,37 +1162,66 @@ export default function GovPrepScreen({ session, user, onBack }) {
                   )}
                 </View>
 
-                {/* Step 4: State / Region Selection (State-wise Filter) */}
+                {/* Step 4: State / Region Selection (Custom Dropdown) */}
                 <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
                   <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>4</Text>
                   <Text style={[styles.stepTitle, { color: theme.text }]}>Select Target State / Region (राज्य चुनें)</Text>
                 </View>
 
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScrollRow}>
-                  {DEFAULT_STATES.map((stName) => {
-                    const isStActive = selectedState === stName;
-                    return (
-                      <TouchableOpacity
-                        key={`st_${stName}`}
-                        style={[
-                          styles.subjectChip,
-                          { backgroundColor: theme.cardBg, borderColor: theme.border },
-                          isStActive && styles.subjectChipActive
-                        ]}
-                        onPress={() => handleSelectState(stName)}
-                      >
-                        <MaterialCommunityIcons
-                          name={stName === "All States" ? "earth" : "map-marker-radius"}
-                          size={14}
-                          color={isStActive ? "#FFFFFF" : "#09090B"}
-                        />
-                        <Text style={[styles.subjectChipText, { color: theme.text }, isStActive && styles.subjectChipTextActive]}>
-                          {stName}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
+                <View style={styles.yearDropdownContainer}>
+                  <TouchableOpacity
+                    style={[styles.yearDropdownTrigger, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+                    onPress={() => setIsStateDropdownOpen((prev) => !prev)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.yearDropdownTriggerLeft}>
+                      <MaterialCommunityIcons name="map-marker-radius" size={18} color="#09090B" />
+                      <Text style={[styles.yearDropdownTriggerText, { color: theme.text }]}>
+                        {selectedState === "All States"
+                          ? "All States & Union Territories (All India Level)"
+                          : `${selectedState} State Exam Papers`}
+                      </Text>
+                    </View>
+                    <MaterialCommunityIcons
+                      name={isStateDropdownOpen ? "chevron-up" : "chevron-down"}
+                      size={20}
+                      color={theme.subtext}
+                    />
+                  </TouchableOpacity>
+
+                  {isStateDropdownOpen && (
+                    <View style={[styles.yearDropdownMenu, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                      {DEFAULT_STATES.map((stName, idx) => {
+                        const isSelected = selectedState === stName;
+                        const isLast = idx === DEFAULT_STATES.length - 1;
+
+                        return (
+                          <TouchableOpacity
+                            key={`st_dd_${stName}`}
+                            style={[
+                              styles.yearDropdownItem,
+                              !isLast && { borderBottomColor: theme.border },
+                              isSelected && { backgroundColor: theme.isDark ? "#18181B" : "#F4F4F5" }
+                            ]}
+                            onPress={() => {
+                              handleSelectState(stName);
+                              setIsStateDropdownOpen(false);
+                            }}
+                          >
+                            <MaterialCommunityIcons
+                              name={isSelected ? "radiobox-marked" : "radiobox-blank"}
+                              size={20}
+                              color={isSelected ? "#09090B" : theme.subtext}
+                            />
+                            <Text style={[styles.yearDropdownItemText, { color: theme.text }, isSelected && { fontWeight: "700" }]}>
+                              {stName === "All States" ? "All States / All India Level" : `${stName} State Exams`}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
 
                 {/* Step 5: Subject Selection (Optional) */}
                 {subjects.length > 0 ? (
