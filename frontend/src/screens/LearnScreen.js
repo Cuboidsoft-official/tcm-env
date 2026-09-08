@@ -438,9 +438,12 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
             Practice real exam questions from SSC, Railway, Banking, UPSC & more with instant Groq AI explanations.
           </Text>
           <View style={styles.govCardFooterRow}>
-            <View style={styles.govStartPracticeBtn}>
+            <Pressable
+              onPress={() => (onOpenGovPrep ? onOpenGovPrep() : Alert.alert("Government Preparation", "Opening Government Exam Module..."))}
+              style={({ pressed }) => [styles.govStartPracticeBtn, pressed && { opacity: 0.8 }]}
+            >
               <Text style={styles.govStartPracticeText}>Start Practice →</Text>
-            </View>
+            </Pressable>
             <View style={styles.govTagPill}>
               <Text style={styles.govTagPillText}>1,250+ PYQs & Practice Sets</Text>
             </View>

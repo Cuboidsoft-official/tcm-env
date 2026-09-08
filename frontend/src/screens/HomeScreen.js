@@ -956,6 +956,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
     if (exploreCategoryKey) return () => setExploreCategoryKey(null);
     if (showAllMentorsScreen) return () => setShowAllMentorsScreen(false);
     if (showCommunityScreen) return () => setShowCommunityScreen(false);
+    if (showGovPrepScreen) return () => setShowGovPrepScreen(false);
     if (showWalletScreen) return () => setShowWalletScreen(false);
     if (showMentorDashboard) return () => setShowMentorDashboard(false);
     if (showPartnerDashboard) return () => setShowPartnerDashboard(false);
@@ -1000,6 +1001,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
     exploreCategoryKey,
     showAllMentorsScreen,
     showCommunityScreen,
+    showGovPrepScreen,
     showWalletScreen,
     showMentorDashboard,
     showPartnerDashboard,
@@ -1063,9 +1065,9 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
     );
   }
 
-  const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen);
+  const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen || showCommunityScreen || showGovPrepScreen);
 
-  const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || selectedCourseId || exploreCategoryKey || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard || activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community" || activeTab === "Home" || activeTab === "home" || activeTab === "Learn" || activeTab === "Profile" || activeTab === "ProfileSettings");
+  const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || selectedCourseId || exploreCategoryKey || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard || activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community" || activeTab === "Home" || activeTab === "home" || activeTab === "Learn" || activeTab === "Profile" || activeTab === "ProfileSettings" || showGovPrepScreen);
 
   return (
     <SwipeBackWrapper onBack={activeBackAction} enabled={Boolean(activeBackAction)}>
@@ -1537,7 +1539,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
           </View>
           </ScrollView>
         )}
-        {!activeChatUser && !activeDoubtRoom && !selectedCourseId && !selectedMentorId && !showMentorDashboard && !showPartnerDashboard && !showDiscoverPartnersScreen && !selectedPartnerForPreview && !showCreateCourseScreen && !showCreateWebinarScreen ? (
+        {!activeChatUser && !activeDoubtRoom && !selectedCourseId && !selectedMentorId && !showMentorDashboard && !showPartnerDashboard && !showDiscoverPartnersScreen && !selectedPartnerForPreview && !showCreateCourseScreen && !showCreateWebinarScreen && !showGovPrepScreen ? (
           <ActionDock
             user={user}
             open={actionMenuOpen}
