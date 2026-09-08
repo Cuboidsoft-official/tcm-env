@@ -47,6 +47,7 @@ import UserProfileScreen from "./UserProfileScreen";
 import ProfileSettingsScreen from "./ProfileSettingsScreen";
 import LearnScreen from "./LearnScreen";
 import GovPrepScreen from "./GovPrepScreen";
+import GovernmentExamsPage from "./GovernmentExamsPage";
 import CourseDetailsScreen from "./CourseDetailsScreen";
 import ContinueLearningScreen from "./ContinueLearningScreen";
 import PopularCoursesScreen from "./PopularCoursesScreen";
@@ -369,6 +370,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
   const [selectedPartnerForPreview, setSelectedPartnerForPreview] = useState(null);
   const [courseToEdit, setCourseToEdit] = useState(null);
   const [showGovPrepScreen, setShowGovPrepScreen] = useState(false);
+  const [showGovExamsPage, setShowGovExamsPage] = useState(false);
   const [activeDoubtRoom, setActiveDoubtRoom] = useState(null);
   const [getVerifiedModalOpen, setGetVerifiedModalOpen] = useState(false);
   const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
@@ -516,6 +518,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
     setShowAllMentorsScreen(false);
     setShowCommunityScreen(false);
     setShowGovPrepScreen(false);
+    setShowGovExamsPage(false);
     setTargetUserProfile(null);
     setCourseToEdit(null);
   }
@@ -1065,9 +1068,9 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
     );
   }
 
-  const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen || showCommunityScreen || showGovPrepScreen);
+  const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen || showCommunityScreen || showGovPrepScreen || showGovExamsPage);
 
-  const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || selectedCourseId || exploreCategoryKey || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard || activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community" || activeTab === "Home" || activeTab === "home" || activeTab === "Learn" || activeTab === "Profile" || activeTab === "ProfileSettings" || showGovPrepScreen);
+  const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || selectedCourseId || exploreCategoryKey || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard || activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community" || activeTab === "Home" || activeTab === "home" || activeTab === "Learn" || activeTab === "Profile" || activeTab === "ProfileSettings" || showGovPrepScreen || showGovExamsPage);
 
   return (
     <SwipeBackWrapper onBack={activeBackAction} enabled={Boolean(activeBackAction)}>
@@ -1254,6 +1257,12 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
               <CommunityScreen
                 session={session}
                 navigation={{ goBack: () => setShowCommunityScreen(false) }}
+              />
+            ) : showGovExamsPage ? (
+              <GovernmentExamsPage
+                session={session}
+                user={user}
+                onBack={() => setShowGovExamsPage(false)}
               />
             ) : showGovPrepScreen ? (
               <GovPrepScreen
@@ -1483,6 +1492,14 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
                 onOpenExploreCategory={(catKey) => setExploreCategoryKey(catKey)}
                 onOpenDiscoverPartners={() => setShowDiscoverPartnersScreen(true)}
                 onOpenGovPrep={() => setShowGovPrepScreen(true)}
+                onOpenGovExams={() => {
+                  setShowGovExamsPage(true);
+                  if (Platform.OS === "web" && typeof window !== "undefined" && window.history) {
+                    try {
+                      window.history.pushState({ page: "govExams" }, "", "/learn/government-exams");
+                    } catch (e) {}
+                  }
+                }}
               />
             ) : activeTab === "Chats" || activeTab === "Doubts" ? (
               <ChatListScreen
@@ -1539,7 +1556,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
           </View>
           </ScrollView>
         )}
-        {!activeChatUser && !activeDoubtRoom && !selectedCourseId && !selectedMentorId && !showMentorDashboard && !showPartnerDashboard && !showDiscoverPartnersScreen && !selectedPartnerForPreview && !showCreateCourseScreen && !showCreateWebinarScreen && !showGovPrepScreen ? (
+        {!activeChatUser && !activeDoubtRoom && !selectedCourseId && !selectedMentorId && !showMentorDashboard && !showPartnerDashboard && !showDiscoverPartnersScreen && !selectedPartnerForPreview && !showCreateCourseScreen && !showCreateWebinarScreen && !showGovPrepScreen && !showGovExamsPage ? (
           <ActionDock
             user={user}
             open={actionMenuOpen}

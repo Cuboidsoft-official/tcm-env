@@ -1294,5 +1294,99 @@ export function explainGovQuestionWithAI(token, questionId, payload = {}) {
   });
 }
 
+// SECTION 10: GOVERNMENT LEARNING API CLIENT METHODS
+export function getGovernmentStates() {
+  return request("/government/states");
+}
+
+export function getGovernmentExams(stateId = "") {
+  const q = stateId ? `?state=${encodeURIComponent(stateId)}` : "";
+  return request(`/government/exams${q}`);
+}
+
+export function getGovernmentSubjects(examId = "") {
+  const q = examId ? `?examId=${encodeURIComponent(examId)}` : "";
+  return request(`/government/exams/${examId || "all"}/subjects${q}`);
+}
+
+export function getGovernmentTopics(subjectId = "") {
+  const q = subjectId ? `?subjectId=${encodeURIComponent(subjectId)}` : "";
+  return request(`/government/subjects/${subjectId || "all"}/topics${q}`);
+}
+
+export function getGovernmentChapters(filters = {}) {
+  const query = new URLSearchParams(filters).toString();
+  return request(`/government/chapters?${query}`);
+}
+
+export function getGovernmentChapter(chapterId) {
+  return request(`/government/chapters/${encodeURIComponent(chapterId)}`);
+}
+
+export function getGovernmentLearningProgress(token) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return request("/government/progress", { headers });
+}
+
+export function saveChapterProgress(token, chapterId, progress = {}) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return request(`/government/chapters/${encodeURIComponent(chapterId)}/progress`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(progress)
+  });
+}
+
+export function bookmarkChapter(token, chapterId) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return request(`/government/chapters/${encodeURIComponent(chapterId)}/bookmark`, {
+    method: "POST",
+    headers
+  });
+}
+
+export function explainChapterWithAI(token, chapterId, language = "en") {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return request(`/government/questions/${encodeURIComponent(chapterId)}/explain-ai`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ language })
+  });
+}
+
+export function saveChapterNote(token, chapterId, notePayload = {}) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return request(`/government/chapters/${encodeURIComponent(chapterId)}/notes`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(notePayload)
+  });
+}
+
+export function getChapterNotes(token, chapterId) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return request(`/government/chapters/${encodeURIComponent(chapterId)}/notes`, { headers });
+}
+
+export function getGovernmentSources() {
+  return request("/government/sources");
+}
+
+export function syncGovernmentSource(token, sourceId) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return request("/government/sources/sync", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ sourceId })
+  });
+}
+
 
 

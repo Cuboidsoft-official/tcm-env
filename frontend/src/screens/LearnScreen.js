@@ -129,7 +129,7 @@ function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694
   return url;
 }
 
-export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory, onOpenDiscoverPartners, onOpenGovPrep, onBack }) {
+export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory, onOpenDiscoverPartners, onOpenGovPrep, onOpenGovExams, onBack }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [allMentorsModalVisible, setAllMentorsModalVisible] = useState(false);
@@ -413,6 +413,56 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
 
           <View style={[styles.quickAiBtn, { backgroundColor: theme.primary, borderColor: theme.primaryDark || theme.primary, shadowColor: theme.primary }]}>
             <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: "#FFFFFF" }}>Start AI →</Text>
+          </View>
+        </View>
+      </Pressable>
+
+      {/* NEW: LEARN FOR GOVERNMENT EXAMS CARD */}
+      <Pressable
+        onPress={() => (onOpenGovExams ? onOpenGovExams() : Alert.alert("Learn for Government Exams", "Opening Government Exams Page..."))}
+        style={({ pressed }) => [
+          styles.govPrepCardContainer,
+          {
+            backgroundColor: theme.isDark ? "#0A192F" : "#EFF6FF",
+            borderColor: theme.isDark ? "#1E293B" : "#BFDBFE"
+          },
+          pressed && styles.pressed
+        ]}
+      >
+        <View style={styles.govCardContent}>
+          <View style={styles.govBadgeRow}>
+            <View style={[styles.govBadgePill, { backgroundColor: theme.isDark ? "#1E293B" : "#FFFFFF", borderColor: theme.isDark ? "#334155" : "#DBEAFE" }]}>
+              <MaterialCommunityIcons name="book-open-page-variant-outline" size={14} color="#0284C7" />
+              <Text style={[styles.govBadgeLabel, { color: "#0284C7", fontFamily: fonts.bold }]}>
+                Government Preparation
+              </Text>
+            </View>
+          </View>
+          <Text style={[styles.govCardMainTitle, { color: theme.isDark ? "#FFFFFF" : "#0F172A" }]}>
+            Learn for Government Exams
+          </Text>
+          <Text style={[styles.govCardSubText, { color: theme.isDark ? "#94A3B8" : "#475569" }]}>
+            Prepare smarter with exam-wise subjects, chapters, notes, and real study material.
+          </Text>
+          <View style={styles.govCardFooterRow}>
+            <Pressable
+              onPress={() => (onOpenGovExams ? onOpenGovExams() : Alert.alert("Learn for Government Exams", "Opening Government Exams Page..."))}
+              style={({ pressed }) => [
+                styles.govStartPracticeBtn,
+                { backgroundColor: "#0284C7" },
+                pressed && { opacity: 0.85 }
+              ]}
+            >
+              <Text style={[styles.govStartPracticeText, { color: "#FFFFFF", fontFamily: fonts.bold }]}>
+                Start Learning →
+              </Text>
+            </Pressable>
+            <View style={[styles.govTagPill, { backgroundColor: theme.isDark ? "#1E293B" : "#FFFFFF", borderColor: theme.isDark ? "#334155" : "#DBEAFE" }]}>
+              <MaterialCommunityIcons name="shield-check-outline" size={13} color={theme.isDark ? "#94A3B8" : "#64748B"} />
+              <Text style={[styles.govTagPillText, { color: theme.isDark ? "#94A3B8" : "#64748B" }]}>
+                Free & Official Books
+              </Text>
+            </View>
           </View>
         </View>
       </Pressable>

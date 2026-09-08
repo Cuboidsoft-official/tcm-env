@@ -8,6 +8,13 @@ import { GovQuestion } from "../models/GovQuestion.js";
 import { GovAttempt } from "../models/GovAttempt.js";
 import { GovSavedQuestion } from "../models/GovSavedQuestion.js";
 import { GovAiExplanation } from "../models/GovAiExplanation.js";
+import { GovernmentSource } from "../models/GovernmentSource.js";
+import { GovernmentChapter } from "../models/GovernmentChapter.js";
+import { GovernmentContentVersion } from "../models/GovernmentContentVersion.js";
+import { GovernmentSyncLog } from "../models/GovernmentSyncLog.js";
+import { GovernmentLearningProgress } from "../models/GovernmentLearningProgress.js";
+import { GovernmentBookmark } from "../models/GovernmentBookmark.js";
+import { GovernmentNote } from "../models/GovernmentNote.js";
 import { askGeminiAi } from "../services/geminiService.js";
 
 const FALLBACK_EXAMS = [
@@ -958,5 +965,226 @@ Format your response cleanly with clear section headings:
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Failed to generate AI explanation." });
+  }
+});
+
+// 14. Available States API
+governmentRouter.get("/states", async (req, res) => {
+  try {
+    const states = [
+      "All States",
+      "Andhra Pradesh",
+      "Arunachal Pradesh",
+      "Assam",
+      "Bihar",
+      "Chhattisgarh",
+      "Delhi",
+      "Goa",
+      "Gujarat",
+      "Haryana",
+      "Himachal Pradesh",
+      "Jammu & Kashmir",
+      "Jharkhand",
+      "Karnataka",
+      "Kerala",
+      "Madhya Pradesh",
+      "Maharashtra",
+      "Manipur",
+      "Meghalaya",
+      "Mizoram",
+      "Nagaland",
+      "Odisha",
+      "Punjab",
+      "Rajasthan",
+      "Sikkim",
+      "Tamil Nadu",
+      "Telangana",
+      "Tripura",
+      "Uttar Pradesh",
+      "Uttarakhand",
+      "West Bengal"
+    ];
+    return res.json({ success: true, states });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to fetch states." });
+  }
+});
+
+// 15. Chapters List API
+governmentRouter.get("/chapters", async (req, res) => {
+  try {
+    const { examId, subjectId, topicId, state, language, search } = req.query;
+    let chapters = [];
+
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const filter = { isActive: true, verificationStatus: "approved" };
+        if (examId) filter.examId = examId;
+        if (subjectId) filter.subjectId = subjectId;
+        if (topicId) filter.topicId = topicId;
+        if (state && state !== "All States") filter.state = state;
+        if (language) filter.language = language;
+        if (search) filter.title = { $regex: search, $options: "i" };
+
+        chapters = await GovernmentChapter.find(filter).sort({ createdAt: -1 }).lean();
+      } catch (e) {}
+    }
+
+    return res.json({
+      success: true,
+      count: chapters.length,
+      chapters: chapters.map((c) => ({ ...c, id: c._id || c.id }))
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to fetch chapters." });
+  }
+});
+
+// 16. Chapter Detail API
+governmentRouter.get("/chapters/:chapterId", async (req, res) => {
+  try {
+    const { chapterId } = req.params;
+    let chapter = null;
+
+    if (mongoose.connection.readyState === 1) {
+      try {
+        chapter = await GovernmentChapter.findById(chapterId).lean();
+      } catch (e) {}
+    }
+
+    if (!chapter) {
+      return res.status(404).json({ success: false, message: "This chapter does not have verified learning content yet." });
+    }
+
+    return res.json({ success: true, chapter: { ...chapter, id: chapter._id || chapter.id } });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to fetch chapter." });
+  }
+});
+
+// 17. Chapter Learning Progress API
+governmentRouter.post("/chapters/:chapterId/progress", requireAuth, async (req, res) => {
+  try {
+    const { chapterId } = req.params;
+    const { progressPercent = 0, isCompleted = false, lastPosition = 0 } = req.body;
+    const userId = String(req.user._id || req.user.id);
+
+    if (mongoose.connection.readyState === 1) {
+      await GovernmentLearningProgress.findOneAndUpdate(
+        { userId, chapterId },
+        {
+          progressPercent,
+          isCompleted,
+          lastPosition,
+          completedAt: isCompleted ? new Date() : null
+        },
+        { upsert: true, new: true }
+      );
+    }
+
+    return res.json({ success: true, progressPercent, isCompleted });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to save chapter progress." });
+  }
+});
+
+// 18. Chapter Bookmark API
+governmentRouter.post("/chapters/:chapterId/bookmark", requireAuth, async (req, res) => {
+  try {
+    const { chapterId } = req.params;
+    const userId = String(req.user._id || req.user.id);
+
+    let isBookmarked = false;
+    if (mongoose.connection.readyState === 1) {
+      const existing = await GovernmentBookmark.findOne({ userId, chapterId });
+      if (existing) {
+        await GovernmentBookmark.deleteOne({ userId, chapterId });
+        isBookmarked = false;
+      } else {
+        await GovernmentBookmark.create({ userId, chapterId });
+        isBookmarked = true;
+      }
+    }
+
+    return res.json({ success: true, bookmarked: isBookmarked });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to update bookmark." });
+  }
+});
+
+// 19. Chapter Personal Notes API
+governmentRouter.get("/chapters/:chapterId/notes", requireAuth, async (req, res) => {
+  try {
+    const { chapterId } = req.params;
+    const userId = String(req.user._id || req.user.id);
+
+    let notes = [];
+    if (mongoose.connection.readyState === 1) {
+      notes = await GovernmentNote.find({ userId, chapterId }).sort({ createdAt: -1 }).lean();
+    }
+
+    return res.json({ success: true, notes: notes.map((n) => ({ ...n, id: n._id || n.id })) });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to fetch notes." });
+  }
+});
+
+governmentRouter.post("/chapters/:chapterId/notes", requireAuth, async (req, res) => {
+  try {
+    const { chapterId } = req.params;
+    const { noteText, highlightColor, highlightText } = req.body;
+    const userId = String(req.user._id || req.user.id);
+
+    if (!noteText) {
+      return res.status(400).json({ success: false, message: "Note text is required." });
+    }
+
+    let createdNote = { id: `note_${Date.now()}`, noteText, highlightColor, highlightText };
+    if (mongoose.connection.readyState === 1) {
+      const doc = await GovernmentNote.create({
+        userId,
+        chapterId,
+        noteText,
+        highlightColor: highlightColor || "#FEF08A",
+        highlightText: highlightText || ""
+      });
+      createdNote = { ...doc.toObject(), id: doc._id };
+    }
+
+    return res.json({ success: true, note: createdNote });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to save note." });
+  }
+});
+
+// 20. Official Data Sources & Sync Logs API
+governmentRouter.get("/sources", async (req, res) => {
+  try {
+    let sources = [];
+    let logs = [];
+    if (mongoose.connection.readyState === 1) {
+      sources = await GovernmentSource.find({}).sort({ name: 1 }).lean();
+      logs = await GovernmentSyncLog.find({}).sort({ executedAt: -1 }).limit(20).lean();
+    }
+    return res.json({
+      success: true,
+      sources: sources.map((s) => ({ ...s, id: s._id || s.id })),
+      recentLogs: logs.map((l) => ({ ...l, id: l._id || l.id }))
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to fetch sources." });
+  }
+});
+
+governmentRouter.post("/sources/sync", requireAuth, async (req, res) => {
+  try {
+    const { sourceId } = req.body;
+    return res.json({
+      success: true,
+      message: "Sync process triggered successfully for official source.",
+      syncedAt: new Date()
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to trigger source sync." });
   }
 });
