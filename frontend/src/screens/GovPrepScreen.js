@@ -530,22 +530,22 @@ export default function GovPrepScreen({ session, user, onBack }) {
             setInPractice(false);
           }}
         >
-          <MaterialCommunityIcons name="compass-outline" size={14} color={activeTab === "practice" ? "#5B3CF5" : theme.subtext} />
-          <Text style={[styles.tabButtonText, { color: activeTab === "practice" ? "#5B3CF5" : theme.subtext }, activeTab === "practice" && styles.tabButtonTextActive]}>
+          <MaterialCommunityIcons name="compass-outline" size={14} color={activeTab === "practice" ? "#DC2626" : theme.subtext} />
+          <Text style={[styles.tabButtonText, { color: activeTab === "practice" ? "#DC2626" : theme.subtext }, activeTab === "practice" && styles.tabButtonTextActive]}>
             Exam Setup
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.tabButton, activeTab === "saved" && styles.tabButtonActive]} onPress={loadSavedTab}>
-          <MaterialCommunityIcons name="bookmark-check-outline" size={14} color={activeTab === "saved" ? "#5B3CF5" : theme.subtext} />
-          <Text style={[styles.tabButtonText, { color: activeTab === "saved" ? "#5B3CF5" : theme.subtext }, activeTab === "saved" && styles.tabButtonTextActive]}>
+          <MaterialCommunityIcons name="bookmark-check-outline" size={14} color={activeTab === "saved" ? "#DC2626" : theme.subtext} />
+          <Text style={[styles.tabButtonText, { color: activeTab === "saved" ? "#DC2626" : theme.subtext }, activeTab === "saved" && styles.tabButtonTextActive]}>
             Saved ({savedIds.length || savedQuestions.length})
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.tabButton, activeTab === "progress" && styles.tabButtonActive]} onPress={loadProgressTab}>
-          <MaterialCommunityIcons name="chart-bar" size={14} color={activeTab === "progress" ? "#5B3CF5" : theme.subtext} />
-          <Text style={[styles.tabButtonText, { color: activeTab === "progress" ? "#5B3CF5" : theme.subtext }, activeTab === "progress" && styles.tabButtonTextActive]}>
+          <MaterialCommunityIcons name="chart-bar" size={14} color={activeTab === "progress" ? "#DC2626" : theme.subtext} />
+          <Text style={[styles.tabButtonText, { color: activeTab === "progress" ? "#DC2626" : theme.subtext }, activeTab === "progress" && styles.tabButtonTextActive]}>
             Analytics
           </Text>
         </TouchableOpacity>
@@ -554,7 +554,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
       {/* BODY CONTENT SCROLLVIEW */}
       {loading ? (
         <View style={styles.fullscreenLoadingBox}>
-          <ActivityIndicator size="large" color="#5B3CF5" />
+          <ActivityIndicator size="large" color="#DC2626" />
           <Text style={[styles.fullscreenLoadingText, { color: theme.text }]}>
             Loading Government Exams & Question Bank...
           </Text>
@@ -566,7 +566,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
           <View style={styles.setupMainWrapper}>
             {/* Step 1: Exam Category Selector */}
             <View style={styles.stepSectionHeader}>
-              <Text style={[styles.stepNumberBadge, { backgroundColor: "#5B3CF5" }]}>1</Text>
+              <Text style={[styles.stepNumberBadge, { backgroundColor: "#DC2626" }]}>1</Text>
               <Text style={[styles.stepTitle, { color: theme.text }]}>Select Exam Category</Text>
             </View>
 
@@ -598,7 +598,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
 
             {/* Step 2: Exam Grid Cards */}
             <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
-              <Text style={[styles.stepNumberBadge, { backgroundColor: "#5B3CF5" }]}>2</Text>
+              <Text style={[styles.stepNumberBadge, { backgroundColor: "#DC2626" }]}>2</Text>
               <Text style={[styles.stepTitle, { color: theme.text }]}>Choose Target Exam</Text>
             </View>
 
@@ -618,16 +618,16 @@ export default function GovPrepScreen({ session, user, onBack }) {
                       style={[
                         styles.examCardBox,
                         { backgroundColor: theme.cardBg, borderColor: theme.border },
-                        isSelected && [styles.examCardBoxSelected, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF" }]
+                        isSelected && [styles.examCardBoxSelected, { backgroundColor: theme.isDark ? "#450A0A" : "#FEF2F2" }]
                       ]}
                       onPress={() => handleSelectExam(ex)}
                     >
                       <View style={styles.examCardTopRow}>
-                        <View style={[styles.examIconCircle, { backgroundColor: isSelected ? "#5B3CF5" : theme.isDark ? "#1E293B" : "#F1F5F9" }]}>
-                          <MaterialCommunityIcons name={iconName} size={20} color={isSelected ? "#FFFFFF" : "#5B3CF5"} />
+                        <View style={[styles.examIconCircle, { backgroundColor: isSelected ? "#DC2626" : theme.isDark ? "#1E293B" : "#F1F5F9" }]}>
+                          <MaterialCommunityIcons name={iconName} size={20} color={isSelected ? "#FFFFFF" : "#DC2626"} />
                         </View>
                         {isSelected ? (
-                          <MaterialCommunityIcons name="check-circle" size={20} color="#5B3CF5" />
+                          <MaterialCommunityIcons name="check-circle" size={20} color="#DC2626" />
                         ) : (
                           <View style={[styles.examCategoryTag, { backgroundColor: theme.isDark ? "#1E293B" : "#F1F5F9" }]}>
                             <Text style={[styles.examCategoryTagText, { color: theme.subtext }]}>{ex.category}</Text>
@@ -656,7 +656,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
             {selectedExam ? (
               <>
                 <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
-                  <Text style={[styles.stepNumberBadge, { backgroundColor: "#5B3CF5" }]}>3</Text>
+                  <Text style={[styles.stepNumberBadge, { backgroundColor: "#DC2626" }]}>3</Text>
                   <Text style={[styles.stepTitle, { color: theme.text }]}>Select Exam Year (Official Papers)</Text>
                 </View>
 
@@ -693,7 +693,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                             updateAvailableCount(selectedExam?.id, String(yr), selectedSubject?.id, selectedTopic?.id);
                           }}
                         >
-                          <MaterialCommunityIcons name="calendar-check" size={14} color={isYrSelected ? "#FFFFFF" : "#5B3CF5"} />
+                          <MaterialCommunityIcons name="calendar-check" size={14} color={isYrSelected ? "#FFFFFF" : "#DC2626"} />
                           <Text style={[styles.yearPillText, { color: theme.text }, isYrSelected && styles.yearPillTextActive]}>
                             {yr} PYQ Paper
                           </Text>
@@ -711,7 +711,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                 {subjects.length > 0 ? (
                   <>
                     <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
-                      <Text style={[styles.stepNumberBadge, { backgroundColor: "#5B3CF5" }]}>4</Text>
+                      <Text style={[styles.stepNumberBadge, { backgroundColor: "#DC2626" }]}>4</Text>
                       <Text style={[styles.stepTitle, { color: theme.text }]}>Choose Subject (Optional)</Text>
                     </View>
 
@@ -741,7 +741,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                             ]}
                             onPress={() => handleSelectSubject(sub)}
                           >
-                            <MaterialCommunityIcons name="book-open-variant" size={14} color={isSubSelected ? "#FFFFFF" : "#5B3CF5"} />
+                            <MaterialCommunityIcons name="book-open-variant" size={14} color={isSubSelected ? "#FFFFFF" : "#DC2626"} />
                             <Text style={[styles.subjectChipText, { color: theme.text }, isSubSelected && styles.subjectChipTextActive]}>
                               {sub.name}
                             </Text>
@@ -754,7 +754,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
 
                 {/* Step 5: Question Count & Live Setup Summary Card */}
                 <View style={[styles.stepSectionHeader, { marginTop: 22 }]}>
-                  <Text style={[styles.stepNumberBadge, { backgroundColor: "#5B3CF5" }]}>5</Text>
+                  <Text style={[styles.stepNumberBadge, { backgroundColor: "#DC2626" }]}>5</Text>
                   <Text style={[styles.stepTitle, { color: theme.text }]}>Questions Per Session</Text>
                 </View>
 
@@ -780,9 +780,9 @@ export default function GovPrepScreen({ session, user, onBack }) {
                 </View>
 
                 {/* Live Setup Summary Banner */}
-                <View style={[styles.summaryBannerCard, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F0EDFF", borderColor: "#C4B5FD" }]}>
+                <View style={[styles.summaryBannerCard, { backgroundColor: theme.isDark ? "#450A0A" : "#FEF2F2", borderColor: "#FCA5A5" }]}>
                   <View style={styles.summaryTopRow}>
-                    <MaterialCommunityIcons name="target" size={20} color="#5B3CF5" />
+                    <MaterialCommunityIcons name="target" size={20} color="#DC2626" />
                     <Text style={styles.summaryTargetHeading}>SESSION CONFIGURATION</Text>
                   </View>
 
@@ -829,7 +829,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
 
               <View style={styles.progressCounterBox}>
                 <Text style={[styles.progressCounterText, { color: theme.text }]}>
-                  Question <Text style={{ color: "#5B3CF5", fontWeight: "700" }}>{currentIndex + 1}</Text> / {questions.length}
+                  Question <Text style={{ color: "#DC2626", fontWeight: "700" }}>{currentIndex + 1}</Text> / {questions.length}
                 </Text>
               </View>
 
@@ -837,7 +837,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                 <MaterialCommunityIcons
                   name={isSavedCurrent ? "bookmark" : "bookmark-outline"}
                   size={22}
-                  color={isSavedCurrent ? "#5B3CF5" : theme.subtext}
+                  color={isSavedCurrent ? "#DC2626" : theme.subtext}
                 />
               </TouchableOpacity>
             </View>
@@ -849,8 +849,8 @@ export default function GovPrepScreen({ session, user, onBack }) {
 
             {/* Meta Tags Row */}
             <View style={styles.questionMetaRow}>
-              <View style={[styles.metaBadge, { backgroundColor: "#F0EDFF" }]}>
-                <Text style={[styles.metaBadgeText, { color: "#5B3CF5" }]}>{currentQ.examName || selectedExam?.name}</Text>
+              <View style={[styles.metaBadge, { backgroundColor: "#FEF2F2" }]}>
+                <Text style={[styles.metaBadgeText, { color: "#DC2626" }]}>{currentQ.examName || selectedExam?.name}</Text>
               </View>
               <View style={[styles.metaBadge, { backgroundColor: "#ECFDF5" }]}>
                 <Text style={[styles.metaBadgeText, { color: "#059669" }]}>{currentQ.subjectName || "General Paper"}</Text>
@@ -892,9 +892,9 @@ export default function GovPrepScreen({ session, user, onBack }) {
                       circleTextColor = "#FFFFFF";
                     }
                   } else if (isSelected) {
-                    borderStyle = "#5B3CF5";
-                    bgStyle = theme.isDark ? "#1E1B4B" : "#F0EDFF";
-                    circleBg = "#5B3CF5";
+                    borderStyle = "#DC2626";
+                    bgStyle = theme.isDark ? "#450A0A" : "#FEF2F2";
+                    circleBg = "#DC2626";
                     circleTextColor = "#FFFFFF";
                   }
 
@@ -949,10 +949,10 @@ export default function GovPrepScreen({ session, user, onBack }) {
                   {/* Groq AI Explanation Button */}
                   <TouchableOpacity style={styles.aiExplainTriggerBtn} onPress={() => handleExplainWithAI(aiLanguage)}>
                     {aiLoading ? (
-                      <ActivityIndicator color="#5B3CF5" />
+                      <ActivityIndicator color="#DC2626" />
                     ) : (
                       <>
-                        <MaterialCommunityIcons name="sparkles" size={18} color="#5B3CF5" />
+                        <MaterialCommunityIcons name="sparkles" size={18} color="#DC2626" />
                         <Text style={styles.aiExplainTriggerBtnText}>Explain with Groq AI ✨</Text>
                       </>
                     )}
@@ -962,10 +962,10 @@ export default function GovPrepScreen({ session, user, onBack }) {
 
               {/* GROQ AI EXPLANATION SECTION */}
               {aiExplanation ? (
-                <View style={[styles.aiExplanationWrapper, { backgroundColor: theme.isDark ? "#1E1B4B" : "#F8F5FF", borderColor: "#DDD6FE" }]}>
+                <View style={[styles.aiExplanationWrapper, { backgroundColor: theme.isDark ? "#450A0A" : "#FFF1F2", borderColor: "#FECACA" }]}>
                   <View style={styles.aiCardHeaderRow}>
                     <View style={styles.aiRobotBadge}>
-                      <MaterialCommunityIcons name="robot" size={18} color="#5B3CF5" />
+                      <MaterialCommunityIcons name="robot" size={18} color="#DC2626" />
                       <Text style={styles.aiRobotBadgeText}>GROQ AI TUTOR</Text>
                     </View>
 
@@ -1109,7 +1109,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
                 <Text style={[styles.statQuadLabel, { color: theme.subtext }]}>Incorrect</Text>
               </View>
               <View style={[styles.statQuadCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-                <Text style={[styles.statQuadValue, { color: "#5B3CF5" }]}>{progressData?.accuracy || 0}%</Text>
+                <Text style={[styles.statQuadValue, { color: "#DC2626" }]}>{progressData?.accuracy || 0}%</Text>
                 <Text style={[styles.statQuadLabel, { color: theme.subtext }]}>Accuracy Rate</Text>
               </View>
             </View>
@@ -1186,7 +1186,7 @@ const styles = StyleSheet.create({
     borderRadius: 8
   },
   tabButtonActive: {
-    backgroundColor: "#F0EDFF"
+    backgroundColor: "#FEF2F2"
   },
   tabButtonText: {
     fontSize: 11,
@@ -1241,8 +1241,8 @@ const styles = StyleSheet.create({
     marginRight: 8
   },
   categoryChipActive: {
-    backgroundColor: "#5B3CF5",
-    borderColor: "#5B3CF5"
+    backgroundColor: "#DC2626",
+    borderColor: "#DC2626"
   },
   categoryChipText: {
     fontSize: 12,
@@ -1267,7 +1267,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between"
   },
   examCardBoxSelected: {
-    borderColor: "#5B3CF5",
+    borderColor: "#DC2626",
     borderWidth: 2
   },
   examCardTopRow: {
@@ -1298,7 +1298,7 @@ const styles = StyleSheet.create({
     marginBottom: 4
   },
   examCardNameSelected: {
-    color: "#5B3CF5"
+    color: "#DC2626"
   },
   examCardDesc: {
     fontSize: 11,
@@ -1338,8 +1338,8 @@ const styles = StyleSheet.create({
     borderWidth: 1
   },
   yearPillActive: {
-    backgroundColor: "#5B3CF5",
-    borderColor: "#5B3CF5"
+    backgroundColor: "#DC2626",
+    borderColor: "#DC2626"
   },
   yearPillText: {
     fontSize: 12,
@@ -1361,8 +1361,8 @@ const styles = StyleSheet.create({
     marginRight: 8
   },
   subjectChipActive: {
-    backgroundColor: "#5B3CF5",
-    borderColor: "#5B3CF5"
+    backgroundColor: "#DC2626",
+    borderColor: "#DC2626"
   },
   subjectChipText: {
     fontSize: 12,
@@ -1380,8 +1380,8 @@ const styles = StyleSheet.create({
     borderWidth: 1
   },
   limitPillActive: {
-    backgroundColor: "#5B3CF5",
-    borderColor: "#5B3CF5"
+    backgroundColor: "#DC2626",
+    borderColor: "#DC2626"
   },
   limitPillText: {
     fontSize: 12,
@@ -1409,7 +1409,7 @@ const styles = StyleSheet.create({
   summaryTargetHeading: {
     fontSize: 10,
     fontFamily: fonts.bold,
-    color: "#5B3CF5",
+    color: "#DC2626",
     letterSpacing: 0.5
   },
   summaryTitle: {
@@ -1439,7 +1439,7 @@ const styles = StyleSheet.create({
     color: "#059669"
   },
   startPracticeBtnCTA: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#DC2626",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1491,7 +1491,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: "#5B3CF5"
+    backgroundColor: "#DC2626"
   },
 
   questionMetaRow: {
@@ -1552,7 +1552,7 @@ const styles = StyleSheet.create({
   },
 
   submitAnswerBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#DC2626",
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center"
@@ -1601,14 +1601,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: "#F0EDFF",
+    backgroundColor: "#FEF2F2",
     borderWidth: 1,
-    borderColor: "#C4B5FD",
+    borderColor: "#FCA5A5",
     paddingVertical: 10,
     borderRadius: 10
   },
   aiExplainTriggerBtnText: {
-    color: "#5B3CF5",
+    color: "#DC2626",
     fontFamily: fonts.bold,
     fontSize: 13
   },
@@ -1634,7 +1634,7 @@ const styles = StyleSheet.create({
   aiRobotBadgeText: {
     fontSize: 11,
     fontFamily: fonts.bold,
-    color: "#5B3CF5"
+    color: "#DC2626"
   },
   langPillsRow: {
     flexDirection: "row",
@@ -1647,7 +1647,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E2E8F0"
   },
   langPillItemActive: {
-    backgroundColor: "#5B3CF5"
+    backgroundColor: "#DC2626"
   },
   langPillItemText: {
     fontSize: 10,
@@ -1678,7 +1678,7 @@ const styles = StyleSheet.create({
   followUpCardQuery: {
     fontSize: 11,
     fontFamily: fonts.bold,
-    color: "#5B3CF5"
+    color: "#DC2626"
   },
   followUpCardAnswer: {
     fontSize: 11.5,
@@ -1701,7 +1701,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular
   },
   sendFollowUpActionBtn: {
-    backgroundColor: "#5B3CF5",
+    backgroundColor: "#DC2626",
     padding: 8,
     borderRadius: 8
   },
@@ -1728,8 +1728,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium
   },
   navChevronBtnPrimary: {
-    backgroundColor: "#5B3CF5",
-    borderColor: "#5B3CF5"
+    backgroundColor: "#DC2626",
+    borderColor: "#DC2626"
   },
   navChevronBtnPrimaryText: {
     color: "#FFFFFF",
@@ -1778,7 +1778,7 @@ const styles = StyleSheet.create({
   savedCardExamTag: {
     fontSize: 11,
     fontFamily: fonts.bold,
-    color: "#5B3CF5"
+    color: "#DC2626"
   },
   savedCardQuestionText: {
     fontSize: 13,
@@ -1849,12 +1849,12 @@ const styles = StyleSheet.create({
   },
   subjectBarFillTrack: {
     height: "100%",
-    backgroundColor: "#5B3CF5"
+    backgroundColor: "#DC2626"
   },
   subjectBreakdownPct: {
     fontSize: 11,
     fontFamily: fonts.bold,
-    color: "#5B3CF5",
+    color: "#DC2626",
     width: 36,
     textAlign: "right"
   },
