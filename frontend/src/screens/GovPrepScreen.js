@@ -1067,7 +1067,8 @@ export default function GovPrepScreen({ session, user, onBack }) {
       ]);
 
       const fetchedCats = catRes?.categories || [];
-      const catList = fetchedCats.length > 0 ? fetchedCats : ["All", "SSC", "Railway", "Banking", "UPSC", "State PSC", "Police", "Defence"];
+      const catNames = fetchedCats.map((c) => (typeof c === "object" ? c.name : c)).filter(Boolean);
+      const catList = catNames.length > 0 ? (catNames.includes("All") ? catNames : ["All", ...catNames]) : ["All", "SSC", "Railway", "Banking", "UPSC", "State PSC", "Police", "Defence"];
       setCategories(catList);
 
       const fetchedExams = examRes?.exams || [];

@@ -889,7 +889,9 @@ export default function GovernmentExamsPage({ session, user, onBack }) {
       }
 
       if (catRes?.categories && Array.isArray(catRes.categories) && catRes.categories.length > 0) {
-        setCategories(catRes.categories);
+        const catNames = catRes.categories.map((c) => (typeof c === "object" ? c.name : c)).filter(Boolean);
+        const uniqueCats = Array.from(new Set(["All", ...catNames]));
+        setCategories(uniqueCats);
       }
 
       const fetchedExams = examRes?.exams && examRes.exams.length > 0 ? examRes.exams : defaultGovExams;
@@ -1510,14 +1512,15 @@ export default function GovernmentExamsPage({ session, user, onBack }) {
               <Text style={[styles.filterLabel, { color: theme.subtext }]}>Exam:</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterChipScroll}>
                 {categories.map((cat) => {
-                  const active = activeCategory === cat;
+                  const catName = typeof cat === "object" ? cat.name : cat;
+                  const active = activeCategory === catName;
                   return (
                     <TouchableOpacity
-                      key={`cat_${cat}`}
+                      key={`cat_${catName}`}
                       style={[styles.filterChipBtn, active && styles.filterChipBtnActive]}
-                      onPress={() => setActiveCategory(cat)}
+                      onPress={() => setActiveCategory(catName)}
                     >
-                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{cat}</Text>
+                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{catName}</Text>
                     </TouchableOpacity>
                   );
                 })}

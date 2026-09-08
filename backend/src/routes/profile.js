@@ -163,15 +163,13 @@ profileRouter.get("/", requireAuth, async (req, res) => {
       });
     }
 
-    if (!dbUser) {
-      dbUser = await User.findById(req.user._id || req.user.id).lean();
-    }
-    if (!dbUser) {
+    const activeUserDoc = dbUser || targetUserDoc || req.user;
+    if (!activeUserDoc) {
       return res.status(404).json({ message: "User not found" });
     }
 
     const userPosts = await CommunityPost.find({
-      $or: [{ authorId: req.user._id }, { authorName: dbUser.name }]
+      $or: [{ authorId: req.user._id }, { authorName: activeUserDoc.name }]
     })
       .sort({ publishedAt: -1 })
       .lean();
@@ -179,10 +177,10 @@ profileRouter.get("/", requireAuth, async (req, res) => {
     const formattedUserPosts = userPosts.map(formatCommunityPostToProfileCard);
     const totalReviews = formattedUserPosts.reduce((sum, p) => sum + (p.metrics?.comments || 0), 0);
 
-    const userFollowers = Array.isArray(dbUser.followers) ? dbUser.followers : [];
-    const userFollowing = Array.isArray(dbUser.following) ? dbUser.following : [];
+    const userFollowers = Array.isArray(activeUserDoc.followers) ? activeUserDoc.followers : [];
+    const userFollowing = Array.isArray(activeUserDoc.following) ? activeUserDoc.following : [];
 
-    const pubUser = publicUser(dbUser);
+    const pubUser = publicUser(activeUserDoc);
     pubUser.stats = {
       postsCount: formattedUserPosts.length,
       followers: userFollowers.length,
@@ -315,6 +313,9 @@ async function handleUpdateProfile(req, res) {
     res.status(500).json({ message: "Could not update profile" });
   }
 }
+
+profileRouter.put("/", requireAuth, handleUpdateProfile);
+profileRouter.post("/", requireAuth, handleUpdateProfile);
 
 // Toggle follow endpoint
 profileRouter.post("/follow", requireAuth, async (req, res) => {

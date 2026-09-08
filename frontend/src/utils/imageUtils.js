@@ -5,8 +5,14 @@ export const DEFAULT_AVATAR_IMAGE = "https://images.unsplash.com/photo-153452874
 
 export function sanitizeImageUri(uri, fallback = DEFAULT_FALLBACK_IMAGE) {
   if (!uri || typeof uri !== "string") return fallback;
-  const trimmed = uri.trim();
+  let trimmed = uri.trim();
   if (!trimmed) return fallback;
+
+  // Fix URLs missing /uploads/ prefix e.g. https://api.thecodemunk.in/mtocaq7p-6bdd1d6e8191.png
+  if (/^https?:\/\/api\.thecodemunk\.in\/([a-z0-9_-]+\.(png|jpg|jpeg|webp|gif|heic|avif))$/i.test(trimmed)) {
+    const filename = trimmed.split("/").pop();
+    trimmed = `https://api.thecodemunk.in/uploads/${filename}`;
+  }
 
   // 1. On Web: file:/// or device local URIs cause "Not allowed to load local resource: file:///..."
   if (Platform.OS === "web" && (trimmed.startsWith("file://") || trimmed.startsWith("content://") || trimmed.startsWith("ph://"))) {
@@ -28,12 +34,27 @@ export function sanitizeImageUri(uri, fallback = DEFAULT_FALLBACK_IMAGE) {
     return trimmed;
   }
 
-  // 5. Valid Web Blob URIs (only on Web platform)
+  // 5. Relative Upload Paths & Filenames (e.g. /uploads/..., uploads/..., mtocaq7p-6bdd1d6e8191.png)
+  if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
+    const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    return `https://api.thecodemunk.in${path}`;
+  }
+
+  if (/^\/?([a-z0-9_-]+\.(png|jpg|jpeg|webp|gif|heic|avif))$/i.test(trimmed)) {
+    const filename = trimmed.replace(/^\//, "");
+    return `https://api.thecodemunk.in/uploads/${filename}`;
+  }
+
+  if (trimmed.startsWith("/")) {
+    return `https://api.thecodemunk.in${trimmed}`;
+  }
+
+  // 6. Valid Web Blob URIs (only on Web platform)
   if (Platform.OS === "web" && trimmed.startsWith("blob:")) {
     return trimmed;
   }
 
-  // 6. Valid Local File/Content URIs (only on Native iOS/Android)
+  // 7. Valid Local File/Content URIs (only on Native iOS/Android)
   if (Platform.OS !== "web" && (trimmed.startsWith("file://") || trimmed.startsWith("content://") || trimmed.startsWith("asset://"))) {
     return trimmed;
   }

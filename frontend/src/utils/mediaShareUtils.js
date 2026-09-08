@@ -7,16 +7,21 @@ import * as Sharing from "expo-sharing";
  */
 export function resolveFullMediaUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== "string") return "";
-  const trimmed = rawUrl.trim();
+  let trimmed = rawUrl.trim();
   if (!trimmed) return "";
+  if (/^https?:\/\/api\.thecodemunk\.in\/([a-z0-9_-]+\.(png|jpg|jpeg|webp|gif|heic|avif))$/i.test(trimmed)) {
+    const filename = trimmed.split("/").pop();
+    return `https://api.thecodemunk.in/uploads/${filename}`;
+  }
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   if (trimmed.startsWith("file://") || trimmed.startsWith("content://") || trimmed.startsWith("data:")) {
     return trimmed;
   }
-  if (trimmed.startsWith("/")) {
-    return `https://api.thecodemunk.in${trimmed}`;
+  const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  if (!cleanPath.startsWith("/uploads/")) {
+    return `https://api.thecodemunk.in/uploads${cleanPath}`;
   }
-  return `https://api.thecodemunk.in/${trimmed}`;
+  return `https://api.thecodemunk.in${cleanPath}`;
 }
 
 /**

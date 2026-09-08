@@ -77,6 +77,18 @@ app.use(
   })
 );
 
+// Fallback static handler for direct root requests to uploaded files (e.g. /mtocaq7p-6bdd1d6e8191.png)
+app.get("/:filename", (req, res, next) => {
+  const filename = req.params.filename;
+  if (/^[a-z0-9_-]+\.(png|jpg|jpeg|webp|gif|heic|heif|avif|pdf|mp4)$/i.test(filename)) {
+    const filePath = path.join(UPLOADS_DIR, filename);
+    if (fs.existsSync(filePath)) {
+      return res.sendFile(filePath);
+    }
+  }
+  next();
+});
+
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
