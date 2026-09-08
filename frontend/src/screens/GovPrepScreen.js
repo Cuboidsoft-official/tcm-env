@@ -46,12 +46,20 @@ const DEFAULT_EXAM_LIST = [
   { id: "ex_defence", name: "CDS Defence", category: "Defence", description: "Combined Defence Services Examination", isActive: true }
 ];
 
+const DEFAULT_SUBJECTS = [
+  { id: "sub_reasoning", name: "Reasoning", icon: "brain" },
+  { id: "sub_quant", name: "Quantitative Aptitude", icon: "calculator" },
+  { id: "sub_ga", name: "General Awareness", icon: "book-open" },
+  { id: "sub_english", name: "English Comprehension", icon: "format-title" }
+];
+
 const DEFAULT_QUESTIONS = [
   {
     id: "q_ssc_1",
     examId: "ex_ssc_cgl",
     examName: "SSC CGL",
     year: 2024,
+    subjectId: "sub_reasoning",
     subjectName: "Reasoning",
     topicName: "Analogy",
     type: "pyq",
@@ -71,6 +79,7 @@ const DEFAULT_QUESTIONS = [
     examId: "ex_ssc_cgl",
     examName: "SSC CGL",
     year: 2024,
+    subjectId: "sub_reasoning",
     subjectName: "Reasoning",
     topicName: "Number Series",
     type: "pyq",
@@ -90,6 +99,7 @@ const DEFAULT_QUESTIONS = [
     examId: "ex_ssc_cgl",
     examName: "SSC CGL",
     year: 2024,
+    subjectId: "sub_quant",
     subjectName: "Quantitative Aptitude",
     topicName: "Percentage",
     type: "pyq",
@@ -105,10 +115,31 @@ const DEFAULT_QUESTIONS = [
     language: "en"
   },
   {
+    id: "q_ssc_5",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2024,
+    subjectId: "sub_quant",
+    subjectName: "Quantitative Aptitude",
+    topicName: "Ratio & Proportion",
+    type: "pyq",
+    questionText: "The ratio of ages of A and B is 3:4. After 5 years, the ratio becomes 4:5. What is the present age of A?",
+    options: [
+      { label: "A", text: "12 years" },
+      { label: "B", text: "15 years" },
+      { label: "C", text: "20 years" },
+      { label: "D", text: "25 years" }
+    ],
+    correctAnswer: "B",
+    explanation: "Let present ages be 3x and 4x. (3x + 5)/(4x + 5) = 4/5 => 5(3x + 5) = 4(4x + 5) => 15x + 25 = 16x + 20 => x = 5. Present age of A = 3 × 5 = 15 years.",
+    language: "en"
+  },
+  {
     id: "q_ssc_4",
     examId: "ex_ssc_cgl",
     examName: "SSC CGL",
     year: 2023,
+    subjectId: "sub_ga",
     subjectName: "General Awareness",
     topicName: "Indian History",
     type: "pyq",
@@ -124,10 +155,71 @@ const DEFAULT_QUESTIONS = [
     language: "en"
   },
   {
+    id: "q_ssc_6",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2024,
+    subjectId: "sub_ga",
+    subjectName: "General Awareness",
+    topicName: "Geography",
+    type: "pyq",
+    questionText: "Which Indian city is famously known as the 'Pink City' of India?",
+    options: [
+      { label: "A", text: "Udaipur" },
+      { label: "B", text: "Jaipur" },
+      { label: "C", text: "Jodhpur" },
+      { label: "D", text: "Jaisalmer" }
+    ],
+    correctAnswer: "B",
+    explanation: "Jaipur is known as the Pink City of India due to the distinctive color of its buildings.",
+    language: "en"
+  },
+  {
+    id: "q_ssc_7",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2024,
+    subjectId: "sub_english",
+    subjectName: "English Comprehension",
+    topicName: "Vocabulary",
+    type: "pyq",
+    questionText: "Select the most appropriate SYNONYM of the word 'BENEVOLENT':",
+    options: [
+      { label: "A", text: "Cruel" },
+      { label: "B", text: "Kind" },
+      { label: "C", text: "Greedy" },
+      { label: "D", text: "Hateful" }
+    ],
+    correctAnswer: "B",
+    explanation: "'Benevolent' means well-meaning and kindly. Therefore, 'Kind' is the correct synonym.",
+    language: "en"
+  },
+  {
+    id: "q_ssc_8",
+    examId: "ex_ssc_cgl",
+    examName: "SSC CGL",
+    year: 2024,
+    subjectId: "sub_english",
+    subjectName: "English Comprehension",
+    topicName: "Spelling",
+    type: "pyq",
+    questionText: "Select the correctly spelt word:",
+    options: [
+      { label: "A", text: "Recieve" },
+      { label: "B", text: "Receive" },
+      { label: "C", text: "Receave" },
+      { label: "D", text: "Receeve" }
+    ],
+    correctAnswer: "B",
+    explanation: "The correct spelling is 'Receive' (rule: 'i' before 'e' except after 'c').",
+    language: "en"
+  },
+  {
     id: "q_rrb_1",
     examId: "ex_rrb_ntpc",
     examName: "Railway NTPC",
     year: 2024,
+    subjectId: "sub_rrb_sci",
     subjectName: "General Science",
     topicName: "Physics",
     type: "pyq",
@@ -147,6 +239,7 @@ const DEFAULT_QUESTIONS = [
     examId: "ex_upsc_cse",
     examName: "UPSC Civil Services",
     year: 2024,
+    subjectId: "sub_upsc_polity",
     subjectName: "General Studies",
     topicName: "Indian Polity",
     type: "pyq",
@@ -269,7 +362,8 @@ export default function GovPrepScreen({ session, user, onBack }) {
       const defaultYr = yrList.length > 0 ? String(yrList[0]) : "";
       setSelectedYear(defaultYr);
 
-      const subList = subRes?.subjects || [];
+      const fetchedSubs = subRes?.subjects || [];
+      const subList = fetchedSubs.length > 0 ? fetchedSubs : DEFAULT_SUBJECTS;
       setSubjects(subList);
       setSelectedSubject(null);
       setSelectedTopic(null);
@@ -278,6 +372,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
       updateAvailableCount(examId, defaultYr, null, null);
     } catch (e) {
       console.warn("Error loading exam details:", e);
+      setSubjects(DEFAULT_SUBJECTS);
     }
   }
 
@@ -291,7 +386,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
     } else {
       setSelectedExam(null);
       setYears([]);
-      setSubjects([]);
+      setSubjects(DEFAULT_SUBJECTS);
       setAvailableCount(0);
     }
   }
@@ -364,9 +459,14 @@ export default function GovPrepScreen({ session, user, onBack }) {
         qList = fallbackRes?.questions || [];
       }
 
-      // If network/API returns 0 questions, use DEFAULT_QUESTIONS fallback
+      // If network/API returns 0 questions, use DEFAULT_QUESTIONS fallback filtered by subject
       if (qList.length === 0) {
-        qList = DEFAULT_QUESTIONS;
+        if (selectedSubject?.id) {
+          const filteredBySub = DEFAULT_QUESTIONS.filter((q) => q.subjectId === selectedSubject.id || q.subjectName === selectedSubject.name);
+          qList = filteredBySub.length > 0 ? filteredBySub : DEFAULT_QUESTIONS;
+        } else {
+          qList = DEFAULT_QUESTIONS;
+        }
       }
 
       const formattedQuestions = qList.map((q) => ({
@@ -383,7 +483,12 @@ export default function GovPrepScreen({ session, user, onBack }) {
       setFollowUpResponses([]);
       setInPractice(true);
     } catch (err) {
-      const formattedQuestions = DEFAULT_QUESTIONS.map((q) => ({
+      const filteredBySub = selectedSubject?.id
+        ? DEFAULT_QUESTIONS.filter((q) => q.subjectId === selectedSubject.id || q.subjectName === selectedSubject.name)
+        : DEFAULT_QUESTIONS;
+      const finalQList = filteredBySub.length > 0 ? filteredBySub : DEFAULT_QUESTIONS;
+
+      const formattedQuestions = finalQList.map((q) => ({
         ...q,
         examName: selectedExam?.name || "Government Exam",
         subjectName: selectedSubject?.name || "General Practice Paper"
