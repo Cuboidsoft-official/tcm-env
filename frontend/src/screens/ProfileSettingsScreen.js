@@ -1227,8 +1227,8 @@ export default function ProfileSettingsScreen({ session, user: initialUser, onBa
             {/* Header */}
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: activeAppTheme.badgeBg, alignItems: "center", justifyContent: "center", marginRight: 10 }}>
-                  <MaterialCommunityIcons name="bot" size={20} color={activeAppTheme.primary} />
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: activeAppTheme.badgeBg, alignItems: "center", justifyContent: "center", marginRight: 10, overflow: "hidden" }}>
+                  <Image source={require("../../assets/icon.png")} style={{ width: 30, height: 30 }} resizeMode="contain" />
                 </View>
                 <View>
                   <Text style={[styles.modalTitle, { color: activeAppTheme.text, marginBottom: 0 }]}>Help & AI Support 🤖</Text>

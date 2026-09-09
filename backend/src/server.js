@@ -12,8 +12,8 @@ import { profileRouter } from "./routes/profile.js";
 import { chatRouter } from "./routes/chat.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { adminRouter } from "./routes/admin.js";
-import { governmentRouter } from "./routes/government.js";
-import { uploadsRouter, UPLOADS_DIR, getMediaFromDb } from "./routes/uploads.js";
+import path from "path";
+import { uploadsRouter, UPLOADS_DIR, getMediaFromDb, saveMediaToDb } from "./routes/uploads.js";
 
 dotenv.config();
 
@@ -212,12 +212,32 @@ async function cleanDatabaseSeeds() {
   }
 }
 
+async function ensureAppLogo() {
+  try {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    const targetLogoPath = path.join(UPLOADS_DIR, "logo.png");
+    const candidatePaths = [
+      path.join(process.cwd(), "frontend", "assets", "icon.png"),
+      path.join(process.cwd(), "..", "frontend", "assets", "icon.png"),
+      path.join(process.cwd(), "assets", "icon.png")
+    ];
+    const sourcePath = candidatePaths.find((p) => fs.existsSync(p));
+    if (sourcePath && (!fs.existsSync(targetLogoPath) || fs.statSync(targetLogoPath).size === 0)) {
+      fs.copyFileSync(sourcePath, targetLogoPath);
+      await saveMediaToDb("logo.png", "image/png", targetLogoPath);
+    }
+  } catch (err) {
+    console.warn("Logo seeding warning:", err.message);
+  }
+}
+
 async function start() {
   try {
     await connectDatabase();
     await ensureDefaultAdmin();
     await ensureDefaultPartner();
     await cleanDatabaseSeeds();
+    await ensureAppLogo();
     try {
       const { hydratePushTokens } = await import("./services/pushNotificationService.js");
       await hydratePushTokens();
@@ -234,6 +254,7 @@ async function start() {
     console.warn("MongoDB unavailable. Starting with in-memory visual seed data.");
     const passwordHash = await bcrypt.hash("password123", 12);
     app.locals.memoryStore = createVisualSeedData(passwordHash);
+    await ensureAppLogo();
   }
 
   app.listen(port, process.env.HOST || "0.0.0.0", () => {

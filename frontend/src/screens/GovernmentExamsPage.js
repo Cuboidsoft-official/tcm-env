@@ -10,11 +10,14 @@ import {
   Alert,
   Modal,
   Platform,
+  Image,
   useWindowDimensions
 } from "react-native";
 import { MaterialCommunityIcons, Feather, FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { fonts } from "../constants/fonts";
+
+const phlappyLogo = require("../../assets/icon.png");
 import {
   getGovernmentStates,
   getGovernmentExams,
@@ -1291,7 +1294,8 @@ export default function GovernmentExamsPage({ session, user, onBack }) {
             {/* AI Explanation Output Card */}
             {aiExplanation && (
               <View style={[styles.aiOutputCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-                <View style={styles.aiOutputHeader}>
+                <View style={[styles.aiOutputHeader, { flexDirection: "row", alignItems: "center" }]}>
+                  <Image source={phlappyLogo} style={{ width: 20, height: 20, borderRadius: 10, marginRight: 6 }} resizeMode="contain" />
                   <Text style={[styles.aiOutputTitle, { color: theme.text }]}>Phlappy AI Assistant</Text>
                 </View>
                 <Text style={[styles.aiOutputText, { color: theme.text }]}>
@@ -1303,7 +1307,7 @@ export default function GovernmentExamsPage({ session, user, onBack }) {
             {/* COMPACT BOTTOM BUTTONS ROW (Small & Non-intrusive, No Text Break) */}
             <View style={styles.readerBottomCompactRow}>
               <TouchableOpacity style={styles.smallPhlappyAiBtn} onPress={handleExplainWithAI} activeOpacity={0.8}>
-                <MaterialCommunityIcons name="sparkles" size={13} color="#FFFFFF" />
+                <Image source={phlappyLogo} style={{ width: 16, height: 16, borderRadius: 8, marginRight: 4 }} resizeMode="contain" />
                 <Text numberOfLines={1} style={styles.smallBtnText}>{aiLoading ? "Analyzing..." : "Ask Phlappy AI"}</Text>
               </TouchableOpacity>
 

@@ -38,6 +38,8 @@ import { useTheme } from "../context/ThemeContext";
 import { fonts } from "../constants/fonts";
 import { fileToDataUri } from "../utils/fileUtils";
 
+const phlappyLogo = require("../../assets/icon.png");
+
 function generateClientSmartFallback(query, category = "Academic") {
   const text = (query || "").toLowerCase().trim();
   const rawTopic = query.replace(/(sir|bhai|mujhe|tell me|explain|what is|how to|about|ke bare me|batao|bataye|\?)/gi, '').trim() || 'Programming & Academic Doubt';
@@ -745,7 +747,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
         id: `msg_ai_${Date.now()}`,
         authorName: "Phlappy AI Tutor 🤖",
         authorRole: "AI Assistant",
-        authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
+        authorAvatar: "https://api.thecodemunk.in/uploads/logo.png",
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         text: aiResponseText,
         isAi: true,
@@ -1253,7 +1255,19 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
             // PARTICIPANT OR AI RESPONSE
             return (
               <View key={uniqueKey} style={styles.msgRowLeft}>
-                <Image source={{ uri: item.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }} style={styles.msgAvatar} />
+                <Image
+                  source={
+                    item.isAi || item.authorName?.includes("Phlappy")
+                      ? phlappyLogo
+                      : (item.authorAvatar && typeof item.authorAvatar === "string"
+                          ? { uri: item.authorAvatar }
+                          : (item.authorAvatar && typeof item.authorAvatar === "object"
+                              ? item.authorAvatar
+                              : { uri: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }))
+                  }
+                  style={styles.msgAvatar}
+                  resizeMode="contain"
+                />
                 <View style={styles.msgBodyLeft}>
                   <View style={styles.authorHeaderRow}>
                     <Text style={[styles.msgAuthor, { color: theme.text }]}>{item.authorName}</Text>

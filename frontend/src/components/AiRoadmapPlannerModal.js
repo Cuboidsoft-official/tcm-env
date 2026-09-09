@@ -21,6 +21,8 @@ import { generateInteractiveAiRoadmapAndChat } from "../api/gemini";
 import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 
+const phlappyLogo = require("../../assets/icon.png");
+
 const QUICK_SUGGESTIONS = [
   "Full Stack Web Plan",
   "AI & Data Science Plan",
@@ -214,11 +216,12 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {}, cou
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                 {/* Left Profile & AI Identity Wrap */}
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
-                  {/* User Profile Avatar with Online Status */}
+                  {/* User Profile Avatar / AI Avatar with Online Status */}
                   <View style={{ position: "relative" }}>
                     <Image
-                      source={{ uri: userAvatarUri }}
+                      source={phlappyLogo}
                       style={{ width: 42, height: 42, borderRadius: 21, borderWidth: 2, borderColor: "#D13B45" }}
+                      resizeMode="contain"
                     />
                     <View style={{ position: "absolute", bottom: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: "#10B981", borderWidth: 2, borderColor: "#0F172A" }} />
                   </View>
@@ -238,22 +241,33 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {}, cou
 
                 {/* Close Button */}
                 <TouchableOpacity onPress={onClose} style={{ padding: 7, borderRadius: 20, backgroundColor: "rgba(30, 41, 59, 0.8)", borderWidth: 1, borderColor: "rgba(255, 255, 255, 0.1)" }}>
-                  <Feather name="x" size={18} color="#94A3B8" />
+                  <Feather name="x" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Quick Suggestion Chips */}
-            <View style={styles.quickChipsWrap}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}>
-                {QUICK_SUGGESTIONS.map((sug) => (
+            {/* Quick Suggestions Chips */}
+            <View style={{ paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {QUICK_SUGGESTIONS.map((sug, idx) => (
                   <TouchableOpacity
-                    key={sug}
+                    key={idx}
                     activeOpacity={0.8}
                     onPress={() => handleSend(`Create a day-by-day and monthly roadmap for ${sug}`)}
-                    style={[styles.sugChip, { backgroundColor: theme.isDark ? "#1E293B" : "#F1F5F9", borderColor: theme.border }]}
+                    style={{
+                      backgroundColor: "rgba(209, 59, 69, 0.12)",
+                      borderColor: "#D13B45",
+                      borderWidth: 1,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 16,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4
+                    }}
                   >
-                    <Text style={[styles.sugChipText, { color: theme.primary }]}>{sug}</Text>
+                    <MaterialCommunityIcons name="sparkles" size={13} color="#D13B45" />
+                    <Text style={{ color: "#FFFFFF", fontSize: 11.5, fontFamily: fonts.bold }}>{sug}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -262,8 +276,8 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {}, cou
             {/* Chat Messages Log */}
             <ScrollView
               ref={scrollViewRef}
-              style={styles.chatScroll}
-              contentContainerStyle={styles.chatContent}
+              style={{ flex: 1, paddingHorizontal: 16, paddingTop: 14 }}
+              contentContainerStyle={{ paddingBottom: 20 }}
               showsVerticalScrollIndicator={false}
             >
               {messages.map((msg) => (
@@ -279,8 +293,8 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {}, cou
                 >
                   {/* AI Avatar for AI Messages */}
                   {msg.sender === "ai" ? (
-                    <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: "#0F172A", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#D13B45" }}>
-                      <MaterialCommunityIcons name="robot-sparkles" size={18} color="#D13B45" />
+                    <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: "#0F172A", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#D13B45", overflow: "hidden" }}>
+                      <Image source={phlappyLogo} style={{ width: 28, height: 28 }} resizeMode="contain" />
                     </View>
                   ) : null}
 
@@ -324,8 +338,8 @@ export default function AiRoadmapPlannerModal({ visible, onClose, user = {}, cou
 
               {loading && (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                  <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: "#0F172A", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#D13B45" }}>
-                    <MaterialCommunityIcons name="robot-sparkles" size={18} color="#D13B45" />
+                  <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: "#0F172A", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#D13B45", overflow: "hidden" }}>
+                    <Image source={phlappyLogo} style={{ width: 28, height: 28 }} resizeMode="contain" />
                   </View>
                   <View style={[styles.msgBubble, styles.aiBubble, { backgroundColor: theme.isDark ? "#0F172A" : "#F8FAFC", borderColor: theme.border, flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }]}>
                     <ActivityIndicator size="small" color={theme.primary} />
