@@ -1174,16 +1174,68 @@ export default function GovPrepScreen({ session, user, onBack }) {
     loadExamDetails(exam.id);
   }
 
+  const DEFAULT_TOPICS_BY_SUBJECT = {
+    Reasoning: [
+      { id: "top_analogy", name: "Analogy" },
+      { id: "top_series", name: "Number Series" },
+      { id: "top_coding", name: "Coding-Decoding" },
+      { id: "top_syllogism", name: "Syllogism" },
+      { id: "top_blood", name: "Blood Relations" }
+    ],
+    "Quantitative Aptitude": [
+      { id: "top_percentage", name: "Percentage" },
+      { id: "top_interest", name: "Simple & Compound Interest" },
+      { id: "top_ratio", name: "Ratio & Proportion" },
+      { id: "top_profit", name: "Profit & Loss" },
+      { id: "top_work", name: "Time & Work" }
+    ],
+    Mathematics: [
+      { id: "top_percentage", name: "Percentage" },
+      { id: "top_interest", name: "Simple & Compound Interest" },
+      { id: "top_ratio", name: "Ratio & Proportion" },
+      { id: "top_profit", name: "Profit & Loss" }
+    ],
+    "General Awareness": [
+      { id: "top_history", name: "Indian History" },
+      { id: "top_polity", name: "Indian Polity" },
+      { id: "top_geography", name: "Geography" },
+      { id: "top_physics", name: "Physics & Science" }
+    ],
+    "General Science": [
+      { id: "top_physics", name: "Physics & Science" },
+      { id: "top_chemistry", name: "Chemistry" },
+      { id: "top_biology", name: "Biology" }
+    ],
+    "English Comprehension": [
+      { id: "top_idioms", name: "Idioms & Phrases" },
+      { id: "top_vocab", name: "Vocabulary & Synonyms" },
+      { id: "top_grammar", name: "Grammar & Errors" },
+      { id: "top_spelling", name: "Correct Spelling" }
+    ],
+    "English Language": [
+      { id: "top_idioms", name: "Idioms & Phrases" },
+      { id: "top_vocab", name: "Vocabulary & Synonyms" },
+      { id: "top_grammar", name: "Grammar & Errors" }
+    ]
+  };
+
   async function handleSelectSubject(subject) {
     setSelectedSubject(subject);
     setSelectedTopic(null);
     const yearParam = selectedYears.length > 0 ? selectedYears.join(",") : "";
-    if (subject && subject.id) {
+    if (subject) {
       try {
-        const topRes = await getGovTopics(subject.id).catch(() => ({ topics: [] }));
-        setTopics(topRes?.topics || []);
-        updateAvailableCount(selectedExam?.id, yearParam, subject.id, null);
-      } catch (e) {}
+        const topRes = subject.id ? await getGovTopics(subject.id).catch(() => ({ topics: [] })) : { topics: [] };
+        const fetchedTopics = topRes?.topics || [];
+        const fallbackList = DEFAULT_TOPICS_BY_SUBJECT[subject.name] || DEFAULT_TOPICS_BY_SUBJECT["Reasoning"];
+        const topicList = fetchedTopics.length > 0 ? fetchedTopics : fallbackList;
+        setTopics(topicList);
+        updateAvailableCount(selectedExam?.id, yearParam, subject.id || subject.name, null);
+      } catch (e) {
+        const fallbackList = DEFAULT_TOPICS_BY_SUBJECT[subject.name] || [];
+        setTopics(fallbackList);
+        updateAvailableCount(selectedExam?.id, yearParam, subject.id || subject.name, null);
+      }
     } else {
       setTopics([]);
       updateAvailableCount(selectedExam?.id, yearParam, null, null);
@@ -1193,7 +1245,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
   async function handleSelectTopic(topic) {
     setSelectedTopic(topic);
     const yearParam = selectedYears.length > 0 ? selectedYears.join(",") : "";
-    updateAvailableCount(selectedExam?.id, yearParam, selectedSubject?.id, topic?.id);
+    updateAvailableCount(selectedExam?.id, yearParam, selectedSubject?.id || selectedSubject?.name, topic?.id || topic?.name);
   }
 
   async function updateAvailableCount(examId, year, subjectId, topicId, state) {
@@ -1211,7 +1263,8 @@ export default function GovPrepScreen({ session, user, onBack }) {
 
       const localCount = DEFAULT_QUESTIONS.filter((q) => {
         if (examId && q.examId && q.examId !== examId) return false;
-        if (subjectId && q.subjectId && q.subjectId !== subjectId) return false;
+        if (subjectId && q.subjectId && q.subjectId !== subjectId && q.subjectName !== subjectId) return false;
+        if (topicId && q.topicId && q.topicId !== topicId && q.topicName !== topicId) return false;
         if (targetState && targetState !== "All States" && q.state && q.state !== targetState) return false;
         return true;
       }).length;
@@ -1223,8 +1276,45 @@ export default function GovPrepScreen({ session, user, onBack }) {
     }
   }
 
+  function isMatchQuestion(q, subObj, topicObj) {
+    if (!q) return false;
+
+    if (subObj) {
+      const sId = String(subObj.id || "").toLowerCase();
+      const sName = String(subObj.name || "").toLowerCase();
+      const qSubId = String(q.subjectId || "").toLowerCase();
+      const qSubName = String(q.subjectName || "").toLowerCase();
+
+      let matchedSub = false;
+      if (sId && qSubId === sId) matchedSub = true;
+      else if (sName && qSubName === sName) matchedSub = true;
+      else if (sName.includes("reasoning") && (qSubId.includes("reasoning") || qSubName.includes("reasoning") || qSubName.includes("intelligence") || qSubName.includes("mental"))) matchedSub = true;
+      else if ((sName.includes("quant") || sName.includes("math") || sName.includes("num")) && (qSubId.includes("quant") || qSubId.includes("math") || qSubId.includes("num") || qSubName.includes("quant") || qSubName.includes("math") || qSubName.includes("num"))) matchedSub = true;
+      else if ((sName.includes("aware") || sName.includes("gk") || sName.includes("general") || sName.includes("science") || sName.includes("studies")) && (qSubId.includes("ga") || qSubId.includes("gk") || qSubId.includes("sci") || qSubId.includes("gs") || qSubName.includes("aware") || qSubName.includes("science") || qSubName.includes("studies") || qSubName.includes("gk"))) matchedSub = true;
+      else if ((sName.includes("english") || sName.includes("verbal")) && (qSubId.includes("english") || qSubId.includes("eng") || qSubName.includes("english"))) matchedSub = true;
+
+      if (!matchedSub) return false;
+    }
+
+    if (topicObj) {
+      const tId = String(topicObj.id || "").toLowerCase();
+      const tName = String(topicObj.name || "").toLowerCase();
+      const qTopId = String(q.topicId || "").toLowerCase();
+      const qTopName = String(q.topicName || "").toLowerCase();
+
+      let matchedTop = false;
+      if (tId && qTopId === tId) matchedTop = true;
+      else if (tName && qTopName === tName) matchedTop = true;
+      else if (tName && qTopName && (qTopName.includes(tName) || tName.includes(qTopName))) matchedTop = true;
+
+      if (!matchedTop) return false;
+    }
+
+    return true;
+  }
+
   // Multi-Tier Question Pool Synthesizer (Guarantees EXACT count 10/20/50 with zero duplicates)
-  function buildPracticePool(initialRaw, targetLimit, examObj, subObj, stateObj, yearsArr) {
+  function buildPracticePool(initialRaw, targetLimit, examObj, subObj, stateObj, yearsArr, topicObj) {
     const seen = new Set();
     const result = [];
 
@@ -1236,24 +1326,22 @@ export default function GovPrepScreen({ session, user, onBack }) {
         result.push({
           ...q,
           examName: q.examName || examObj?.name || "Government Exam",
-          subjectName: q.subjectName || subObj?.name || "General Practice Paper"
+          subjectName: subObj?.name || q.subjectName || "General Practice Paper",
+          topicName: topicObj?.name || q.topicName || ""
         });
       }
     };
 
-    // Tier 1: Strictly matched fetched or default items
-    initialRaw.forEach(addUnique);
+    // Tier 1: Strictly matched fetched items
+    initialRaw.filter((q) => isMatchQuestion(q, subObj, topicObj)).forEach(addUnique);
 
-    // Tier 2: Filter DEFAULT_QUESTIONS by subject/state/category
-    DEFAULT_QUESTIONS.filter((q) => {
-      if (subObj?.id && (q.subjectId === subObj.id || q.subjectName === subObj.name)) return true;
-      if (stateObj && stateObj !== "All States" && q.state === stateObj) return true;
-      if (examObj?.id && q.examId === examObj.id) return true;
-      return false;
-    }).forEach(addUnique);
+    // Tier 2: Filter DEFAULT_QUESTIONS by subject & topic
+    DEFAULT_QUESTIONS.filter((q) => isMatchQuestion(q, subObj, topicObj)).forEach(addUnique);
 
-    // Tier 3: All remaining DEFAULT_QUESTIONS
-    DEFAULT_QUESTIONS.forEach(addUnique);
+    // Tier 3: All remaining DEFAULT_QUESTIONS ONLY IF no subject AND no topic selected
+    if (!subObj && !topicObj) {
+      DEFAULT_QUESTIONS.forEach(addUnique);
+    }
 
     // Tier 4: Parameterized variation synthesizer if total unique items < targetLimit
     if (result.length > 0 && result.length < targetLimit) {
@@ -1261,6 +1349,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
       let vIndex = 1;
       while (result.length < targetLimit) {
         const seed = basePool[(vIndex - 1) % basePool.length];
+        const tName = topicObj?.name || seed.topicName || "";
 
         let qText = seed.questionText;
         let qTextHi = seed.questionTextHi || seed.questionText;
@@ -1270,7 +1359,7 @@ export default function GovPrepScreen({ session, user, onBack }) {
         let exp = seed.explanation || "";
         let expHi = seed.explanationHi || exp;
 
-        if (seed.topicName === "Percentage" || seed.subjectId === "sub_quant") {
+        if (tName.includes("Percentage") || seed.subjectId === "sub_quant" || subObj?.name?.includes("Quantitative")) {
           const pVal = 10 * ((vIndex % 4) + 1);
           const netVal = Math.round((pVal * pVal) / 100);
           qText = `If a number is increased by ${pVal}% and then decreased by ${pVal}%, what is the net percentage change?`;
@@ -1279,18 +1368,18 @@ export default function GovPrepScreen({ session, user, onBack }) {
             { label: "A", text: "No change" },
             { label: "B", text: `${netVal}% Increase` },
             { label: "C", text: `${netVal}% Decrease` },
-            { label: "D", text: `${netVal + 1}% Decrease` }
+            { label: "D", text: `${netVal + 2}% Decrease` }
           ];
           optsHi = [
             { label: "A", text: "कोई परिवर्तन नहीं" },
             { label: "B", text: `${netVal}% वृद्धि` },
             { label: "C", text: `${netVal}% कमी` },
-            { label: "D", text: `${netVal + 1}% कमी` }
+            { label: "D", text: `${netVal + 2}% कमी` }
           ];
           ans = "C";
           exp = `Net Change = +${pVal} - ${pVal} + (${pVal} × -${pVal})/100 = -${netVal}%. A net ${netVal}% decrease.`;
           expHi = `शुद्ध परिवर्तन = -${netVal}% (अर्थात ${netVal}% की कमी)।`;
-        } else if (seed.topicName === "Simple Interest" || seed.topicName === "Compound Interest") {
+        } else if (tName.includes("Interest")) {
           const principal = 2000 * (vIndex + 1);
           const rate = 5;
           const time = 2 + (vIndex % 3);
@@ -1312,6 +1401,31 @@ export default function GovPrepScreen({ session, user, onBack }) {
           ans = "B";
           exp = `SI = (P × R × T)/100 = (${principal} × ${rate} × ${time})/100 = ₹${interest}.`;
           expHi = `साधारण ब्याज = (${principal} × ${rate} × ${time})/100 = ₹${interest}।`;
+        } else if (tName.includes("Series") || subObj?.name?.includes("Reasoning")) {
+          const start = 2 + vIndex;
+          const mult = 2;
+          const n1 = start;
+          const n2 = n1 * mult + 1;
+          const n3 = n2 * mult + 1;
+          const n4 = n3 * mult + 1;
+          const ansVal = n4 * mult + 1;
+          qText = `Find the missing number in the series: ${n1}, ${n2}, ${n3}, ${n4}, ?`;
+          qTextHi = `श्रृंखला में लुप्त संख्या ज्ञात कीजिए: ${n1}, ${n2}, ${n3}, ${n4}, ?`;
+          opts = [
+            { label: "A", text: `${ansVal}` },
+            { label: "B", text: `${ansVal - 10}` },
+            { label: "C", text: `${ansVal + 10}` },
+            { label: "D", text: `${ansVal + 5}` }
+          ];
+          optsHi = [
+            { label: "A", text: `${ansVal}` },
+            { label: "B", text: `${ansVal - 10}` },
+            { label: "C", text: `${ansVal + 10}` },
+            { label: "D", text: `${ansVal + 5}` }
+          ];
+          ans = "A";
+          exp = `Pattern: Each term is (Previous × 2) + 1. Next term = ${n4}×2 + 1 = ${ansVal}.`;
+          expHi = `पैटर्न: (पिछली × 2) + 1। अगला पद = ${ansVal}।`;
         }
 
         const variant = {
@@ -1323,7 +1437,9 @@ export default function GovPrepScreen({ session, user, onBack }) {
           optionsHi: optsHi,
           correctAnswer: ans,
           explanation: exp,
-          explanationHi: expHi
+          explanationHi: expHi,
+          subjectName: subObj?.name || seed.subjectName,
+          topicName: topicObj?.name || seed.topicName
         };
 
         addUnique(variant);
@@ -1359,8 +1475,8 @@ export default function GovPrepScreen({ session, user, onBack }) {
       if (selectedExam?.id) params.examId = selectedExam.id;
       if (selectedYears.length > 0) params.year = selectedYears.join(",");
       if (selectedState && selectedState !== "All States") params.state = selectedState;
-      if (selectedSubject?.id) params.subjectId = selectedSubject.id;
-      if (selectedTopic?.id) params.topicId = selectedTopic.id;
+      if (selectedSubject?.id || selectedSubject?.name) params.subjectId = selectedSubject?.id || selectedSubject?.name;
+      if (selectedTopic?.id || selectedTopic?.name) params.topicId = selectedTopic?.id || selectedTopic?.name;
       params.limit = targetLimit;
 
       let res = await getGovQuestions(params).catch(() => ({ questions: [] }));
@@ -1372,7 +1488,8 @@ export default function GovPrepScreen({ session, user, onBack }) {
         selectedExam,
         selectedSubject,
         selectedState,
-        selectedYears
+        selectedYears,
+        selectedTopic
       );
 
       setQuestions(pool);
@@ -1389,7 +1506,8 @@ export default function GovPrepScreen({ session, user, onBack }) {
         selectedExam,
         selectedSubject,
         selectedState,
-        selectedYears
+        selectedYears,
+        selectedTopic
       );
 
       setQuestions(pool);
@@ -1864,10 +1982,10 @@ export default function GovPrepScreen({ session, user, onBack }) {
                       </TouchableOpacity>
 
                       {subjects.map((sub) => {
-                        const isSubSelected = selectedSubject?.id === sub.id;
+                        const isSubSelected = selectedSubject?.id === sub.id || selectedSubject?.name === sub.name;
                         return (
                           <TouchableOpacity
-                            key={sub.id || sub._id}
+                            key={sub.id || sub._id || sub.name}
                             style={[
                               styles.subjectChip,
                               { backgroundColor: theme.cardBg, borderColor: theme.border },
@@ -1878,6 +1996,51 @@ export default function GovPrepScreen({ session, user, onBack }) {
                             <MaterialCommunityIcons name="book-open-variant" size={14} color={isSubSelected ? "#FFFFFF" : "#09090B"} />
                             <Text style={[styles.subjectChipText, { color: theme.text }, isSubSelected && styles.subjectChipTextActive]}>
                               {sub.name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </>
+                ) : null}
+
+                {/* Step 5b: Topic Selection (Optional) */}
+                {selectedSubject && topics.length > 0 ? (
+                  <>
+                    <View style={[styles.stepSectionHeader, { marginTop: 18 }]}>
+                      <Text style={[styles.stepNumberBadge, { backgroundColor: "#09090B" }]}>5b</Text>
+                      <Text style={[styles.stepTitle, { color: theme.text }]}>Topic (Optional)</Text>
+                    </View>
+
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScrollRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.subjectChip,
+                          { backgroundColor: theme.cardBg, borderColor: theme.border },
+                          !selectedTopic && styles.subjectChipActive
+                        ]}
+                        onPress={() => handleSelectTopic(null)}
+                      >
+                        <Text style={[styles.subjectChipText, { color: theme.text }, !selectedTopic && styles.subjectChipTextActive]}>
+                          All Topics
+                        </Text>
+                      </TouchableOpacity>
+
+                      {topics.map((top) => {
+                        const isTopSelected = selectedTopic?.id === top.id || selectedTopic?.name === top.name;
+                        return (
+                          <TouchableOpacity
+                            key={top.id || top._id || top.name}
+                            style={[
+                              styles.subjectChip,
+                              { backgroundColor: theme.cardBg, borderColor: theme.border },
+                              isTopSelected && styles.subjectChipActive
+                            ]}
+                            onPress={() => handleSelectTopic(top)}
+                          >
+                            <MaterialCommunityIcons name="tag-outline" size={14} color={isTopSelected ? "#FFFFFF" : "#09090B"} />
+                            <Text style={[styles.subjectChipText, { color: theme.text }, isTopSelected && styles.subjectChipTextActive]}>
+                              {top.name}
                             </Text>
                           </TouchableOpacity>
                         );
@@ -2063,6 +2226,11 @@ export default function GovPrepScreen({ session, user, onBack }) {
               <View style={[styles.metaBadge, { backgroundColor: "#ECFDF5" }]}>
                 <Text style={[styles.metaBadgeText, { color: "#059669" }]}>{currentQ.subjectName || "General Paper"}</Text>
               </View>
+              {currentQ.topicName ? (
+                <View style={[styles.metaBadge, { backgroundColor: "#F3E8FF" }]}>
+                  <Text style={[styles.metaBadgeText, { color: "#7E22CE" }]}>{currentQ.topicName}</Text>
+                </View>
+              ) : null}
               <View style={[styles.metaBadge, { backgroundColor: "#FEF3C7" }]}>
                 <Text style={[styles.metaBadgeText, { color: "#D97706" }]}>
                   {currentQ.type === "pyq" ? `Official ${currentQ.year || "PYQ"}` : "Practice MCQ"}

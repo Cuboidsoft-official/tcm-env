@@ -43,10 +43,44 @@ const FALLBACK_SUBJECTS = [
 const FALLBACK_TOPICS = [
   { _id: "top_analogy", id: "top_analogy", subjectId: "sub_reasoning", name: "Analogy" },
   { _id: "top_series", id: "top_series", subjectId: "sub_reasoning", name: "Number Series" },
+  { _id: "top_coding", id: "top_coding", subjectId: "sub_reasoning", name: "Coding-Decoding" },
   { _id: "top_percentage", id: "top_percentage", subjectId: "sub_quant", name: "Percentage" },
+  { _id: "top_interest", id: "top_interest", subjectId: "sub_quant", name: "Simple & Compound Interest" },
+  { _id: "top_ratio", id: "top_ratio", subjectId: "sub_quant", name: "Ratio & Proportion" },
   { _id: "top_history", id: "top_history", subjectId: "sub_ga", name: "Indian History" },
-  { _id: "top_idioms", id: "top_idioms", subjectId: "sub_english", name: "Idioms & Phrases" }
+  { _id: "top_polity", id: "top_polity", subjectId: "sub_ga", name: "Indian Polity" },
+  { _id: "top_physics", id: "top_physics", subjectId: "sub_rrb_sci", name: "Physics & General Science" },
+  { _id: "top_idioms", id: "top_idioms", subjectId: "sub_english", name: "Idioms & Phrases" },
+  { _id: "top_vocab", id: "top_vocab", subjectId: "sub_english", name: "Vocabulary & Synonyms" }
 ];
+
+function matchesSubjectFilter(q, subjectFilter) {
+  if (!subjectFilter || subjectFilter === "All") return true;
+  const sStr = String(subjectFilter).toLowerCase();
+  const qSubId = String(q.subjectId || "").toLowerCase();
+  const qSubName = String(q.subjectName || "").toLowerCase();
+
+  if (qSubId === sStr || qSubName === sStr) return true;
+
+  if (sStr.includes("reasoning") && (qSubId.includes("reasoning") || qSubName.includes("reasoning") || qSubName.includes("intelligence") || qSubName.includes("mental"))) return true;
+  if ((sStr.includes("quant") || sStr.includes("math") || sStr.includes("num")) && (qSubId.includes("quant") || qSubId.includes("math") || qSubId.includes("num") || qSubName.includes("quant") || qSubName.includes("math") || qSubName.includes("num"))) return true;
+  if ((sStr.includes("ga") || sStr.includes("aware") || sStr.includes("gk") || sStr.includes("science") || sStr.includes("gs") || sStr.includes("psc")) && (qSubId.includes("ga") || qSubId.includes("gk") || qSubId.includes("sci") || qSubId.includes("gs") || qSubName.includes("aware") || qSubName.includes("science") || qSubName.includes("studies") || qSubName.includes("gk") || qSubName.includes("history") || qSubName.includes("polity"))) return true;
+  if ((sStr.includes("english") || sStr.includes("eng")) && (qSubId.includes("english") || qSubId.includes("eng") || qSubName.includes("english"))) return true;
+
+  return false;
+}
+
+function matchesTopicFilter(q, topicFilter) {
+  if (!topicFilter || topicFilter === "All") return true;
+  const tStr = String(topicFilter).toLowerCase();
+  const qTopId = String(q.topicId || "").toLowerCase();
+  const qTopName = String(q.topicName || "").toLowerCase();
+
+  if (qTopId === tStr || qTopName === tStr) return true;
+  if (qTopName.includes(tStr) || tStr.includes(qTopName)) return true;
+
+  return false;
+}
 
 const FALLBACK_QUESTIONS = [
   {
@@ -434,14 +468,23 @@ async function getQuestionsData(filter = {}) {
       }
       if (filter.year) dbFilter.year = Number(filter.year);
       if (filter.state && filter.state !== "All States" && filter.state !== "All") dbFilter.state = filter.state;
-      if (filter.subjectId) dbFilter.subjectId = filter.subjectId;
-      if (filter.topicId) dbFilter.topicId = filter.topicId;
       if (filter.type) dbFilter.type = filter.type;
 
-      questions = await GovQuestion.find(dbFilter).sort({ year: -1, createdAt: -1 }).lean();
+      let rawQuestions = await GovQuestion.find(dbFilter).sort({ year: -1, createdAt: -1 }).lean();
 
-      // If specific filter resulted in 0 questions from DB, attempt broader DB search by examId alone or active questions
-      if (!questions || questions.length === 0) {
+      if (filter.subjectId || filter.topicId) {
+        rawQuestions = rawQuestions.filter((q) => {
+          if (filter.subjectId && !matchesSubjectFilter(q, filter.subjectId)) return false;
+          if (filter.topicId && !matchesTopicFilter(q, filter.topicId)) return false;
+          return true;
+        });
+      }
+
+      questions = rawQuestions;
+
+      // If specific filter resulted in 0 questions from DB AND neither subjectId nor topicId was requested,
+      // attempt broader DB search by examId alone or active questions.
+      if ((!questions || questions.length === 0) && !filter.subjectId && !filter.topicId) {
         if (filter.examId) {
           questions = await GovQuestion.find({ isActive: true, examId: filter.examId }).sort({ year: -1 }).lean();
         }
@@ -452,18 +495,16 @@ async function getQuestionsData(filter = {}) {
     } catch (e) {}
   }
 
-  // Static Fallback resilience: If DB returned 0 questions, return fallback question set
+  // Static Fallback resilience: If DB returned 0 questions, return fallback question set matching subject & topic
   if (!questions || questions.length === 0) {
     questions = FALLBACK_QUESTIONS.filter((q) => {
       if (filter.year && Number(q.year) !== Number(filter.year)) return false;
       if (filter.state && filter.state !== "All States" && filter.state !== "All" && q.state && q.state !== "All" && q.state !== filter.state) return false;
       if (filter.type && q.type !== filter.type) return false;
+      if (filter.subjectId && !matchesSubjectFilter(q, filter.subjectId)) return false;
+      if (filter.topicId && !matchesTopicFilter(q, filter.topicId)) return false;
       return true;
     });
-
-    if (!questions || questions.length === 0) {
-      questions = FALLBACK_QUESTIONS;
-    }
   }
 
   return questions;
