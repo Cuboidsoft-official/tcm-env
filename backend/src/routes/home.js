@@ -1,6 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, optionalAuth } from "../middleware/auth.js";
 import { CommunityPost } from "../models/CommunityPost.js";
 import { Community } from "../models/Community.js";
 import { Mentor } from "../models/Mentor.js";
@@ -489,9 +489,10 @@ function getTimeLabel(date) {
 }
 
 // Routes
-homeRouter.get("/", requireAuth, async (req, res) => {
+homeRouter.get("/", optionalAuth, async (req, res) => {
   const memoryStore = req.app.locals.memoryStore;
-  const currentUserIdStr = String(req.user._id || req.user.id);
+  const currentUser = req.user || { _id: "guest", id: "guest", name: "Guest Learner", email: "guest@tcm.com", role: "student", progress: 0 };
+  const currentUserIdStr = String(currentUser._id || currentUser.id || "guest");
   const globalComments = req.app.locals.globalPostComments || {};
 
   let dbStories = [];
@@ -580,23 +581,23 @@ homeRouter.get("/", requireAuth, async (req, res) => {
 
   res.json({
     user: {
-      id: req.user._id || req.user.id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role,
-      avatarUrl: req.user.avatarUrl,
-      progress: req.user.progress,
-      wallet: getOrCreateUserWallet(req, req.user._id || req.user.id)
+      id: currentUser._id || currentUser.id || "guest",
+      name: currentUser.name || "Guest Learner",
+      email: currentUser.email || "guest@tcm.com",
+      role: currentUser.role || "student",
+      avatarUrl: currentUser.avatarUrl || "",
+      progress: currentUser.progress || 0,
+      wallet: getOrCreateUserWallet(req, currentUser._id || currentUser.id || "guest")
     },
-    notifications: getUnreadNotifCount(req, req.user._id || req.user.id),
+    notifications: getUnreadNotifCount(req, currentUser._id || currentUser.id),
     progress: {
       label: "Today's Progress",
-      value: req.user.progress
+      value: currentUser.progress || 0
     },
     tabs,
     categories,
     learn: await buildLearnPayload(
-      req.user,
+      currentUser,
       dbMentors.length > 0 ? dbMentors : (memoryStore?.mentors || []),
       memoryStore?.learn,
       memoryStore,
@@ -605,8 +606,8 @@ homeRouter.get("/", requireAuth, async (req, res) => {
     stories: [
       {
         id: "me",
-        name: "Your Story",
-        avatarUrl: req.user.avatarUrl,
+        name: currentUser.name ? "Your Story" : "Guest",
+        avatarUrl: currentUser.avatarUrl || "",
         badge: "add",
         ringColors: ["#6E42F5", "#7D45EA"]
       },

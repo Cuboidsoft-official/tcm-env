@@ -73,3 +73,37 @@ export async function requireAuth(req, res, next) {
     res.status(401).json({ message: "Invalid auth token" });
   }
 }
+
+export async function optionalAuth(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (token) {
+      const secret = process.env.JWT_SECRET || "tcm_local_dev_secret_change_before_production";
+      let payload;
+      try {
+        payload = jwt.verify(token, secret, { algorithms: ["HS256"] });
+      } catch (e) {}
+
+      if (payload && payload.sub) {
+        let dbUser = null;
+        try {
+          dbUser = await User.findById(payload.sub).select("-passwordHash").lean();
+        } catch (e) {}
+
+        if (dbUser) {
+          req.user = dbUser;
+        } else {
+          req.user = {
+            _id: payload.sub,
+            id: payload.sub,
+            name: payload.name || "TCM Learner",
+            email: payload.email || "user@tcm.com",
+            role: payload.role || "student"
+          };
+        }
+      }
+    }
+  } catch (e) {}
+  next();
+}

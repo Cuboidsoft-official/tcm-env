@@ -133,7 +133,8 @@ export default function LoginScreen({ onLogin }) {
       return;
     }
 
-    const params = new URLSearchParams(window.location.hash.substring(1));
+    const hashStr = window.location.hash.substring(1) || window.location.search.substring(1);
+    const params = new URLSearchParams(hashStr);
     const accessToken = params.get("access_token") || params.get("id_token");
     if (!accessToken) {
       return;
@@ -141,10 +142,32 @@ export default function LoginScreen({ onLogin }) {
 
     (async () => {
       try {
-        const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        const googleUser = await userRes.json();
+        let googleUser = null;
+        try {
+          const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+          if (userRes.ok) {
+            googleUser = await userRes.json();
+          }
+        } catch (e) {}
+
+        if (!googleUser || !googleUser.email) {
+          try {
+            const rawToken = params.get("id_token") || accessToken;
+            if (rawToken && rawToken.includes(".")) {
+              const base64Url = rawToken.split(".")[1];
+              const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+              const jsonPayload = decodeURIComponent(
+                atob(base64)
+                  .split("")
+                  .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+                  .join("")
+              );
+              googleUser = JSON.parse(jsonPayload);
+            }
+          } catch (jwtErr) {}
+        }
 
         if (googleUser && googleUser.email) {
           const session = await googleLogin(
@@ -154,12 +177,16 @@ export default function LoginScreen({ onLogin }) {
             accessToken,
             role
           );
-          onLogin(session);
+          if (session) {
+            onLogin(session);
+          }
         }
       } catch (err) {
         console.log("Google web OAuth callback failed:", err);
       } finally {
-        history.replaceState(null, "", window.location.pathname);
+        if (typeof window !== "undefined" && window.history) {
+          window.history.replaceState(null, "", window.location.pathname);
+        }
       }
     })();
   }, []);

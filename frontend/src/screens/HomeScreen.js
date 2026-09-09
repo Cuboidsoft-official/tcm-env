@@ -576,21 +576,16 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
   }, [session?.token]);
 
   async function loadHome({ quiet = false } = {}) {
-    if (!session?.token) {
-      setLoading(false);
-      return;
-    }
-
     if (quiet) setRefreshing(true);
     else setLoading(true);
     setError("");
 
     try {
-      const data = await getHome(session.token);
+      const data = await getHome(session?.token);
       setHome(data);
       setActiveCategory((current) => current || data.categories?.[0] || "");
     } catch (nextError) {
-      if (nextError?.status === 401) {
+      if (nextError?.status === 401 && session?.token) {
         if (onLogout) onLogout();
         else if (onRequireLogin) onRequireLogin();
         return;
