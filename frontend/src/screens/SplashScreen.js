@@ -68,13 +68,13 @@ export default function SplashScreen() {
           <View style={[styles.accentLine, { backgroundColor: theme.isDark ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.2)" }]} />
         </View>
 
-        {/* Lappy AI Badge */}
+        {/* Phlappy AI Badge */}
         <View style={[styles.aiBadge, { backgroundColor: theme.isDark ? "#18181B" : "#F4F4F5", borderColor: theme.border }]}>
           <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
             <Ionicons name="sparkles" size={14} color={theme.isDark ? "#E4E4E7" : "#18181B"} />
           </Animated.View>
           <Text style={[styles.aiBadgeText, { color: theme.text }]}>
-            Powered by <Text style={styles.aiBadgeHighlight}>Lappy AI</Text> & Mentors
+            Powered by <Text style={styles.aiBadgeHighlight}>Phlappy AI</Text> & Mentors
           </Text>
         </View>
 

@@ -990,7 +990,7 @@ export default function ProfileScreen({ session, user: initialUser, onOpenSettin
                     <Text style={{ fontSize: 12, fontFamily: fonts.semiBold, color: theme.text }}>
                       Score: <Text style={{ color: "#10B981", fontFamily: fonts.bold }}>{item.percentage}%</Text> ({item.correctAnswers}/{item.totalQuestions} Correct)
                     </Text>
-                    <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#6366F1" }}>Lappy AI Badge ✓</Text>
+                    <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: "#6366F1" }}>Phlappy AI Badge ✓</Text>
                   </View>
                 </View>
               ))}

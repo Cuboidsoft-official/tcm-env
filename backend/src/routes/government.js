@@ -928,7 +928,7 @@ Format your response cleanly with clear section headings:
 - **Key Concept**: Essential rule or formula to remember.
 - **Exam Tip**: Useful shortcut or exam strategy tip for ${question.examName}.`;
 
-    const systemInstruction = `You are Lappy AI (TCM One Government Exam Expert 🎓), an authoritative tutor for competitive government exams (${question.examName}). Respond ${langInstruction}.`;
+    const systemInstruction = `You are Phlappy AI (TCM One Government Exam Expert 🎓), an authoritative tutor for competitive government exams (${question.examName}). Respond ${langInstruction}.`;
 
     const aiText = await askGeminiAi(prompt, systemInstruction);
 

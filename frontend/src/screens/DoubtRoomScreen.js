@@ -43,18 +43,18 @@ function generateClientSmartFallback(query, category = "Academic") {
   const rawTopic = query.replace(/(sir|bhai|mujhe|tell me|explain|what is|how to|about|ke bare me|batao|bataye|\?)/gi, '').trim() || 'Programming & Academic Doubt';
 
   if (text.includes("python")) {
-    return `🐍 **Python Explanation by Lappy AI**\n\nPython ek simple, powerful aur high-level programming language hai! Web development, AI, automation aur data analysis me python widely use hoti hai.\n\n### 🎯 Key Highlights:\n- **Simple Syntax**: English jaisa readable code.\n- **Versatile**: Web apps (Django/Flask), AI/ML (TensorFlow, PyTorch) me use hota hai.\n- **Dynamically Typed**: Variables ka type manually declare nahi karna padta.\n\n\`\`\`python\n# Simple Python Example\ndef greet_student(name):\n    return f"Hello {name}, welcome to Lappy AI Learning!"\n\nprint(greet_student("Aman"))\n\`\`\`\n\n🚀 **Next Step**: Pehle basic variables, loops aur functions ki practice karo!`;
+    return `🐍 **Python Explanation by Phlappy AI**\n\nPython ek simple, powerful aur high-level programming language hai! Web development, AI, automation aur data analysis me python widely use hoti hai.\n\n### 🎯 Key Highlights:\n- **Simple Syntax**: English jaisa readable code.\n- **Versatile**: Web apps (Django/Flask), AI/ML (TensorFlow, PyTorch) me use hota hai.\n- **Dynamically Typed**: Variables ka type manually declare nahi karna padta.\n\n\`\`\`python\n# Simple Python Example\ndef greet_student(name):\n    return f"Hello {name}, welcome to Phlappy AI Learning!"\n\nprint(greet_student("Aman"))\n\`\`\`\n\n🚀 **Next Step**: Pehle basic variables, loops aur functions ki practice karo!`;
   }
 
   if (text.includes("django")) {
-    return `🎓 **Django Overview by Lappy AI**\n\nDjango ek powerful Python Web Framework hai jo **MVT Architecture** (Model, View, Template) use karta hai.\n\n- **Model**: Database schema define karta hai.\n- **View**: API and Business Logic handle karta hai.\n- **Template**: HTML UI render karta hai.\n\n\`\`\`python\nfrom django.http import JsonResponse\n\ndef my_api_view(request):\n    return JsonResponse({"message": "Hello from Lappy AI & Django!"})\n\`\`\``;
+    return `🎓 **Django Overview by Phlappy AI**\n\nDjango ek powerful Python Web Framework hai jo **MVT Architecture** (Model, View, Template) use karta hai.\n\n- **Model**: Database schema define karta hai.\n- **View**: API and Business Logic handle karta hai.\n- **Template**: HTML UI render karta hai.\n\n\`\`\`python\nfrom django.http import JsonResponse\n\ndef my_api_view(request):\n    return JsonResponse({"message": "Hello from Phlappy AI & Django!"})\n\`\`\``;
   }
 
   if (text.includes("react") || text.includes("javascript") || text.includes("js")) {
-    return `⚡ **React & JavaScript Guide by Lappy AI**\n\nReact ek declarative, component-based UI library hai jo modern web and mobile apps (React Native) me use hoti hai.\n\n- **Virtual DOM**: Fast updates aur re-rendering compute karta hai.\n- **Hooks**: \`useState\` and \`useEffect\` se state and side effects manage hote hain.\n\n\`\`\`javascript\nimport React, { useState } from 'react';\n\nexport function Counter() {\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(c => c + 1)}>Clicks: {count}</button>;\n}\n\`\`\``;
+    return `⚡ **React & JavaScript Guide by Phlappy AI**\n\nReact ek declarative, component-based UI library hai jo modern web and mobile apps (React Native) me use hoti hai.\n\n- **Virtual DOM**: Fast updates aur re-rendering compute karta hai.\n- **Hooks**: \`useState\` and \`useEffect\` se state and side effects manage hote hain.\n\n\`\`\`javascript\nimport React, { useState } from 'react';\n\nexport function Counter() {\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(c => c + 1)}>Clicks: {count}</button>;\n}\n\`\`\``;
   }
 
-  return `🤖 **Lappy AI Quick Guide on "${rawTopic}"**\n\nAapke question **"${query}"** ka key breakdown:\n\n1. **Core Idea**: Pehle basic concepts aur inputs ko clear samjho.\n2. **Practical Approach**: Logic ko step-by-step modular code ya clean solution me break karo.\n3. **Best Practice**: Output check karo aur edge cases handle karo.\n\nAgar koi specific doubt ho ya code sample chahiye, to text me specify karke puch sakte ho! 🚀`;
+  return `🤖 **Phlappy AI Quick Guide on "${rawTopic}"**\n\nAapke question **"${query}"** ka key breakdown:\n\n1. **Core Idea**: Pehle basic concepts aur inputs ko clear samjho.\n2. **Practical Approach**: Logic ko step-by-step modular code ya clean solution me break karo.\n3. **Best Practice**: Output check karo aur edge cases handle karo.\n\nAgar koi specific doubt ho ya code sample chahiye, to text me specify karke puch sakte ho! 🚀`;
 }
 
 function renderAiFormattedResponse(rawText, theme = {}) {
@@ -294,13 +294,13 @@ async function generateDoubtAnswerWithLiveAI(query, category = "Academic") {
     "qwen/qwen3.8-27b"
   ];
 
-  const prompt = `You are Lappy AI (TCM One Lappy AI 🤖), a friendly, highly intelligent expert academic and coding tutor at TCM One Academy.
+  const prompt = `You are Phlappy AI (TCM One Phlappy AI 🤖), a friendly, highly intelligent expert academic and coding tutor at TCM One Academy.
 
 Student Query: "${query}"
 Subject / Domain Category: "${category}"
 
-INSTRUCTIONS FOR LAPPY AI:
-1. Identify yourself as Lappy AI if asked.
+INSTRUCTIONS FOR PHLAPPY AI:
+1. Identify yourself as Phlappy AI if asked.
 2. Adapt to the student's language naturally (Hinglish/Hindi/English). If the student asks in Hinglish (e.g. "Python smjhao", "kaise kare"), answer in clear, friendly Hinglish with code & bullet points!
 3. DO NOT use rigid robotic headings like "Executive Concept Overview" or "Step 1 (Core Fundamentals)".
 4. Give a direct, easy-to-understand, engaging explanation with real-world analogies, code examples with comments, and key tips.
@@ -743,7 +743,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
 
       const aiMsg = {
         id: `msg_ai_${Date.now()}`,
-        authorName: "Lappy AI Tutor 🤖",
+        authorName: "Phlappy AI Tutor 🤖",
         authorRole: "AI Assistant",
         authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80",
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -1279,7 +1279,7 @@ export default function DoubtRoomScreen({ session, roomId = "NEET-DOUBT-001", on
                     <View style={styles.aiFooterMentionRow}>
                       <MaterialCommunityIcons name="shield-check" size={13} color={theme.isDark ? "#A78BFA" : "#6366F1"} />
                       <Text style={[styles.aiFooterMentionText, { color: theme.isDark ? "#A78BFA" : "#0A6836" }]}>
-                        ⚡ Powered by Lappy AI Engine • Verified Academic Tutor
+                        ⚡ Powered by Phlappy AI Engine • Verified Academic Tutor
                       </Text>
                     </View>
                   )}

@@ -19,10 +19,10 @@ export async function askGeminiAi(prompt, systemInstruction = "") {
   const cleanPrompt = (prompt || "").trim();
   if (!cleanPrompt) return generateSmartAcademicFallback("Explain this doubt");
 
-  const defaultSystemMsg = `You are Lappy AI (TCM One Lappy AI 🤖), a friendly, highly intelligent expert academic and coding tutor at TCM One Academy.
+  const defaultSystemMsg = `You are Phlappy AI (TCM One Phlappy AI 🤖), a friendly, highly intelligent expert academic and coding tutor at TCM One Academy.
 
-INSTRUCTIONS FOR LAPPY AI:
-1. Identify yourself as Lappy AI if asked.
+INSTRUCTIONS FOR PHLAPPY AI:
+1. Identify yourself as Phlappy AI if asked.
 2. Adapt to the student's language naturally (Hinglish/Hindi/English). If the student asks in Hinglish (e.g. "mujhe batao ki html ka code likh kar", "Python smjhao", "kaise kare"), answer in clear, friendly Hinglish with code & bullet points!
 3. DO NOT use rigid robotic headings like "Executive Concept Overview" or "Step 1 (Core Fundamentals)".
 4. Give a direct, easy-to-understand, engaging explanation with real-world analogies, code examples with comments, and key tips.
@@ -111,7 +111,7 @@ export function generateSmartAcademicFallback(query) {
   const rawTopic = query.replace(/(sir|bhai|mujhe|tell me|explain|what is|how to|about|ke bare me|batao|bataye|\?)/gi, '').trim() || 'Programming & Academic Doubt';
 
   if (text.includes("html")) {
-    return `🌐 **HTML Code & Explanation by Lappy AI**
+    return `🌐 **HTML Code & Explanation by Phlappy AI**
 
 HTML (HyperText Markup Language) web pages ka basic structure banane ke liye use hota hai.
 
@@ -121,12 +121,12 @@ HTML (HyperText Markup Language) web pages ka basic structure banane ke liye use
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Lappy AI Web Page</title>
+    <title>Phlappy AI Web Page</title>
 </head>
 <body>
-    <h1>Welcome to TCM One Lappy AI 🚀</h1>
+    <h1>Welcome to TCM One Phlappy AI 🚀</h1>
     <p>Yeh simple HTML structure hai.</p>
-    <button onclick="alert('Hello from Lappy AI!')">Click Me</button>
+    <button onclick="alert('Hello from Phlappy AI!')">Click Me</button>
 </body>
 </html>
 \`\`\`
@@ -142,7 +142,7 @@ HTML (HyperText Markup Language) web pages ka basic structure banane ke liye use
   }
 
   if (text.includes("python")) {
-    return `🐍 **Python Code & Explanation by Lappy AI**
+    return `🐍 **Python Code & Explanation by Phlappy AI**
 
 Python ek simple, powerful aur high-level programming language hai!
 
@@ -150,7 +150,7 @@ Python ek simple, powerful aur high-level programming language hai!
 \`\`\`python
 # Simple Python Program
 def greet(name):
-    return f"Hello {name}, welcome to Lappy AI Learning!"
+    return f"Hello {name}, welcome to Phlappy AI Learning!"
 
 print(greet("Student"))
 \`\`\`
@@ -159,7 +159,7 @@ print(greet("Student"))
   }
 
   if (text.includes("django")) {
-    return `🎓 **Django Overview by Lappy AI**
+    return `🎓 **Django Overview by Phlappy AI**
 
 Django ek Python web framework hai jo MVT (Model, View, Template) architecture follow karta hai.
 
@@ -167,12 +167,12 @@ Django ek Python web framework hai jo MVT (Model, View, Template) architecture f
 from django.http import JsonResponse
 
 def home_view(request):
-    return JsonResponse({"message": "Hello from Lappy AI and Django!"})
+    return JsonResponse({"message": "Hello from Phlappy AI and Django!"})
 \`\`\``;
   }
 
   if (text.includes("react") || text.includes("javascript") || text.includes("js")) {
-    return `⚡ **React & JS Guide by Lappy AI**
+    return `⚡ **React & JS Guide by Phlappy AI**
 
 React component-based UI build karne me help karta hai.
 
@@ -186,7 +186,7 @@ export function App() {
 \`\`\``;
   }
 
-  return `🤖 **Lappy AI Explanation on "${rawTopic}"**
+  return `🤖 **Phlappy AI Explanation on "${rawTopic}"**
 
 Aapke doubt **"${query}"** ka quick explanation:
 
