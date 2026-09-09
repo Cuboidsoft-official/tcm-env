@@ -848,7 +848,7 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
   const rawText = [req.body?.text, req.body?.content, req.body?.caption, req.body?.body].find(
     (value) => typeof value === "string" && value.trim()
   );
-  const postText = rawText?.trim();
+  const postText = rawText?.trim() || (media && media.kind !== "none" ? (media.title || "Shared Post") : "New Post");
 
   if (!postText) {
     return res.status(400).json({ message: "Post text is required" });

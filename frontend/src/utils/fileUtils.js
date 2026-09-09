@@ -19,15 +19,18 @@ export async function fileToDataUri(asset) {
   }
 
   try {
-    const { File } = await import("expo-file-system");
-    const file = new File(asset.uri);
-    const base64 = await file.base64();
-    const mime = asset.mimeType || "application/octet-stream";
-    return `data:${mime};base64,${base64}`;
+    const FileSystem = await import("expo-file-system");
+    const readFunc = FileSystem.readAsStringAsync || FileSystem.default?.readAsStringAsync;
+    if (readFunc) {
+      const encoding = FileSystem.EncodingType?.Base64 || FileSystem.default?.EncodingType?.Base64 || "base64";
+      const base64 = await readFunc(asset.uri, { encoding });
+      const mime = asset.mimeType || "application/octet-stream";
+      return `data:${mime};base64,${base64}`;
+    }
   } catch (e) {
     console.warn("Native file to data URI failed:", e);
-    return null;
   }
+  return null;
 }
 
 export function formatFileSize(bytes) {
@@ -70,13 +73,16 @@ export async function uriToDataUri(uri, mimeType) {
   }
 
   try {
-    const { File } = await import("expo-file-system");
-    const file = new File(uri);
-    const base64 = await file.base64();
-    const mime = mimeType || "application/octet-stream";
-    return `data:${mime};base64,${base64}`;
+    const FileSystem = await import("expo-file-system");
+    const readFunc = FileSystem.readAsStringAsync || FileSystem.default?.readAsStringAsync;
+    if (readFunc) {
+      const encoding = FileSystem.EncodingType?.Base64 || FileSystem.default?.EncodingType?.Base64 || "base64";
+      const base64 = await readFunc(uri, { encoding });
+      const mime = mimeType || "application/octet-stream";
+      return `data:${mime};base64,${base64}`;
+    }
   } catch (e) {
     console.warn("Native URI to data URI failed:", e);
-    return null;
   }
+  return null;
 }

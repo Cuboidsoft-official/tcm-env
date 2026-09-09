@@ -738,7 +738,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
         console.warn("Normalize draft error:", err);
       }
 
-      const isRemote = (uri) => !uri || /^(https?:\/\/|\/uploads\/|data:(image|video)\/)/i.test(uri);
+      const isRemote = (uri) => !uri || /^(https?:\/\/|\/uploads\/|data:)/i.test(uri);
       const pendingLocal = [
         normalizedDraft.mediaUrl,
         normalizedDraft.fileUri,
@@ -746,8 +746,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
       ].filter((uri) => uri && !isRemote(uri));
 
       if (pendingLocal.length > 0) {
-        Alert.alert("Media upload failed", "Your file could not be uploaded (max 80MB, supported formats only). Please try again.");
-        return;
+        console.warn("Some media files remain local/unhosted:", pendingLocal);
       }
 
       setUploadProgress(70);
