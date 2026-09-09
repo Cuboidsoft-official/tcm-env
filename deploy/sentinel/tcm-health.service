@@ -1,0 +1,11 @@
+[Unit]
+Description=TCM external HTTPS and backup health check
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/sbin/tcm-health-check.py
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

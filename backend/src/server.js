@@ -1,6 +1,7 @@
 import cors from "cors";
-import dotenv from "dotenv";
+import "dotenv/config";
 import express from "express";
+import { rateLimit } from "express-rate-limit";
 import fs from "fs";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
@@ -11,29 +12,40 @@ import { homeRouter, serveOpenGraphPreview } from "./routes/home.js";
 import { profileRouter } from "./routes/profile.js";
 import { chatRouter } from "./routes/chat.js";
 import { jobsRouter } from "./routes/jobs.js";
+import { governmentRouter } from "./routes/government.js";
 import { adminRouter } from "./routes/admin.js";
 import path from "path";
 import { uploadsRouter, UPLOADS_DIR, getMediaFromDb, saveMediaToDb } from "./routes/uploads.js";
 
-dotenv.config();
-
 const app = express();
 const port = process.env.PORT || 5000;
+const production = process.env.NODE_ENV === "production";
+app.disable("x-powered-by");
+app.set("trust proxy", "loopback");
+const allowedOrigins = (process.env.CLIENT_ORIGIN || "*").split(",").map((s) => s.trim());
 
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || "*",
+    origin: (origin, callback) => callback(null, !origin || allowedOrigins.includes("*") || allowedOrigins.includes(origin)),
     credentials: true
   })
 );
 app.use(express.json({ limit: "120mb" }));
 
 app.get("/api/health", (req, res) => {
-  res.json({
-    ok: true,
+  const ok = !production || mongoose.connection.readyState === 1;
+  res.status(ok ? 200 : 503).json({
+    ok,
     service: "tcm-backend",
     mongo: mongoose.connection.readyState
   });
+});
+
+app.use("/api", (req, res, next) => {
+  if (production && mongoose.connection.readyState !== 1) {
+    return res.status(503).json({ message: "Database unavailable. Please try again shortly." });
+  }
+  next();
 });
 
 // Top-Level OpenGraph Share Preview Endpoints for WhatsApp Crawlers
@@ -47,7 +59,7 @@ app.get("/share/preview/:type/:id", serveOpenGraphPreview);
 app.get("/api/share/:type/:id", serveOpenGraphPreview);
 app.get("/api/share/preview/:type/:id", serveOpenGraphPreview);
 
-app.use("/api/auth", authRouter);
+app.use("/api/auth", rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standardHeaders: "draft-8", legacyHeaders: false }), authRouter);
 app.use("/api/home", homeRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/chat", chatRouter);
@@ -109,6 +121,13 @@ app.get("/:filename", (req, res, next) => serveOrRestoreMedia(req.params.filenam
 
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
+});
+
+app.use((error, req, res, next) => {
+  if (res.headersSent) return next(error);
+  console.error("Request failed:", error.message);
+  const status = error.status === 413 ? 413 : error.status === 400 ? 400 : 500;
+  res.status(status).json({ message: status === 413 ? "File too large" : status === 400 ? "Invalid request" : "Request failed. Please try again." });
 });
 
 import { User } from "./models/User.js";
@@ -232,11 +251,16 @@ async function ensureAppLogo() {
 }
 
 async function start() {
+  if (production && (!process.env.JWT_SECRET || !process.env.PUBLIC_ORIGIN || !path.isAbsolute(process.env.UPLOADS_DIR || ""))) {
+    throw new Error("Production requires JWT_SECRET, PUBLIC_ORIGIN and an absolute UPLOADS_DIR");
+  }
   try {
     await connectDatabase();
-    await ensureDefaultAdmin();
-    await ensureDefaultPartner();
-    await cleanDatabaseSeeds();
+    if (!production) {
+      await ensureDefaultAdmin();
+      await ensureDefaultPartner();
+      await cleanDatabaseSeeds();
+    }
     await ensureAppLogo();
     try {
       const { hydratePushTokens } = await import("./services/pushNotificationService.js");
@@ -244,13 +268,14 @@ async function start() {
     } catch (e) {
       console.warn("Push token hydration skipped:", e.message);
     }
-    try {
+    if (!production) try {
       const { seedGovData } = await import("./seedGovData.js");
       await seedGovData();
     } catch (e) {
       console.warn("Gov data auto-seed skipped:", e.message);
     }
   } catch (error) {
+    if (production) throw error;
     console.warn("MongoDB unavailable. Starting with in-memory visual seed data.");
     const passwordHash = await bcrypt.hash("password123", 12);
     app.locals.memoryStore = createVisualSeedData(passwordHash);
@@ -262,4 +287,7 @@ async function start() {
   });
 }
 
-start();
+start().catch((error) => {
+  console.error("Startup failed:", error.message);
+  process.exit(1);
+});

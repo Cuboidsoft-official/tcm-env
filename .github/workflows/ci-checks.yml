@@ -41,6 +41,13 @@ jobs:
       - name: Install backend dependencies
         run: npm ci --workspace=backend
 
+      - name: Production persistence and startup regression checks
+        run: node --test backend/test/production.test.js
+
+      - name: Verify standalone deployment lockfile
+        working-directory: backend
+        run: npm ci --workspaces=false --omit=dev --ignore-scripts --no-audit --no-fund
+
       - name: Backend health check (in-memory fallback)
         run: |
           set -e

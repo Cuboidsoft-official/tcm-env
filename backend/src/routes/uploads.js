@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import "dotenv/config";
+import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
 import { execFile } from "child_process";
@@ -8,12 +10,15 @@ import { UploadedMedia } from "../models/UploadedMedia.js";
 
 const uploadsRouter = express.Router();
 
-export const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads");
+export const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads"));
 
 export async function saveMediaToDb(filename, mimeType, filePath) {
   try {
+    // Disk is the primary store, backed up independently of application releases.
+    // Keep optional MongoDB copies below the 16 MiB BSON document limit.
+    if (mongoose.connection.readyState !== 1 || fs.statSync(filePath).size > 15 * 1024 * 1024) return;
     const fileBuf = fs.readFileSync(filePath);
-    if (fileBuf && fileBuf.length > 0 && fileBuf.length <= 50 * 1024 * 1024) {
+    if (fileBuf && fileBuf.length > 0) {
       await UploadedMedia.findOneAndUpdate(
         { filename },
         { filename, mimeType, data: fileBuf },
@@ -27,9 +32,11 @@ export async function saveMediaToDb(filename, mimeType, filePath) {
 
 export async function getMediaFromDb(filename) {
   try {
-    const doc = await UploadedMedia.findOne({ filename }).lean();
+    if (mongoose.connection.readyState !== 1) return null;
+    // Hydration gives a Buffer; lean() can return BSON Binary instead.
+    const doc = await UploadedMedia.findOne({ filename });
     if (doc && doc.data) {
-      return { mimeType: doc.mimeType, data: doc.data };
+      return { mimeType: doc.mimeType, data: Buffer.from(doc.data) };
     }
   } catch (err) {
     console.warn("UploadedMedia DB restore error:", err.message);
@@ -291,7 +298,7 @@ uploadsRouter.post("/file", requireAuth, async (req, res) => {
     const finalPath = await maybeTranscodeVideo(parsed.mime, origPath, path.join(UPLOADS_DIR, baseName));
     const name = path.basename(finalPath);
 
-    await saveMediaToDb(name, parsed.mime, finalPath);
+    await saveMediaToDb(name, name.endsWith(".mp4") ? "video/mp4" : parsed.mime, finalPath);
 
     const origin = getPublicOrigin(req);
 

@@ -1,0 +1,9 @@
+[Unit]
+Description=Copy and verify TCM backend backups over private network
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tcm-backup-pull
+UMask=0077
+Nice=10

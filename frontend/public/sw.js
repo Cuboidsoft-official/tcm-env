@@ -1,6 +1,6 @@
 // Service Worker for TCM PWA & Background Push Notifications
 
-const CACHE_NAME = "tcm-pwa-cache-v1";
+const CACHE_NAME = "tcm-pwa-cache-v2";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
@@ -41,7 +41,8 @@ self.addEventListener("activate", (event) => {
 
 // Fetch Event - Stale-while-revalidate network strategy (satisfies PWA requirement)
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET" || !event.request.url.startsWith("http")) {
+  const url = new URL(event.request.url);
+  if (event.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/") || event.request.headers.has("Authorization")) {
     return;
   }
   event.respondWith(

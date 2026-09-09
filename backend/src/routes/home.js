@@ -847,7 +847,8 @@ homeRouter.post("/communities/:id/manage-request", requireAuth, async (req, res)
   }
 });
 
-homeRouter.post("/posts", requireAuth, async (req, res) => {
+homeRouter.post("/posts", requireAuth, async (req, res, next) => {
+  try {
   const memoryStore = req.app.locals.memoryStore;
   const {
     targetCourseId,
@@ -884,6 +885,11 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     .slice(0, 6);
 
   const cleanMedia = sanitizeIncomingMedia(media);
+
+  const suppliedUris = [documentUrl, media?.imageUrl, media?.thumbnailUrl, media?.videoUrl, media?.fileUri, ...(Array.isArray(media?.carouselImages) ? media.carouselImages : [])];
+  if (suppliedUris.some((uri) => typeof uri === "string" && /^(blob:|file:|content:|ph:)/i.test(uri.trim()))) {
+    return res.status(400).json({ message: "Please upload the media before publishing the post." });
+  }
 
   if (cleanMedia) {
     if (cleanMedia.imageUrl) {
@@ -952,6 +958,9 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     }
   } catch (err) {
     console.error("MongoDB post creation error:", err.message);
+    if (!memoryStore || process.env.NODE_ENV === "production") {
+      return res.status(503).json({ message: "Post could not be saved. Please try again." });
+    }
   }
 
   if (!createdPost) {
@@ -978,7 +987,7 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     }
   }
 
-  notifyNewCommunityPost({
+  if (normalizedPrivacy === "public") notifyNewCommunityPost({
     authorName: req.user.name,
     channelName: normalizedCategory || "TCM Community",
     postTitle: postText,
@@ -986,6 +995,9 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
   }).catch(() => {});
 
   return res.status(201).json({ post: formatted, mediaWarning });
+  } catch (error) {
+    next(error);
+  }
 });
 
 homeRouter.delete("/posts/:postId", requireAuth, async (req, res) => {

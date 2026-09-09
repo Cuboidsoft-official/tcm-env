@@ -72,14 +72,8 @@ If the backend is not running, the mobile app opens the home screen with demo fa
 
 The frontend uses `EXPO_PUBLIC_API_URL` when present, otherwise it falls back to `http://localhost:5000/api`. In CI/CD, `EXPO_PUBLIC_API_URL` is baked into builds at build time from the `TCM_API_URL` repo variable (default `https://api.thecodemunk.in/api`).
 
-## CI/CD
+## Production and CI/CD
 
-- **CI Checks** (`.github/workflows/ci-checks.yml`) run on every push to `main` and pull request (path-scoped to `backend/**` and `frontend/**`): backend health check (starts the server without a DB, asserts `/api/health` returns `"ok":true`) and a frontend Android Metro bundle export.
-- **Backend** auto-deploys to the OCI Always-Free VM (`140.245.209.147`) via SSH + rsync, installs deps with `npm ci`, restarts the systemd service, and polls the health endpoint; served through Caddy with HTTPS at `api.thecodemunk.in` (Let's Encrypt cert auto-issued).
-- **Frontend** Android APK/AAB auto-builds on the GitHub Actions runner (Expo prebuild + local Gradle, no EAS cloud builds), publishes to GitHub Releases + the OCI VM `/dl` hosting, and emails **single-use secret download links** to `cuboidsoft@gmail.com`.
-- **OTA** JS updates auto-publish to installed builds (`eas update`, preview + production channels).
-- Required GitHub secrets: `OCI_SSH_KEY`, `OCI_HOST`, `OCI_USER`, `DL_ADMIN_TOKEN`, `EXPO_TOKEN` (OTA only), `MAIL_USERNAME`, `MAIL_APP_PASSWORD`, `MAIL_TO`. `MONGODB_URI`, `JWT_SECRET`, and `GEMINI_API_KEY` live in `/opt/tcm/.env` on the VM, not in GitHub.
+Production serves the website at `https://app.thecodemunk.in`, the admin dashboard at `https://admin.thecodemunk.in`, and the API at `https://api.thecodemunk.in/api`.
 
-## CI/CD & Hosting
-
-Full pipeline docs: [`docs/CI-CD.md`](docs/CI-CD.md). Push to `main` → CI checks, backend auto-deploys to the OCI VM, Android APK + AAB auto-build on the GitHub Actions runner, OTA updates publish to the preview channel, and install/download links are emailed to `cuboidsoft@gmail.com`.
+See [Production operations](docs/PRODUCTION.md) for hosting inventory, persistent uploads, backups, monitoring and recovery. See [CI/CD](docs/CI-CD.md) for deployment workflows. Demo credentials above apply only to local development; production does not create demo accounts.

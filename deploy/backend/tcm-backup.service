@@ -1,0 +1,10 @@
+[Unit]
+Description=TCM database, uploads and configuration backup
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tcm-backup
+Nice=10
+IOSchedulingClass=idle
+UMask=0077

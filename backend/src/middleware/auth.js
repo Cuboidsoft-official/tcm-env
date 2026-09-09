@@ -60,7 +60,10 @@ export async function requireAuth(req, res, next) {
       }
     }
 
-    // 3. Fallback mock user if token signature is valid but DB/memory user record is missing
+    if (process.env.NODE_ENV === "production") {
+      return res.status(401).json({ message: "Account no longer exists. Please sign in again." });
+    }
+    // Development-only mock user.
     req.user = {
       _id: payload.sub,
       id: payload.sub,
@@ -93,7 +96,7 @@ export async function optionalAuth(req, res, next) {
 
         if (dbUser) {
           req.user = dbUser;
-        } else {
+        } else if (process.env.NODE_ENV !== "production") {
           req.user = {
             _id: payload.sub,
             id: payload.sub,
