@@ -63,7 +63,7 @@ try {
 }
 
 async function serveOrRestoreMedia(filename, res, next) {
-  if (!/^[a-z0-9_-]+\.(png|jpg|jpeg|webp|gif|heic|heif|avif|pdf|mp4)$/i.test(filename)) {
+  if (!/^[a-z0-9_-]+\.(png|jpg|jpeg|webp|gif|heic|heif|avif|pdf|mp4|mov|m4v|3gp|webm|avi|mkv|mpeg|ogv|flv|wmv|doc|docx|ppt|pptx|xls|xlsx|txt|csv|md|rtf|zip|rar|7z)$/i.test(filename)) {
     return next();
   }
   const filePath = path.join(UPLOADS_DIR, filename);

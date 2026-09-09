@@ -305,25 +305,30 @@ function sanitizeIncomingMedia(media) {
     ? media.carouselImages.map((u) => (typeof u === "string" ? u.trim() : "")).filter(isUsableMediaUri)
     : [];
 
-  if (media.kind === "photo") {
-    if (!image && !thumb) return { kind: "none" };
-    return { ...media, imageUrl: image || thumb, thumbnailUrl: thumb || image };
+  let kind = String(media.kind || "none").toLowerCase();
+  if (kind === "image") kind = "photo";
+  if (kind === "document" || kind === "pdf" || kind === "file") kind = "notes";
+  const validKinds = ["video", "code", "roadmap", "notes", "showcase", "photo", "none"];
+  if (!validKinds.includes(kind)) kind = "none";
+
+  if (kind === "photo") {
+    if (!image && !thumb && carousel.length === 0) return { kind: "none" };
+    return { ...media, kind: "photo", imageUrl: image || thumb || carousel[0] || "", thumbnailUrl: thumb || image || carousel[0] || "" };
   }
 
-  if (media.kind === "showcase") {
+  if (kind === "showcase") {
     if (!image && carousel.length === 0) return { kind: "none" };
-    return { ...media, imageUrl: image || carousel[0] || "", carouselImages: carousel };
+    return { ...media, kind: "showcase", imageUrl: image || carousel[0] || "", carouselImages: carousel };
   }
 
-  if (media.kind === "video") {
+  if (kind === "video") {
     if (!video && !image && !thumb) return { kind: "none" };
     if (!video) {
-      // No usable video URL: fall back to a photo so the feed never renders
-      // a "playable" video card that cannot actually play.
-      return { kind: "showcase", imageUrl: image || thumb, thumbnailUrl: thumb || image, carouselImages: [] };
+      return { ...media, kind: "showcase", imageUrl: image || thumb, thumbnailUrl: thumb || image, carouselImages: [] };
     }
     return {
       ...media,
+      kind: "video",
       videoUrl: video,
       fileUri: file || video,
       imageUrl: image || thumb,
@@ -331,12 +336,12 @@ function sanitizeIncomingMedia(media) {
     };
   }
 
-  if (media.kind === "notes") {
+  if (kind === "notes") {
     if (!file && !image) return { kind: "none" };
-    return { ...media, fileUri: file || "", imageUrl: image || "" };
+    return { ...media, kind: "notes", fileUri: file || "", imageUrl: image || "" };
   }
 
-  return media;
+  return { ...media, kind: "none" };
 }
 
 function sanitizePostMedia(media) {
@@ -913,9 +918,9 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
   })();
   const isUserMentor = req.user.role === "mentor";
   const postPayload = {
-    authorName: req.user.name || "TCM Member",
+    authorName: (req.user.name && typeof req.user.name === "string" && req.user.name.trim()) ? req.user.name.trim() : "TCM Member",
     authorId: req.user._id?.toString() || req.user.id?.toString() || "user-local",
-    authorRole: req.user.memberBadge || req.user.role || (isUserMentor ? "TCM Senior Mentor" : "TCM Member"),
+    authorRole: (req.user.memberBadge || req.user.role || (isUserMentor ? "TCM Senior Mentor" : "TCM Member")),
     authorAvatarUrl: req.user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
     verified: isUserMentor ? true : Boolean(req.user.verified),
     isMentor: isUserMentor,
@@ -931,7 +936,8 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     metrics: {
       likes: 0,
       comments: 0,
-      shares: 0
+      shares: 0,
+      reposts: 0
     },
     tags: normalizedTags,
     publishedAt: new Date()
@@ -941,7 +947,7 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
 
   try {
     createdPost = await CommunityPost.create(postPayload);
-    if (createdPost && req.user._id) {
+    if (createdPost && req.user._id && mongoose.Types.ObjectId.isValid(req.user._id)) {
       await User.findByIdAndUpdate(req.user._id, { $inc: { "stats.postsCount": 1 } }).catch(() => {});
     }
   } catch (err) {
@@ -956,15 +962,17 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     };
   }
 
+  const formatted = mapPost(createdPost, {}, req.user._id?.toString());
+
   if (memoryStore) {
     if (!memoryStore.posts) memoryStore.posts = [];
     if (!memoryStore.communityPosts) memoryStore.communityPosts = [];
     
-    const formatted = mapPost(createdPost, {}, req.user._id?.toString());
-    memoryStore.posts.unshift(formatted);
-    memoryStore.communityPosts.unshift(formatted);
+    const formattedIdStr = String(formatted.id || formatted._id);
+    memoryStore.posts = [formatted, ...memoryStore.posts.filter((p) => String(p.id || p._id) !== formattedIdStr)];
+    memoryStore.communityPosts = [formatted, ...memoryStore.communityPosts.filter((p) => String(p.id || p._id) !== formattedIdStr)];
 
-    const userInMem = memoryStore.users?.find((u) => String(u._id || u.id) === String(req.user._id)) || memoryStore.user;
+    const userInMem = memoryStore.users?.find((u) => String(u._id || u.id) === String(req.user._id || req.user.id)) || memoryStore.user;
     if (userInMem && userInMem.stats) {
       userInMem.stats.postsCount = (userInMem.stats.postsCount || 0) + 1;
     }
@@ -977,7 +985,7 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     channelId: targetCourseId || normalizedCategory
   }).catch(() => {});
 
-  return res.status(201).json({ post: mapPost(createdPost, {}, req.user._id?.toString()), mediaWarning });
+  return res.status(201).json({ post: formatted, mediaWarning });
 });
 
 homeRouter.delete("/posts/:postId", requireAuth, async (req, res) => {

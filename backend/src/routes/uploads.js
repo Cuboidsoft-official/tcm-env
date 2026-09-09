@@ -13,7 +13,7 @@ export const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), "
 export async function saveMediaToDb(filename, mimeType, filePath) {
   try {
     const fileBuf = fs.readFileSync(filePath);
-    if (fileBuf && fileBuf.length > 0 && fileBuf.length <= 15 * 1024 * 1024) {
+    if (fileBuf && fileBuf.length > 0 && fileBuf.length <= 50 * 1024 * 1024) {
       await UploadedMedia.findOneAndUpdate(
         { filename },
         { filename, mimeType, data: fileBuf },
