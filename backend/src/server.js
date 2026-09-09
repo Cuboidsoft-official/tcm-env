@@ -107,6 +107,9 @@ app.use(
     immutable: true,
     index: false,
     setHeaders(res, filePath) {
+      if (path.basename(filePath) === "logo.png") {
+        res.setHeader("Cache-Control", "no-cache");
+      }
       const m = /\.(heic|heif|avif)$/i.exec(filePath);
       if (m) {
         const map = { heic: "image/heic", heif: "image/heif", avif: "image/avif" };

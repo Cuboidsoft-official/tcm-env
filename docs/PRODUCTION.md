@@ -33,7 +33,7 @@ Disk is the primary media store. MongoDB holds optional copies of files up to 15
 - `/var/backups/tcm/daily/<UTC timestamp>` contains compressed MongoDB archive, uploads, runtime/proxy configuration and SHA256 checksums. Completed backups older than seven days are rotated after a new successful backup.
 - Sentinel `tcm-backup-pull.timer`: daily at 03:30 UTC, retains copies for fourteen days under `/var/backups/tcm-backend`. A dedicated, source-restricted SSH key can only export completed backups; private keys are not committed.
 - The initial backup was copied to sentinel and all checksums verified. Its MongoDB archive was actually restored to a temporary database; 27 users and two posts were verified, then only the temporary restore database was removed.
-- OCI boot-volume recovery baselines were requested for both machines on 2026-09-09. These are manual baselines, not recurring volume backup policies. Application backups above are scheduled.
+- OCI boot-volume recovery baselines for both machines reached `AVAILABLE` on 2026-09-09. These are manual baselines, not recurring volume backup policies. Application backups above are scheduled.
 - Both servers remain in the same region/account. These backups are not protection against losing the entire OCI account/region. MongoDB dumps are logical backups, not a transaction-consistent point-in-time recovery service across all collections.
 
 Check or run backups:
@@ -64,9 +64,12 @@ No email, Slack or other outbound alert recipient has been configured. Health ch
 - Latest source `db9c564` referenced `governmentRouter` without importing it; production was crash-looping with more than 2,700 restarts.
 - The backend-specific lockfile was stale, breaking `npm ci` on the VM even though workspace installs succeeded locally.
 - The existing 240 MiB persistent media directory was not configured in runtime; deployment deleted the backend-relative upload directory.
-- Missing HTTPS public origin produced HTTP image links. Two stored documents were repaired and one missing JPEG restored from MongoDB. At least one older referenced image had no surviving file or database copy; a fix cannot recreate deleted bytes.
+- Missing HTTPS public origin produced HTTP image links. Two stored documents were repaired and one missing JPEG restored from MongoDB. Two older referenced images (`mtocaq7p-6bdd1d6e8191.png` and `msvfy10o-2ea297a28b03.jpg`) had no surviving file or database copy; they must be re-uploaded.
 - A private synthetic photo post was uploaded through the live authenticated HTTPS API, checked in MongoDB, fetched byte-for-byte, and rechecked after restarting the service. Removing only that synthetic image from disk also verified database restoration. All synthetic test records/files were cleaned up.
 - Default admin and partner passwords were replaced with generated credentials. Recovery values are in the ignored local `secrets/production-credentials-20260909.json`, mode 0600, and root-only incident recovery storage on the backend. They are not in GitHub or this document.
 - Website Caddy routing, camera/photo permissions and cache headers were corrected. Service-worker caching excludes API and cross-origin requests, and the cache version was bumped.
+- Backend releases now include the official frontend icon, so the default `/uploads/logo.png` fallback is created and backed up at startup.
+
+The standalone backend production dependency audit reported zero advisories. The workspace audit still reports six high-severity package entries stemming from Metro/React Native's `image-size` dependency. The [ICNS](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) and [JXL/HEIF](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) advisories list no patched release. Metro is used by build tooling, not the deployed Caddy static website or standalone backend. Do not process untrusted assets through Metro; revisit when upstream publishes a compatible fix. The informational CI audit remains non-blocking and does not imply a clean workspace audit.
 
 This incident work is not a complete application authorization audit. Media URLs are public URLs; marking a post private does not create private object storage. Review the application's privacy and authorization design separately before storing confidential media.
