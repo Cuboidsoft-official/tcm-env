@@ -221,11 +221,22 @@ export async function getHome(token) {
       (p) => p.postType !== "job_news" && !p.jobData && !jobPostCards.some((j) => j.id === p.id || j.id === String(p.id).replace(/^post-/, ""))
     );
 
-    const mergedPosts = [...nonJobPosts, ...jobPostCards].sort((a, b) => {
-      const timeA = new Date(a.publishedAt || a.createdAt || 0).getTime() || 0;
-      const timeB = new Date(b.publishedAt || b.createdAt || 0).getTime() || 0;
-      return timeB - timeA;
-    });
+    const parsePostTime = (p) => {
+      if (!p) return 0;
+      const raw = p.publishedAt || p.createdAt;
+      if (raw) {
+        const t = new Date(raw).getTime();
+        if (!isNaN(t) && t > 0) return t;
+      }
+      const idStr = String(p.id || p._id || "");
+      if (/^[0-9a-fA-F]{24}$/.test(idStr)) {
+        const mongoTime = parseInt(idStr.substring(0, 8), 16) * 1000;
+        if (!isNaN(mongoTime) && mongoTime > 1000000000000) return mongoTime;
+      }
+      return Date.now();
+    };
+
+    const mergedPosts = [...nonJobPosts, ...jobPostCards].sort((a, b) => parsePostTime(b) - parsePostTime(a));
 
     return {
       ...homeData,

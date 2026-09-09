@@ -558,12 +558,25 @@ homeRouter.get("/", requireAuth, async (req, res) => {
     };
   });
 
+  const parsePostTime = (p) => {
+    if (!p) return 0;
+    const raw = p.publishedAt || p.createdAt;
+    if (raw) {
+      const t = new Date(raw).getTime();
+      if (!isNaN(t) && t > 0) return t;
+    }
+    const idStr = String(p.id || p._id || "");
+    if (/^[0-9a-fA-F]{24}$/.test(idStr)) {
+      const mongoTime = parseInt(idStr.substring(0, 8), 16) * 1000;
+      if (!isNaN(mongoTime) && mongoTime > 1000000000000) return mongoTime;
+    }
+    return 0;
+  };
+
   const allHomePosts = [
     ...rawPosts.map((p) => mapPost(p, globalComments, currentUserIdStr)),
     ...jobPostCards
-  ].sort(
-    (a, b) => new Date(b.publishedAt || b.createdAt || 0) - new Date(a.publishedAt || a.createdAt || 0)
-  );
+  ].sort((a, b) => parsePostTime(b) - parsePostTime(a));
 
   res.json({
     user: {

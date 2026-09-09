@@ -795,11 +795,26 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
         };
       }
 
+      const nowIso = new Date().toISOString();
+      if (newPost) {
+        newPost.publishedAt = newPost.publishedAt || nowIso;
+        newPost.createdAt = newPost.createdAt || nowIso;
+        newPost.timeLabel = newPost.timeLabel || "Just now";
+        if (!newPost.authorAvatarUrl) {
+          newPost.authorAvatarUrl = user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80";
+        }
+      }
+
       setUploadProgress(100);
-      setHome((current) => ({
-        ...current,
-        posts: [newPost, ...(current?.posts || [])]
-      }));
+      setHome((current) => {
+        const currentPosts = Array.isArray(current?.posts) ? current.posts : [];
+        const cleanId = String(newPost?.id || newPost?._id || "");
+        const filtered = currentPosts.filter((p) => String(p.id || p._id || "") !== cleanId);
+        return {
+          ...current,
+          posts: [newPost, ...filtered]
+        };
+      });
       setDraft({ text: "", tags: "", title: "", mentions: "", mediaUrl: "", fileName: "", fileSize: "", fileUri: "", mimeType: "", frameKey: "none", carouselImages: [], location: "" });
     } catch (nextError) {
       console.warn("Post creation error:", nextError);
@@ -892,7 +907,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
         .toLowerCase();
 
       let categoryMatch = false;
-      if (!cleanActiveCat || cleanActiveCat === "for you" || cleanActiveCat === "trending" || cleanActiveCat === "following") {
+      if (!cleanActiveCat || cleanActiveCat === "for you" || cleanActiveCat === "trending" || cleanActiveCat === "following" || cleanActiveCat === "community" || cleanActiveCat === "all") {
         categoryMatch = true;
       } else if (cleanActiveCat.includes("job") || cleanActiveCat.includes("hiring")) {
         categoryMatch = isJobPost;
@@ -901,7 +916,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
           .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|💼|🔥|✨|👥/gu, "")
           .trim()
           .toLowerCase();
-        categoryMatch = cleanPostCat === cleanActiveCat;
+        categoryMatch = !cleanPostCat || cleanPostCat === "community" || cleanPostCat === "general" || cleanPostCat === cleanActiveCat;
       }
 
       const queryMatch =
@@ -916,7 +931,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
 
     return [...filtered].sort((a, b) => {
       const parseTime = (item) => {
-        if (!item) return 0;
+        if (!item) return Date.now();
         if (item.publishedAt) {
           const t = new Date(item.publishedAt).getTime();
           if (!isNaN(t) && t > 0) return t;
@@ -925,13 +940,17 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
           const t = new Date(item.createdAt).getTime();
           if (!isNaN(t) && t > 0) return t;
         }
-        if (typeof item.id === "number") return item.id;
-        if (typeof item.id === "string" && item.id.includes("-")) {
-          const parts = item.id.split("-");
-          const num = Number(parts[parts.length - 1]);
-          if (!isNaN(num) && num > 0) return num;
+        const idStr = String(item.id || item._id || "");
+        if (/^[0-9a-fA-F]{24}$/.test(idStr)) {
+          const mongoTime = parseInt(idStr.substring(0, 8), 16) * 1000;
+          if (!isNaN(mongoTime) && mongoTime > 1000000000000) return mongoTime;
         }
-        return 0;
+        const digitsMatch = idStr.match(/\d{10,13}/);
+        if (digitsMatch) {
+          const num = Number(digitsMatch[0]);
+          if (!isNaN(num) && num > 1000000000) return num;
+        }
+        return Date.now();
       };
       const timeA = parseTime(a);
       const timeB = parseTime(b);
