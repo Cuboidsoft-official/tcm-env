@@ -222,7 +222,7 @@ async function ensureAppLogo() {
       path.join(process.cwd(), "assets", "icon.png")
     ];
     const sourcePath = candidatePaths.find((p) => fs.existsSync(p));
-    if (sourcePath && (!fs.existsSync(targetLogoPath) || fs.statSync(targetLogoPath).size === 0)) {
+    if (sourcePath) {
       fs.copyFileSync(sourcePath, targetLogoPath);
       await saveMediaToDb("logo.png", "image/png", targetLogoPath);
     }

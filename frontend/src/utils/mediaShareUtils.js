@@ -163,10 +163,10 @@ export async function sharePostWithMedia({
       }
     }
 
-    // 2. Fallback: Download high-res poster JPG if text-only post or media download failed
+    // 2. Fallback: Download official app logo PNG if text-only post or media download failed
     if (!targetImageUri) {
-      const fallbackPosterUrl = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&h=630&q=80";
-      const cardFilename = `tcm_card_${targetId || Date.now()}.jpg`;
+      const fallbackPosterUrl = "https://api.thecodemunk.in/uploads/logo.png";
+      const cardFilename = `tcm_logo_${targetId || Date.now()}.png`;
       const cardPath = `${FileSystem.cacheDirectory}${cardFilename}`;
 
       const cardInfo = await FileSystem.getInfoAsync(cardPath).catch(() => ({ exists: false }));
@@ -178,8 +178,8 @@ export async function sharePostWithMedia({
           targetImageUri = dlRes.uri;
         }
       }
-      mimeType = "image/jpeg";
-      uti = "public.image";
+      mimeType = "image/png";
+      uti = "public.png";
     }
 
     // 3. Share actual JPG/MP4 file via Native Sharing Sheet

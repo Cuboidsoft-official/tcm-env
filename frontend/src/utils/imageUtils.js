@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 
-export const DEFAULT_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80";
+export const DEFAULT_FALLBACK_IMAGE = "https://api.thecodemunk.in/uploads/logo.png";
 export const DEFAULT_AVATAR_IMAGE = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80";
 
 export function sanitizeImageUri(uri, fallback = DEFAULT_FALLBACK_IMAGE) {
