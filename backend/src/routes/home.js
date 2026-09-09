@@ -499,37 +499,30 @@ homeRouter.get("/", requireAuth, async (req, res) => {
   let dbJobs = [];
   let dbMentors = [];
 
-  if (mongoose.connection.readyState === 1) {
-    try {
-      const [stories, posts, jobs, legacyMentors, registeredMentorUsers] = await Promise.all([
-        Story.find().sort({ order: 1, createdAt: 1 }).lean(),
-        CommunityPost.find().sort({ publishedAt: -1 }).limit(50).lean(),
-        Job.find().sort({ createdAt: -1 }).lean(),
-        Mentor.find({ isApproved: { $ne: false } }).sort({ rating: -1 }).limit(6).lean(),
-        User.find({ role: "mentor", isApproved: { $ne: false } }).lean()
-      ]);
-      dbStories = stories || [];
-      dbPosts = posts || [];
-      dbJobs = jobs || [];
-      dbMentors = [...(registeredMentorUsers || []), ...(legacyMentors || [])];
-    } catch (dbErr) {
-      console.warn("MongoDB home query failed, falling back to memoryStore:", dbErr.message);
-    }
+  try {
+    const [stories, posts, jobs, legacyMentors, registeredMentorUsers] = await Promise.all([
+      Story.find().sort({ order: 1, createdAt: 1 }).lean().catch(() => []),
+      CommunityPost.find().sort({ publishedAt: -1 }).limit(100).lean().catch(() => []),
+      Job.find().sort({ createdAt: -1 }).lean().catch(() => []),
+      Mentor.find({ isApproved: { $ne: false } }).sort({ rating: -1 }).limit(6).lean().catch(() => []),
+      User.find({ role: "mentor", isApproved: { $ne: false } }).lean().catch(() => [])
+    ]);
+    dbStories = stories || [];
+    dbPosts = posts || [];
+    dbJobs = jobs || [];
+    dbMentors = [...(registeredMentorUsers || []), ...(legacyMentors || [])];
+  } catch (dbErr) {
+    console.warn("MongoDB home query failed, falling back to memoryStore:", dbErr.message);
   }
 
-  let rawPosts = [];
-  if (dbPosts.length > 0) {
-    rawPosts = [...dbPosts];
-    if (memoryStore?.posts?.length) {
-      memoryStore.posts.forEach((memP) => {
-        const memId = String(memP._id || memP.id);
-        if (!rawPosts.some((p) => String(p._id || p.id) === memId)) {
-          rawPosts.push(memP);
-        }
-      });
-    }
-  } else if (memoryStore?.posts?.length) {
-    rawPosts = memoryStore.posts;
+  let rawPosts = [...dbPosts];
+  if (memoryStore?.posts?.length) {
+    memoryStore.posts.forEach((memP) => {
+      const memId = String(memP._id || memP.id);
+      if (!rawPosts.some((p) => String(p._id || p.id) === memId)) {
+        rawPosts.push(memP);
+      }
+    });
   }
 
   let rawJobs = dbJobs.length > 0 ? dbJobs : (memoryStore?.jobs || []);
@@ -872,6 +865,27 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
     .slice(0, 6);
 
   const cleanMedia = sanitizeIncomingMedia(media);
+
+  if (cleanMedia) {
+    if (cleanMedia.imageUrl) {
+      cleanMedia.imageUrl = (await resolveMediaUrl(cleanMedia.imageUrl)) || cleanMedia.imageUrl;
+    }
+    if (cleanMedia.thumbnailUrl) {
+      cleanMedia.thumbnailUrl = (await resolveMediaUrl(cleanMedia.thumbnailUrl)) || cleanMedia.thumbnailUrl;
+    }
+    if (cleanMedia.videoUrl) {
+      cleanMedia.videoUrl = (await resolveMediaUrl(cleanMedia.videoUrl)) || cleanMedia.videoUrl;
+    }
+    if (cleanMedia.fileUri) {
+      cleanMedia.fileUri = (await resolveMediaUrl(cleanMedia.fileUri)) || cleanMedia.fileUri;
+    }
+    if (Array.isArray(cleanMedia.carouselImages)) {
+      cleanMedia.carouselImages = await Promise.all(
+        cleanMedia.carouselImages.map(async (img) => (await resolveMediaUrl(img)) || img)
+      );
+    }
+  }
+
   const mediaWarning = (() => {
     const localOnly = (uri) => typeof uri === "string" && /^(blob:|file:|content:|ph:)/i.test(uri.trim());
     const candidates = [
@@ -885,20 +899,20 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
   })();
   const isUserMentor = req.user.role === "mentor";
   const postPayload = {
-    authorName: req.user.name,
-    authorId: req.user._id?.toString(),
-    authorRole: req.user.memberBadge || (isUserMentor ? "TCM Senior Mentor" : "TCM Member"),
-    authorAvatarUrl: req.user.avatarUrl,
+    authorName: req.user.name || "TCM Member",
+    authorId: req.user._id?.toString() || req.user.id?.toString() || "user-local",
+    authorRole: req.user.memberBadge || req.user.role || (isUserMentor ? "TCM Senior Mentor" : "TCM Member"),
+    authorAvatarUrl: req.user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
     verified: isUserMentor ? true : Boolean(req.user.verified),
     isMentor: isUserMentor,
-    category: normalizedCategory,
-    privacy: normalizedPrivacy,
-    postType: normalizedPostType,
+    category: normalizedCategory || "Community",
+    privacy: normalizedPrivacy || "public",
+    postType: normalizedPostType || "general",
     targetCourseId: targetCourseId || null,
     documentUrl: documentUrl || null,
     documentName: documentName || null,
     documentSize: documentSize || "4.2 MB",
-    text: postText,
+    text: postText || "New Post",
     media: cleanMedia,
     metrics: {
       likes: 0,
@@ -911,15 +925,13 @@ homeRouter.post("/posts", requireAuth, async (req, res) => {
 
   let createdPost = null;
 
-  if (mongoose.connection.readyState === 1) {
-    try {
-      createdPost = await CommunityPost.create(postPayload);
-      try {
-        await User.findByIdAndUpdate(req.user._id, { $inc: { "stats.postsCount": 1 } });
-      } catch (e) {}
-    } catch (err) {
-      console.warn("MongoDB post creation error, falling back to memoryStore:", err.message);
+  try {
+    createdPost = await CommunityPost.create(postPayload);
+    if (createdPost && req.user._id) {
+      await User.findByIdAndUpdate(req.user._id, { $inc: { "stats.postsCount": 1 } }).catch(() => {});
     }
+  } catch (err) {
+    console.error("MongoDB post creation error:", err.message);
   }
 
   if (!createdPost) {
