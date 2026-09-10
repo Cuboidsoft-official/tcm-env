@@ -1129,6 +1129,7 @@ const styles = StyleSheet.create({
   },
   homeScroll: {
     padding: 12,
+    paddingBottom: 80,
     gap: 12
   },
   topHeader: {
@@ -1358,6 +1359,7 @@ const styles = StyleSheet.create({
   },
   instructionScroll: {
     padding: 12,
+    paddingBottom: 80,
     gap: 10
   },
   backBtnRow: {

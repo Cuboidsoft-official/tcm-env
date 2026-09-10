@@ -313,8 +313,19 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
     }
     return false;
   }
-  const [home, setHome] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [home, setHome] = useState(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const stored = window.localStorage.getItem("tcm_home_cache_v1");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && (parsed.posts || parsed.categories || parsed.tabs)) return parsed;
+        }
+      }
+    } catch (e) {}
+    return null;
+  });
+  const [loading, setLoading] = useState(() => !home);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("Home");
@@ -521,6 +532,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
     setShowCommunityScreen(false);
     setShowGovPrepScreen(false);
     setShowGovExamsPage(false);
+    setShowMockTestScreen(false);
     setTargetUserProfile(null);
     setCourseToEdit(null);
   }
@@ -578,21 +590,28 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
   }, [session?.token]);
 
   async function loadHome({ quiet = false } = {}) {
-    if (quiet) setRefreshing(true);
-    else setLoading(true);
+    if (!home && !quiet) setLoading(true);
+    else if (quiet) setRefreshing(true);
     setError("");
 
     try {
       const data = await getHome(session?.token);
       setHome(data);
       setActiveCategory((current) => current || data.categories?.[0] || "");
+      try {
+        const jsonStr = JSON.stringify(data);
+        AsyncStorage.setItem("tcm_home_cache_v1", jsonStr).catch(() => {});
+        if (typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.setItem("tcm_home_cache_v1", jsonStr);
+        }
+      } catch (e) {}
     } catch (nextError) {
       if (nextError?.status === 401 && session?.token) {
         if (onLogout) onLogout();
         else if (onRequireLogin) onRequireLogin();
         return;
       }
-      setError(nextError.message || "Unable to load live home data.");
+      if (!home) setError(nextError.message || "Unable to load live home data.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -1083,7 +1102,7 @@ export default function HomeScreen({ session, onLogout, onRequireLogin, onUserUp
     );
   }
 
-  const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen || showCommunityScreen || showGovPrepScreen || showGovExamsPage || showMockTestScreen);
+  const isFullScreenView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || showNotificationsScreen || showSearchScreen || showPopularCourses || showContinueLearning || selectedCourseId || exploreCategoryKey || showWalletScreen || showMentorDashboard || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showCreateCourseScreen || showCreateWebinarScreen || showAllMentorsScreen || showCommunityScreen || showGovPrepScreen || showGovExamsPage);
 
   const isFullWidthView = Boolean(activeDoubtRoom || activeChatUser || selectedMentorId || selectedCourseId || exploreCategoryKey || showPartnerDashboard || showDiscoverPartnersScreen || selectedPartnerForPreview || showMentorDashboard || activeTab === "Chats" || activeTab === "Doubts" || activeTab === "chats" || activeTab === "doubts" || activeTab === "Community" || activeTab === "community" || activeTab === "Home" || activeTab === "home" || activeTab === "Learn" || activeTab === "Profile" || activeTab === "ProfileSettings" || showGovPrepScreen || showGovExamsPage || showMockTestScreen);
 
