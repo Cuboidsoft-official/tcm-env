@@ -15,6 +15,7 @@ import { GovernmentSyncLog } from "../models/GovernmentSyncLog.js";
 import { GovernmentLearningProgress } from "../models/GovernmentLearningProgress.js";
 import { GovernmentBookmark } from "../models/GovernmentBookmark.js";
 import { GovernmentNote } from "../models/GovernmentNote.js";
+import { GovMockTest } from "../models/GovMockTest.js";
 import { askGeminiAi } from "../services/geminiService.js";
 
 const FALLBACK_EXAMS = [
@@ -1273,3 +1274,159 @@ governmentRouter.post("/sources/sync", requireAuth, async (req, res) => {
     return res.status(500).json({ success: false, message: "Failed to trigger source sync." });
   }
 });
+
+// 21. Government Mock Tests Listing API
+governmentRouter.get("/mock-tests", async (req, res) => {
+  try {
+    const { examId, testType, difficulty } = req.query;
+    let tests = [];
+
+    if (mongoose.connection.readyState === 1) {
+      const query = { isPublished: true };
+      if (examId) query.examId = examId;
+      if (testType && testType !== "all") query.testType = testType;
+      if (difficulty && difficulty !== "All") query.difficulty = difficulty;
+
+      tests = await GovMockTest.find(query).sort({ createdAt: -1 }).lean();
+    }
+
+    return res.json({
+      success: true,
+      tests: tests.map((t) => ({
+        ...t,
+        id: String(t._id || t.id)
+      }))
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to fetch mock tests." });
+  }
+});
+
+// 22. Get Single Mock Test Details & Questions API
+governmentRouter.get("/mock-tests/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    let testDoc = null;
+
+    if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(id)) {
+      testDoc = await GovMockTest.findById(id).populate("questionIds").lean();
+    }
+
+    if (!testDoc) {
+      return res.status(404).json({ success: false, message: "Mock test not found." });
+    }
+
+    return res.json({
+      success: true,
+      test: {
+        ...testDoc,
+        id: String(testDoc._id || testDoc.id),
+        questions: (testDoc.questionIds || []).map((q, idx) => ({
+          ...q,
+          id: String(q._id || q.id || `q_${idx + 1}`),
+          questionNumber: idx + 1
+        }))
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to fetch mock test details." });
+  }
+});
+
+// 23. Submit Mock Test & Calculate Results API
+governmentRouter.post("/mock-tests/:id/submit", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { answers = {}, timeTakenSec = 0 } = req.body;
+
+    let testDoc = null;
+    if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(id)) {
+      testDoc = await GovMockTest.findById(id).populate("questionIds").lean();
+    }
+
+    const questions = testDoc?.questionIds || [];
+    let correctCount = 0;
+    let wrongCount = 0;
+    let skippedCount = 0;
+    let score = 0;
+
+    const subjectStats = {};
+    const topicStats = {};
+
+    questions.forEach((q) => {
+      const qId = String(q._id || q.id);
+      const userAns = answers[qId]?.selectedOption;
+      const subName = q.subjectName || "General";
+      const topName = q.topicName || "General Topic";
+
+      if (!subjectStats[subName]) {
+        subjectStats[subName] = { subject: subName, total: 0, correct: 0, wrong: 0, score: 0, maxScore: 0 };
+      }
+      if (!topicStats[topName]) {
+        topicStats[topName] = { topicId: q.topicId || topName, topicName: topName, total: 0, correct: 0, wrong: 0, skipped: 0 };
+      }
+
+      subjectStats[subName].total += 1;
+      subjectStats[subName].maxScore += testDoc?.positiveMarks || 2.0;
+      topicStats[topName].total += 1;
+
+      if (!userAns) {
+        skippedCount++;
+        topicStats[topName].skipped += 1;
+      } else if (String(userAns).trim().toUpperCase() === String(q.correctAnswer).trim().toUpperCase()) {
+        correctCount++;
+        score += testDoc?.positiveMarks || 2.0;
+        subjectStats[subName].correct += 1;
+        subjectStats[subName].score += testDoc?.positiveMarks || 2.0;
+        topicStats[topName].correct += 1;
+      } else {
+        wrongCount++;
+        score -= testDoc?.negativeMarking || 0.5;
+        subjectStats[subName].wrong += 1;
+        subjectStats[subName].score -= testDoc?.negativeMarking || 0.5;
+        topicStats[topName].wrong += 1;
+      }
+    });
+
+    const attemptedCount = correctCount + wrongCount;
+    const totalCount = questions.length || 1;
+    const accuracy = attemptedCount > 0 ? Math.round((correctCount / attemptedCount) * 100) : 0;
+    const finalScore = Math.max(0, Math.round(score * 100) / 100);
+    const maxMarks = testDoc?.maxMarks || totalCount * (testDoc?.positiveMarks || 2.0);
+
+    const subjectPerformance = Object.values(subjectStats).map((s) => ({
+      ...s,
+      score: Math.max(0, Math.round(s.score * 100) / 100),
+      accuracy: s.correct + s.wrong > 0 ? Math.round((s.correct / (s.correct + s.wrong)) * 100) : 0
+    }));
+
+    const topicsArray = Object.values(topicStats).map((t) => ({
+      ...t,
+      accuracy: t.correct + t.wrong > 0 ? Math.round((t.correct / (t.correct + t.wrong)) * 100) : 0
+    }));
+
+    const weakTopics = topicsArray.filter((t) => t.accuracy < 60 || (t.wrong > t.correct && t.wrong > 0));
+    const strongTopics = topicsArray.filter((t) => t.accuracy >= 75);
+
+    return res.json({
+      success: true,
+      result: {
+        score: finalScore,
+        maxScore: maxMarks,
+        accuracy,
+        attempted: attemptedCount,
+        correct: correctCount,
+        wrong: wrongCount,
+        skipped: skippedCount,
+        totalQuestions: totalCount,
+        timeTakenSec,
+        subjectPerformance,
+        weakTopics,
+        strongTopics
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to process test submission." });
+  }
+});
+

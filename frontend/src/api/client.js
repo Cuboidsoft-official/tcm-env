@@ -1421,5 +1421,22 @@ export function syncGovernmentSource(token, sourceId) {
   });
 }
 
+export function getGovernmentMockTests(filters = {}) {
+  const query = new URLSearchParams(filters).toString();
+  return request(`/government/mock-tests?${query}`);
+}
+
+export function getGovernmentMockTestDetails(testId) {
+  return request(`/government/mock-tests/${encodeURIComponent(testId)}`);
+}
+
+export function submitGovernmentMockTest(testId, payload) {
+  return request(`/government/mock-tests/${encodeURIComponent(testId)}/submit`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+
 
 

@@ -22,6 +22,7 @@ import { fonts } from "../constants/fonts";
 import { useTheme } from "../context/ThemeContext";
 import RazorpayPaymentModal from "../components/RazorpayPaymentModal";
 import ComingSoonCategoryModal from "../components/ComingSoonCategoryModal";
+import MockTestCard from "../components/mockTest/MockTestCard";
 
 const { width } = Dimensions.get("window");
 
@@ -129,7 +130,7 @@ function safeImageUri(url, fallback = "https://images.unsplash.com/photo-1517694
   return url;
 }
 
-export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory, onOpenDiscoverPartners, onOpenGovPrep, onOpenGovExams, onBack }) {
+export default function LearnScreen({ learn = {}, user = {}, session, onOpenSidebar, onNotifications, onSelectUser, onSelectCourse, onOpenContinueLearning, onOpenPopularCourses, onOpenAllMentors, onOpenExploreCategory, onOpenDiscoverPartners, onOpenGovPrep, onOpenGovExams, onOpenMockTests, onBack }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [allMentorsModalVisible, setAllMentorsModalVisible] = useState(false);
@@ -416,6 +417,11 @@ export default function LearnScreen({ learn = {}, user = {}, session, onOpenSide
           </View>
         </View>
       </Pressable>
+
+      {/* NEW: MOCK TEST CARD */}
+      <MockTestCard
+        onPress={() => (onOpenMockTests ? onOpenMockTests() : Alert.alert("Mock Test", "Opening Mock Test module..."))}
+      />
 
       {/* NEW: LEARN FOR GOVERNMENT EXAMS CARD */}
       <Pressable

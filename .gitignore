@@ -30,3 +30,7 @@ tcm-web/
 
 # credential vault (local backup — never commit)
 secrets/
+
+backend/uploads/
+*.log
+
