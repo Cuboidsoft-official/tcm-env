@@ -14,6 +14,16 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true
     },
+    legacyIds: {
+      mysql: Number
+    },
+    sourceSystems: {
+      type: [String],
+      default: ["app"]
+    },
+    migrationBatchId: { type: String, index: true },
+    schemaVersion: { type: Number, default: 1 },
+    migrationMergePolicy: { type: String, enum: ["preserve_target", "source_owned"] },
     passwordHash: {
       type: String,
       required: true
@@ -43,6 +53,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "+91 98765 43210"
     },
+    studentId: { type: String, sparse: true, index: true },
+    onboarded: { type: Boolean, default: false },
+    lastLoginAt: Date,
     totalRevenue: {
       type: String,
       default: "₹48,750"
@@ -200,9 +213,25 @@ const userSchema = new mongoose.Schema(
     enrolledCourses: {
       type: Array,
       default: []
+    },
+    profile: {
+      headline: { type: String, default: "" },
+      bio: { type: String, default: "" },
+      location: { type: String, default: "" },
+      college: { type: String, default: "" },
+      graduationYear: Number,
+      experienceLevel: { type: String, enum: ["beginner", "intermediate", "advanced"], default: "beginner" },
+      goal: { type: String, default: "" },
+      githubUrl: { type: String, default: "" },
+      linkedinUrl: { type: String, default: "" },
+      websiteUrl: { type: String, default: "" },
+      twitterUrl: { type: String, default: "" },
+      banner: { type: String, default: "" }
     }
   },
   { timestamps: true }
 );
+
+userSchema.index({ "legacyIds.mysql": 1 }, { unique: true, sparse: true });
 
 export const User = mongoose.model("User", userSchema);

@@ -9,7 +9,10 @@ const lessonSchema = new mongoose.Schema({
 
 const moduleSchema = new mongoose.Schema({
   id: String,
+  legacyIds: { mysql: Number },
   title: { type: String, required: true },
+  summary: String,
+  order: { type: Number, default: 0 },
   lessonsCount: String,
   lessons: [mongoose.Schema.Types.Mixed]
 }, { _id: false });
@@ -20,6 +23,13 @@ const courseSchema = new mongoose.Schema(
       type: String,
       index: true
     },
+    legacyIds: {
+      mysql: Number
+    },
+    sourceSystem: { type: String, default: "app" },
+    migrationBatchId: { type: String, index: true },
+    schemaVersion: { type: Number, default: 1 },
+    slug: { type: String, trim: true, index: true, sparse: true },
     title: {
       type: String,
       required: true,
@@ -29,6 +39,7 @@ const courseSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+    description: { type: String, default: "" },
     category: {
       type: String,
       required: true,
@@ -38,6 +49,17 @@ const courseSchema = new mongoose.Schema(
       type: String,
       default: "All Levels"
     },
+    language: String,
+    publicationStatus: { type: String, enum: ["draft", "published", "archived"], default: "draft", index: true },
+    certificate: { type: Boolean, default: false },
+    categoryId: String,
+    totalSeats: { type: Number, min: 0, default: 0 },
+    seatsLeft: { type: Number, min: 0, default: 0 },
+    seatsFilled: { type: Number, min: 0, default: 0 },
+    schedule: String,
+    startsAt: Date,
+    isFeatured: { type: Boolean, default: false },
+    isBestseller: { type: Boolean, default: false },
     price: {
       type: String,
       default: "₹1,499"
@@ -98,5 +120,7 @@ const courseSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+courseSchema.index({ sourceSystem: 1, "legacyIds.mysql": 1 }, { unique: true, sparse: true });
 
 export const Course = mongoose.model("Course", courseSchema);
