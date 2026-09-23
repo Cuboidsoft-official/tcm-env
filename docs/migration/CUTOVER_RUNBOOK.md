@@ -14,7 +14,7 @@ Success means existing app data remains intact; migrated users can authenticate;
 ## Preparation (at least one day before)
 
 1. Resolve every launch blocker in `PRODUCTION_READINESS.md`.
-2. Upgrade Atlas or prove the scheduled logical backup and alert path.
+2. Confirm the backend, sentinel and Object Storage backup timers are healthy; perform an isolated restore drill. Record acceptance of the residual single-account/region risk or add an independent backup provider.
 3. Rotate database and SSH credentials that were shared during setup.
 4. Deploy the target schema/API code without activating new read paths.
 5. Run the importer against a fresh production-data clone and complete critical user journey tests.

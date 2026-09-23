@@ -32,9 +32,12 @@ Disk is the primary media store. MongoDB holds optional copies of files up to 15
 - Backend `tcm-backup.timer`: daily at 02:30 UTC, with up to five minutes jitter.
 - `/var/backups/tcm/daily/<UTC timestamp>` contains compressed MongoDB archive, uploads, runtime/proxy configuration and SHA256 checksums. Completed backups older than seven days are rotated after a new successful backup.
 - Sentinel `tcm-backup-pull.timer`: daily at 03:30 UTC, retains copies for fourteen days under `/var/backups/tcm-backend`. A dedicated, source-restricted SSH key can only export completed backups; private keys are not committed.
+- Sentinel `tcm-object-storage-backup.timer`: daily at 04:15 UTC, checksum-verifies the latest replica and copies it to the private `tcm-production-backups` OCI Object Storage bucket. Authentication uses the sentinel instance principal; the IAM policy grants create, inspect and read permissions only for that bucket. Object Storage keeps 35 days through a bucket lifecycle policy.
+- The Object Storage client is pinned in `/opt/oci-cli`; identifiers live in root-owned `/etc/tcm/object-storage-backup.env` and no API key is stored on the VM. The exact sentinel instance is the sole member of the `tcm-sentinel-backup-uploaders` dynamic group. Uploads are write-once (`--no-overwrite`) and checksum-verified.
 - The initial backup was copied to sentinel and all checksums verified. Its MongoDB archive was actually restored to a temporary database; 27 users and two posts were verified, then only the temporary restore database was removed.
+- The first Object Storage acceptance run on 2026-09-23 uploaded and remotely verified four objects (manifest, configuration, Mongo archive and media archive), totalling 265,041,685 bytes. The health monitor now also rejects an Object Storage marker older than 30 hours.
 - OCI boot-volume recovery baselines for both machines reached `AVAILABLE` on 2026-09-09. These are manual baselines, not recurring volume backup policies. Application backups above are scheduled.
-- Both servers remain in the same region/account. These backups are not protection against losing the entire OCI account/region. MongoDB dumps are logical backups, not a transaction-consistent point-in-time recovery service across all collections.
+- Both servers and the Object Storage bucket remain in the same OCI region/account. The object copy protects against either VPS being lost, but not loss of the entire OCI account/region. MongoDB dumps are logical backups, not a transaction-consistent point-in-time recovery service across all collections.
 
 Check or run backups:
 
@@ -43,6 +46,8 @@ sudo systemctl start tcm-backup.service              # backend
 sudo journalctl -u tcm-backup.service -n 30
 sudo systemctl start tcm-backup-pull.service         # sentinel
 sudo journalctl -u tcm-backup-pull.service -n 30
+sudo systemctl start tcm-object-storage-backup.service
+sudo journalctl -u tcm-object-storage-backup.service -n 30
 ```
 
 Restore into a new isolated database first using `mongorestore --gzip --archive=<archive> --nsFrom='tcm_ac.*' --nsTo='<new_database>.*' --config=<root-only-uri-file>`. Compare collection counts and indexes. Never use `--drop` against the live database. For files, verify SHA256SUMS and extract into a staging directory before copying selected missing files into `/opt/tcm/uploads`. Preserve ownership `ubuntu:ubuntu`. Restore runtime secrets only after reviewing the backup's age and any subsequent credential rotations.

@@ -13,13 +13,15 @@ Status: **NO-GO for live cutover; staging implementation is verified.**
 - Expected target counts matched; duplicate migration identities, active orphan references and wallet reconciliation mismatches were all zero.
 - Backend migration/model syntax, model imports and the three production behavior tests pass.
 - Hostinger media was copied off-host to the sentinel: 50 files, 21,041,341 bytes and 50 SHA-256 manifest entries. The database has 24 valid local references, 34 external avatar URLs and four missing legacy references.
+- Production creates daily checksum-protected logical Mongo/media/config backups, retains seven days on the backend and fourteen days on the sentinel, and checks external health plus backup freshness every five minutes. The 2026-09-23 backup and private-network replication completed successfully.
+- A private, versioned OCI Object Storage bucket now retains 35 days. Its first write-once acceptance run uploaded and remotely verified the four current snapshot artifacts (265,041,685 bytes); the daily timer and 30-hour freshness monitor are active.
 
 ## Launch blockers
 
 1. **Application compatibility:** imported course, program, enrollment, payment, wallet, lead, event, CMS and notification collections need production API/admin read-path smoke tests. The current app does not yet expose every new collection through completed user journeys.
 2. **Source write control:** Hostinger MySQL is still receiving writes. A short write freeze or a reviewed change-data-capture/outbox bridge is required for the final delta.
 3. **Media serving cutover:** an off-host checksum backup exists, but the application still needs durable target object paths and URL rewrites. Four broken legacy references (two avatars and two payment screenshots) must remain explicitly quarantined.
-4. **Backup durability:** Atlas M0 has no native backup policy. Before cutover, either upgrade to a backup-capable tier or activate scheduled encrypted logical backups to OCI Object Storage with retention and restore monitoring.
+4. **Disaster-recovery isolation:** scheduled logical backups now cover the M0 native-backup gap across both VPSes and private OCI Object Storage. All copies remain in one OCI account and region; add a second account/region provider or upgrade Atlas for stronger isolation and point-in-time recovery. Perform and record another isolated restore drill immediately before cutover.
 5. **Operational signals:** add migration/cutover dashboards or at minimum alerts for API health, authentication errors, Mongo connection failures, 5xx rate and failed write/outbox events.
 6. **Credential rotation:** rotate the Atlas database credential exposed during migration diagnostics and update the OCI backend secret before cutover.
 7. **Authentication smoke test:** validate migrated PHP bcrypt (`$2y$`) users with designated non-privileged test accounts and verify password-reset fallback.

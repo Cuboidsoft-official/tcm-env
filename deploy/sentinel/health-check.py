@@ -17,4 +17,7 @@ for url in ["https://api.thecodemunk.in/api/health", "https://app.thecodemunk.in
 backups = list(pathlib.Path("/var/backups/tcm-backend").glob("20*T*Z/SHA256SUMS"))
 if not backups or time.time() - max(p.stat().st_mtime for p in backups) > 30 * 3600:
     raise RuntimeError("No verified backend backup from the last 30 hours")
-print("API, database, website, admin and replicated backup healthy")
+object_storage_marker = pathlib.Path("/var/lib/tcm-object-storage-backup/latest")
+if not object_storage_marker.exists() or time.time() - object_storage_marker.stat().st_mtime > 30 * 3600:
+    raise RuntimeError("No verified Object Storage backup from the last 30 hours")
+print("API, database, website, admin and replicated backups healthy")

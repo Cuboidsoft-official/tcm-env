@@ -1,0 +1,18 @@
+[Unit]
+Description=Copy latest verified TCM backup to OCI Object Storage
+After=network-online.target tcm-backup-pull.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tcm-object-storage-backup
+User=root
+Group=root
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=strict
+StateDirectory=tcm-object-storage-backup
+StateDirectoryMode=0700
+ReadWritePaths=/run/lock
+ReadOnlyPaths=/var/backups/tcm-backend /etc/tcm/object-storage-backup.env /opt/oci-cli
