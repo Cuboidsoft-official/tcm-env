@@ -12,8 +12,10 @@ import mongoose from 'mongoose';
 import { homeRouter } from '../src/routes/home.js';
 import { adminRouter } from '../src/routes/admin.js';
 import { jobsRouter } from '../src/routes/jobs.js';
+import { governmentRouter } from '../src/routes/government.js';
 import { User } from '../src/models/User.js';
 import { CommunityPost } from '../src/models/CommunityPost.js';
+import { Course } from '../src/models/Course.js';
 import { UploadedMedia } from '../src/models/UploadedMedia.js';
 import { getMediaFromDb, saveMediaToDb } from '../src/routes/uploads.js';
 
@@ -142,6 +144,53 @@ test('job applicant PII and mutations require authenticated ownership', async ()
   } finally {
     server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
     User.findById=oldFind;mongoose.connection.readyState=oldState;
+    if(oldEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldEnv;
+  }
+});
+
+test('course mutations and allocation require creator ownership', async () => {
+  const oldEnv=process.env.NODE_ENV, oldFind=User.findById, oldState=mongoose.connection.readyState;
+  const oldCourseFind=Course.findOne, oldCourseFindById=Course.findById, oldCourseUpdate=Course.findOneAndUpdate;
+  process.env.NODE_ENV='production';mongoose.connection.readyState=0;
+  const users={
+    mentor:{_id:'mentor',name:'Course Owner',email:'mentor@example.test',role:'mentor',isApproved:true},
+    student:{_id:'student',name:'Learner',email:'student@example.test',role:'student',enrolledCourses:[]},
+    other:{_id:'other',name:'Other User',email:'other@example.test',role:'student'},
+    admin:{_id:'admin',name:'Administrator',email:'admin@example.test',role:'admin'}
+  };
+  User.findById=(id)=>({select:()=>({lean:async()=>users[String(id)]||null})});
+  Course.findOne=()=>({lean:async()=>null});Course.findById=async()=>null;Course.findOneAndUpdate=()=>({lean:async()=>null});
+  const course={id:'course-1',customId:'course-1',title:'Owned Course',price:'₹999',mentorId:'mentor',status:'Active'};
+  const app=express();app.use(express.json());app.locals.memoryStore={courses:[course],users:[users.student],notifications:[]};
+  app.use('/api/home',homeRouter);app.use('/api/admin',adminRouter);app.use('/api/government',governmentRouter);
+  const server=app.listen(0,'127.0.0.1');await once(server,'listening');
+  const base=`http://127.0.0.1:${server.address().port}/api`;
+  const token=(sub)=>jwt.sign({sub},process.env.JWT_SECRET||'tcm_local_dev_secret_change_before_production');
+  const auth=(sub)=>({'Content-Type':'application/json',Authorization:`Bearer ${token(sub)}`});
+  try {
+    assert.equal((await fetch(`${base}/home/courses`,{method:'POST',headers:auth('student'),body:JSON.stringify({title:'Unauthorized'})})).status,403);
+    assert.equal((await fetch(`${base}/home/webinars`,{method:'POST',headers:auth('student'),body:JSON.stringify({title:'Unauthorized',description:'No'})})).status,403);
+    assert.equal((await fetch(`${base}/home/courses/course-1`,{method:'PUT',headers:auth('other'),body:JSON.stringify({title:'Hijacked'})})).status,404);
+    const updated=await fetch(`${base}/home/courses/course-1`,{method:'PUT',headers:auth('mentor'),body:JSON.stringify({title:'Owner Update'})});
+    assert.equal(updated.status,200);assert.equal(course.title,'Owner Update');
+
+    const allocationBody=JSON.stringify({studentId:'student',courseId:'course-1'});
+    assert.equal((await fetch(`${base}/admin/allocate-course`,{method:'POST',headers:auth('student'),body:allocationBody})).status,403);
+    assert.equal((await fetch(`${base}/admin/allocate-course`,{method:'POST',headers:auth('mentor'),body:allocationBody})).status,200);
+    assert.equal(users.student.enrolledCourses.length,1);assert.equal(users.student.enrolledCourses[0].courseTitle,'Owner Update');
+
+    const scheduleBody=JSON.stringify({status:'Active',nextClassDate:'Tomorrow'});
+    assert.equal((await fetch(`${base}/admin/courses/course-1/schedule`,{method:'PATCH',headers:auth('other'),body:scheduleBody})).status,403);
+    assert.equal((await fetch(`${base}/admin/courses/course-1/schedule`,{method:'PATCH',headers:auth('mentor'),body:scheduleBody})).status,200);
+
+    assert.equal((await fetch(`${base}/home/wallet/add-money`,{method:'POST',headers:auth('student'),body:JSON.stringify({amount:100000})})).status,503);
+    assert.equal((await fetch(`${base}/home/wallet/convert-referral`,{method:'POST',headers:auth('student'),body:JSON.stringify({friendName:'Fake'})})).status,503);
+    assert.equal((await fetch(`${base}/government/sources/sync`,{method:'POST',headers:auth('student'),body:JSON.stringify({sourceId:'source'})})).status,403);
+    assert.equal((await fetch(`${base}/government/sources/sync`,{method:'POST',headers:auth('admin'),body:JSON.stringify({sourceId:'source'})})).status,501);
+  } finally {
+    server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
+    User.findById=oldFind;Course.findOne=oldCourseFind;Course.findById=oldCourseFindById;Course.findOneAndUpdate=oldCourseUpdate;
+    mongoose.connection.readyState=oldState;
     if(oldEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldEnv;
   }
 });

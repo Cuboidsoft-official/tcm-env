@@ -1264,6 +1264,12 @@ governmentRouter.get("/sources", async (req, res) => {
 
 governmentRouter.post("/sources/sync", requireAuth, async (req, res) => {
   try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Administrator access is required." });
+    }
+    if (process.env.NODE_ENV === "production") {
+      return res.status(501).json({ success: false, message: "Source synchronization is not configured." });
+    }
     const { sourceId } = req.body;
     return res.json({
       success: true,
@@ -1429,4 +1435,3 @@ governmentRouter.post("/mock-tests/:id/submit", async (req, res) => {
     return res.status(500).json({ success: false, message: "Failed to process test submission." });
   }
 });
-

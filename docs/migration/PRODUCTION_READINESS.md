@@ -16,6 +16,7 @@ Status: **NO-GO for live cutover; staging implementation is verified.**
 - Production creates daily checksum-protected logical Mongo/media/config backups, retains seven days on the backend and fourteen days on the sentinel, and checks external health plus backup freshness every five minutes. The 2026-09-23 backup and private-network replication completed successfully.
 - A private, versioned OCI Object Storage bucket now retains 35 days. Its first write-once acceptance run uploaded and remotely verified the four current snapshot artifacts (265,041,685 bytes); the daily timer and 30-hour freshness monitor are active.
 - Production admin self-registration is disabled unless explicitly enabled with a configured secret. Job mutations and applicant details now require authenticated owner/admin access; applicant identity is server-derived and public job responses exclude contact and resume data.
+- Course creation requires an approved content-creator role, and course updates, schedules, deletion and allocation require creator/admin ownership. Production wallet credit, withdrawal, coin and referral mutations now fail closed instead of reporting non-persistent financial success; the real migrated ledger/payment workflow remains a launch blocker.
 
 ## Launch blockers
 

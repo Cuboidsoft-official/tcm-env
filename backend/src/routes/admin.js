@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import express from "express";
 import { rateLimit } from "express-rate-limit";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import { User } from "../models/User.js";
 import { Mentor } from "../models/Mentor.js";
 import { Course } from "../models/Course.js";
@@ -22,6 +23,31 @@ const adminAuthRateLimit = rateLimit({
   standardHeaders: "draft-8",
   legacyHeaders: false
 });
+
+function adminUserId(user) {
+  return String(user?._id || user?.id || "");
+}
+
+function canManageCourse(user, course) {
+  if (!user || !course) return false;
+  if (user.role === "admin") return true;
+  if (user.role !== "mentor" && user.role !== "partner") return false;
+  if (user.role === "mentor" && user.isApproved === false) return false;
+  return Boolean(adminUserId(user) && String(course.mentorId || "") === adminUserId(user));
+}
+
+async function findCourseForAuthorization(req, courseId) {
+  const memoryCandidates = [
+    ...(req.app.locals.memoryStore?.courses || []),
+    ...(req.app.locals.globalCourses || [])
+  ];
+  const memoryCourse = memoryCandidates.find((course) => String(course.id || course._id || course.customId) === String(courseId));
+  if (memoryCourse) return memoryCourse;
+
+  const options = [{ customId: courseId }, { id: courseId }];
+  if (mongoose.Types.ObjectId.isValid(courseId)) options.unshift({ _id: courseId });
+  try { return await Course.findOne({ $or: options }); } catch (error) { return null; }
+}
 
 function signAdminToken(user) {
   return jwt.sign(
@@ -930,6 +956,17 @@ adminRouter.post("/allocate-course", requireAuth, async (req, res) => {
     if (!studentEmail && !studentId) {
       return res.status(400).json({ message: "Student Email or Student ID is required." });
     }
+    if (!courseId) {
+      return res.status(400).json({ message: "A valid Course ID is required." });
+    }
+
+    const managedCourse = await findCourseForAuthorization(req, courseId);
+    if (!managedCourse) {
+      return res.status(404).json({ message: "Course not found." });
+    }
+    if (!canManageCourse(req.user, managedCourse)) {
+      return res.status(403).json({ message: "Only the course owner or an administrator can allocate this course." });
+    }
 
     const memoryStore = req.app.locals.memoryStore;
     let student = null;
@@ -958,9 +995,9 @@ adminRouter.post("/allocate-course", requireAuth, async (req, res) => {
       student.enrolledCourses = [];
     }
 
-    const targetCourseId = courseId || `c-${Date.now()}`;
-    const targetCourseTitle = courseTitle || "Full Stack Web Development Masterclass";
-    const targetCoursePrice = coursePrice || "₹4,999";
+    const targetCourseId = courseId;
+    const targetCourseTitle = managedCourse.title || courseTitle || "Course";
+    const targetCoursePrice = managedCourse.price || coursePrice || "₹0";
 
     const alreadyEnrolled = student.enrolledCourses.some(
       (c) => String(c.id || c.courseId) === String(targetCourseId) || c.courseTitle === targetCourseTitle
@@ -1030,17 +1067,13 @@ adminRouter.patch("/courses/:id/schedule", requireAuth, async (req, res) => {
     }
 
     if (!course) {
-      course = {
-        id,
-        title: "Full Stack Web Development Masterclass",
-        status: "Active",
-        nextClassDate: "Tomorrow",
-        nextClassTime: "10:00 AM"
-      };
-      if (memoryStore) {
-        if (!Array.isArray(memoryStore.courses)) memoryStore.courses = [];
-        memoryStore.courses.push(course);
-      }
+      course = await findCourseForAuthorization(req, id);
+    }
+    if (!course) {
+      return res.status(404).json({ message: "Course not found." });
+    }
+    if (!canManageCourse(req.user, course)) {
+      return res.status(403).json({ message: "Only the course owner or an administrator can update its schedule." });
     }
 
     if (status) course.status = status;

@@ -25,6 +25,7 @@ function userId(user) {
 function canManageJob(user, job) {
   if (!user || !job) return false;
   if (user.role === "admin") return true;
+  if (!canCreateJob(user) || (user.role === "mentor" && user.isApproved === false)) return false;
   return Boolean(userId(user) && String(job.mentorId || "") === userId(user));
 }
 

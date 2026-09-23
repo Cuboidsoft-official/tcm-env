@@ -28,6 +28,45 @@ import { resolveMediaUrl } from "./uploads.js";
 
 export const homeRouter = express.Router();
 
+function authenticatedUserId(user) {
+  return String(user?._id || user?.id || "");
+}
+
+function canCreateLearningContent(user) {
+  if (!user) return false;
+  if (user.role === "admin" || user.role === "partner") return true;
+  return user.role === "mentor" && user.isApproved !== false;
+}
+
+function canManageCourse(user, course) {
+  if (!user || !course) return false;
+  if (user.role === "admin") return true;
+  if (!canCreateLearningContent(user)) return false;
+  const id = authenticatedUserId(user);
+  return Boolean(id && String(course.mentorId || "") === id);
+}
+
+function courseIdentityQuery(courseId) {
+  const options = [{ customId: courseId }, { id: courseId }];
+  if (mongoose.Types.ObjectId.isValid(courseId)) options.unshift({ _id: courseId });
+  return { $or: options };
+}
+
+function authorizedCourseQuery(user, courseId) {
+  const identity = courseIdentityQuery(courseId);
+  if (user?.role === "admin") return identity;
+  return { $and: [identity, { mentorId: authenticatedUserId(user) }] };
+}
+
+function findAuthorizedMemoryCourse(req, courseId) {
+  const candidates = [
+    ...(req.app.locals.globalCourses || []),
+    ...(req.app.locals.memoryStore?.courses || [])
+  ];
+  const course = candidates.find((item) => String(item.id || item._id || item.customId) === String(courseId));
+  return canManageCourse(req.user, course) ? course : null;
+}
+
 function getUnreadNotifCount(req, userId) {
   if (!userId) return 0;
   const uId = String(userId);
@@ -1533,8 +1572,8 @@ homeRouter.post("/post/:postId/comment/:commentId/like", requireAuth, async (req
 });
 
 homeRouter.post("/courses", requireAuth, async (req, res) => {
-  if (req.user.role === "mentor" && req.user.isApproved === false) {
-    return res.status(403).json({ message: "Your mentor account is pending admin approval. You cannot add courses until approved." });
+  if (!canCreateLearningContent(req.user)) {
+    return res.status(403).json({ message: "An approved mentor, partner, or administrator account is required." });
   }
 
   const memoryStore = req.app.locals.memoryStore;
@@ -1587,6 +1626,9 @@ homeRouter.post("/courses", requireAuth, async (req, res) => {
     courseObj._id = dbCourse._id;
   } catch (dbErr) {
     console.warn("Could not save Course to MongoDB database:", dbErr);
+    if (process.env.NODE_ENV === "production") {
+      return res.status(503).json({ message: "Course could not be saved. Please try again." });
+    }
   }
 
   // 2. Save in memoryStore & app locals
@@ -1666,6 +1708,14 @@ homeRouter.post("/courses/:courseId/schedule-live", requireAuth, async (req, res
       return res.status(400).json({ message: "Meeting URL, Recorded Video URL or PDF Notes Link is required." });
     }
 
+    const query = authorizedCourseQuery(req.user, courseId);
+    let databaseCourse = null;
+    try { databaseCourse = await Course.findOne(query).lean(); } catch (e) {}
+    const memoryCourse = findAuthorizedMemoryCourse(req, courseId);
+    if (!databaseCourse && !memoryCourse) {
+      return res.status(404).json({ message: "Course not found or you do not manage it." });
+    }
+
     const liveData = {
       topic: topic || "Daily Live Session",
       meetingUrl: (meetingUrl || "").trim(),
@@ -1714,7 +1764,7 @@ homeRouter.post("/courses/:courseId/schedule-live", requireAuth, async (req, res
     // Update in MongoDB
     try {
       await Course.findOneAndUpdate(
-        { $or: [{ customId: courseId }, { _id: courseId }] },
+        query,
         { $set: { activeLiveClass: liveData } },
         { new: true }
       );
@@ -1735,24 +1785,20 @@ homeRouter.post("/courses/:courseId/schedule-live", requireAuth, async (req, res
 // GET /home/mentor/courses - Fetch all courses created by the logged-in mentor
 homeRouter.get("/mentor/courses", requireAuth, async (req, res) => {
   try {
-    const mentorId = String(req.user?.id || req.user?._id || "");
-    const mentorName = req.user?.name || "";
+    if (!canCreateLearningContent(req.user)) {
+      return res.status(403).json({ message: "An approved mentor, partner, or administrator account is required." });
+    }
+    const mentorId = authenticatedUserId(req.user);
 
     let dbCourses = [];
     try {
-      dbCourses = await Course.find({
-        $or: [
-          { mentorId: mentorId },
-          { mentorName: mentorName },
-          { "mentor.name": mentorName }
-        ]
-      }).sort({ createdAt: -1 }).lean();
+      dbCourses = await Course.find(req.user.role === "admin" ? {} : { mentorId }).sort({ createdAt: -1 }).lean();
     } catch (e) {}
 
     // Combine with global created courses in memory
     const globalCourses = req.app.locals.globalCourses || [];
     const memoryStoreCourses = req.app.locals.memoryStore?.courses || [];
-    const allCourses = [...dbCourses, ...globalCourses, ...memoryStoreCourses];
+    const allCourses = [...dbCourses, ...globalCourses, ...memoryStoreCourses].filter((course) => canManageCourse(req.user, course));
 
     // Deduplicate and format modules
     const uniqueCourses = [];
@@ -1802,6 +1848,9 @@ homeRouter.get("/mentor/courses", requireAuth, async (req, res) => {
 });
 
 homeRouter.post("/webinars", requireAuth, async (req, res) => {
+  if (!canCreateLearningContent(req.user)) {
+    return res.status(403).json({ message: "An approved mentor, partner, or administrator account is required." });
+  }
   const memoryStore = req.app.locals.memoryStore;
   const {
     eventType = "Webinar",
@@ -1856,6 +1905,9 @@ homeRouter.post("/webinars", requireAuth, async (req, res) => {
     webinarObj._id = dbWebinar._id;
   } catch (dbErr) {
     console.warn("Could not save Webinar to MongoDB database:", dbErr);
+    if (process.env.NODE_ENV === "production") {
+      return res.status(503).json({ message: "Webinar could not be saved. Please try again." });
+    }
   }
 
   if (!req.app.locals.globalWebinars) {
@@ -1905,10 +1957,7 @@ homeRouter.put("/courses/:courseId", requireAuth, async (req, res) => {
   }
   if (modules && Array.isArray(modules)) updateFields.modules = modules;
 
-  const query = { $or: [{ customId: courseId }, { id: courseId }] };
-  if (mongoose.Types.ObjectId.isValid(courseId)) {
-    query.$or.unshift({ _id: courseId });
-  }
+  const query = authorizedCourseQuery(req.user, courseId);
 
   // 1. Update in MongoDB Database
   let updatedCourse = null;
@@ -1923,10 +1972,13 @@ homeRouter.put("/courses/:courseId", requireAuth, async (req, res) => {
   }
 
   // 2. Update memoryStore & globalCourses
-  const allLiveCourses = (memoryStore?.courses || []).concat(req.app.locals.globalCourses || []);
-  const memoryCourse = allLiveCourses.find((c) => String(c.id || c._id || c.customId) === String(courseId));
+  const memoryCourse = findAuthorizedMemoryCourse(req, courseId);
   if (memoryCourse) {
     Object.assign(memoryCourse, updateFields);
+  }
+
+  if (!updatedCourse && !memoryCourse) {
+    return res.status(404).json({ message: "Course not found or you do not manage it." });
   }
 
   // 3. Update in globalPopularCourses & popularCourses
@@ -1947,23 +1999,22 @@ homeRouter.put("/courses/:courseId", requireAuth, async (req, res) => {
 });
 
 homeRouter.delete("/courses/:courseId", requireAuth, async (req, res) => {
-  if (req.user.role === "mentor" && req.user.isApproved === false) {
-    return res.status(403).json({ message: "Your mentor account is pending admin approval. You cannot delete courses until approved." });
-  }
-
   try {
     const { courseId } = req.params;
     const memoryStore = req.app.locals.memoryStore;
 
     // 1. Delete from MongoDB Database if present
+    let deletedCount = 0;
     try {
-      const query = { $or: [{ customId: courseId }, { id: courseId }] };
-      if (mongoose.Types.ObjectId.isValid(courseId)) {
-        query.$or.unshift({ _id: courseId });
-      }
-      await Course.deleteOne(query);
+      const result = await Course.deleteOne(authorizedCourseQuery(req.user, courseId));
+      deletedCount = result.deletedCount || 0;
     } catch (e) {
       console.warn("Course.deleteOne error:", e);
+    }
+
+    const memoryCourse = findAuthorizedMemoryCourse(req, courseId);
+    if (!deletedCount && !memoryCourse) {
+      return res.status(404).json({ message: "Course not found or you do not manage it." });
     }
 
     // 2. Remove from MemoryStore & App Locals
@@ -3703,12 +3754,19 @@ function getOrCreateUserWallet(req, userId) {
   return req.app.locals.wallets[uId];
 }
 
+function rejectUnimplementedFinancialMutation(res) {
+  if (process.env.NODE_ENV !== "production") return false;
+  res.status(503).json({ message: "Wallet mutations are unavailable until verified payment and ledger processing is enabled." });
+  return true;
+}
+
 homeRouter.get("/wallet", requireAuth, (req, res) => {
   const wallet = getOrCreateUserWallet(req, req.user._id || req.user.id);
   res.json({ wallet });
 });
 
 homeRouter.post("/wallet/withdraw", requireAuth, (req, res) => {
+  if (rejectUnimplementedFinancialMutation(res)) return;
   const wallet = getOrCreateUserWallet(req, req.user._id || req.user.id);
   const { amount = 0, upiId = "" } = req.body;
   const amt = parseFloat(amount);
@@ -3736,6 +3794,7 @@ homeRouter.post("/wallet/withdraw", requireAuth, (req, res) => {
 });
 
 homeRouter.post("/wallet/add-money", requireAuth, (req, res) => {
+  if (rejectUnimplementedFinancialMutation(res)) return;
   const wallet = getOrCreateUserWallet(req, req.user._id || req.user.id);
   const { amount = 0 } = req.body;
   const amt = parseFloat(amount);
@@ -3763,6 +3822,7 @@ homeRouter.post("/wallet/add-money", requireAuth, (req, res) => {
 });
 
 homeRouter.post("/wallet/convert-coins", requireAuth, (req, res) => {
+  if (rejectUnimplementedFinancialMutation(res)) return;
   const wallet = getOrCreateUserWallet(req, req.user._id || req.user.id);
   const { coins = 100 } = req.body;
   const coinsToConvert = parseInt(coins, 10) || 100;
@@ -3793,6 +3853,7 @@ homeRouter.post("/wallet/convert-coins", requireAuth, (req, res) => {
 });
 
 homeRouter.post("/wallet/convert-referral", requireAuth, (req, res) => {
+  if (rejectUnimplementedFinancialMutation(res)) return;
   const wallet = getOrCreateUserWallet(req, req.user._id || req.user.id);
   const { referralId, friendName } = req.body;
   const bonusCash = 500.0;
