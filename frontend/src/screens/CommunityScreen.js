@@ -1969,7 +1969,7 @@ function JobCardItem({ job, theme, isMentor, currentUserIdStr, handleDeleteJob, 
   const reqCount = job.requiredCandidates || 1;
   const fillPercent = Math.min(100, Math.round((appliedCount / reqCount) * 100));
   const isValidBanner = job.imageUrl && !(Platform.OS === "web" && typeof job.imageUrl === "string" && job.imageUrl.startsWith("file://"));
-  const hasApplied = Array.isArray(job.applicants) && job.applicants.some((a) => String(a.userId || a.id) === currentUserIdStr);
+  const hasApplied = Boolean(job.hasApplied) || (Array.isArray(job.applicants) && job.applicants.some((a) => String(a.userId || a.id) === currentUserIdStr));
 
   return (
     <View

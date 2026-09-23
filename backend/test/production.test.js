@@ -10,6 +10,8 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { homeRouter } from '../src/routes/home.js';
+import { adminRouter } from '../src/routes/admin.js';
+import { jobsRouter } from '../src/routes/jobs.js';
 import { User } from '../src/models/User.js';
 import { CommunityPost } from '../src/models/CommunityPost.js';
 import { UploadedMedia } from '../src/models/UploadedMedia.js';
@@ -72,5 +74,74 @@ test('media restoration returns bytes and oversized files skip BSON storage', as
   } finally {
     mongoose.connection.readyState=oldState;UploadedMedia.findOne=oldFind;UploadedMedia.findOneAndUpdate=oldUpdate;
     fs.rmSync(dir,{recursive:true,force:true});
+  }
+});
+
+test('production admin self-registration is disabled by default', async () => {
+  const oldEnv=process.env.NODE_ENV, oldSignup=process.env.ADMIN_SIGNUP_ENABLED;
+  process.env.NODE_ENV='production';delete process.env.ADMIN_SIGNUP_ENABLED;
+  const app=express();app.use(express.json());app.use('/api/admin',adminRouter);
+  const server=app.listen(0,'127.0.0.1');await once(server,'listening');
+  try {
+    const response=await fetch(`http://127.0.0.1:${server.address().port}/api/admin/signup`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:'Unauthorized Admin',email:'attacker@example.test',password:'password123'})
+    });
+    assert.equal(response.status,403);
+    assert.match((await response.json()).message,/disabled/i);
+  } finally {
+    server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
+    if(oldEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldEnv;
+    if(oldSignup===undefined)delete process.env.ADMIN_SIGNUP_ENABLED;else process.env.ADMIN_SIGNUP_ENABLED=oldSignup;
+  }
+});
+
+test('job applicant PII and mutations require authenticated ownership', async () => {
+  const oldEnv=process.env.NODE_ENV, oldFind=User.findById, oldState=mongoose.connection.readyState;
+  process.env.NODE_ENV='production';mongoose.connection.readyState=0;
+  const users={
+    mentor:{_id:'mentor',name:'Verified Mentor',email:'mentor@example.test',role:'mentor',isApproved:true},
+    student:{_id:'student',name:'Real Student',email:'student@example.test',role:'student'},
+    other:{_id:'other',name:'Other Student',email:'other@example.test',role:'student'}
+  };
+  User.findById=(id)=>({select:()=>({lean:async()=>users[String(id)]||null})});
+  const app=express();app.use(express.json());app.locals.memoryStore={jobs:[{
+    id:'job-1',title:'Security Engineer',description:'Protect systems',mentorId:'mentor',mentorName:'Verified Mentor',
+    requiredCandidates:2,status:'active',applicants:[{userId:'student',name:'Real Student',email:'student@example.test',phone:'123',status:'pending'}]
+  }]};app.use('/api/jobs',jobsRouter);
+  const server=app.listen(0,'127.0.0.1');await once(server,'listening');
+  const base=`http://127.0.0.1:${server.address().port}/api/jobs`;
+  const token=(sub)=>jwt.sign({sub},process.env.JWT_SECRET||'tcm_local_dev_secret_change_before_production');
+  const auth=(sub)=>({'Content-Type':'application/json',Authorization:`Bearer ${token(sub)}`});
+  try {
+    const publicList=await (await fetch(base)).json();
+    assert.equal(publicList.jobs[0].applicants,undefined);
+    assert.equal(publicList.jobs[0].appliedCandidates,1);
+    assert.equal((await fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).status,401);
+
+    const studentList=await (await fetch(base,{headers:auth('student')})).json();
+    assert.equal(studentList.jobs[0].hasApplied,true);
+    assert.equal(studentList.jobs[0].applicants,undefined);
+    assert.equal((await fetch(`${base}/job-1/applicants`,{headers:auth('student')})).status,403);
+
+    const applied=await fetch(`${base}/job-1/apply`,{
+      method:'POST',headers:auth('other'),
+      body:JSON.stringify({userId:'spoofed',name:'Spoofed',email:'spoofed@example.test',phone:'456'})
+    });
+    assert.equal(applied.status,200);
+    const stored=app.locals.memoryStore.jobs[0].applicants[0];
+    assert.equal(stored.userId,'other');assert.equal(stored.name,'Other Student');assert.equal(stored.email,'other@example.test');
+
+    assert.equal((await fetch(`${base}/job-1/applicants/other/status`,{method:'PUT',headers:auth('student'),body:JSON.stringify({status:'selected'})})).status,403);
+    const managed=await fetch(`${base}/job-1/applicants/other/status`,{method:'PUT',headers:auth('mentor'),body:JSON.stringify({status:'selected'})});
+    assert.equal(managed.status,200);
+    const applicants=await (await fetch(`${base}/job-1/applicants`,{headers:auth('mentor')})).json();
+    assert.equal(applicants.applicants.length,2);assert.equal(applicants.applicants[0].status,'selected');
+    const edited=await fetch(`${base}/job-1`,{method:'PUT',headers:auth('mentor'),body:JSON.stringify({title:'Updated title',mentorId:'other',applicants:[]})});
+    assert.equal(edited.status,200);assert.equal(app.locals.memoryStore.jobs[0].mentorId,'mentor');assert.equal(app.locals.memoryStore.jobs[0].applicants.length,2);
+  } finally {
+    server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
+    User.findById=oldFind;mongoose.connection.readyState=oldState;
+    if(oldEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldEnv;
   }
 });

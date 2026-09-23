@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import express from "express";
+import { rateLimit } from "express-rate-limit";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
 import { Mentor } from "../models/Mentor.js";
@@ -15,6 +16,12 @@ export const adminRouter = express.Router();
 const TOKEN_ISSUER = "tcm";
 const TOKEN_AUDIENCE = "tcm-app";
 const JWT_SECRET = process.env.JWT_SECRET || "tcm_local_dev_secret_change_before_production";
+const adminAuthRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false
+});
 
 function signAdminToken(user) {
   return jwt.sign(
@@ -42,7 +49,11 @@ export async function requireAdmin(req, res, next) {
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      algorithms: ["HS256"],
+      issuer: TOKEN_ISSUER,
+      audience: TOKEN_AUDIENCE
+    });
 
     if (decoded.role !== "admin") {
       return res.status(403).json({ message: "Access denied. Admin rights required." });
@@ -56,7 +67,7 @@ export async function requireAdmin(req, res, next) {
 }
 
 // Admin Login
-adminRouter.post("/login", async (req, res) => {
+adminRouter.post("/login", adminAuthRateLimit, async (req, res) => {
   try {
     const memoryStore = req.app.locals.memoryStore;
     const { email, password } = req.body;
@@ -115,17 +126,24 @@ adminRouter.post("/login", async (req, res) => {
 });
 
 // Admin Signup (Create new admin account)
-adminRouter.post("/signup", async (req, res) => {
+adminRouter.post("/signup", adminAuthRateLimit, async (req, res) => {
   try {
     const memoryStore = req.app.locals.memoryStore;
     const { name, email, password, adminSecret } = req.body;
+
+    if (process.env.NODE_ENV === "production" && process.env.ADMIN_SIGNUP_ENABLED !== "true") {
+      return res.status(403).json({ message: "Administrator self-registration is disabled." });
+    }
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Name, email, and password are required" });
     }
 
-    const expectedSecret = process.env.ADMIN_SECRET || "TCM_ADMIN_KEY_2026";
-    if (adminSecret && adminSecret !== expectedSecret) {
+    const expectedSecret = process.env.ADMIN_SECRET || (process.env.NODE_ENV === "production" ? "" : "TCM_ADMIN_KEY_2026");
+    if (!expectedSecret) {
+      return res.status(503).json({ message: "Administrator registration is not configured." });
+    }
+    if (adminSecret !== expectedSecret) {
       return res.status(403).json({ message: "Invalid admin registration key" });
     }
 
@@ -1223,4 +1241,3 @@ adminRouter.post("/government/questions/import", requireAdmin, async (req, res) 
     return res.status(500).json({ message: "Bulk import failed", error: err.message });
   }
 });
-
