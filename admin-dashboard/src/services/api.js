@@ -100,6 +100,13 @@ export const adminApi = {
     }
   },
 
+  async getFinancialTransactions() {
+    const res = await fetch(`${API_BASE}/financial-transactions`, { headers: getHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Could not fetch financial transactions');
+    return data;
+  },
+
   async approveMentor(id) {
     const res = await fetch(`${API_BASE}/mentors/${id}/approve`, {
       method: 'PATCH',

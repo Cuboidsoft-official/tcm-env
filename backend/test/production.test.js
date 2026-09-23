@@ -16,6 +16,10 @@ import { governmentRouter } from '../src/routes/government.js';
 import { User } from '../src/models/User.js';
 import { CommunityPost } from '../src/models/CommunityPost.js';
 import { Course } from '../src/models/Course.js';
+import { Wallet } from '../src/models/Wallet.js';
+import { WalletTransaction } from '../src/models/WalletTransaction.js';
+import { Payment } from '../src/models/Payment.js';
+import { Enrollment } from '../src/models/Enrollment.js';
 import { UploadedMedia } from '../src/models/UploadedMedia.js';
 import { getMediaFromDb, saveMediaToDb } from '../src/routes/uploads.js';
 
@@ -190,6 +194,50 @@ test('course mutations and allocation require creator ownership', async () => {
   } finally {
     server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
     User.findById=oldFind;Course.findOne=oldCourseFind;Course.findById=oldCourseFindById;Course.findOneAndUpdate=oldCourseUpdate;
+    mongoose.connection.readyState=oldState;
+    if(oldEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldEnv;
+  }
+});
+
+test('migrated wallet and financial records are exposed through authenticated read paths', async () => {
+  const oldEnv=process.env.NODE_ENV, oldFind=User.findById, oldState=mongoose.connection.readyState;
+  const oldWalletFind=Wallet.findOne, oldTransactionFind=WalletTransaction.find, oldPaymentFind=Payment.find;
+  const oldEnrollmentFind=Enrollment.find, oldCourseFind=Course.find;
+  process.env.NODE_ENV='production';mongoose.connection.readyState=1;
+  const user={_id:'507f1f77bcf86cd799439011',name:'Migrated User',email:'migrated@example.test',role:'student'};
+  User.findById=()=>({select:()=>({lean:async()=>user}),lean:async()=>user});
+  Wallet.findOne=()=>({lean:async()=>({_id:'wallet-1',currency:'INR',balance:750,pendingBalance:50,metadata:{tcmCoins:25}})});
+  const chain=(rows)=>{const query={populate:()=>query,sort:()=>query,limit:()=>query,lean:async()=>rows};return query;};
+  WalletTransaction.find=()=>chain([{_id:'tx-1',userId:user,type:'credit',amount:750,balanceAfter:750,description:'Imported balance',referenceType:'migration',createdAt:new Date('2026-09-22T00:00:00Z')}]);
+  Payment.find=()=>chain([{_id:'pay-1',userId:user,itemType:'course',amount:499,method:'UPI',status:'approved',paymentDate:new Date('2026-09-21T00:00:00Z')}]);
+  const migratedCourse={_id:'507f1f77bcf86cd799439012',customId:'legacy-course',title:'Migrated Python',price:'₹499',modules:[{id:'module-1',title:'Python Basics'}]};
+  Enrollment.find=()=>chain([{_id:'enrollment-1',userId:user._id,courseId:migratedCourse,status:'active',progressPercent:42,enrolledAt:new Date('2026-09-20T00:00:00Z')}]);
+  Course.find=()=>({lean:async()=>[migratedCourse]});
+  const app=express();app.use(express.json());app.use('/api/home',homeRouter);app.use('/api/admin',adminRouter);
+  const server=app.listen(0,'127.0.0.1');await once(server,'listening');
+  const base=`http://127.0.0.1:${server.address().port}/api`;
+  const secret=process.env.JWT_SECRET||'tcm_local_dev_secret_change_before_production';
+  const userToken=jwt.sign({sub:user._id},secret);
+  const adminToken=jwt.sign({sub:'admin',role:'admin'},secret,{issuer:'tcm',audience:'tcm-app'});
+  try {
+    const walletResponse=await fetch(`${base}/home/wallet`,{headers:{Authorization:`Bearer ${userToken}`}});
+    assert.equal(walletResponse.status,200);
+    const wallet=(await walletResponse.json()).wallet;
+    assert.equal(wallet.availableBalance,750);assert.equal(wallet.pendingBalance,50);assert.equal(wallet.transactions.length,1);
+
+    const financeResponse=await fetch(`${base}/admin/financial-transactions`,{headers:{Authorization:`Bearer ${adminToken}`}});
+    assert.equal(financeResponse.status,200);
+    const finance=await financeResponse.json();
+    assert.equal(finance.walletTransactionCount,1);assert.equal(finance.paymentCount,1);assert.equal(finance.transactions.length,2);
+
+    const learningResponse=await fetch(`${base}/home/continue-learning`,{headers:{Authorization:`Bearer ${userToken}`}});
+    assert.equal(learningResponse.status,200);
+    const learning=await learningResponse.json();
+    assert.equal(learning.courseTitle,'Migrated Python');assert.equal(learning.userProgress.courseProgress,42);
+  } finally {
+    server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
+    User.findById=oldFind;Wallet.findOne=oldWalletFind;WalletTransaction.find=oldTransactionFind;Payment.find=oldPaymentFind;
+    Enrollment.find=oldEnrollmentFind;Course.find=oldCourseFind;
     mongoose.connection.readyState=oldState;
     if(oldEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldEnv;
   }

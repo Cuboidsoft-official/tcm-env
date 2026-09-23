@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { IconDashboard } from '../components/Icons';
 
-export function WalletTransactionsView({ search = '' }) {
-  const [transactions, setTransactions] = useState([]);
-
+export function WalletTransactionsView({ transactions = [], search = '' }) {
   const filtered = transactions.filter((t) =>
     t.id?.toLowerCase().includes(search.toLowerCase()) ||
     t.user?.toLowerCase().includes(search.toLowerCase()) ||

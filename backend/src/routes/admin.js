@@ -9,6 +9,10 @@ import { Course } from "../models/Course.js";
 import { Job } from "../models/Job.js";
 import { Webinar } from "../models/Webinar.js";
 import { CommunityPost } from "../models/CommunityPost.js";
+import { Enrollment } from "../models/Enrollment.js";
+import { Program } from "../models/Program.js";
+import { Payment } from "../models/Payment.js";
+import { WalletTransaction } from "../models/WalletTransaction.js";
 import { publicUser } from "./auth.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -929,6 +933,43 @@ adminRouter.get("/enrollments", requireAdmin, async (req, res) => {
       });
     });
 
+    try {
+      const migratedEnrollments = await Enrollment.find({})
+        .populate("userId", "name email avatarUrl role")
+        .populate("courseId", "title price mentorName mentorRole modules")
+        .populate("programId", "title price")
+        .sort({ enrolledAt: -1, createdAt: -1 })
+        .lean();
+
+      migratedEnrollments.forEach((enrollment) => {
+        const user = enrollment.userId || {};
+        const learningItem = enrollment.courseId || enrollment.programId || {};
+        const id = String(enrollment._id);
+        if (realEnrollments.some((item) => item.id === id)) return;
+        const moduleCount = Array.isArray(learningItem.modules) ? learningItem.modules.length : 0;
+        const completedModules = Number(enrollment.metadata?.completedModules || 0);
+        realEnrollments.push({
+          id,
+          studentId: String(user._id || enrollment.userId),
+          studentName: user.name || enrollment.metadata?.studentName || "Learner",
+          studentEmail: user.email || enrollment.metadata?.studentEmail || "",
+          studentAvatar: user.avatarUrl || "",
+          courseId: String(learningItem._id || enrollment.courseId || enrollment.programId || ""),
+          courseTitle: learningItem.title || enrollment.metadata?.courseTitle || (enrollment.enrollmentType === "program" ? "Program" : "Course"),
+          coursePrice: learningItem.price || enrollment.metadata?.coursePrice || "₹0",
+          enrolledDate: enrollment.enrolledAt || enrollment.createdAt,
+          progressPercent: Number(enrollment.progressPercent || 0),
+          completedModules: moduleCount ? `${completedModules} / ${moduleCount} Modules` : `${completedModules} Modules`,
+          status: enrollment.status === "completed" ? "Completed" : enrollment.status === "active" ? "In Progress" : enrollment.status,
+          assignedMentorName: enrollment.courseId?.mentorName || enrollment.metadata?.assignedMentorName || "Unassigned",
+          assignedMentorTitle: enrollment.courseId?.mentorRole || enrollment.metadata?.assignedMentorTitle || "Educator",
+          sourceSystem: enrollment.sourceSystem
+        });
+      });
+    } catch (error) {
+      console.warn("Migrated enrollment admin lookup failed:", error.message);
+    }
+
     const totalProgress = realEnrollments.reduce((acc, curr) => acc + (curr.progressPercent || 0), 0);
     const avgProgress = realEnrollments.length ? (totalProgress / realEnrollments.length).toFixed(1) + "%" : "0%";
 
@@ -946,6 +987,48 @@ adminRouter.get("/enrollments", requireAdmin, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Could not fetch enrollments", error: error.message });
+  }
+});
+
+adminRouter.get("/financial-transactions", requireAdmin, async (req, res) => {
+  try {
+    const [walletTransactions, payments] = await Promise.all([
+      WalletTransaction.find({}).populate("userId", "name email").sort({ createdAt: -1 }).limit(500).lean(),
+      Payment.find({}).populate("userId", "name email").sort({ paymentDate: -1, createdAt: -1 }).limit(500).lean()
+    ]);
+
+    const transactions = [
+      ...walletTransactions.map((item) => ({
+        id: String(item._id),
+        user: item.userId?.name || "Unknown user",
+        email: item.userId?.email || "",
+        type: item.type,
+        referralCode: item.metadata?.referralCode || "",
+        referralCashback: item.referenceType === "referral" ? `₹${Number(item.amount || 0).toFixed(2)}` : "₹0",
+        amount: `₹${Number(item.amount || 0).toFixed(2)}`,
+        gateway: item.referenceType || "Wallet",
+        date: item.createdAt,
+        status: "Success",
+        source: "wallet"
+      })),
+      ...payments.map((item) => ({
+        id: String(item._id),
+        user: item.userId?.name || "Unknown user",
+        email: item.userId?.email || "",
+        type: `payment:${item.itemType || "other"}`,
+        referralCode: item.referralCode || "",
+        referralCashback: "₹0",
+        amount: `₹${Number(item.amount || 0).toFixed(2)}`,
+        gateway: item.method || "Manual",
+        date: item.paymentDate || item.createdAt,
+        status: item.status === "approved" ? "Success" : item.status,
+        source: "payment"
+      }))
+    ].sort((left, right) => new Date(right.date || 0) - new Date(left.date || 0));
+
+    res.json({ transactions, walletTransactionCount: walletTransactions.length, paymentCount: payments.length });
+  } catch (error) {
+    res.status(500).json({ message: "Could not fetch financial transactions", error: error.message });
   }
 });
 

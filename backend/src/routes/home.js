@@ -12,6 +12,9 @@ import { DoubtRoom } from "../models/DoubtRoom.js";
 import { KnowledgeBaseItem } from "../models/KnowledgeBaseItem.js";
 import { ClassReview } from "../models/ClassReview.js";
 import { Job } from "../models/Job.js";
+import { Enrollment } from "../models/Enrollment.js";
+import { Wallet } from "../models/Wallet.js";
+import { WalletTransaction } from "../models/WalletTransaction.js";
 import {
   registerPushToken,
   getInAppNotifications,
@@ -2815,6 +2818,27 @@ homeRouter.get("/continue-learning", requireAuth, async (req, res) => {
   const currentUser = dbUser || req.user || {};
   let enrolledList = currentUser.enrolledCourses || currentUser.allocatedCourses || [];
 
+  try {
+    const migratedEnrollments = await Enrollment.find({
+      userId,
+      courseId: { $exists: true, $ne: null },
+      status: { $in: ["active", "completed"] }
+    }).populate("courseId").sort({ enrolledAt: -1, createdAt: -1 }).lean();
+    if (migratedEnrollments.length > 0) {
+      enrolledList = migratedEnrollments.map((enrollment) => ({
+        id: String(enrollment._id),
+        courseId: String(enrollment.courseId?._id || enrollment.courseId),
+        courseTitle: enrollment.courseId?.title || enrollment.metadata?.courseTitle || "Enrolled Course",
+        coursePrice: enrollment.courseId?.price || enrollment.metadata?.coursePrice || "₹0",
+        progressPercent: enrollment.progressPercent || 0,
+        status: enrollment.status,
+        enrolledDate: enrollment.enrolledAt || enrollment.createdAt
+      }));
+    }
+  } catch (error) {
+    console.warn("Migrated enrollment lookup failed:", error.message);
+  }
+
   // Check memoryStore user enrolledCourses as fallback
   if ((!enrolledList || enrolledList.length === 0) && req.app.locals.memoryStore?.users) {
     const memUser = req.app.locals.memoryStore.users.find(
@@ -2944,7 +2968,7 @@ homeRouter.get("/continue-learning", requireAuth, async (req, res) => {
       ]
     },
     userProgress: {
-      courseProgress: 0,
+      courseProgress: Number(targetEnrolled.progressPercent || 0),
       dayStreak: 1,
       xpPoints: 0,
       certificates: 0
@@ -3761,8 +3785,46 @@ function rejectUnimplementedFinancialMutation(res) {
 }
 
 homeRouter.get("/wallet", requireAuth, (req, res) => {
-  const wallet = getOrCreateUserWallet(req, req.user._id || req.user.id);
-  res.json({ wallet });
+  const userId = req.user._id || req.user.id;
+  if (mongoose.connection.readyState !== 1) {
+    return res.json({ wallet: getOrCreateUserWallet(req, userId) });
+  }
+
+  Promise.all([
+    Wallet.findOne({ userId }).lean(),
+    WalletTransaction.find({ userId }).sort({ createdAt: -1 }).limit(100).lean()
+  ]).then(([wallet, transactions]) => {
+    if (!wallet) {
+      return res.json({ wallet: getOrCreateUserWallet(req, userId) });
+    }
+    const totalEarned = transactions.filter((item) => ["credit", "release"].includes(item.type)).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const totalWithdrawn = transactions.filter((item) => item.type === "debit").reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    return res.json({
+      wallet: {
+        id: String(wallet._id),
+        currency: wallet.currency || "INR",
+        totalBalance: Number(wallet.balance || 0),
+        availableBalance: Number(wallet.balance || 0),
+        pendingBalance: Number(wallet.pendingBalance || 0),
+        totalEarned,
+        totalWithdrawn,
+        tcmCoins: Number(wallet.metadata?.tcmCoins || 0),
+        referralCode: req.user.referralCode || "",
+        referrals: [],
+        transactions: transactions.map((item) => ({
+          id: String(item._id),
+          type: item.type,
+          title: item.description || item.referenceType || "Wallet transaction",
+          subtitle: item.referenceId || "",
+          amount: `${item.type === "debit" ? "-" : "+"} ₹${Number(item.amount || 0).toFixed(2)}`,
+          balanceAfter: item.balanceAfter,
+          date: item.createdAt,
+          referenceType: item.referenceType,
+          referenceId: item.referenceId
+        }))
+      }
+    });
+  }).catch((error) => res.status(500).json({ message: "Could not load wallet", error: error.message }));
 });
 
 homeRouter.post("/wallet/withdraw", requireAuth, (req, res) => {

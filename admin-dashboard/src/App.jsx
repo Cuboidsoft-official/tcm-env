@@ -38,20 +38,22 @@ export function App() {
   const [jobs, setJobs] = useState([]);
   const [partners, setPartners] = useState([]);
   const [enrollmentsData, setEnrollmentsData] = useState({});
+  const [financialTransactions, setFinancialTransactions] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
 
   const loadData = async () => {
     if (!adminUser) return;
     setLoadingData(true);
     try {
-      const [statsRes, mentorsRes, usersRes, coursesRes, jobsRes, partnersRes, enrollmentsRes] = await Promise.allSettled([
+      const [statsRes, mentorsRes, usersRes, coursesRes, jobsRes, partnersRes, enrollmentsRes, financialRes] = await Promise.allSettled([
         adminApi.getStats(),
         adminApi.getMentors('all'),
         adminApi.getUsers(),
         adminApi.getCourses(),
         adminApi.getJobs(),
         adminApi.getPartners(),
-        adminApi.getEnrollments()
+        adminApi.getEnrollments(),
+        adminApi.getFinancialTransactions()
       ]);
 
       if (statsRes.status === 'fulfilled') setStats(statsRes.value);
@@ -61,6 +63,7 @@ export function App() {
       if (jobsRes.status === 'fulfilled') setJobs(jobsRes.value);
       if (partnersRes.status === 'fulfilled') setPartners(partnersRes.value);
       if (enrollmentsRes.status === 'fulfilled') setEnrollmentsData(enrollmentsRes.value);
+      if (financialRes.status === 'fulfilled') setFinancialTransactions(financialRes.value.transactions || []);
     } catch (err) {
       console.warn('Backend loading warning:', err);
     } finally {
@@ -286,7 +289,7 @@ export function App() {
           )}
 
           {currentTab === 'wallet' && (
-            <WalletTransactionsView search={search} />
+            <WalletTransactionsView transactions={financialTransactions} search={search} />
           )}
 
           {currentTab === 'tickets' && (
