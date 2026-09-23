@@ -54,7 +54,7 @@ Restore into a new isolated database first using `mongorestore --gzip --archive=
 
 ## Monitoring
 
-Sentinel `tcm-health.timer` checks API/database health, website/admin HTML and replicated-backup freshness every five minutes. Failures appear in systemd and the journal:
+Sentinel `tcm-health.timer` checks API/database health, rolling five-minute backend 5xx and database-unavailable signals, failed/stale outbox work, website/admin HTML and replicated-backup freshness every five minutes. Authentication failures are exposed in the health metrics for diagnosis without making expected rejected requests an outage. Failures appear in systemd and the journal:
 
 ```bash
 sudo systemctl --failed

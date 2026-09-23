@@ -12,6 +12,16 @@ for url in ["https://api.thecodemunk.in/api/health", "https://app.thecodemunk.in
             health = json.loads(body)
             if not health.get("ok") or health.get("mongo") != 1:
                 raise RuntimeError("Backend database is unhealthy")
+            metrics = health.get("metrics", {})
+            requests = metrics.get("requests", 0)
+            server_errors = metrics.get("serverErrors", 0)
+            if requests >= 10 and server_errors >= 5 and server_errors / requests >= 0.2:
+                raise RuntimeError("Backend five-minute 5xx rate is unhealthy")
+            if metrics.get("databaseUnavailable", 0) > 0:
+                raise RuntimeError("Backend rejected requests because MongoDB was unavailable")
+            outbox = health.get("outbox", {})
+            if outbox.get("failed", 0) > 0 or outbox.get("stalePending", 0) > 0:
+                raise RuntimeError("Backend outbox has failed or stale events")
         elif b'<div id="root"' not in body:
             raise RuntimeError("Web application root missing: " + url)
 backups = list(pathlib.Path("/var/backups/tcm-backend").glob("20*T*Z/SHA256SUMS"))

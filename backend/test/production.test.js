@@ -27,6 +27,27 @@ import { CmsPost, Testimonial, AppSetting } from '../src/models/CmsContent.js';
 import { Notification } from '../src/models/Notification.js';
 import { UploadedMedia } from '../src/models/UploadedMedia.js';
 import { getMediaFromDb, saveMediaToDb } from '../src/routes/uploads.js';
+import { getOperationalMetrics, requestMetrics, resetOperationalMetrics } from '../src/services/operationalMetrics.js';
+
+test('operational metrics expose rolling HTTP and database failure signals', async () => {
+  resetOperationalMetrics();
+  const app=express();app.use(requestMetrics);
+  app.get('/ok',(req,res)=>res.json({ok:true}));
+  app.get('/unauthorized',(req,res)=>res.status(401).json({message:'no'}));
+  app.get('/error',(req,res)=>res.status(500).json({message:'failed'}));
+  app.get('/database',(req,res)=>{res.setHeader('x-tcm-database-unavailable','1');res.status(503).json({message:'database'});});
+  const server=app.listen(0,'127.0.0.1');await once(server,'listening');
+  const base=`http://127.0.0.1:${server.address().port}`;
+  try {
+    await fetch(`${base}/ok`);await fetch(`${base}/unauthorized`);await fetch(`${base}/error`);await fetch(`${base}/database`);
+    await new Promise(resolve=>setImmediate(resolve));
+    const metrics=getOperationalMetrics();
+    assert.equal(metrics.requests,4);assert.equal(metrics.clientErrors,1);assert.equal(metrics.serverErrors,2);
+    assert.equal(metrics.authFailures,1);assert.equal(metrics.databaseUnavailable,1);assert.equal(metrics.serverErrorRate,0.5);
+  } finally {
+    server.closeAllConnections();await new Promise(resolve=>server.close(resolve));resetOperationalMetrics();
+  }
+});
 
 test('production refuses database-free startup; development starts all routers', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tcm-startup-'));
