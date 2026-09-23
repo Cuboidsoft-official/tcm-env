@@ -8,6 +8,8 @@ Verified 2026-09-09 against OCI and both running servers.
 | Website and admin dashboard | `cynik-free-sentinel`, `140.245.249.14`, private `10.0.0.124` | Ubuntu, Caddy, atomic static releases |
 | Application database | MongoDB Atlas, database `tcm_ac` | External database, not stored on either VM |
 
+The production runtime authenticates as the dedicated `tcm_app_prod` database user with `readWrite` access limited to `tcm_ac`. The former shared `atlasAdmin` runtime user was revoked on 2026-09-23 after an overlap validation, atomic environment switch, service restart and external health check. Administrative migration work must use a separate temporary/operator identity rather than expanding the runtime account.
+
 The hosting tenancy has one subscribed region (`ap-hyderabad-1`) and these two running E2.1.Micro instances. Both have about 1 GiB RAM and 2 GiB swap. This is a small single-backend deployment, without automatic failover. Capacity/load testing and a separate-region disaster recovery deployment are not included.
 
 ## Runtime and deployment
