@@ -16,6 +16,7 @@ import { PurchasedCoursesView } from './views/PurchasedCoursesView';
 import { MentorAssignmentsView } from './views/MentorAssignmentsView';
 import { WalletTransactionsView } from './views/WalletTransactionsView';
 import { PartnerTicketsView } from './views/PartnerTicketsView';
+import { MigrationContentView } from './views/MigrationContentView';
 
 export function App() {
   const { adminUser } = useAuth();
@@ -39,13 +40,14 @@ export function App() {
   const [partners, setPartners] = useState([]);
   const [enrollmentsData, setEnrollmentsData] = useState({});
   const [financialTransactions, setFinancialTransactions] = useState([]);
+  const [migrationContent, setMigrationContent] = useState({ counts: {}, collections: {} });
   const [loadingData, setLoadingData] = useState(false);
 
   const loadData = async () => {
     if (!adminUser) return;
     setLoadingData(true);
     try {
-      const [statsRes, mentorsRes, usersRes, coursesRes, jobsRes, partnersRes, enrollmentsRes, financialRes] = await Promise.allSettled([
+      const [statsRes, mentorsRes, usersRes, coursesRes, jobsRes, partnersRes, enrollmentsRes, financialRes, migrationRes] = await Promise.allSettled([
         adminApi.getStats(),
         adminApi.getMentors('all'),
         adminApi.getUsers(),
@@ -53,7 +55,8 @@ export function App() {
         adminApi.getJobs(),
         adminApi.getPartners(),
         adminApi.getEnrollments(),
-        adminApi.getFinancialTransactions()
+        adminApi.getFinancialTransactions(),
+        adminApi.getMigrationContent()
       ]);
 
       if (statsRes.status === 'fulfilled') setStats(statsRes.value);
@@ -64,6 +67,7 @@ export function App() {
       if (partnersRes.status === 'fulfilled') setPartners(partnersRes.value);
       if (enrollmentsRes.status === 'fulfilled') setEnrollmentsData(enrollmentsRes.value);
       if (financialRes.status === 'fulfilled') setFinancialTransactions(financialRes.value.transactions || []);
+      if (migrationRes.status === 'fulfilled') setMigrationContent(migrationRes.value);
     } catch (err) {
       console.warn('Backend loading warning:', err);
     } finally {
@@ -225,6 +229,8 @@ export function App() {
         return 'Mentor-to-Student Course Assignments';
       case 'wallet':
         return 'Referrals, Wallet & Payment Transactions';
+      case 'migration-content':
+        return 'Migrated Programs, Leads, Events & Content';
       case 'tickets':
         return 'P-Support Tickets Management';
       case 'approvals':
@@ -290,6 +296,10 @@ export function App() {
 
           {currentTab === 'wallet' && (
             <WalletTransactionsView transactions={financialTransactions} search={search} />
+          )}
+
+          {currentTab === 'migration-content' && (
+            <MigrationContentView data={migrationContent} search={search} />
           )}
 
           {currentTab === 'tickets' && (

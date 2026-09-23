@@ -13,6 +13,10 @@ import { Enrollment } from "../models/Enrollment.js";
 import { Program } from "../models/Program.js";
 import { Payment } from "../models/Payment.js";
 import { WalletTransaction } from "../models/WalletTransaction.js";
+import { Lead } from "../models/Lead.js";
+import { Event } from "../models/Event.js";
+import { CmsPost, Testimonial, AppSetting } from "../models/CmsContent.js";
+import { Notification } from "../models/Notification.js";
 import { publicUser } from "./auth.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -1029,6 +1033,40 @@ adminRouter.get("/financial-transactions", requireAdmin, async (req, res) => {
     res.json({ transactions, walletTransactionCount: walletTransactions.length, paymentCount: payments.length });
   } catch (error) {
     res.status(500).json({ message: "Could not fetch financial transactions", error: error.message });
+  }
+});
+
+// Read-only operational view for collections introduced by the MySQL migration.
+// Values from AppSetting are deliberately excluded because legacy settings may
+// contain credentials or other deployment secrets.
+adminRouter.get("/migration-content", requireAdmin, async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 200, 1), 500);
+    const [programs, leads, events, posts, testimonials, settings, notifications] = await Promise.all([
+      Program.find({}).sort({ createdAt: -1 }).limit(limit).lean(),
+      Lead.find({}).populate("userId", "name email").sort({ createdAt: -1 }).limit(limit).lean(),
+      Event.find({}).populate("instructorId", "name email").sort({ eventDate: -1, createdAt: -1 }).limit(limit).lean(),
+      CmsPost.find({}).populate("authorId", "name email").sort({ publishedAt: -1, createdAt: -1 }).limit(limit).lean(),
+      Testimonial.find({}).sort({ sortOrder: 1, createdAt: -1 }).limit(limit).lean(),
+      AppSetting.find({}).select("key sourceSystem migrationBatchId createdAt updatedAt").sort({ key: 1 }).limit(limit).lean(),
+      Notification.find({}).populate("userId", "name email").sort({ createdAt: -1 }).limit(limit).lean()
+    ]);
+
+    const safeSettings = settings.map((item) => ({
+      _id: item._id,
+      key: item.key,
+      sourceSystem: item.sourceSystem,
+      migrationBatchId: item.migrationBatchId,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
+    }));
+    const collections = { programs, leads, events, posts, testimonials, settings: safeSettings, notifications };
+    const collectionModels = { programs: Program, leads: Lead, events: Event, posts: CmsPost, testimonials: Testimonial, settings: AppSetting, notifications: Notification };
+    const countValues = await Promise.all(Object.values(collectionModels).map((model) => model.countDocuments({})));
+    const counts = Object.fromEntries(Object.keys(collectionModels).map((name, index) => [name, countValues[index]]));
+    res.json({ counts, limit, collections });
+  } catch (error) {
+    res.status(500).json({ message: "Could not fetch migrated content", error: error.message });
   }
 });
 

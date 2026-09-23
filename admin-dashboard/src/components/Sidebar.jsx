@@ -19,6 +19,7 @@ export function Sidebar({ currentTab, setCurrentTab, pendingCount = 0 }) {
     { id: 'purchases', label: 'Purchased Courses', icon: IconCourses },
     { id: 'mentor-assignments', label: 'Mentor Assignments', icon: IconMentor },
     { id: 'wallet', label: 'Referrals & Wallet', icon: IconDashboard },
+    { id: 'migration-content', label: 'Migrated Content', icon: IconDashboard },
     { id: 'tickets', label: 'P-Support Tickets', icon: IconMentor },
     { id: 'approvals', label: 'Mentor Approvals', icon: IconMentor, badge: pendingCount },
     { id: 'partners', label: 'Partner Accounts', icon: IconUsers },

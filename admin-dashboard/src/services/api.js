@@ -107,6 +107,13 @@ export const adminApi = {
     return data;
   },
 
+  async getMigrationContent(limit = 200) {
+    const res = await fetch(`${API_BASE}/migration-content?limit=${limit}`, { headers: getHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Could not fetch migrated content');
+    return data;
+  },
+
   async approveMentor(id) {
     const res = await fetch(`${API_BASE}/mentors/${id}/approve`, {
       method: 'PATCH',

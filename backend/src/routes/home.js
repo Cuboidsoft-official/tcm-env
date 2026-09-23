@@ -15,6 +15,9 @@ import { Job } from "../models/Job.js";
 import { Enrollment } from "../models/Enrollment.js";
 import { Wallet } from "../models/Wallet.js";
 import { WalletTransaction } from "../models/WalletTransaction.js";
+import { Program } from "../models/Program.js";
+import { Event } from "../models/Event.js";
+import { Notification } from "../models/Notification.js";
 import {
   registerPushToken,
   getInAppNotifications,
@@ -3671,13 +3674,87 @@ homeRouter.post("/user/:targetId/friend-request", requireAuth, async (req, res) 
   return res.json({ success: true, friendStatus, isMutual });
 });
 
-homeRouter.get("/notifications", requireAuth, (req, res) => {
+function notificationSection(createdAt) {
+  const created = new Date(createdAt || 0);
+  if (Number.isNaN(created.getTime())) return "Earlier";
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startYesterday = new Date(startToday);
+  startYesterday.setDate(startYesterday.getDate() - 1);
+  if (created >= startToday) return "Today";
+  if (created >= startYesterday) return "Yesterday";
+  return "Earlier";
+}
+
+function persistedNotificationView(notification) {
+  const createdAt = notification.createdAt || new Date();
+  return {
+    id: String(notification._id),
+    type: notification.audienceRole === "mentor" ? "mentor" : "system",
+    title: notification.title,
+    subtitle: notification.body || "",
+    icon: notification.icon || "bell",
+    clickUrl: notification.clickUrl || "",
+    time: new Date(createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+    section: notificationSection(createdAt),
+    unread: !notification.readAt,
+    sourceSystem: notification.sourceSystem
+  };
+}
+
+homeRouter.get("/programs", async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    return process.env.NODE_ENV === "production"
+      ? res.status(503).json({ message: "Programs are temporarily unavailable." })
+      : res.json({ programs: [] });
+  }
+  try {
+    const programs = await Program.find({ publicationStatus: "published" })
+      .populate("courseIds", "title customId price imageUrl category")
+      .sort({ isFeatured: -1, startDate: 1, createdAt: -1 })
+      .lean();
+    res.json({ programs });
+  } catch (error) {
+    res.status(503).json({ message: "Programs are temporarily unavailable." });
+  }
+});
+
+homeRouter.get("/events", async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    return process.env.NODE_ENV === "production"
+      ? res.status(503).json({ message: "Events are temporarily unavailable." })
+      : res.json({ events: [] });
+  }
+  try {
+    const events = await Event.find({ status: { $in: ["upcoming", "ongoing"] } })
+      .populate("instructorId", "name avatarUrl mentorCategory")
+      .sort({ eventDate: 1, createdAt: -1 })
+      .lean();
+    res.json({ events });
+  } catch (error) {
+    res.status(503).json({ message: "Events are temporarily unavailable." });
+  }
+});
+
+homeRouter.get("/notifications", requireAuth, async (req, res) => {
   const userId = String(req.user?._id || req.user?.id || "seed-user");
   const memNotifs = getInAppNotifications(userId) || [];
   const appNotifs = (req.app.locals.userNotifications && req.app.locals.userNotifications[userId]) || [];
 
+  let persistedNotifs = [];
+  if (mongoose.connection.readyState === 1) {
+    try {
+      persistedNotifs = (await Notification.find({ userId }).sort({ createdAt: -1 }).limit(200).lean())
+        .map(persistedNotificationView);
+    } catch (error) {
+      if (process.env.NODE_ENV === "production") {
+        return res.status(503).json({ message: "Notifications are temporarily unavailable." });
+      }
+    }
+  }
+
   const notifMap = new Map();
-  [...appNotifs, ...memNotifs].forEach((n) => {
+  [...appNotifs, ...memNotifs, ...persistedNotifs].forEach((n) => {
     if (!n) return;
     const key = String(n.id || `${n.type || "gen"}_${n.title}_${n.senderId || ""}`);
     notifMap.set(key, n);
@@ -3688,8 +3765,17 @@ homeRouter.get("/notifications", requireAuth, (req, res) => {
   return res.json({ notifications, unreadCount });
 });
 
-homeRouter.post("/notifications/read-all", requireAuth, (req, res) => {
+homeRouter.post("/notifications/read-all", requireAuth, async (req, res) => {
   const userId = String(req.user?._id || req.user?.id);
+  if (mongoose.connection.readyState === 1) {
+    try {
+      await Notification.updateMany({ userId, readAt: null }, { $set: { readAt: new Date() } });
+    } catch (error) {
+      if (process.env.NODE_ENV === "production") {
+        return res.status(503).json({ success: false, message: "Notifications could not be marked as read." });
+      }
+    }
+  }
   markAllInAppNotificationsRead(userId);
   if (req.app.locals.userNotifications && req.app.locals.userNotifications[userId]) {
     req.app.locals.userNotifications[userId] = req.app.locals.userNotifications[userId].map((n) => ({ ...n, unread: false }));

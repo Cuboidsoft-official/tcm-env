@@ -20,6 +20,11 @@ import { Wallet } from '../src/models/Wallet.js';
 import { WalletTransaction } from '../src/models/WalletTransaction.js';
 import { Payment } from '../src/models/Payment.js';
 import { Enrollment } from '../src/models/Enrollment.js';
+import { Program } from '../src/models/Program.js';
+import { Lead } from '../src/models/Lead.js';
+import { Event } from '../src/models/Event.js';
+import { CmsPost, Testimonial, AppSetting } from '../src/models/CmsContent.js';
+import { Notification } from '../src/models/Notification.js';
 import { UploadedMedia } from '../src/models/UploadedMedia.js';
 import { getMediaFromDb, saveMediaToDb } from '../src/routes/uploads.js';
 
@@ -238,6 +243,62 @@ test('migrated wallet and financial records are exposed through authenticated re
     server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
     User.findById=oldFind;Wallet.findOne=oldWalletFind;WalletTransaction.find=oldTransactionFind;Payment.find=oldPaymentFind;
     Enrollment.find=oldEnrollmentFind;Course.find=oldCourseFind;
+    mongoose.connection.readyState=oldState;
+    if(oldEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldEnv;
+  }
+});
+
+test('migrated programs, events, CMS and persisted notifications have safe read paths', async () => {
+  const oldEnv=process.env.NODE_ENV, oldFindUser=User.findById, oldState=mongoose.connection.readyState;
+  const models=[Program,Lead,Event,CmsPost,Testimonial,AppSetting,Notification];
+  const originalFind=new Map(models.map((model)=>[model,model.find]));
+  const originalCount=new Map(models.map((model)=>[model,model.countDocuments]));
+  const oldUpdateMany=Notification.updateMany;
+  process.env.NODE_ENV='production';mongoose.connection.readyState=1;
+  const user={_id:'507f1f77bcf86cd799439011',name:'Migration Reader',email:'reader@example.test',role:'student'};
+  User.findById=()=>({select:()=>({lean:async()=>user})});
+  const rows={
+    Program:[{_id:'program-1',title:'Career Launchpad',slug:'career-launchpad',publicationStatus:'published',sourceSystem:'mysql'}],
+    Lead:[{_id:'lead-1',name:'Interested Learner',email:'lead@example.test',status:'new',sourceSystem:'mysql'}],
+    Event:[{_id:'event-1',title:'Python Workshop',slug:'python-workshop',status:'upcoming',eventDate:new Date('2026-10-01T10:00:00Z'),sourceSystem:'mysql'}],
+    CmsPost:[{_id:'post-1',title:'Build Your Career',slug:'build-career',status:'published',sourceSystem:'mysql'}],
+    Testimonial:[{_id:'testimonial-1',name:'Learner',content:'Helpful',status:'active',sourceSystem:'mysql'}],
+    AppSetting:[{_id:'setting-1',key:'site_name',value:'must-not-leak',sourceSystem:'mysql'}],
+    Notification:[{_id:'507f1f77bcf86cd799439099',userId:user._id,title:'Welcome back',body:'Your migrated account is ready.',readAt:null,createdAt:new Date(),sourceSystem:'mysql'}]
+  };
+  const chain=(items)=>{const query={populate:()=>query,sort:()=>query,limit:()=>query,select:()=>query,lean:async()=>items};return query;};
+  models.forEach((model)=>{model.find=()=>chain(rows[model.modelName]);model.countDocuments=async()=>rows[model.modelName].length;});
+  let markedRead=false;
+  Notification.updateMany=async()=>{markedRead=true;return {modifiedCount:1};};
+  const app=express();app.use(express.json());app.use('/api/home',homeRouter);app.use('/api/admin',adminRouter);
+  const server=app.listen(0,'127.0.0.1');await once(server,'listening');
+  const base=`http://127.0.0.1:${server.address().port}/api`;
+  const secret=process.env.JWT_SECRET||'tcm_local_dev_secret_change_before_production';
+  const userToken=jwt.sign({sub:user._id},secret);
+  const adminToken=jwt.sign({sub:'admin',role:'admin'},secret,{issuer:'tcm',audience:'tcm-app'});
+  try {
+    const programs=await (await fetch(`${base}/home/programs`)).json();
+    assert.equal(programs.programs[0].title,'Career Launchpad');
+    const events=await (await fetch(`${base}/home/events`)).json();
+    assert.equal(events.events[0].title,'Python Workshop');
+
+    const notificationsResponse=await fetch(`${base}/home/notifications`,{headers:{Authorization:`Bearer ${userToken}`}});
+    assert.equal(notificationsResponse.status,200);
+    const notifications=await notificationsResponse.json();
+    assert.equal(notifications.notifications[0].title,'Welcome back');
+    assert.equal(notifications.notifications[0].unread,true);
+    assert.equal(notifications.unreadCount,1);
+    assert.equal((await fetch(`${base}/home/notifications/read-all`,{method:'POST',headers:{Authorization:`Bearer ${userToken}`}})).status,200);
+    assert.equal(markedRead,true);
+
+    const adminResponse=await fetch(`${base}/admin/migration-content`,{headers:{Authorization:`Bearer ${adminToken}`}});
+    assert.equal(adminResponse.status,200);
+    const adminData=await adminResponse.json();
+    assert.equal(adminData.counts.programs,1);assert.equal(adminData.counts.leads,1);assert.equal(adminData.counts.notifications,1);
+    assert.equal(Object.hasOwn(adminData.collections.settings[0],'value'),false);
+  } finally {
+    server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
+    User.findById=oldFindUser;models.forEach((model)=>{model.find=originalFind.get(model);model.countDocuments=originalCount.get(model);});Notification.updateMany=oldUpdateMany;
     mongoose.connection.readyState=oldState;
     if(oldEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldEnv;
   }
